@@ -7,8 +7,7 @@
  * the server, so this button works as soon as the API is configured.
  */
 import { useState } from 'react';
-
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+import { API_BASE } from '@lib/api';
 
 export default function GoogleButton({ label = 'Continue with Google', redirect }) {
   const [isRedirecting, setIsRedirecting] = useState(false);

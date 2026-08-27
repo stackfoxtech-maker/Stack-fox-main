@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Mail, MessageSquare, ExternalLink, ChevronDown, ChevronUp, User, ScrollText, FileText, ShieldCheck, PenTool, Clock, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, Mail, MessageSquare, ExternalLink, ChevronDown, ChevronUp, User, ScrollText, FileText, ShieldCheck, PenTool, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, formatDate, capitalize, getStatusBadge } from '@lib/utils';
+import { formatINR, formatDate, capitalize } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
@@ -15,19 +15,80 @@ const CONTRACT_STATUS = {
   DRAFT: 'warning', CLIENT_SIGNED: 'info', EXECUTED: 'success', AMENDED: 'info', TERMINATED: 'danger',
 };
 
+const STATUS_TO_VARIANT = {
+  draft: 'neutral',
+  reviewing: 'info',
+  approved: 'info',
+  invoiced: 'fox',
+  cancelled: 'danger',
+  sent: 'info',
+  viewed: 'info',
+  'partially-paid': 'warning',
+  paid: 'success',
+  overdue: 'danger',
+};
+
+function statusBadgeVariant(status) {
+  return STATUS_TO_VARIANT[status] || 'neutral';
+}
+
 export default function Orders() {
   usePageTitle('Admin Orders');
   const [tab, setTab] = useState('quotes');
   const [items, setItems] = useState([]);
+  const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [contractPage, setContractPage] = useState(1);
+  const CONTRACT_PAGE_SIZE = 10;
 
   const fetchItems = () => {
     setLoading(true);
-    const endpoint = tab === 'quotes' ? '/quotes' : tab === 'invoices' ? '/invoices' : '/contracts';
-    api.get(endpoint, { params: { limit: 100 } })
-      .then((r) => setItems(r.data.data || []))
-      .catch(() => setItems([]))
+    setError(null);
+    if (tab === 'contracts') {
+      setContractPage(1);
+      api.get('/contracts')
+        .then((r) => setItems(r.data.data || []))
+        .catch((err) => {
+          setError(err?.response?.data?.error || 'Failed to load contracts');
+          setItems([]);
+        })
+        .finally(() => setLoading(false));
+      return;
+    }
+    api.get(tab === 'quotes' ? '/quotes' : '/invoices', { params: { page: 1, limit: 20 } })
+      .then((r) => {
+        setItems(r.data.data || []);
+        const pagination = r.data.meta?.pagination;
+        if (pagination) {
+          setMeta({ page: pagination.page, pages: pagination.pages, total: pagination.total });
+        } else {
+          setMeta({ page: 1, pages: 1, total: (r.data.data || []).length });
+        }
+      })
+      .catch((err) => {
+        setError(err?.response?.data?.error || 'Failed to load items');
+        setItems([]);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const fetchPage = (page) => {
+    setLoading(true);
+    setError(null);
+    api.get(tab === 'quotes' ? '/quotes' : '/invoices', { params: { page, limit: 20 } })
+      .then((r) => {
+        setItems(r.data.data || []);
+        const pagination = r.data.meta?.pagination;
+        if (pagination) {
+          setMeta({ page: pagination.page, pages: pagination.pages, total: pagination.total });
+        }
+      })
+      .catch((err) => {
+        setError(err?.response?.data?.error || 'Failed to load items');
+        setItems([]);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -40,7 +101,11 @@ export default function Orders() {
       const endpoint = tab === 'quotes' ? `/quotes/${id}/status` : `/invoices/${id}/status`;
       await api.patch(endpoint, { status: newStatus });
       toast.success(`Status updated to ${newStatus}`);
-      fetchItems();
+      if (tab === 'contracts') {
+        fetchItems();
+      } else {
+        fetchPage(meta.page);
+      }
     } catch (err) {
       toast.error(err?.response?.data?.error || err?.response?.data?.message || 'Failed to update status');
     }
@@ -55,13 +120,18 @@ export default function Orders() {
     }
   };
 
-  // Quotes use the sales workflow; invoices are serialized lowercase with
-  // dashes on the backend ("partially-paid"), matching what item.status holds.
+  const contactMethodLabel = (email, phone) => phone ? 'Contact via WhatsApp' : email ? 'Contact via Email' : 'No contact method';
+
   const statusOptions = tab === 'quotes'
     ? ['draft', 'reviewing', 'approved', 'invoiced', 'cancelled']
     : tab === 'invoices'
     ? ['draft', 'sent', 'viewed', 'partially-paid', 'paid', 'overdue', 'cancelled']
-    : [];
+    : ['draft', 'client-signed', 'executed', 'amended', 'terminated'];
+
+  const contractStart = (contractPage - 1) * CONTRACT_PAGE_SIZE;
+  const contractEnd = contractStart + CONTRACT_PAGE_SIZE;
+  const paginatedContracts = items.slice(contractStart, contractEnd);
+  const contractTotalPages = Math.max(1, Math.ceil(items.length / CONTRACT_PAGE_SIZE));
 
   return (
     <div className="space-y-6">
@@ -74,9 +144,9 @@ export default function Orders() {
 
       <div className="flex bg-warm-100/50 p-1 rounded-2xl w-fit">
         {['quotes', 'invoices', 'contracts'].map((t) => (
-          <button 
-            key={t} 
-            onClick={() => setTab(t)} 
+          <button
+            key={t}
+            onClick={() => setTab(t)}
             className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${
               tab === t ? 'bg-white text-fox-500 shadow-sm' : 'text-warm-500 hover:text-warm-900'
             }`}
@@ -88,11 +158,18 @@ export default function Orders() {
 
       {loading ? (
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
-      ) : items.length === 0 ? (
-        <EmptyState icon={tab === 'contracts' ? ScrollText : ShoppingBag} title={`No ${tab} found`} description={`Check back later for new ${tab}.`} />
+      ) : error ? (
+        <div className="bg-danger-50 border border-danger-200 rounded-2xl p-6 flex items-start gap-3">
+          <AlertTriangle className="text-danger-600 mt-0.5" size={20} />
+          <div>
+            <p className="font-bold text-danger-800 text-sm">Failed to load {tab}</p>
+            <p className="text-sm text-danger-700 mt-1">{error}</p>
+            <button onClick={fetchItems} className="mt-3 text-xs font-bold text-danger-800 underline">Retry</button>
+          </div>
+        </div>
       ) : tab === 'contracts' ? (
         <div className="space-y-3">
-          {items.map((c) => {
+          {paginatedContracts.map((c) => {
             const clientSig = c.signatures?.find(s => s.side === 'CLIENT');
             const sfSig = c.signatures?.find(s => s.side === 'STACKFOX');
             return (
@@ -145,12 +222,24 @@ export default function Orders() {
               </div>
             );
           })}
+          {items.length > CONTRACT_PAGE_SIZE && (
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-xs text-warm-500">Showing {contractStart + 1}-{Math.min(contractEnd, items.length)} of {items.length}</p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={contractPage <= 1} onClick={() => setContractPage(p => p - 1)}>Prev</Button>
+                <span className="text-xs text-warm-500 self-center">{contractPage} / {contractTotalPages}</span>
+                <Button variant="outline" size="sm" disabled={contractPage >= contractTotalPages} onClick={() => setContractPage(p => p + 1)}>Next</Button>
+              </div>
+            </div>
+          )}
         </div>
+      ) : items.length === 0 ? (
+        <EmptyState icon={tab === 'contracts' ? ScrollText : ShoppingBag} title={`No ${tab} found`} description={`Check back later for new ${tab}.`} />
       ) : (
         <div className="space-y-4">
           {items.map((item) => (
-            <div 
-              key={item._id} 
+            <div
+              key={item._id}
               className={`bg-white rounded-[2rem] border transition-all duration-300 ${
                 expandedId === item._id ? 'border-fox-200 shadow-xl ring-1 ring-fox-100' : 'border-warm-200 hover:border-warm-300'
               }`}
@@ -164,7 +253,7 @@ export default function Orders() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-bold text-warm-900">{item.quoteNumber || item.invoiceNumber}</h3>
-                        <Badge variant={getStatusBadge(item.status)?.replace('badge-', '')}>{capitalize(item.status)}</Badge>
+                        <Badge variant={statusBadgeVariant(item.status)}>{capitalize(item.status)}</Badge>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-warm-500">
                         <span className="flex items-center gap-1 font-semibold text-warm-700">
@@ -181,19 +270,19 @@ export default function Orders() {
                       <div className="text-xs text-warm-400 font-bold uppercase tracking-widest">Total Amount</div>
                       <div className="font-mono text-xl font-black text-warm-900">{formatINR(tab === 'quotes' ? item.total : (item.grandTotal ?? item.total))}</div>
                     </div>
-                    
+
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="rounded-xl border-warm-200"
                         onClick={() => contactUser(item.client?.email, item.client?.phone, item.client?.name, item.quoteNumber || item.invoiceNumber)}
                       >
                         <MessageSquare size={14} className="text-emerald-500" />
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="rounded-xl border-warm-200"
                         onClick={() => setExpandedId(expandedId === item._id ? null : item._id)}
                       >
@@ -206,7 +295,6 @@ export default function Orders() {
                 {expandedId === item._id && (
                   <div className="mt-8 pt-6 border-t border-warm-100 animate-slide-up">
                     <div className="grid md:grid-cols-2 gap-8">
-                      {/* Items List */}
                       <div>
                         <h4 className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-4">Itemized Breakdown</h4>
                         <div className="space-y-2">
@@ -222,7 +310,6 @@ export default function Orders() {
                         </div>
                       </div>
 
-                      {/* Management Actions */}
                       <div className="space-y-6">
                         <div>
                           <h4 className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-4">Update Workflow Status</h4>
@@ -232,8 +319,8 @@ export default function Orders() {
                                 key={s}
                                 onClick={() => handleStatusUpdate(item._id, s)}
                                 className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all border ${
-                                  item.status === s 
-                                    ? 'bg-fox-500 text-white border-fox-600' 
+                                  item.status === s
+                                    ? 'bg-fox-500 text-white border-fox-600'
                                     : 'bg-white text-warm-500 border-warm-200 hover:border-fox-300'
                                 }`}
                               >
@@ -253,6 +340,9 @@ export default function Orders() {
                               <Mail size={14} /> Send Email
                             </a>
                           </div>
+                          <p className="text-[10px] text-warm-400 mt-2 font-medium">
+                            {contactMethodLabel(item.client?.email, item.client?.phone)}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -261,6 +351,16 @@ export default function Orders() {
               </div>
             </div>
           ))}
+          {tab !== 'contracts' && meta.pages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-xs text-warm-500">Showing {((meta.page - 1) * 20) + 1}-{Math.min(meta.page * 20, meta.total)} of {meta.total}</p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={meta.page <= 1} onClick={() => fetchPage(meta.page - 1)}>Prev</Button>
+                <span className="text-xs text-warm-500 self-center">{meta.page} / {meta.pages}</span>
+                <Button variant="outline" size="sm" disabled={meta.page >= meta.pages} onClick={() => fetchPage(meta.page + 1)}>Next</Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

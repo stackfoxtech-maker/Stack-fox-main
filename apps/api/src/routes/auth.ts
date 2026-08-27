@@ -201,6 +201,7 @@ export async function authRoutes(app: FastifyInstance) {
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
     const { email } = req.body as { email: string };
+    if (!email) return reply.code(400).send({ message: "Email is required" });
     const user = await prisma.user.findUnique({ where: { email } });
     if (user) {
       const { token, hash } = generateToken();

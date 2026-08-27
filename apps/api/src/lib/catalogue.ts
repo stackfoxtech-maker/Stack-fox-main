@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, writeFileSync } from "fs";
 import { resolve } from "path";
 
 /**
@@ -29,11 +29,18 @@ export interface CatalogueItem {
 }
 
 interface RawCatalogue {
-  services?: Array<{ id: string; name: string; price: number; catId?: string }>;
+  services?: Array<{ id: string; name: string; price: number; catId?: string; unit?: string; est?: string; lay?: string }>;
   packages?: Array<{ id: string; name: string; price: number }>;
   industryBundles?: Array<{ id: string; name: string; price: number }>;
-  addons?: Array<{ id: string; name: string; price: number }>;
+  addons?: Array<{ id: string; name: string; price: number; desc?: string }>;
   categories?: Array<{ id: string; name: string }>;
+  meta?: Record<string, any>;
+  tourSteps?: any[];
+  resources?: any[];
+  careers?: any;
+  company?: any;
+  testimonials?: any[];
+  faq?: any[];
 }
 
 /**
@@ -118,4 +125,136 @@ export function catalogueSource(): string | null {
 export function reloadCatalogue(): void {
   cache = null;
   loadedFrom = null;
+}
+
+// ── File-backed sync (admin edits → static JSON) ──
+
+const TIER_TO_PREFIX: Record<string, string> = {
+  WEB: "web",
+  MOB: "mob",
+  AI: "ai",
+  AUTO: "auto",
+  ECO: "ecom",
+  UIX: "ui",
+  API: "be",
+  DEV: "devops",
+  SEC: "sec",
+  SEO: "seo",
+  CON: "consult",
+  SAAS: "saas",
+  MNT: "maint",
+};
+
+function dbIdToJsonPrefix(dbId: string): string | null {
+  const match = dbId.match(/^SF-([A-Z]+)-/);
+  if (!match) return null;
+  return TIER_TO_PREFIX[match[1]] ?? null;
+}
+
+function dbIdToJsonId(dbId: string): string | null {
+  const match = dbId.match(/^SF-([A-Z]+)-(\d+)$/);
+  if (!match) return null;
+  const prefix = dbIdToJsonPrefix(dbId);
+  if (!prefix) return null;
+  return `${prefix}-${match[2]}`;
+}
+
+export function cataloguePath(): string | null {
+  return candidatePaths().find((p) => existsSync(p)) ?? null;
+}
+
+export function readRawCatalogue(): RawCatalogue | null {
+  const path = cataloguePath();
+  if (!path) return null;
+  return JSON.parse(readFileSync(path, "utf8")) as RawCatalogue;
+}
+
+export function writeRawCatalogue(raw: RawCatalogue): void {
+  const path = cataloguePath();
+  if (!path) throw new Error("Catalogue file not found");
+  writeFileSync(path, JSON.stringify(raw, null, 2), "utf8");
+}
+
+export function updateServiceNameInCatalogue(dbId: string, newName: string): boolean {
+  const raw = readRawCatalogue();
+  if (!raw || !raw.services) return false;
+
+  let updated = false;
+  const jsonId = dbIdToJsonId(dbId);
+
+  if (jsonId) {
+    const svc = raw.services.find((s) => s.id === jsonId);
+    if (svc) {
+      svc.name = newName;
+      updated = true;
+    }
+  }
+
+  if (!updated) {
+    const svc = raw.services.find((s) => s.name === newName);
+    if (svc) return false;
+    const tier = dbId.replace(/^SF-/, "").split("-")[0];
+    const prefix = TIER_TO_PREFIX[tier] ?? tier.toLowerCase();
+    const num = dbId.split("-").pop() ?? "001";
+    const newId = `${prefix}-${num}`;
+    const existing = raw.services.find((s) => s.id === newId);
+    if (existing) {
+      existing.name = newName;
+      updated = true;
+    }
+  }
+
+  if (!updated) return false;
+
+  writeRawCatalogue(raw);
+  reloadCatalogue();
+  return true;
+}
+
+export function addServiceToCatalogue(dbService: {
+  id: string;
+  name: string;
+  categoryTier1: string;
+  starterPrice?: number | null;
+  starterTimelineDays?: number | null;
+}): boolean {
+  const raw = readRawCatalogue();
+  if (!raw) return false;
+
+  const prefix = dbIdToJsonPrefix(dbService.id);
+  const num = dbService.id.split("-").pop() ?? "001";
+  const jsonId = prefix ? `${prefix}-${num}` : dbService.id.toLowerCase();
+
+  if (raw.services?.some((s) => s.id === jsonId)) return false;
+
+  raw.services = raw.services ?? [];
+  raw.services.push({
+    id: jsonId,
+    name: dbService.name,
+    price: Math.round((dbService.starterPrice ?? 0) / 100),
+    catId: dbService.categoryTier1,
+    unit: "project",
+    est: `${dbService.starterTimelineDays ?? 7} days`,
+    lay: "",
+  });
+
+  writeRawCatalogue(raw);
+  reloadCatalogue();
+  return true;
+}
+
+export function removeServiceFromCatalogue(dbId: string): boolean {
+  const raw = readRawCatalogue();
+  if (!raw || !raw.services) return false;
+
+  const jsonId = dbIdToJsonId(dbId);
+  if (!jsonId) return false;
+
+  const idx = raw.services.findIndex((s) => s.id === jsonId);
+  if (idx === -1) return false;
+
+  raw.services.splice(idx, 1);
+  writeRawCatalogue(raw);
+  reloadCatalogue();
+  return true;
 }

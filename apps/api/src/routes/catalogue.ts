@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { cache } from "../lib/redis";
+import { readRawCatalogue } from "../lib/catalogue";
 
 export async function catalogueRoutes(app: FastifyInstance) {
   // GET /catalogue/services
@@ -188,5 +189,11 @@ export async function catalogueRoutes(app: FastifyInstance) {
 
   app.get("/catalog/bundles", async () => {
     return prisma.bundle.findMany({ where: { status: "ACTIVE" } });
+  });
+
+  app.get("/catalogue/storefront", async (req, reply) => {
+    const raw = readRawCatalogue();
+    if (!raw) return reply.code(500).send({ error: "Catalogue not found" });
+    return reply.type("application/json").send(raw);
   });
 }

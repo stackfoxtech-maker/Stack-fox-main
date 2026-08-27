@@ -4,6 +4,11 @@ import { requireRole } from "../plugins/auth";
 import { paginated, pageParams } from "../lib/http";
 import { INTERNAL_ROLES, CLIENT_ROLES } from "@stackfox/core";
 import { ok, withId } from "../lib/http";
+import {
+  updateServiceNameInCatalogue,
+  addServiceToCatalogue,
+  removeServiceFromCatalogue,
+} from "../lib/catalogue";
 
 const ALL_ROLES = [...INTERNAL_ROLES, ...CLIENT_ROLES] as readonly string[];
 
@@ -24,18 +29,38 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.post("/admin/services", async (req) => {
     const body = req.body as any;
-    return prisma.serviceUnit.create({ data: body });
+    const created = await prisma.serviceUnit.create({ data: body });
+    try {
+      addServiceToCatalogue({
+        id: created.id,
+        name: created.name,
+        categoryTier1: created.categoryTier1,
+        starterPrice: created.starterPrice,
+        starterTimelineDays: created.starterTimelineDays,
+      });
+    } catch {}
+    return created;
   });
 
   app.patch("/admin/services/:id", async (req) => {
     const { id } = req.params as { id: string };
     const body = req.body as any;
-    return prisma.serviceUnit.update({ where: { id }, data: body });
+    const existing = await prisma.serviceUnit.findUnique({ where: { id } });
+    const updated = await prisma.serviceUnit.update({ where: { id }, data: body });
+    if (existing && body.name && body.name !== existing.name) {
+      try {
+        updateServiceNameInCatalogue(id, body.name);
+      } catch {}
+    }
+    return updated;
   });
 
   app.delete("/admin/services/:id", async (req) => {
     const { id } = req.params as { id: string };
     await prisma.serviceUnit.delete({ where: { id } });
+    try {
+      removeServiceFromCatalogue(id);
+    } catch {}
     return { success: true };
   });
 
@@ -243,5 +268,199 @@ export async function adminRoutes(app: FastifyInstance) {
   app.patch("/admin/compliance/:id", async (req) => {
     const { id } = req.params as { id: string };
     return prisma.complianceItem.update({ where: { id }, data: req.body as any });
+  });
+
+  app.get("/admin/purchases", async (req) => {
+    const { limit = "50", skip = "0", q } = req.query as Record<string, string>;
+    const take = Math.min(parseInt(limit) || 50, 200);
+    const skipNum = parseInt(skip) || 0;
+
+    const [orders, paidQuotes] = await Promise.all([
+      prisma.order.findMany({
+        orderBy: { createdAt: "desc" },
+        skip: skipNum,
+        take: Math.ceil(take / 2),
+        include: {
+          org: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              gstin: true,
+              gstinVerified: true,
+              pan: true,
+              billingAddress: true,
+              contactEmail: true,
+              contactPhone: true,
+              tier: true,
+              status: true,
+              creditTier: true,
+              healthState: true,
+              kycStatus: true,
+            },
+          },
+          estimate: {
+            select: {
+              id: true,
+              snapshot: true,
+              totals: true,
+            },
+          },
+          contracts: {
+            include: {
+              signatures: {
+                include: {
+                  signer: {
+                    select: { id: true, name: true, email: true },
+                  },
+                },
+              },
+            },
+          },
+          projects: {
+            include: {
+              service: {
+                select: { id: true, name: true, categoryTier1: true },
+              },
+              milestones: {
+                orderBy: { number: "asc" },
+              },
+            },
+          },
+          payments: {
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      }),
+      prisma.quote.findMany({
+        where: { status: "paid" },
+        orderBy: { createdAt: "desc" },
+        skip: skipNum,
+        take: Math.ceil(take / 2),
+      }),
+    ]);
+
+    const orderEngIds = orders.map((o) => o.engagementId).filter((id): id is string => Boolean(id));
+    const engagements = await prisma.engagement.findMany({
+      where: { id: { in: orderEngIds } },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            gstin: true,
+            gstinVerified: true,
+            pan: true,
+            billingAddress: true,
+            contactEmail: true,
+            contactPhone: true,
+            tier: true,
+            status: true,
+            creditTier: true,
+            healthState: true,
+            kycStatus: true,
+          },
+        },
+        contracts: {
+          include: {
+            signatures: {
+              include: {
+                signer: {
+                  select: { id: true, name: true, email: true },
+                },
+              },
+            },
+          },
+        },
+        projects: {
+          include: {
+            service: {
+              select: { id: true, name: true, categoryTier1: true },
+            },
+            milestones: {
+              orderBy: { number: "asc" },
+            },
+          },
+        },
+      },
+    });
+    const engagementById = new Map<string, any>(engagements.map((e) => [e.id, e]));
+
+    const normalizeOrder = (o: any) => {
+      const eng = o.engagementId ? engagementById.get(o.engagementId) : null;
+      return {
+        kind: "order" as const,
+        id: o.id,
+        date: o.createdAt,
+        status: o.status,
+        client: o.org,
+        contact: o.primaryContact,
+        items: (o.estimate?.snapshot?.canvas || []).map((c: any) => ({
+          serviceId: c.serviceId,
+          name: c.serviceId,
+          quantity: 1,
+        })),
+        subtotal: o.estimate?.totals?.subtotal ?? o.subtotal ?? 0,
+        gst: o.estimate?.totals?.gst ?? o.gst ?? 0,
+        total: o.estimate?.totals?.grand ?? o.grandTotal ?? 0,
+        paymentMode: o.paymentMode,
+        paidAt: o.paidAt,
+        razorpayOrderId: o.razorpayOrderId,
+        engagement: eng,
+        contracts: (eng?.contracts || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        projects: (eng?.projects || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        payments: o.payments,
+      };
+    };
+
+    const normalizeQuote = (q: any) => ({
+      kind: "quote" as const,
+      id: q.id,
+      quoteNumber: q.quoteNumber,
+      date: q.createdAt,
+      status: q.status,
+      client: null,
+      contact: null,
+      items: (q.items || []).map((it: any) => ({
+        serviceId: it.itemId,
+        name: it.name,
+        quantity: it.quantity || 1,
+      })),
+      subtotal: q.subtotal,
+      gst: q.gstAmount,
+      total: q.total,
+      tier: q.tier,
+      paidAt: q.paidAt,
+      razorpayOrderId: q.razorpayOrderId,
+      engagement: null,
+      contracts: [],
+      projects: [],
+      payments: [],
+    });
+
+    let purchases = [...orders.map(normalizeOrder), ...paidQuotes.map(normalizeQuote)];
+
+    if (q && q.trim()) {
+      const ql = q.toLowerCase();
+      purchases = purchases.filter((p: any) => {
+        const hay = [
+          p.id,
+          p.quoteNumber,
+          p.client?.name,
+          p.client?.id,
+          p.contact?.email,
+          p.contact?.name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(ql);
+      });
+    }
+
+    purchases.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return { data: purchases, total: purchases.length };
   });
 }

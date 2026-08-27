@@ -3,19 +3,20 @@ import { Link } from 'react-router-dom';
 import { Check, ArrowRight, ShoppingCart } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR } from '@lib/utils';
-import { Section, SectionHeading, Button } from '@components/ui/Primitives';
+import { Section, SectionHeading, Button, Spinner } from '@components/ui/Primitives';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
-import data from '@data/stackfox-data.json';
-
-const serviceMap = {};
-data.services.forEach((s) => { serviceMap[s.id] = s; });
+import { useCatalogue } from '@lib/useStorefrontData';
 
 export default function Packages() {
   usePageTitle('Packages');
+  const { services, packages, loading } = useCatalogue();
+  const serviceMap = services.reduce((acc, s) => { acc[s.id] = s; return acc; }, {});
   const [expanded, setExpanded] = useState(null);
   const { addItem } = useCartStore();
   const { isAuthenticated } = useAuthStore();
+
+  if (loading) return <Section><div className="flex justify-center py-20"><Spinner size="lg" /></div></Section>;
 
   const handleAddPackage = (pkg) => {
     addItem({ itemId: pkg.id, itemType: 'package', name: pkg.name, price: pkg.price }, isAuthenticated);
@@ -26,7 +27,7 @@ export default function Packages() {
       <SectionHeading label="Packages" title="Pre-built packages, better value" description="Curated bundles that save you 15–30% compared to picking services individually." />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data.packages.map((pkg) => {
+        {packages.map((pkg) => {
           const resolvedItems = pkg.items.map((id) => serviceMap[id]).filter(Boolean);
           const individualTotal = resolvedItems.reduce((sum, s) => sum + s.price, 0);
           const isExpanded = expanded === pkg.id;

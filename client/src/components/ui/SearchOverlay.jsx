@@ -6,9 +6,10 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@lib/utils';
-import data from '@data/stackfox-data.json';
+import { useCatalogue } from '@lib/useStorefrontData';
 
 export default function SearchOverlay({ isOpen, onClose }) {
+  const { services, categories } = useCatalogue();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const inputRef = useRef(null);
@@ -36,20 +37,19 @@ export default function SearchOverlay({ isOpen, onClose }) {
 
     const q = query.toLowerCase();
     // Join services with their categories for searching
-    const allServices = (data?.services || []).map(s => {
-      const category = (data?.categories || []).find(c => c.id === s.catId);
+    const allServices = services.map(s => {
+      const category = categories.find(c => c.id === s.catId);
       return { ...s, category: category?.name || 'Other' };
     });
 
     const filtered = allServices.filter(s => 
       s.name?.toLowerCase().includes(q) || 
-      s.description?.toLowerCase().includes(q) ||
-      s.category?.toLowerCase().includes(q) ||
-      s.tags?.some(t => t.toLowerCase().includes(q))
+      (s.lay || s.description || '').toLowerCase().includes(q) ||
+      s.category?.toLowerCase().includes(q)
     ).slice(0, 6);
 
     setResults(filtered);
-  }, [query]);
+  }, [query, services, categories]);
 
   // Handle Hotkeys
   useEffect(() => {

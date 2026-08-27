@@ -79,7 +79,7 @@ export default function Invoices() {
                   <div>
                     <h3 className="font-medium text-warm-900">{inv.invoiceNumber}</h3>
                     <p className="text-xs text-warm-500 mt-0.5">
-                      {formatDate(inv.createdAt)} &middot; Due {formatDate(inv.dueDate)}
+                      {inv.clientDetails?.name || inv.org?.name || '—'} &middot; {formatDate(inv.createdAt)} &middot; Due {formatDate(inv.dueDate)}
                       {inv.project?.projectNumber && ` &middot; ${inv.project.projectNumber}`}
                     </p>
                   </div>

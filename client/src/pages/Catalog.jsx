@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { Search, Filter, X, ArrowRight } from 'lucide-react';
 import { usePageTitle, useDebounce } from '@lib/hooks';
 import { cn, formatINR } from '@lib/utils';
-import { Section, SectionHeading, Button } from '@components/ui/Primitives';
-import data from '@data/stackfox-data.json';
+import { Section, SectionHeading, Button, Spinner } from '@components/ui/Primitives';
+import { useCatalogue } from '@lib/useStorefrontData';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
 import toast from 'react-hot-toast';
@@ -13,6 +13,7 @@ const ITEMS_PER_PAGE = 24;
 
 export default function Catalog() {
   usePageTitle('All Services');
+  const { services, categories, loading, error } = useCatalogue();
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
@@ -21,8 +22,11 @@ export default function Catalog() {
   const { addItem } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
+  if (loading) return <Section><div className="flex justify-center py-20"><Spinner size="lg" /></div></Section>;
+  if (error) return <Section><p className="text-danger-600">Failed to load catalogue.</p></Section>;
+
   const filtered = useMemo(() => {
-    let result = data.services;
+    let result = services;
     if (activeCat !== 'all') result = result.filter((s) => s.catId === activeCat);
     if (priceRange === 'under10k') result = result.filter((s) => s.price < 10000);
     else if (priceRange === '10k-25k') result = result.filter((s) => s.price >= 10000 && s.price <= 25000);
@@ -33,14 +37,14 @@ export default function Catalog() {
       result = result.filter((s) => s.name.toLowerCase().includes(lower) || s.lay?.toLowerCase().includes(lower));
     }
     return result;
-  }, [activeCat, priceRange, q]);
+  }, [services, activeCat, priceRange, q]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paged = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   return (
     <Section>
-      <SectionHeading label="Catalog" title="All services" description={`${data.services.length} services across ${data.categories.length} categories. All prices indicative.`} />
+      <SectionHeading label="Catalog" title="All services" description={`${services.length} services across ${categories.length} categories. All prices indicative.`} />
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar */}
@@ -55,10 +59,10 @@ export default function Catalog() {
               <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Category</h4>
               <div className="space-y-1">
                 <button onClick={() => { setActiveCat('all'); setPage(1); }} className={cn('w-full text-left px-3 py-2 rounded-lg text-sm transition-colors', activeCat === 'all' ? 'bg-fox-50 text-fox-600 font-medium' : 'text-warm-600 hover:bg-warm-50')}>
-                  All ({data.services.length})
+                  All ({services.length})
                 </button>
-                {data.categories.map((cat) => {
-                  const count = data.services.filter((s) => s.catId === cat.id).length;
+                {categories.map((cat) => {
+                  const count = services.filter((s) => s.catId === cat.id).length;
                   return (
                     <button key={cat.id} onClick={() => { setActiveCat(cat.id); setPage(1); }} className={cn('w-full text-left px-3 py-2 rounded-lg text-sm transition-colors', activeCat === cat.id ? 'bg-fox-50 text-fox-600 font-medium' : 'text-warm-600 hover:bg-warm-50')}>
                       {cat.name} ({count})
@@ -88,7 +92,7 @@ export default function Catalog() {
             {paged.map((svc) => (
               <div key={svc.id} className="card-fx p-4 flex flex-col">
                 <span className="badge-fx badge-neutral text-[10px] self-start mb-2">
-                  {data.categories.find((c) => c.id === svc.catId)?.name}
+                  {categories.find((c) => c.id === svc.catId)?.name}
                 </span>
                 <h3 className="text-sm font-semibold text-warm-900 mb-1">{svc.name}</h3>
                 {svc.lay && <p className="text-xs text-warm-500 line-clamp-2 mb-3">{svc.lay}</p>}

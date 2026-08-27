@@ -1,13 +1,20 @@
 import { useParams, Link } from 'react-router-dom';
-import data from '@data/stackfox-data.json';
+import { useCatalogue } from '@lib/useStorefrontData';
+import { Spinner } from '@components/ui/Primitives';
 
-const { services, categories } = data;
+const TIERS = [
+  { id: 'STARTER', name: 'Starter', tag: 'AI-accelerated, flat price', card: 'border-orange-500', btn: 'bg-orange-500 hover:bg-orange-600', text: 'text-orange-600' },
+  { id: 'GROWTH', name: 'Growth', tag: 'Balanced human + AI', card: 'border-blue-500', btn: 'bg-blue-500 hover:bg-blue-600', text: 'text-blue-600' },
+  { id: 'PREMIUM', name: 'Premium', tag: 'Dedicated team, white-glove', card: 'border-purple-500', btn: 'bg-purple-600 hover:bg-purple-700', text: 'text-purple-600' },
+];
 
 export default function ServiceTimeline() {
+  const { services, categories, loading } = useCatalogue();
   const { category, slug } = useParams();
   const service = services.find((s) => (s.slug || s.id) === slug);
   const cat = categories.find((c) => c.id === category) || categories[0];
 
+  if (loading) return <div className="max-w-4xl mx-auto px-6 py-24 text-center"><div className="flex justify-center"><Spinner size="lg" /></div></div>;
   if (!service) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-24 text-center">

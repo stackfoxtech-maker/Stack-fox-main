@@ -31,7 +31,7 @@ function serializeInvoice(inv: any) {
       cgst: inv.cgst ?? 0,
       sgst: inv.sgst ?? 0,
     },
-    clientDetails: { email: inv.org?.contactEmail ?? "" },
+    clientDetails: { name: inv.org?.name ?? "", email: inv.org?.contactEmail ?? "" },
     project: inv.engagement ? { projectNumber: inv.engagement.id } : null,
   };
 }

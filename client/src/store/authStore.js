@@ -175,8 +175,8 @@ const useAuthStore = create((set, get) => ({
         toast.error(msg);
         return { success: false, message: msg };
       }
-      toast.success('If an account exists, a reset link has been sent.');
-      return { success: true };
+      toast.error('We could not send the reset email. Please try again shortly.');
+      return { success: false, message: 'We could not send the reset email. Please try again shortly.' };
     } finally {
       set({ isLoading: false });
     }

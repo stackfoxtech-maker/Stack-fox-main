@@ -1,8 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
-import data from '@data/stackfox-data.json';
-
-const { services, categories, addons } = data;
+import { useCatalogue } from '@lib/useStorefrontData';
+import { Spinner } from '@components/ui/Primitives';
 
 const TIERS = [
   { id: 'STARTER', name: 'Starter', tag: 'AI-accelerated, flat price', card: 'border-orange-500', btn: 'bg-orange-500 hover:bg-orange-600', text: 'text-orange-600' },
@@ -11,10 +10,12 @@ const TIERS = [
 ];
 
 export default function ServiceCost() {
+  const { services, categories, addons, loading } = useCatalogue();
   const { category, slug } = useParams();
   const service = services.find(s => (s.slug || s.id) === slug);
   const cat = categories.find(c => c.id === category) || categories[0];
 
+  if (loading) return <div className="max-w-4xl mx-auto px-6 py-24 text-center"><div className="flex justify-center"><Spinner size="lg" /></div></div>;
   if (!service) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-24 text-center">

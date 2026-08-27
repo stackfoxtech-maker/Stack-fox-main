@@ -127,6 +127,7 @@ const AdminOverview = lazy(() => import('@app/admin/Overview'));
 const AdminCatalog = lazy(() => import('@app/admin/Catalog'));
 const AdminHiring = lazy(() => import('@app/admin/Hiring'));
 const AdminOrders = lazy(() => import('@app/admin/Orders'));
+const AdminPurchases = lazy(() => import('@app/admin/Purchases'));
 const AdminProjects = lazy(() => import('@app/admin/Projects'));
 const AdminUsers = lazy(() => import('@app/admin/Users'));
 const AdminProjectWall = lazy(() => import('@app/admin/ProjectWall'));
@@ -354,6 +355,7 @@ export default function AppRoutes() {
           <Route index element={<AdminOverview />} />
           <Route path="catalog" element={<AdminCatalog />} />
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="purchases" element={<AdminPurchases />} />
           <Route path="projects" element={<AdminProjects />} />
           <Route path="projects/:id" element={<AdminProjects />} />
           <Route path="users" element={<AdminUsers />} />

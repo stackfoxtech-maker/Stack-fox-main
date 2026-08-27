@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, Legend,
 } from 'recharts';
 import { BarChart3, Users, Briefcase, Wrench, Download, Calendar, Loader2 } from 'lucide-react';
+import { usePageTitle } from '@lib/hooks';
 import { formatINR } from '@lib/utils';
 import { Spinner } from '@components/ui/Primitives';
 import api from '@lib/api';
@@ -36,6 +37,22 @@ const defaultFrom = () => {
   return d.toISOString().slice(0, 10);
 };
 
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+const isoNDaysAgo = (n) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+};
+
+const startOfQuarterISO = () => {
+  const d = new Date();
+  const qm = d.getMonth() - (d.getMonth() % 3);
+  return new Date(d.getFullYear(), qm, 1).toISOString().slice(0, 10);
+};
+
+const startOfYearISO = () => new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
+
 const Stat = ({ label, value }) => (
   <div className="bg-white rounded-2xl border border-warm-200 p-5">
     <div className="text-xs text-warm-500">{label}</div>
@@ -65,6 +82,7 @@ const Td = ({ children, mono }) => (
 );
 
 export default function Reports() {
+  usePageTitle('Admin Reports');
   const [type, setType] = useState('revenue');
   const [range, setRange] = useState({ from: defaultFrom(), to: new Date().toISOString().slice(0, 10) });
   const [report, setReport] = useState(null);
@@ -113,6 +131,12 @@ export default function Reports() {
   const t = report?.totals ?? {};
   const active = REPORTS.find((r) => r.key === type);
 
+  const presets = [
+    { label: 'Last 30 days', from: isoNDaysAgo(30), to: todayISO() },
+    { label: 'This quarter', from: startOfQuarterISO(), to: todayISO() },
+    { label: 'Year to date', from: startOfYearISO(), to: todayISO() },
+  ];
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -130,6 +154,15 @@ export default function Reports() {
             onChange={(e) => setRange((p) => ({ ...p, to: e.target.value }))}
             className="text-xs border border-warm-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-fox-500/30"
           />
+          {presets.map((p) => (
+            <button
+              key={p.label}
+              onClick={() => setRange({ from: p.from, to: p.to })}
+              className="text-xs border border-warm-200 rounded-lg px-2 py-1.5 hover:bg-warm-50 transition"
+            >
+              {p.label}
+            </button>
+          ))}
           <button
             onClick={exportCsv} disabled={exporting || loading || !report}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fox-500 text-white text-xs font-medium hover:bg-fox-600 disabled:opacity-50 transition"
@@ -190,7 +223,9 @@ export default function Reports() {
               <div className="bg-white rounded-2xl border border-warm-200 p-6">
                 <h3 className="text-sm font-medium text-warm-700 mb-1">Revenue by client</h3>
                 <p className="text-xs text-warm-500 mb-4">
-                  Top client is {t.topClientSharePct}% of revenue in this period.
+                  {t.topClientSharePct != null
+                    ? `Top client is ${t.topClientSharePct}% of revenue in this period.`
+                    : 'Top client data unavailable for this period.'}
                 </p>
                 {report.clients.length === 0 ? (
                   <p className="text-sm text-warm-400 py-4">No invoices in this range.</p>

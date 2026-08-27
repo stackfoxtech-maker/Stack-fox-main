@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, FolderKanban, Users, Briefcase, FileText, BarChart3, Settings, LogOut, Menu, X, Globe, IndianRupee, Handshake, Bell, FileSearch, Gift, ClipboardList, Layers, Flag, Mail, CalendarClock, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, FolderKanban, Users, Briefcase, FileText, BarChart3, Settings, LogOut, Menu, X, Globe, IndianRupee, Handshake, Bell, FileSearch, Gift, ClipboardList, Layers, Flag, Mail, CalendarClock, ShieldCheck, ScrollText } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@lib/utils';
 import useAuthStore from '@store/authStore';
@@ -8,6 +8,7 @@ const navItems = [
   { label: 'Overview', icon: LayoutDashboard, path: '/app/admin' },
   { label: 'Catalog', icon: Package, path: '/app/admin/catalog' },
   { label: 'Orders', icon: ShoppingBag, path: '/app/admin/orders' },
+  { label: 'Purchases', icon: ScrollText, path: '/app/admin/purchases' },
   { label: 'Projects', icon: FolderKanban, path: '/app/admin/projects' },
   { label: 'Users', icon: Users, path: '/app/admin/users' },
   { label: 'Hiring', icon: Briefcase, path: '/app/admin/hiring' },
