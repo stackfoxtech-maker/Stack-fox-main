@@ -1,0 +1,755 @@
+{
+  "meta": {
+    "version": "1.1.0",
+    "currency": "INR",
+    "gstRate": 18,
+    "priceDisclaimer": "All prices are indicative and may vary based on project complexity.",
+    "brand": {
+      "name": "StackFox by Artwall Labs",
+      "tagline": "Smart Code, Swift Delivery.",
+      "keywords": ["BUILD", "SHIP", "SCALE"],
+      "primaryColor": "#FF4D00",
+      "bgColor": "#FAFAF8",
+      "bodyFont": "Outfit",
+      "monoFont": "JetBrains Mono",
+      "email": "stackfox.tech@gmail.com",
+      "phone": "+91 82093 95894",
+      "address": "Jaipur, Rajasthan, India"
+    }
+  },
+
+  "tourSteps": [
+    { "title": "Welcome to Build & Price! 🦊", "description": "This is your custom service builder. Pick exactly what you need — from a ₹3K consultation to a full ₹8L enterprise setup. No packages you don't want, no features you don't need.", "icon": "👋", "tip": "Let's walk through how it works in 60 seconds." },
+    { "title": "Step 1: Browse Categories", "description": "Start by tapping any category tile — Web, Mobile, AI, Security, Consultancy & more. Each has 5-70+ individual services. Tap the Icon on any item for 'What does this mean for me?'", "icon": "📂", "tip": "Tap a category → see all services → tap the icon for clarity." },
+    { "title": "Step 2: Add to Cart", "description": "Found a service you need? Tap '+ Add' to add it to your cart. Your cart updates in real-time. Add as many as you want — mix & match across categories.", "icon": "🛒", "tip": "Each service shows price, delivery time & a plain-English explanation." },
+    { "title": "Step 3: Industry Bundles", "description": "Not sure what you need? Switch to Industry for solutions tailored to your niche like Healthcare, Real Estate, or E-commerce. Curated by our experts.", "icon": "📦", "tip": "Bundles show savings vs buying individually." },
+    { "title": "Step 4: Search Anything", "description": "Looking for something specific? Type in the search bar — 'chatbot', 'SEO', 'WhatsApp', 'security'. It searches all 240+ services instantly.", "icon": "🔍", "tip": "Try searching: 'AI', 'payment', 'WhatsApp', 'Cloud'" },
+    { "title": "Step 5: Get Your Quote", "description": "When you're ready, tap 'View Cart' and then 'Get Quote'. We'll send you a detailed proposal within 24 hours. No commitment, just transparency.", "icon": "📋", "tip": "All prices are indicative — final quotes may be lower for bundles!" }
+  ],
+
+  "categories": [
+    { "id": "web-dev", "name": "Web Development", "icon": "globe", "description": "Custom websites, web apps, and platforms built to scale.", "order": 1 },
+    { "id": "mobile-dev", "name": "Mobile App Development", "icon": "smartphone", "description": "Native and cross-platform mobile apps for iOS and Android.", "order": 2 },
+    { "id": "ai-genai", "name": "AI & GenAI", "icon": "brain", "description": "Artificial intelligence, machine learning, and generative AI solutions.", "order": 3 },
+    { "id": "automation", "name": "Automation", "icon": "zap", "description": "Workflow automation, bots, and process optimization.", "order": 4 },
+    { "id": "ecommerce", "name": "E-Commerce", "icon": "shopping-cart", "description": "Online stores, marketplaces, and payment integrations.", "order": 5 },
+    { "id": "ui-ux", "name": "UI/UX Design", "icon": "palette", "description": "User interface design, prototyping, and user experience research.", "order": 6 },
+    { "id": "backend-api", "name": "Backend & APIs", "icon": "server", "description": "Server-side architecture, REST/GraphQL APIs, and microservices.", "order": 7 },
+    { "id": "devops", "name": "DevOps & Cloud", "icon": "cloud", "description": "CI/CD pipelines, containerization, cloud infrastructure, and monitoring.", "order": 8 },
+    { "id": "cybersecurity", "name": "Cybersecurity", "icon": "shield", "description": "Security audits, penetration testing, compliance, and data protection.", "order": 9 },
+    { "id": "seo-marketing", "name": "SEO & Digital Marketing", "icon": "trending-up", "description": "Search engine optimization, analytics, and growth marketing.", "order": 10 },
+    { "id": "it-consulting", "name": "IT Consultancy", "icon": "message-circle", "description": "Technology strategy, architecture reviews, and digital transformation.", "order": 11 },
+    { "id": "saas", "name": "SaaS Products", "icon": "box", "description": "Custom SaaS product development, multi-tenancy, and subscription billing.", "order": 12 },
+    { "id": "maintenance", "name": "Maintenance & Support", "icon": "wrench", "description": "Ongoing support, bug fixes, performance tuning, and managed services.", "order": 13 }
+  ],
+
+  "services": [
+    { "id": "web-001", "catId": "web-dev", "name": "Business Website (5 pages)", "price": 25000, "unit": "project", "est": "7 days", "lay": "A full 5-page website with About Us, Services, Portfolio, Blog & Contact. It's like having a 24/7 salesperson — customers learn about your business, see your work, read articles & reach out — all without calling you." },
+    { "id": "web-002", "catId": "web-dev", "name": "Responsive Design", "price": 8000, "unit": "project", "est": "2-3 days", "lay": "Makes your website look perfect on phones, tablets, and desktops. Everything adjusts automatically to fit any screen size. Essential for modern Google ranking." },
+    { "id": "web-003", "catId": "web-dev", "name": "Landing Page", "price": 10000, "unit": "page", "est": "3 days", "lay": "Think of this as your digital business card on steroids. High-converting single page with contact form & responsive design. You start getting leads from day one." },
+    { "id": "web-004", "catId": "web-dev", "name": "CMS Setup (WordPress/Strapi)", "price": 20000, "unit": "project", "est": "5-7 days", "lay": "You can update your own website — add new products, change prices, publish blog posts — without calling a developer every time. Saves you ₹5K-10K/month in maintenance." },
+    { "id": "web-005", "catId": "web-dev", "name": "Blog System", "price": 12000, "unit": "project", "est": "4 days", "lay": "A blog helps you rank higher on Google for free. When people search 'best [your service]', your blog articles show up. It's the #1 way to get free organic traffic." },
+    { "id": "web-006", "catId": "web-dev", "name": "Multi-language Support", "price": 20000, "unit": "project", "est": "5 days", "lay": "Your website works in Hindi, English, Tamil, or any language. Customers see the site in their preferred language. Removes the language barrier for diverse markets." },
+    { "id": "web-007", "catId": "web-dev", "name": "Progressive Web App (PWA)", "price": 30000, "unit": "project", "est": "7 days", "lay": "Your website can be installed like an app on phones — works offline, sends push notifications, loads instantly. App-like experience without the App Store download." },
+    { "id": "web-009", "catId": "web-dev", "name": "Admin Dashboard", "price": 40000, "unit": "project", "est": "10 days", "lay": "A private back-office where YOU see everything — how many visitors, which products sell, customer data, orders, team activity. It's your business cockpit." },
+    { "id": "web-010", "catId": "web-dev", "name": "Real-time Chat/Notifications", "price": 25000, "unit": "feature", "est": "6 days", "lay": "Live chat with customers, instant order updates, real-time notifications. When someone places an order, you see it immediately. No email delays." },
+    { "id": "web-011", "catId": "web-dev", "name": "Contact & Lead Forms", "price": 8000, "unit": "feature", "est": "2 days", "lay": "Multi-step forms with validation, file upload & email notifications. When a customer fills a form, you instantly get an alert. No more lost leads." },
+    { "id": "web-013", "catId": "web-dev", "name": "Website Speed Optimization", "price": 10000, "unit": "project", "est": "2-3 days", "lay": "LCP, CLS, FID — Google performance score to 90+. Makes your site load fast worldwide. Higher speed = higher Google ranking." },
+    { "id": "web-014", "catId": "web-dev", "name": "SSR/SSG Setup (Next.js/Nuxt)", "price": 22000, "unit": "project", "est": "4-6 days", "lay": "Server-side rendering makes your site load faster and rank better on Google. Your pages are pre-built instead of loaded on the fly." },
+    { "id": "web-015", "catId": "web-dev", "name": "Web Accessibility (WCAG Compliance)", "price": 15000, "unit": "project", "est": "3-5 days", "lay": "Makes your website usable for people with disabilities — screen readers, keyboard navigation, color contrast fixes." },
+
+    { "id": "mob-001", "catId": "mobile-dev", "name": "Standard Mobile App", "price": 250000, "unit": "project", "est": "40 days", "lay": "A proper business app with login, payment, notifications & more. Think of it like having your own Swiggy or BookMyShow — but for your specific business. Most popular choice." },
+    { "id": "mob-005", "catId": "mobile-dev", "name": "Mobile App UI/UX Design", "price": 80000, "unit": "project", "est": "15 days", "lay": "Your app designed screen-by-screen with beautiful visuals, smooth flows & intuitive navigation. Test the design with real users in Figma before coding starts." },
+    { "id": "mob-006", "catId": "mobile-dev", "name": "Push Notifications", "price": 12000, "unit": "feature", "est": "3 days", "lay": "Send messages directly to your customers' phones — 'Your order is ready!', 'Flash sale today!'. Way more effective than email — 90% read rates." },
+    { "id": "mob-007", "catId": "mobile-dev", "name": "In-App Purchases", "price": 25000, "unit": "feature", "est": "6 days", "lay": "Let customers buy subscriptions, premium features, or digital goods directly inside your app. Apple & Google handle the security & payments." },
+
+    { "id": "ai-001", "catId": "ai-genai", "name": "FAQ Chatbot", "price": 25000, "unit": "project", "est": "5 days", "lay": "A chatbot on your website that answers customer questions 24/7 — 'What are your hours?', 'Do you deliver?'. Handles 80% of queries so you don't have to." },
+    { "id": "ai-002", "catId": "ai-genai", "name": "Custom GPT / RAG Bot", "price": 80000, "unit": "project", "est": "14 days", "lay": "An AI trained specifically on YOUR business data — docs, catalog, policies. It doesn't just guess, it gives accurate, sourced answers. Like a super-employee." },
+    { "id": "ai-006", "catId": "ai-genai", "name": "AI Content Generator", "price": 40000, "unit": "project", "est": "8 days", "lay": "AI writes product descriptions, blog posts, social media captions & email copy for you. Feed it your brand voice once, and it saves you hours every week." },
+    { "id": "ai-007", "catId": "ai-genai", "name": "Image Generation / Editing AI", "price": 35000, "unit": "project", "est": "7-10 days", "lay": "AI that creates or edits images for your business — product photos, marketing banners, or social media graphics." },
+    { "id": "ai-008", "catId": "ai-genai", "name": "Voice AI / Speech-to-Text", "price": 30000, "unit": "feature", "est": "5-7 days", "lay": "Converts spoken words into text, or lets users talk to your app. Perfect for voice search, dictation, or accessibility." },
+    { "id": "ai-009", "catId": "ai-genai", "name": "Predictive Analytics Dashboard", "price": 20000, "unit": "project", "est": "10-15 days", "lay": "AI that looks at your past data and predicts future trends — sales forecasts, demand prediction, churn risk, etc." },
+    { "id": "ai-010", "catId": "ai-genai", "name": "AI Model Training & Fine-tuning", "price": 60000, "unit": "project", "est": "10-20 days", "lay": "We train a custom AI model on your specific data so it becomes an expert in your domain. Not a generic AI — YOUR AI." },
+    { "id": "ai-011", "catId": "ai-genai", "name": "RAG Pipeline (Retrieval-Augmented Generation)", "price": 45000, "unit": "project", "est": "7-12 days", "lay": "Connect an AI to your company documents so it gives accurate answers based on YOUR data, not the internet." },
+    { "id": "ai-012", "catId": "ai-genai", "name": "AI Agent / Workflow Automation", "price": 20000, "unit": "project", "est": "10-15 days", "lay": "An AI that doesn't just answer questions but actually DOES things — books meetings, sends emails, updates databases." },
+
+    { "id": "auto-001", "catId": "automation", "name": "Zapier/Make Workflows", "price": 15000, "unit": "workflow", "est": "3 days", "lay": "Connect 5+ tools — auto-sync data between platforms. When someone fills a form, automatically add them to CRM and notify team on Slack." },
+    { "id": "auto-002", "catId": "automation", "name": "Email Automation", "price": 12000, "unit": "workflow", "est": "3 days", "lay": "Drip sequences, welcome emails, transactional emails. You set it up once, it runs forever while you sleep. High conversion boost." },
+    { "id": "auto-005", "catId": "automation", "name": "WhatsApp Automation", "price": 15000, "unit": "project", "est": "4 days", "lay": "Auto-replies, order updates, broadcast via WhatsApp API. Since everyone's on WhatsApp, open rates are 95%+ (vs 20% for email)." },
+    { "id": "auto-006", "catId": "automation", "name": "Data Scraping & Extraction Bot", "price": 20000, "unit": "project", "est": "4-7 days", "lay": "Automatically collects data from websites — competitor prices, job listings, product catalogs, or any public information." },
+    { "id": "auto-007", "catId": "automation", "name": "Report Generation Automation", "price": 15000, "unit": "project", "est": "3-5 days", "lay": "Auto-generates daily/weekly/monthly reports from your data and emails them to your team. No manual Excel work." },
+    { "id": "auto-008", "catId": "automation", "name": "Social Media Auto-posting", "price": 12000, "unit": "project", "est": "2-4 days", "lay": "Schedule and auto-publish posts across Instagram, Facebook, Twitter, and LinkedIn. Plan a month of content in one sitting." },
+    { "id": "auto-009", "catId": "automation", "name": "Custom Workflow Builder", "price": 35000, "unit": "project", "est": "7-12 days", "lay": "A visual drag-and-drop tool where you can create your own automations without coding. Like Zapier but custom-built for your business." },
+    { "id": "auto-010", "catId": "automation", "name": "Database Sync & Migration", "price": 15000, "unit": "project", "est": "3-5 days", "lay": "Keeps two or more databases in sync automatically, or migrates your data from old systems to new ones without data loss." },
+
+    { "id": "ecom-001", "catId": "ecommerce", "name": "Shopify Store Setup", "price": 30000, "unit": "project", "est": "7 days", "lay": "Your online store on Shopify — world's most popular platform. Products, collections, checkout & payments ready in a week. No coding needed." },
+    { "id": "ecom-004", "catId": "ecommerce", "name": "Payment Integration", "price": 15000, "unit": "integration", "est": "3 days", "lay": "Customers can pay online — Razorpay/Stripe/PayPal with subscriptions & refunds. Secure, reliable, money lands in your bank account." },
+    { "id": "ecom-007", "catId": "ecommerce", "name": "Shipping & Logistics", "price": 20000, "unit": "integration", "est": "5 days", "lay": "Shiprocket/Delhivery/BlueDart integration with automatic tracking numbers & delivery updates sent to customers." },
+    { "id": "ecom-008", "catId": "ecommerce", "name": "Customer Reviews & Ratings", "price": 8000, "unit": "feature", "est": "2-3 days", "lay": "Let customers leave star ratings and written reviews on products. Builds trust and helps other buyers decide." },
+    { "id": "ecom-009", "catId": "ecommerce", "name": "Coupon & Discount Engine", "price": 12000, "unit": "feature", "est": "2-4 days", "lay": "Create discount codes, flash sales, buy-one-get-one offers, and automatic volume discounts to boost sales." },
+    { "id": "ecom-010", "catId": "ecommerce", "name": "Multi-vendor Marketplace", "price": 120000, "unit": "project", "est": "25-40 days", "lay": "An Amazon/Flipkart-style platform where multiple sellers list and sell products. You earn commission on each sale." },
+    { "id": "ecom-011", "catId": "ecommerce", "name": "Subscription Box / Recurring Orders", "price": 20000, "unit": "feature", "est": "4-6 days", "lay": "Customers subscribe and receive products regularly — weekly, monthly, etc. Auto-charges and auto-ships each cycle." },
+    { "id": "ecom-012", "catId": "ecommerce", "name": "Abandoned Cart Recovery", "price": 10000, "unit": "feature", "est": "2-3 days", "lay": "Automatically emails or WhatsApp-messages people who added items to cart but didn't complete the purchase." },
+
+    { "id": "ui-001", "catId": "ui-ux", "name": "UI Design (per screen)", "price": 3000, "unit": "screen", "est": "1 day", "lay": "Professional design for one screen/page of your app or website. Pixel-perfect mockup you can show to investors or developers." },
+    { "id": "ui-002", "catId": "ui-ux", "name": "Complete UI Kit / Design System", "price": 40000, "unit": "project", "est": "7-12 days", "lay": "A full set of reusable buttons, inputs, cards, colors, and fonts for your entire product. Keeps everything consistent." },
+    { "id": "ui-003", "catId": "ui-ux", "name": "Wireframing (per screen)", "price": 1500, "unit": "screen", "est": "0.5 day", "lay": "A basic blueprint/skeleton of a page showing layout and content placement before any visual design. Like a floor plan for your website." },
+    { "id": "ui-004", "catId": "ui-ux", "name": "Interactive Prototype (Figma)", "price": 20000, "unit": "project", "est": "4-6 days", "lay": "A clickable demo of your app that looks real but has no code behind it. Test the flow before spending money on development." },
+    { "id": "ui-005", "catId": "ui-ux", "name": "User Research & Personas", "price": 25000, "unit": "project", "est": "5-7 days", "lay": "We interview your target users, analyze their needs, and create detailed profiles so your product is designed for real people." },
+    { "id": "ui-006", "catId": "ui-ux", "name": "Usability Testing", "price": 20000, "unit": "project", "est": "4-6 days", "lay": "Real users try your product while we watch and take notes. We find confusing parts and suggest fixes before launch." },
+    { "id": "ui-007", "catId": "ui-ux", "name": "Brand Identity Design", "price": 35000, "unit": "project", "est": "7-10 days", "lay": "Logo, color palette, typography, and brand guidelines. Everything you need so your business looks professional and consistent." },
+    { "id": "ui-008", "catId": "ui-ux", "name": "Icon Set Design (20 icons)", "price": 10000, "unit": "set", "est": "2-3 days", "lay": "20 custom icons designed in your brand style. Not generic stock icons — unique ones that match your product's personality." },
+    { "id": "ui-009", "catId": "ui-ux", "name": "Animation & Micro-interaction Design", "price": 15000, "unit": "project", "est": "3-5 days", "lay": "Smooth animations for buttons, page transitions, loading states, and interactions that make your app feel premium and polished." },
+    { "id": "ui-010", "catId": "ui-ux", "name": "Responsive Design Audit & Fix", "price": 12000, "unit": "project", "est": "2-4 days", "lay": "We check your existing website on all devices and fix everything that looks broken or weird on phones and tablets." },
+
+    { "id": "be-001", "catId": "backend-api", "name": "REST API Development", "price": 30000, "unit": "project", "est": "5-10 days", "lay": "The engine behind your app — handles data storage, user accounts, and business logic. Your app or website talks to this." },
+    { "id": "be-002", "catId": "backend-api", "name": "GraphQL API Development", "price": 40000, "unit": "project", "est": "7-12 days", "lay": "A smarter API that lets your app request exactly the data it needs — no more, no less. Faster and more efficient." },
+    { "id": "be-003", "catId": "backend-api", "name": "Database Design & Setup", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "We design how your data is organized and stored. Good database design means your app stays fast even with millions of records." },
+    { "id": "be-004", "catId": "backend-api", "name": "Authentication System (JWT/OAuth)", "price": 18000, "unit": "feature", "est": "3-5 days", "lay": "Secure login system with email/password, Google login, forgot password, and session management. Keeps user accounts safe." },
+    { "id": "be-005", "catId": "backend-api", "name": "File Upload & Storage Service", "price": 12000, "unit": "feature", "est": "2-3 days", "lay": "Let users upload images, documents, or videos. Files stored securely in the cloud with automatic backup." },
+    { "id": "be-006", "catId": "backend-api", "name": "WebSocket / Real-time Server", "price": 20000, "unit": "feature", "est": "3-5 days", "lay": "Enables live features like chat, notifications, live tracking, or collaborative editing. Data updates instantly for all users." },
+    { "id": "be-007", "catId": "backend-api", "name": "Microservices Architecture", "price": 60000, "unit": "project", "est": "15-20 days", "lay": "Splits your backend into small independent services that can scale separately. Best for large apps expecting heavy traffic." },
+    { "id": "be-008", "catId": "backend-api", "name": "Message Queue Setup (Redis/RabbitMQ)", "price": 18000, "unit": "feature", "est": "3-5 days", "lay": "Handles background tasks like sending emails, processing images, or generating reports without slowing down your app." },
+    { "id": "be-009", "catId": "backend-api", "name": "Caching Layer (Redis)", "price": 12000, "unit": "feature", "est": "2-3 days", "lay": "Stores frequently accessed data in fast memory so your app responds instantly instead of querying the database every time." },
+    { "id": "be-010", "catId": "backend-api", "name": "API Rate Limiting & Throttling", "price": 8000, "unit": "feature", "est": "1-2 days", "lay": "Prevents abuse by limiting how many requests a user can make per minute. Protects your server from overload or attacks." },
+    { "id": "be-011", "catId": "backend-api", "name": "Webhook System", "price": 12000, "unit": "feature", "est": "2-3 days", "lay": "Your system automatically notifies other systems when something happens. Example: order placed triggers a Slack message and shipping label." },
+    { "id": "be-012", "catId": "backend-api", "name": "API Documentation (Swagger/OpenAPI)", "price": 10000, "unit": "project", "est": "2-3 days", "lay": "Auto-generated, interactive documentation for your API. Other developers can understand and use your API without guesswork." },
+
+    { "id": "devops-001", "catId": "devops", "name": "CI/CD Pipeline Setup", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "Automates code testing and deployment. Push code to GitHub and it automatically tests, builds, and deploys to your server." },
+    { "id": "devops-002", "catId": "devops", "name": "Docker Containerization", "price": 15000, "unit": "project", "est": "2-4 days", "lay": "Packages your app in a container so it runs exactly the same on any computer or server. No more 'it works on my machine' problems." },
+    { "id": "devops-003", "catId": "devops", "name": "Kubernetes Deployment", "price": 40000, "unit": "project", "est": "7-12 days", "lay": "Auto-scales your app based on traffic. Getting 10x more visitors? Kubernetes spins up more servers automatically." },
+    { "id": "devops-004", "catId": "devops", "name": "AWS Infrastructure Setup", "price": 30000, "unit": "project", "est": "5-7 days", "lay": "Sets up your app on Amazon Web Services — servers, databases, file storage, and networking, all production-ready." },
+    { "id": "devops-005", "catId": "devops", "name": "SSL Certificate & Domain Setup", "price": 2000, "unit": "service", "est": "1 day", "lay": "The green padlock in your browser. Makes your site secure (https://) and connects it to your domain name." },
+    { "id": "devops-006", "catId": "devops", "name": "Server Monitoring & Alerting", "price": 15000, "unit": "project", "est": "2-4 days", "lay": "24/7 monitoring that alerts you via SMS/email/Slack if your server goes down, gets slow, or runs out of storage." },
+    { "id": "devops-007", "catId": "devops", "name": "Automated Backup System", "price": 12000, "unit": "project", "est": "2-3 days", "lay": "Daily automatic backups of your database and files. If anything goes wrong, we can restore everything within minutes." },
+    { "id": "devops-008", "catId": "devops", "name": "Load Balancer Configuration", "price": 15000, "unit": "project", "est": "2-3 days", "lay": "Distributes traffic across multiple servers so no single server gets overwhelmed. Your site stays fast even during traffic spikes." },
+    { "id": "devops-009", "catId": "devops", "name": "Staging Environment Setup", "price": 10000, "unit": "project", "est": "1-2 days", "lay": "A copy of your live site where you test changes before they go live. Catch bugs before your customers see them." },
+    { "id": "devops-010", "catId": "devops", "name": "Log Management (ELK/CloudWatch)", "price": 18000, "unit": "project", "est": "3-5 days", "lay": "Collects and organizes all your server logs in one searchable dashboard. Find and fix errors in minutes instead of hours." },
+
+    { "id": "sec-001", "catId": "cybersecurity", "name": "Security Audit", "price": 20000, "unit": "project", "est": "5 days", "lay": "We scan your system for vulnerabilities — a security health checkup. You get a report of critical gaps. Peace of mind from hackers." },
+    { "id": "sec-002", "catId": "cybersecurity", "name": "Penetration Testing", "price": 20000, "unit": "project", "est": "10 days", "lay": "Ethical hackers TRY to break into your system — just like real attackers. Whatever we find, we fix. The ultimate security fire drill." },
+    { "id": "sec-003", "catId": "cybersecurity", "name": "SSL/TLS Implementation", "price": 8000, "unit": "service", "est": "1-2 days", "lay": "Encrypts all data between your users and your server. Prevents eavesdropping on passwords, credit cards, and personal info." },
+    { "id": "sec-004", "catId": "cybersecurity", "name": "Data Encryption (at rest & in transit)", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "Encrypts sensitive data in your database and during transmission. Even if someone steals your data, they can't read it." },
+    { "id": "sec-005", "catId": "cybersecurity", "name": "GDPR/Data Privacy Compliance", "price": 25000, "unit": "project", "est": "5-7 days", "lay": "Makes your app compliant with data privacy laws. Cookie consent, data deletion requests, privacy policies — all handled." },
+    { "id": "sec-006", "catId": "cybersecurity", "name": "Two-Factor Authentication (2FA)", "price": 12000, "unit": "feature", "est": "2-3 days", "lay": "Adds an extra security step during login — an OTP sent to your phone. Even if someone steals your password, they can't log in." },
+    { "id": "sec-007", "catId": "cybersecurity", "name": "DDoS Protection Setup", "price": 18000, "unit": "project", "est": "2-4 days", "lay": "Protects your website from being overwhelmed by fake traffic attacks that try to take your site offline." },
+    { "id": "sec-008", "catId": "cybersecurity", "name": "WAF (Web Application Firewall)", "price": 15000, "unit": "project", "est": "2-3 days", "lay": "A smart firewall that blocks malicious requests like SQL injection and XSS attacks before they reach your app." },
+    { "id": "sec-009", "catId": "cybersecurity", "name": "Security Training for Team", "price": 15000, "unit": "session", "est": "1 day", "lay": "A workshop teaching your team about phishing, password hygiene, safe browsing, and basic cybersecurity practices." },
+    { "id": "sec-010", "catId": "cybersecurity", "name": "Incident Response Plan", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "A step-by-step action plan for when things go wrong. Who does what, how to contain damage, how to recover and communicate." },
+
+    { "id": "seo-001", "catId": "seo-marketing", "name": "Technical SEO Audit", "price": 15000, "unit": "project", "est": "3-5 days", "lay": "A full health check of your website's Google ranking factors — speed, mobile-friendliness, broken links, indexing issues." },
+    { "id": "seo-002", "catId": "seo-marketing", "name": "On-Page SEO Optimization", "price": 12000, "unit": "project", "est": "3-5 days", "lay": "Optimizes your page titles, descriptions, headings, images, and content structure so Google understands and ranks your pages." },
+    { "id": "seo-003", "catId": "seo-marketing", "name": "Keyword Research & Strategy", "price": 10000, "unit": "project", "est": "2-3 days", "lay": "Finds the exact words your potential customers type into Google. We build a strategy to rank for those terms." },
+    { "id": "seo-004", "catId": "seo-marketing", "name": "Google Analytics & Search Console Setup", "price": 8000, "unit": "service", "est": "1-2 days", "lay": "Connects Google's free tools to your website so you can see who visits, where they come from, and what they search for." },
+    { "id": "seo-005", "catId": "seo-marketing", "name": "Content Marketing Strategy", "price": 20000, "unit": "project", "est": "5-7 days", "lay": "A plan for what blog posts, videos, and social content to create, when to publish, and how to drive traffic to your site." },
+    { "id": "seo-006", "catId": "seo-marketing", "name": "Google Ads Campaign Setup", "price": 15000, "unit": "campaign", "est": "3-5 days", "lay": "Creates and launches Google search and display ads to drive targeted traffic to your website immediately." },
+    { "id": "seo-007", "catId": "seo-marketing", "name": "Social Media Marketing Setup", "price": 12000, "unit": "project", "est": "2-4 days", "lay": "Sets up and optimizes your business profiles on Instagram, Facebook, LinkedIn, and Twitter with a posting calendar." },
+    { "id": "seo-008", "catId": "seo-marketing", "name": "Email Marketing Setup (Mailchimp/Brevo)", "price": 10000, "unit": "project", "est": "2-3 days", "lay": "Sets up email marketing with subscriber lists, beautiful templates, and automated campaigns that drive repeat business." },
+    { "id": "seo-009", "catId": "seo-marketing", "name": "Conversion Rate Optimization", "price": 25000, "unit": "project", "est": "5-7 days", "lay": "Analyzes why visitors leave without buying and fixes the issues. Small changes to your site can dramatically increase sales." },
+    { "id": "seo-010", "catId": "seo-marketing", "name": "Local SEO (Google My Business)", "price": 8000, "unit": "service", "est": "1-2 days", "lay": "Makes your business show up in local Google searches and Google Maps. Essential for businesses serving a specific city or area." },
+    { "id": "seo-011", "catId": "seo-marketing", "name": "Monthly SEO Retainer", "price": 25000, "unit": "month", "est": "ongoing", "lay": "Ongoing SEO work every month — content updates, backlinks, ranking reports, and strategy adjustments to keep climbing Google." },
+
+    { "id": "consult-001", "catId": "it-consulting", "name": "Technology Stack Consultation", "price": 15000, "unit": "session", "est": "1-2 days", "lay": "Expert advice on which programming languages, frameworks, and tools to use for your project. Avoid expensive wrong choices." },
+    { "id": "consult-002", "catId": "it-consulting", "name": "Architecture Review", "price": 25000, "unit": "project", "est": "3-5 days", "lay": "A senior engineer reviews your existing system design and recommends improvements for performance, scalability, and security." },
+    { "id": "consult-003", "catId": "it-consulting", "name": "Digital Transformation Roadmap", "price": 40000, "unit": "project", "est": "7-10 days", "lay": "A complete plan to modernize your business with technology — which processes to digitize first, what tools to adopt, and timeline." },
+    { "id": "consult-004", "catId": "it-consulting", "name": "Vendor Selection & Evaluation", "price": 15000, "unit": "project", "est": "3-5 days", "lay": "We evaluate and compare software vendors or IT service providers so you make the right choice based on data, not sales pitches." },
+    { "id": "consult-005", "catId": "it-consulting", "name": "Technical Due Diligence", "price": 20000, "unit": "project", "est": "7-14 days", "lay": "Deep technical audit for investors or acquirers. We examine code quality, architecture, security, and scalability of a company's tech." },
+    { "id": "consult-006", "catId": "it-consulting", "name": "Project Rescue & Recovery", "price": 35000, "unit": "project", "est": "5-10 days", "lay": "Your project is stuck or failing? We diagnose what went wrong, stabilize things, and create a plan to get it back on track." },
+    { "id": "consult-007", "catId": "it-consulting", "name": "CTO-as-a-Service (monthly)", "price": 60000, "unit": "month", "est": "ongoing", "lay": "A fractional CTO who joins your team part-time. Makes technology decisions, manages developers, and aligns tech with business goals." },
+    { "id": "consult-008", "catId": "it-consulting", "name": "Training Workshop (team)", "price": 25000, "unit": "session", "est": "1-2 days", "lay": "Custom training for your team on any technology — React, Node.js, Cloud, AI, etc. Hands-on workshops, not boring lectures." },
+
+    { "id": "saas-001", "catId": "saas", "name": "SaaS MVP Development", "price": 150000, "unit": "project", "est": "30-45 days", "lay": "Build the first version of your software product with core features. Enough to launch, get users, and validate your idea." },
+    { "id": "saas-002", "catId": "saas", "name": "Multi-tenant Architecture", "price": 40000, "unit": "feature", "est": "7-12 days", "lay": "One app that serves many companies, each seeing only their own data. Like how Slack or Notion works for different teams." },
+    { "id": "saas-003", "catId": "saas", "name": "Subscription & Billing (Stripe/Razorpay)", "price": 25000, "unit": "feature", "est": "5-7 days", "lay": "Monthly/yearly subscription billing with plan tiers, upgrades, downgrades, trials, and automatic payment collection." },
+    { "id": "saas-004", "catId": "saas", "name": "Admin Panel for SaaS", "price": 35000, "unit": "feature", "est": "7-10 days", "lay": "A dashboard where you manage all your customers, view metrics, handle support, and configure your product settings." },
+    { "id": "saas-005", "catId": "saas", "name": "User Onboarding Flow", "price": 15000, "unit": "feature", "est": "3-5 days", "lay": "A guided tour that walks new users through your product step by step. Reduces confusion and increases user retention." },
+    { "id": "saas-006", "catId": "saas", "name": "Role-Based Access Control (RBAC)", "price": 15000, "unit": "feature", "est": "3-5 days", "lay": "Different users see different things. Admins see everything, managers see their team, regular users see only their own data." },
+    { "id": "saas-007", "catId": "saas", "name": "Analytics & Reporting Dashboard", "price": 30000, "unit": "feature", "est": "5-8 days", "lay": "Charts, graphs, and reports showing how your SaaS is performing — revenue, users, churn, feature usage, and more." },
+    { "id": "saas-008", "catId": "saas", "name": "API for Third-party Integrations", "price": 25000, "unit": "feature", "est": "5-7 days", "lay": "A public API so other developers can build on top of your product. Turns your app into a platform." },
+    { "id": "saas-009", "catId": "saas", "name": "White-label Solution", "price": 20000, "unit": "feature", "est": "10-15 days", "lay": "Rebrand your SaaS with another company's logo and colors. They sell it as their own, you power it behind the scenes." },
+    { "id": "saas-010", "catId": "saas", "name": "SaaS Landing Page & Marketing Site", "price": 25000, "unit": "project", "est": "5-7 days", "lay": "A beautiful marketing website for your SaaS — features showcase, pricing page, testimonials, and signup flow." },
+
+    { "id": "maint-001", "catId": "maintenance", "name": "Monthly Maintenance Retainer", "price": 15000, "unit": "month", "est": "ongoing", "lay": "Ongoing bug fixes, minor updates, and server monitoring every month. Like having a mechanic on call for your website." },
+    { "id": "maint-002", "catId": "maintenance", "name": "Bug Fix Package (10 hours)", "price": 12000, "unit": "package", "est": "as needed", "lay": "10 hours of developer time to fix specific bugs or issues. We prioritize critical bugs and work through the list." },
+    { "id": "maint-003", "catId": "maintenance", "name": "Performance Optimization", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "Makes your slow app fast. Database optimization, code cleanup, caching, and infrastructure tuning." },
+    { "id": "maint-004", "catId": "maintenance", "name": "Database Maintenance & Optimization", "price": 15000, "unit": "project", "est": "2-4 days", "lay": "Cleans up your database — removes old data, optimizes queries, adds indexes. Makes everything faster and more reliable." },
+    { "id": "maint-005", "catId": "maintenance", "name": "Security Patching & Updates", "price": 10000, "unit": "project", "est": "1-3 days", "lay": "Updates all your software packages to latest secure versions. Patches known vulnerabilities before hackers exploit them." },
+    { "id": "maint-006", "catId": "maintenance", "name": "Migration Service (old to new platform)", "price": 30000, "unit": "project", "est": "5-10 days", "lay": "Moves your entire app from one hosting, framework, or technology to another. Zero data loss, minimal downtime." },
+    { "id": "maint-007", "catId": "maintenance", "name": "Uptime Monitoring (24/7)", "price": 2000, "unit": "month", "est": "ongoing", "lay": "We monitor your website 24/7 and get alerted instantly if it goes down. Response time under 15 minutes." },
+    { "id": "maint-008", "catId": "maintenance", "name": "Code Review & Refactoring", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "A senior developer reviews your codebase, identifies tech debt, and cleans up messy code so your app is easier to maintain." },
+    { "id": "maint-009", "catId": "maintenance", "name": "Disaster Recovery Setup", "price": 25000, "unit": "project", "est": "3-5 days", "lay": "A complete backup and recovery plan so your business can bounce back within hours if your servers fail or data is lost." },
+    { "id": "maint-010", "catId": "maintenance", "name": "Dedicated Support Engineer (monthly)", "price": 20000, "unit": "month", "est": "ongoing", "lay": "A named engineer assigned to your project who knows your codebase inside out. Fastest response times and deepest context." },
+
+    { "id": "web-016", "catId": "web-dev", "name": "Portfolio / Gallery Section", "price": 12000, "unit": "feature", "est": "2-3 days", "lay": "A beautiful image or project gallery on your website where visitors can browse your past work, products, or team photos with filters and lightbox zoom." },
+    { "id": "web-017", "catId": "web-dev", "name": "Dark Mode Toggle", "price": 6000, "unit": "feature", "est": "1-2 days", "lay": "Adds a light/dark theme switch to your website. Visitors can pick their preferred look, and it remembers their choice next time." },
+    { "id": "web-018", "catId": "web-dev", "name": "Site Search Functionality", "price": 10000, "unit": "feature", "est": "2-3 days", "lay": "A search bar that lets visitors instantly find any page, product, or blog post on your website. No more endless scrolling." },
+    { "id": "web-019", "catId": "web-dev", "name": "Custom 404 & Error Pages", "price": 2000, "unit": "feature", "est": "1 day", "lay": "When someone lands on a broken link, they see a helpful branded page instead of a confusing error. Keeps visitors on your site." },
+    { "id": "web-020", "catId": "web-dev", "name": "Interactive Map Integration", "price": 10000, "unit": "feature", "est": "2-3 days", "lay": "An embedded Google or Mapbox map showing your store locations, delivery zones, or service areas with clickable pins and directions." },
+    { "id": "web-021", "catId": "web-dev", "name": "AMP Pages Setup", "price": 8000, "unit": "project", "est": "2-3 days", "lay": "Accelerated Mobile Pages that load almost instantly on phones. Google favors these in mobile search results, so you get more traffic." },
+
+    { "id": "mob-008", "catId": "mobile-dev", "name": "App Store Optimization (ASO)", "price": 15000, "unit": "service", "est": "3-5 days", "lay": "Optimizes your app listing on Google Play and Apple App Store — keywords, screenshots, description — so more people find and download it." },
+    { "id": "mob-009", "catId": "mobile-dev", "name": "Biometric Authentication", "price": 12000, "unit": "feature", "est": "2-3 days", "lay": "Let users log in with their fingerprint or face scan instead of typing passwords. Faster, more secure, and users love it." },
+    { "id": "mob-010", "catId": "mobile-dev", "name": "Offline Mode", "price": 18000, "unit": "feature", "est": "4-5 days", "lay": "Your app works even without internet. Data syncs automatically when the connection is back. Essential for users in areas with patchy network." },
+    { "id": "mob-011", "catId": "mobile-dev", "name": "Deep Linking", "price": 10000, "unit": "feature", "est": "2-3 days", "lay": "Links from emails, ads, or social media open directly to the right screen inside your app instead of just the home screen." },
+    { "id": "mob-012", "catId": "mobile-dev", "name": "QR Code & Barcode Scanner", "price": 10000, "unit": "feature", "est": "2-3 days", "lay": "Your app can scan QR codes or product barcodes using the phone camera. Great for inventory, tickets, payments, or product lookups." },
+    { "id": "mob-013", "catId": "mobile-dev", "name": "AR Features (Augmented Reality)", "price": 45000, "unit": "feature", "est": "10-15 days", "lay": "Overlay digital content on the real world through the phone camera — try furniture in your room, visualize products, or create immersive experiences." },
+    { "id": "mob-014", "catId": "mobile-dev", "name": "Geofencing & Location Alerts", "price": 15000, "unit": "feature", "est": "3-5 days", "lay": "Triggers actions when a user enters or leaves a geographic area — send a coupon when they're near your store, or clock in employees on arrival." },
+    { "id": "mob-015", "catId": "mobile-dev", "name": "Mobile Analytics Integration", "price": 8000, "unit": "feature", "est": "1-2 days", "lay": "See exactly how people use your app — which screens they visit, where they drop off, crash reports, and session recordings." },
+    { "id": "mob-016", "catId": "mobile-dev", "name": "App Localization (Multi-language)", "price": 18000, "unit": "feature", "est": "4-6 days", "lay": "Your app works in multiple languages — Hindi, English, Tamil, etc. Users see the app in the language set on their phone." },
+    { "id": "mob-017", "catId": "mobile-dev", "name": "Wearable Companion App", "price": 35000, "unit": "project", "est": "10-14 days", "lay": "A companion app for smartwatches that shows notifications, quick actions, or health data synced from your main phone app." },
+    { "id": "mob-018", "catId": "mobile-dev", "name": "In-App Chat & Messaging", "price": 25000, "unit": "feature", "est": "5-7 days", "lay": "Users can chat with each other or with your support team directly inside the app — text, images, and file sharing included." },
+    { "id": "mob-019", "catId": "mobile-dev", "name": "Social Login (Google/Apple/Facebook)", "price": 8000, "unit": "feature", "est": "1-2 days", "lay": "Let users sign up with one tap using their Google, Apple, or Facebook account. Removes friction and increases signups dramatically." },
+    { "id": "mob-020", "catId": "mobile-dev", "name": "App Widgets (Home Screen)", "price": 12000, "unit": "feature", "est": "3-4 days", "lay": "Small widgets that users can add to their phone home screen showing quick info from your app — order status, weather, stats — without opening the app." },
+    { "id": "mob-021", "catId": "mobile-dev", "name": "Video Calling Integration", "price": 30000, "unit": "feature", "est": "5-8 days", "lay": "Built-in video calls between users or with your team — perfect for telemedicine, online tutoring, or customer consultations." },
+
+    { "id": "ai-013", "catId": "ai-genai", "name": "Sentiment Analysis Engine", "price": 30000, "unit": "project", "est": "5-8 days", "lay": "AI reads customer reviews, social media posts, or support tickets and tells you whether people feel positive, negative, or neutral about your brand." },
+    { "id": "ai-014", "catId": "ai-genai", "name": "Document OCR & Data Extraction", "price": 35000, "unit": "project", "est": "7-10 days", "lay": "AI scans printed documents, invoices, receipts, or ID cards and extracts the text and data into your system automatically." },
+    { "id": "ai-015", "catId": "ai-genai", "name": "Recommendation Engine", "price": 45000, "unit": "project", "est": "10-14 days", "lay": "AI suggests products, content, or services to each user based on their behavior — like how Netflix recommends shows or Amazon suggests products." },
+    { "id": "ai-016", "catId": "ai-genai", "name": "Chatbot Analytics Dashboard", "price": 20000, "unit": "feature", "est": "3-5 days", "lay": "See how your AI chatbot is performing — which questions it can't answer, how satisfied users are, and where conversations drop off." },
+    { "id": "ai-017", "catId": "ai-genai", "name": "AI-Powered Search", "price": 35000, "unit": "feature", "est": "7-10 days", "lay": "Search that understands meaning, not just keywords. Users type natural questions and get accurate results even with typos or different phrasing." },
+    { "id": "ai-018", "catId": "ai-genai", "name": "Language Translation AI", "price": 30000, "unit": "feature", "est": "5-8 days", "lay": "Automatically translates your content, chat messages, or support tickets between languages in real time. Break language barriers with your customers." },
+    { "id": "ai-019", "catId": "ai-genai", "name": "AI Data Labeling & Annotation", "price": 25000, "unit": "project", "est": "5-7 days", "lay": "We label and tag your raw data — images, text, or audio — so it can be used to train AI models. The foundation of any good AI project." },
+    { "id": "ai-020", "catId": "ai-genai", "name": "Fraud Detection AI", "price": 25000, "unit": "project", "est": "10-15 days", "lay": "AI monitors transactions and user behavior in real time to catch suspicious activity — fake accounts, payment fraud, or unusual patterns." },
+    { "id": "ai-021", "catId": "ai-genai", "name": "AI-Powered Resume Screening", "price": 30000, "unit": "project", "est": "5-8 days", "lay": "AI reads resumes, ranks candidates, and shortlists the best matches for your job requirements. Saves HR teams hours of manual screening." },
+    { "id": "ai-022", "catId": "ai-genai", "name": "Computer Vision Solution", "price": 60000, "unit": "project", "est": "12-18 days", "lay": "AI that understands images and video — detect objects, read license plates, count people, inspect product quality, or recognize faces." },
+
+    { "id": "auto-011", "catId": "automation", "name": "Invoice Generation Automation", "price": 18000, "unit": "workflow", "est": "3-5 days", "lay": "Automatically creates and sends invoices when an order is placed or a milestone is completed. No more manual invoicing at month-end." },
+    { "id": "auto-012", "catId": "automation", "name": "HR Onboarding Automation", "price": 25000, "unit": "workflow", "est": "5-7 days", "lay": "Automates new employee onboarding — sends welcome emails, collects documents, assigns training, creates accounts — all without HR chasing people." },
+    { "id": "auto-013", "catId": "automation", "name": "Inventory Alert System", "price": 12000, "unit": "workflow", "est": "2-3 days", "lay": "Automatically alerts you when stock is running low and can trigger reorder emails to your suppliers. Never run out of popular products again." },
+    { "id": "auto-014", "catId": "automation", "name": "Order Processing Automation", "price": 20000, "unit": "workflow", "est": "4-6 days", "lay": "When a customer places an order, everything happens automatically — confirmation email, invoice, warehouse notification, shipping label, tracking update." },
+    { "id": "auto-015", "catId": "automation", "name": "Document Approval Workflow", "price": 18000, "unit": "workflow", "est": "3-5 days", "lay": "Route documents for approval through the right chain of people — manager, then director, then finance. Track status and send reminders automatically." },
+    { "id": "auto-016", "catId": "automation", "name": "CRM Data Automation", "price": 15000, "unit": "workflow", "est": "3-4 days", "lay": "Automatically updates your CRM when leads come in — from website forms, emails, WhatsApp, or social media. No lead falls through the cracks." },
+    { "id": "auto-017", "catId": "automation", "name": "Task Scheduling & Assignment", "price": 15000, "unit": "workflow", "est": "3-4 days", "lay": "Automatically assigns tasks to team members based on rules, deadlines, and workload. Sends reminders when tasks are overdue." },
+    { "id": "auto-018", "catId": "automation", "name": "Customer Feedback Collection", "price": 10000, "unit": "workflow", "est": "2-3 days", "lay": "Automatically sends feedback surveys after a purchase or service interaction and compiles the results into a dashboard." },
+    { "id": "auto-019", "catId": "automation", "name": "Attendance & Leave Management Bot", "price": 18000, "unit": "project", "est": "4-5 days", "lay": "Employees mark attendance and apply for leave via WhatsApp or a simple app. Managers get instant approval requests. No more paper forms." },
+    { "id": "auto-020", "catId": "automation", "name": "Appointment Scheduling Automation", "price": 12000, "unit": "workflow", "est": "2-3 days", "lay": "Customers book appointments from your website. Automatic calendar sync, confirmation emails, and WhatsApp reminders reduce no-shows by 40%." },
+    { "id": "auto-021", "catId": "automation", "name": "Contract & Agreement Automation", "price": 20000, "unit": "workflow", "est": "4-6 days", "lay": "Auto-generates contracts from templates, sends them for e-signature, tracks signing status, and stores signed copies — all without manual effort." },
+
+    { "id": "ecom-013", "catId": "ecommerce", "name": "Wishlist & Save for Later", "price": 8000, "unit": "feature", "est": "2 days", "lay": "Customers can save products they like and come back to buy them later. You can also send reminders when wishlist items go on sale." },
+    { "id": "ecom-014", "catId": "ecommerce", "name": "Product Comparison Tool", "price": 12000, "unit": "feature", "est": "2-3 days", "lay": "Lets shoppers compare two or more products side by side — specs, prices, features — helping them decide faster and buy with confidence." },
+    { "id": "ecom-015", "catId": "ecommerce", "name": "Size & Fit Guide", "price": 8000, "unit": "feature", "est": "2 days", "lay": "Interactive size charts and fit recommendations for clothing or footwear. Reduces returns by helping customers pick the right size the first time." },
+    { "id": "ecom-016", "catId": "ecommerce", "name": "Gift Cards & Vouchers", "price": 15000, "unit": "feature", "est": "3-4 days", "lay": "Sell digital gift cards that customers can buy and send to friends. Recipients redeem them at checkout. Great for holidays and corporate gifting." },
+    { "id": "ecom-017", "catId": "ecommerce", "name": "Loyalty & Rewards Program", "price": 20000, "unit": "feature", "est": "4-6 days", "lay": "Customers earn points on every purchase and redeem them for discounts. Keeps them coming back to your store instead of going to competitors." },
+    { "id": "ecom-018", "catId": "ecommerce", "name": "Product Bundling Engine", "price": 12000, "unit": "feature", "est": "2-3 days", "lay": "Create product bundles — buy shampoo + conditioner together at a discount. Increases average order value and moves slow-selling items." },
+    { "id": "ecom-019", "catId": "ecommerce", "name": "Flash Sale & Countdown Timer", "price": 10000, "unit": "feature", "est": "2-3 days", "lay": "Run time-limited flash sales with a live countdown timer. Creates urgency and can boost sales by 200-300% during the sale window." },
+    { "id": "ecom-020", "catId": "ecommerce", "name": "Inventory Management System", "price": 25000, "unit": "project", "est": "5-7 days", "lay": "Track stock levels across warehouses, get low-stock alerts, manage purchase orders, and see inventory reports all in one dashboard." },
+    { "id": "ecom-021", "catId": "ecommerce", "name": "Custom Checkout Flow", "price": 18000, "unit": "feature", "est": "3-5 days", "lay": "A tailored checkout experience — address auto-fill, multiple payment options, order summary, and trust badges. Reduces cart abandonment by 25%." },
+    { "id": "ecom-022", "catId": "ecommerce", "name": "Product Reviews with Photos", "price": 10000, "unit": "feature", "est": "2-3 days", "lay": "Customers can upload photos along with their reviews. Real photos from real buyers build massive trust and increase conversions." },
+    { "id": "ecom-023", "catId": "ecommerce", "name": "Multi-currency & International Shipping", "price": 20000, "unit": "feature", "est": "4-6 days", "lay": "Show prices in the customer's local currency and calculate international shipping rates. Opens your store to buyers worldwide." },
+
+    { "id": "ui-011", "catId": "ui-ux", "name": "Design Audit & Heuristic Review", "price": 18000, "unit": "project", "est": "3-5 days", "lay": "A senior designer reviews your existing app or website and gives you a detailed report of what's confusing, ugly, or broken — with fixes." },
+    { "id": "ui-012", "catId": "ui-ux", "name": "Landing Page Design", "price": 12000, "unit": "page", "est": "2-3 days", "lay": "A high-converting landing page designed from scratch — headline, visuals, call-to-action, trust signals — optimized to turn visitors into customers." },
+    { "id": "ui-013", "catId": "ui-ux", "name": "Email Template Design", "price": 8000, "unit": "set", "est": "2-3 days", "lay": "Beautiful, branded email templates for newsletters, promotions, and transactional emails that look great on every email client and phone." },
+    { "id": "ui-014", "catId": "ui-ux", "name": "Social Media Graphics Pack", "price": 10000, "unit": "set", "est": "2-3 days", "lay": "A set of branded templates for Instagram posts, stories, LinkedIn banners, and Facebook covers. Post consistently without hiring a designer every time." },
+    { "id": "ui-015", "catId": "ui-ux", "name": "Presentation & Pitch Deck Design", "price": 15000, "unit": "project", "est": "3-5 days", "lay": "A stunning investor pitch deck or business presentation designed to impress. Clean visuals, clear data, and a compelling story." },
+    { "id": "ui-016", "catId": "ui-ux", "name": "User Flow & Journey Mapping", "price": 15000, "unit": "project", "est": "3-4 days", "lay": "Maps out every step your customer takes — from first visit to purchase to repeat business. Reveals where people get confused or leave." },
+    { "id": "ui-017", "catId": "ui-ux", "name": "A/B Test Design Variants", "price": 10000, "unit": "set", "est": "2-3 days", "lay": "Two or more design versions of a page or feature so you can test which one performs better. Data-driven design decisions." },
+    { "id": "ui-018", "catId": "ui-ux", "name": "Dashboard & Data Visualization Design", "price": 20000, "unit": "project", "est": "4-6 days", "lay": "Design for complex dashboards with charts, graphs, KPIs, and data tables that are easy to read and act on at a glance." },
+    { "id": "ui-019", "catId": "ui-ux", "name": "Design System Documentation", "price": 15000, "unit": "project", "est": "3-5 days", "lay": "A detailed guide documenting all your design components, spacing rules, color usage, and patterns so your team stays consistent forever." },
+
+    { "id": "be-013", "catId": "backend-api", "name": "Third-party API Integration", "price": 15000, "unit": "integration", "est": "2-4 days", "lay": "Connect your app to external services like Google Maps, Twilio SMS, payment gateways, or social media platforms through their APIs." },
+    { "id": "be-014", "catId": "backend-api", "name": "Search Engine (Elasticsearch/Algolia)", "price": 25000, "unit": "feature", "est": "4-6 days", "lay": "Lightning-fast search across millions of records with typo tolerance, filters, and relevance ranking. Your users find what they need instantly." },
+    { "id": "be-015", "catId": "backend-api", "name": "Scheduled Jobs & Cron Tasks", "price": 10000, "unit": "feature", "est": "2-3 days", "lay": "Automates recurring backend tasks — send daily reports, clean up old data, sync inventory — all running on schedule without manual triggers." },
+    { "id": "be-016", "catId": "backend-api", "name": "Multi-database Setup", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "Uses different databases for different needs — fast reads from Redis, complex queries from PostgreSQL, documents from MongoDB — all working together." },
+    { "id": "be-017", "catId": "backend-api", "name": "Email & SMS Service Integration", "price": 12000, "unit": "integration", "est": "2-3 days", "lay": "Connects your app to email and SMS providers so it can send transactional messages — OTPs, order confirmations, and alerts automatically." },
+    { "id": "be-018", "catId": "backend-api", "name": "Data Export & Import Module", "price": 12000, "unit": "feature", "est": "2-3 days", "lay": "Let users download their data as CSV or Excel files and upload bulk data from spreadsheets. Essential for businesses migrating data." },
+    { "id": "be-019", "catId": "backend-api", "name": "Audit Logging System", "price": 15000, "unit": "feature", "est": "3-4 days", "lay": "Records every important action — who changed what, when, and from where. Essential for compliance, debugging, and accountability." },
+
+    { "id": "devops-011", "catId": "devops", "name": "Infrastructure as Code (Terraform)", "price": 25000, "unit": "project", "est": "4-7 days", "lay": "Your entire server setup written as code. Recreate your infrastructure in minutes, track changes, and avoid manual configuration mistakes." },
+    { "id": "devops-012", "catId": "devops", "name": "GCP Infrastructure Setup", "price": 30000, "unit": "project", "est": "5-7 days", "lay": "Sets up your app on Google Cloud Platform — Compute Engine, Cloud SQL, Cloud Storage, and networking, all production-ready." },
+    { "id": "devops-013", "catId": "devops", "name": "Azure Infrastructure Setup", "price": 30000, "unit": "project", "est": "5-7 days", "lay": "Sets up your app on Microsoft Azure — Virtual Machines, Azure SQL, Blob Storage, and networking for enterprise-grade reliability." },
+    { "id": "devops-014", "catId": "devops", "name": "Container Registry & Image Management", "price": 10000, "unit": "project", "est": "1-2 days", "lay": "A private container registry to store and manage your Docker images securely. Version control for your application containers." },
+    { "id": "devops-015", "catId": "devops", "name": "Blue-Green / Canary Deployment", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "Deploy new versions without downtime. The new version runs alongside the old one, and traffic shifts gradually so issues are caught early." },
+    { "id": "devops-016", "catId": "devops", "name": "Secrets Management (Vault/AWS Secrets)", "price": 12000, "unit": "project", "est": "2-3 days", "lay": "Stores API keys, passwords, and sensitive config securely instead of in code files. Rotates secrets automatically for better security." },
+    { "id": "devops-017", "catId": "devops", "name": "Auto-scaling Configuration", "price": 15000, "unit": "project", "est": "2-4 days", "lay": "Your servers automatically add capacity during traffic spikes and scale down when it's quiet. Pay only for what you use." },
+    { "id": "devops-018", "catId": "devops", "name": "Database Replication & Failover", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "Your database is copied to a backup server in real time. If the primary goes down, the backup takes over instantly — zero data loss." },
+    { "id": "devops-019", "catId": "devops", "name": "Cost Optimization Audit (Cloud)", "price": 15000, "unit": "project", "est": "2-3 days", "lay": "We review your cloud bill and find savings — unused resources, oversized servers, reserved instance opportunities. Most clients save 20-40%." },
+
+    { "id": "sec-011", "catId": "cybersecurity", "name": "Vulnerability Scanning (Automated)", "price": 12000, "unit": "service", "est": "1-2 days", "lay": "Automated tools scan your website and servers for known security weaknesses and give you a prioritized list of what to fix first." },
+    { "id": "sec-012", "catId": "cybersecurity", "name": "SOC 2 Compliance Preparation", "price": 40000, "unit": "project", "est": "10-15 days", "lay": "Prepares your company for SOC 2 certification — security policies, access controls, monitoring, and documentation that auditors require." },
+    { "id": "sec-013", "catId": "cybersecurity", "name": "API Security Audit", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "Tests your APIs for security flaws — broken authentication, data exposure, injection attacks, and rate limiting issues." },
+    { "id": "sec-014", "catId": "cybersecurity", "name": "Secure Code Review", "price": 25000, "unit": "project", "est": "4-7 days", "lay": "A security expert reads your code line by line looking for vulnerabilities that automated tools miss. Finds the deepest security issues." },
+    { "id": "sec-015", "catId": "cybersecurity", "name": "Phishing Simulation & Training", "price": 15000, "unit": "service", "est": "2-3 days", "lay": "We send fake phishing emails to your team to test who clicks. Then we train them to spot real attacks. Reduces phishing risk by 70%." },
+    { "id": "sec-016", "catId": "cybersecurity", "name": "Endpoint Security Setup", "price": 18000, "unit": "project", "est": "2-4 days", "lay": "Secures all company laptops and devices with antivirus, disk encryption, remote wipe capability, and device management policies." },
+    { "id": "sec-017", "catId": "cybersecurity", "name": "Backup Encryption & Secure Storage", "price": 12000, "unit": "project", "est": "2-3 days", "lay": "Encrypts all your backups so even if someone steals the backup files, they cannot read your data. Stored in secure cloud vaults." },
+    { "id": "sec-018", "catId": "cybersecurity", "name": "Zero Trust Network Setup", "price": 35000, "unit": "project", "est": "7-10 days", "lay": "A security model where no user or device is trusted by default — everyone must verify identity before accessing any resource, even inside your network." },
+    { "id": "sec-019", "catId": "cybersecurity", "name": "Security Monitoring & SIEM", "price": 25000, "unit": "project", "est": "4-7 days", "lay": "24/7 monitoring that detects suspicious activity across your systems in real time — unauthorized logins, data transfers, or configuration changes." },
+
+    { "id": "seo-012", "catId": "seo-marketing", "name": "Backlink Building Campaign", "price": 20000, "unit": "campaign", "est": "ongoing", "lay": "Gets other reputable websites to link to yours. More quality backlinks means higher Google ranking and more organic traffic." },
+    { "id": "seo-013", "catId": "seo-marketing", "name": "Video Marketing Strategy", "price": 15000, "unit": "project", "est": "3-5 days", "lay": "A plan for YouTube and social video content — what to create, how to optimize for search, and how to drive viewers to your website." },
+    { "id": "seo-014", "catId": "seo-marketing", "name": "Influencer Marketing Setup", "price": 20000, "unit": "campaign", "est": "5-7 days", "lay": "Identifies relevant influencers in your niche, negotiates collaborations, and manages the campaign to drive awareness and sales." },
+    { "id": "seo-015", "catId": "seo-marketing", "name": "WhatsApp Marketing Campaign", "price": 12000, "unit": "campaign", "est": "2-3 days", "lay": "Broadcast promotional messages, product launches, and offers directly to your customers via WhatsApp Business API. 95%+ open rates." },
+    { "id": "seo-016", "catId": "seo-marketing", "name": "Competitor Analysis Report", "price": 15000, "unit": "project", "est": "3-5 days", "lay": "Deep analysis of your competitors' websites, SEO strategy, ads, social media, and content. Know exactly what they're doing and how to beat them." },
+    { "id": "seo-017", "catId": "seo-marketing", "name": "Marketing Funnel Setup", "price": 25000, "unit": "project", "est": "5-7 days", "lay": "A complete lead-to-customer journey — ads bring visitors, landing page captures leads, emails nurture them, and they convert into paying customers." },
+    { "id": "seo-018", "catId": "seo-marketing", "name": "Schema Markup & Rich Snippets", "price": 8000, "unit": "service", "est": "1-2 days", "lay": "Adds structured data to your website so Google shows rich results — star ratings, prices, FAQs, and event details directly in search results." },
+    { "id": "seo-019", "catId": "seo-marketing", "name": "Facebook & Instagram Ads Campaign", "price": 18000, "unit": "campaign", "est": "3-5 days", "lay": "Creates and manages paid ad campaigns on Meta platforms targeting your ideal customers by demographics, interests, and behavior." },
+
+    { "id": "consult-009", "catId": "it-consulting", "name": "MVP Scoping & Estimation", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "We define exactly what your MVP should include, estimate costs and timelines, and create a development roadmap. Start building with clarity." },
+    { "id": "consult-010", "catId": "it-consulting", "name": "Cloud Cost Optimization Consulting", "price": 20000, "unit": "session", "est": "2-3 days", "lay": "An expert reviews your AWS/GCP/Azure spending and recommends ways to cut costs without affecting performance. Most clients save 20-40%." },
+    { "id": "consult-011", "catId": "it-consulting", "name": "Data Strategy Consulting", "price": 30000, "unit": "project", "est": "5-7 days", "lay": "A plan for how to collect, store, analyze, and use your business data effectively. Turn raw data into actionable business insights." },
+    { "id": "consult-012", "catId": "it-consulting", "name": "API Strategy & Design Workshop", "price": 20000, "unit": "session", "est": "2-3 days", "lay": "Plan which APIs to build, how to structure them, and how third parties will use them. Essential before building a platform or marketplace." },
+    { "id": "consult-013", "catId": "it-consulting", "name": "Legacy System Modernization Plan", "price": 35000, "unit": "project", "est": "5-10 days", "lay": "A step-by-step plan to move from your old outdated software to modern systems — without disrupting current operations or losing data." },
+    { "id": "consult-014", "catId": "it-consulting", "name": "Compliance & Regulatory Tech Consulting", "price": 25000, "unit": "project", "est": "3-5 days", "lay": "Expert guidance on meeting industry regulations — RBI guidelines for fintech, HIPAA for healthcare, DPDP Act for data privacy." },
+    { "id": "consult-015", "catId": "it-consulting", "name": "AI Readiness Assessment", "price": 20000, "unit": "session", "est": "2-3 days", "lay": "We evaluate whether your business is ready for AI adoption — data quality, use cases, team capability, and infrastructure readiness." },
+    { "id": "consult-016", "catId": "it-consulting", "name": "Process Mapping & Optimization", "price": 20000, "unit": "project", "est": "3-5 days", "lay": "We document all your business processes, identify bottlenecks and redundancies, and design optimized workflows that save time and money." },
+    { "id": "consult-017", "catId": "it-consulting", "name": "Team Augmentation & Hiring Guidance", "price": 15000, "unit": "session", "est": "1-2 days", "lay": "Advice on building your tech team — what roles to hire, required skills, salary benchmarks, and whether to hire or outsource." },
+    { "id": "consult-018", "catId": "it-consulting", "name": "Startup Tech Advisory (3 months)", "price": 90000, "unit": "package", "est": "ongoing", "lay": "Three months of ongoing tech advisory for early-stage startups — architecture decisions, tech hiring, vendor selection, and product strategy." },
+
+    { "id": "saas-011", "catId": "saas", "name": "SaaS Email & Notification System", "price": 20000, "unit": "feature", "est": "4-6 days", "lay": "Transactional emails, in-app notifications, and digest emails for your SaaS product. Users stay informed without being overwhelmed." },
+    { "id": "saas-012", "catId": "saas", "name": "Feature Flag System", "price": 15000, "unit": "feature", "est": "3-4 days", "lay": "Turn features on or off for specific users without deploying new code. Test features with a small group before rolling out to everyone." },
+    { "id": "saas-013", "catId": "saas", "name": "SaaS Audit Trail & Activity Log", "price": 18000, "unit": "feature", "est": "3-5 days", "lay": "Records everything users and admins do in your product. Essential for enterprise customers who need compliance and accountability." },
+    { "id": "saas-014", "catId": "saas", "name": "Team & Organization Management", "price": 20000, "unit": "feature", "est": "4-6 days", "lay": "Let customers create teams, invite members, assign roles, and manage their organization inside your SaaS product." },
+    { "id": "saas-015", "catId": "saas", "name": "Usage Metering & Billing", "price": 25000, "unit": "feature", "est": "5-7 days", "lay": "Track how much each customer uses — API calls, storage, seats — and bill them based on actual usage instead of flat plans." },
+    { "id": "saas-016", "catId": "saas", "name": "Customizable Dashboards", "price": 22000, "unit": "feature", "est": "5-7 days", "lay": "Let your SaaS users drag, drop, and rearrange their dashboard widgets. Each user gets a personalized view of the data that matters to them." },
+    { "id": "saas-017", "catId": "saas", "name": "SaaS Data Import Wizard", "price": 15000, "unit": "feature", "est": "3-5 days", "lay": "A guided CSV/Excel import tool that maps columns, validates data, and shows errors before importing. Critical for customer onboarding." },
+    { "id": "saas-018", "catId": "saas", "name": "Customer Support Ticket System", "price": 20000, "unit": "feature", "est": "4-6 days", "lay": "A built-in support system where your SaaS customers raise tickets, track status, and chat with your team — without leaving your product." },
+    { "id": "saas-019", "catId": "saas", "name": "SaaS Changelog & Release Notes", "price": 8000, "unit": "feature", "est": "1-2 days", "lay": "A public changelog page showing what's new in your product. Keeps users excited about updates and reduces support questions about new features." },
+
+    { "id": "maint-011", "catId": "maintenance", "name": "Dependency & Library Updates", "price": 10000, "unit": "project", "est": "2-3 days", "lay": "Updates all third-party packages and libraries your app uses to their latest versions. Fixes security holes and compatibility issues." },
+    { "id": "maint-012", "catId": "maintenance", "name": "Content Update Service (monthly)", "price": 8000, "unit": "month", "est": "ongoing", "lay": "We update your website content — text, images, new pages, blog posts — whenever you need. Just send us the changes and we handle it." },
+    { "id": "maint-013", "catId": "maintenance", "name": "Server Migration", "price": 25000, "unit": "project", "est": "3-5 days", "lay": "Moves your application from one hosting provider to another — AWS to GCP, shared hosting to VPS, or any combination — with zero downtime." },
+    { "id": "maint-014", "catId": "maintenance", "name": "SSL Certificate Renewal & Management", "price": 3000, "unit": "service", "est": "1 day", "lay": "Renews your SSL certificates before they expire and sets up auto-renewal so your site never shows a scary security warning." },
+    { "id": "maint-015", "catId": "maintenance", "name": "Emergency Bug Fix (Priority)", "price": 8000, "unit": "service", "est": "same day", "lay": "Critical bug breaking your business? We drop everything and fix it within hours. Same-day response for production emergencies." },
+    { "id": "maint-016", "catId": "maintenance", "name": "Load Testing & Stress Testing", "price": 15000, "unit": "project", "est": "2-3 days", "lay": "Simulates thousands of users hitting your app at once to find breaking points before your real customers do. Know your limits." },
+    { "id": "web-t001", "catId": "web-dev", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "mob-t001", "catId": "mobile-dev", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "ai-t001", "catId": "ai-genai", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "auto-t001", "catId": "automation", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "ecom-t001", "catId": "ecommerce", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "ui-t001", "catId": "ui-ux", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "be-t001", "catId": "backend-api", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "devops-t001", "catId": "devops", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "sec-t001", "catId": "cybersecurity", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "seo-t001", "catId": "seo-marketing", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "consult-t001", "catId": "it-consulting", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "saas-t001", "catId": "saas", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." },
+    { "id": "maint-t001", "catId": "maintenance", "name": "End-to-End Workflow Test (₹5)", "price": 2, "unit": "project", "est": "1 day", "lay": "A tiny test service priced at ₹5 so you can walk through the entire StackFox flow — browse, add to cart, checkout, pay, and get an invoice — without spending real money. Use this to verify your setup." }
+  ],
+
+  "packages": [
+    {
+      "id": "pkg-starter",
+      "name": "Starter Website Package",
+      "description": "Everything you need to get online. Perfect for small businesses and personal brands.",
+      "price": 35000,
+      "savings": 16000,
+      "items": ["web-001", "web-002", "web-011", "seo-004", "devops-005"],
+      "popular": false
+    },
+    {
+      "id": "pkg-business",
+      "name": "Business Website Package",
+      "description": "Professional website with CMS, blog, SEO, and analytics. Grow your online presence.",
+      "price": 65000,
+      "savings": 27000,
+      "items": ["web-001", "web-002", "web-004", "web-005", "web-013", "seo-001", "seo-002", "seo-004", "devops-005"],
+      "popular": true
+    },
+    {
+      "id": "pkg-ecommerce",
+      "name": "E-Commerce Launchpad",
+      "description": "Complete online store ready to sell. Payment gateway, inventory, and shipping included.",
+      "price": 85000,
+      "savings": 30000,
+      "items": ["ecom-002", "ecom-004", "ecom-005", "ecom-006", "ecom-008", "ecom-009", "seo-004", "devops-005"],
+      "popular": true
+    },
+    {
+      "id": "pkg-mobile",
+      "name": "Mobile App Launch Package",
+      "description": "Cross-platform app with push notifications, analytics, and store submission.",
+      "price": 110000,
+      "savings": 26000,
+      "items": ["mob-001", "mob-005", "mob-006", "mob-009", "mob-010", "mob-014"],
+      "popular": false
+    },
+    {
+      "id": "pkg-saas",
+      "name": "SaaS Starter Kit",
+      "description": "MVP with multi-tenancy, auth, billing, and admin panel. Launch your SaaS in 60 days.",
+      "price": 250000,
+      "savings": 55000,
+      "items": ["saas-001", "saas-002", "saas-003", "saas-004", "saas-005", "saas-006", "saas-010", "devops-001", "devops-002"],
+      "popular": false
+    },
+    {
+      "id": "pkg-ai",
+      "name": "AI Integration Package",
+      "description": "Add AI superpowers to your existing product. Chatbot, search, and content generation.",
+      "price": 90000,
+      "savings": 22000,
+      "items": ["ai-001", "ai-002", "ai-006", "ai-011"],
+      "popular": false
+    },
+    {
+      "id": "pkg-security",
+      "name": "Security Hardening Package",
+      "description": "Comprehensive security audit, penetration testing, encryption, and compliance.",
+      "price": 95000,
+      "savings": 25000,
+      "items": ["sec-001", "sec-002", "sec-003", "sec-004", "sec-005", "sec-006"],
+      "popular": false
+    },
+    {
+      "id": "pkg-growth",
+      "name": "Digital Growth Package",
+      "description": "SEO, content marketing, analytics, and conversion optimization to grow your traffic.",
+      "price": 70000,
+      "savings": 20000,
+      "items": ["seo-001", "seo-002", "seo-003", "seo-004", "seo-005", "seo-009", "seo-010"],
+      "popular": false
+    }
+  ],
+
+  "industryBundles": [
+    {
+      "id": "ind-healthcare",
+      "name": "Healthcare & Clinics",
+      "description": "HIPAA-aware patient portal, appointment booking, and telemedicine-ready platform.",
+      "price": 180000,
+      "items": ["web-009", "web-010", "mob-001", "mob-006", "mob-011", "be-001", "be-004", "be-005", "sec-004", "sec-005", "auto-002", "auto-005"],
+      "features": ["Patient portal with appointment booking", "Telemedicine video integration ready", "Prescription & report upload", "SMS/WhatsApp reminders", "HIPAA-aware data encryption", "Push notifications for appointments"]
+    },
+    {
+      "id": "ind-realestate",
+      "name": "Real Estate & Property",
+      "description": "Property listing portal with virtual tours, lead management, and agent dashboard.",
+      "price": 160000,
+      "items": ["web-008", "web-009", "web-010", "web-011", "mob-001", "mob-012", "ecom-006", "be-001", "be-004", "ai-002", "seo-002", "seo-010"],
+      "features": ["Property listing with filters & map view", "Virtual tour integration", "Lead capture & CRM", "Agent dashboard", "EMI calculator", "Location-based search", "WhatsApp inquiry button"]
+    },
+    {
+      "id": "ind-ecommerce",
+      "name": "E-Commerce Business",
+      "description": "Full-featured online store with inventory, shipping, reviews, and marketing automation.",
+      "price": 200000,
+      "items": ["ecom-002", "ecom-004", "ecom-005", "ecom-006", "ecom-007", "ecom-008", "ecom-009", "ecom-012", "mob-001", "mob-006", "auto-002", "auto-005", "seo-001", "seo-002"],
+      "features": ["Custom storefront with advanced filters", "Multi-payment gateway (UPI, cards, wallets)", "Inventory & warehouse management", "Shipping integration (Shiprocket/Delhivery)", "Customer reviews & ratings", "Abandoned cart recovery", "Mobile app for customers"]
+    },
+    {
+      "id": "ind-education",
+      "name": "Education & EdTech",
+      "description": "Learning management system with courses, quizzes, certificates, and student dashboard.",
+      "price": 190000,
+      "items": ["web-009", "web-010", "mob-001", "mob-006", "mob-008", "be-001", "be-004", "be-005", "be-006", "ecom-004", "saas-003", "saas-006"],
+      "features": ["Course catalog with video streaming", "Quiz & assessment engine", "Certificate generation", "Student progress dashboard", "Live class integration (Zoom/Meet)", "Subscription billing for courses", "Offline mode for mobile app"]
+    },
+    {
+      "id": "ind-food",
+      "name": "Food & Restaurant",
+      "description": "Online ordering, table reservation, delivery tracking, and kitchen management.",
+      "price": 140000,
+      "items": ["web-008", "mob-001", "mob-006", "mob-012", "ecom-004", "ecom-006", "ecom-009", "be-001", "be-004", "be-006", "auto-005", "auto-002"],
+      "features": ["Online menu with ordering", "Table reservation system", "Real-time delivery tracking", "Kitchen order management", "Coupon & discount engine", "WhatsApp order updates", "Customer loyalty program"]
+    },
+    {
+      "id": "ind-events",
+      "name": "Events & Ticketing",
+      "description": "Event listing, online ticketing, seat selection, and attendee management platform.",
+      "price": 170000,
+      "items": ["web-008", "web-009", "mob-001", "mob-006", "ecom-004", "ecom-009", "be-001", "be-004", "be-006", "auto-002", "auto-005", "ui-001"],
+      "features": ["Event listing with calendar view", "Online ticket booking & seat selection", "QR code check-in", "Attendee dashboard", "Speaker/artist profiles", "Multi-event support", "WhatsApp & email confirmations"]
+    }
+  ],
+
+  "addons": [
+    { "id": "addon-ssl", "name": "SSL Certificate Setup", "price": 2000, "lay": "HTTPS padlock for your site. Included free in most packages." },
+    { "id": "addon-domain", "name": "Domain Registration (1 year)", "price": 1000, "lay": "Register your .com, .in, or .co domain name for one year." },
+    { "id": "addon-hosting-basic", "name": "Basic Hosting (1 year)", "price": 6000, "lay": "Shared hosting suitable for small websites. Includes email accounts." },
+    { "id": "addon-hosting-vps", "name": "VPS Hosting (1 year)", "price": 18000, "lay": "Dedicated virtual server for medium to large applications. Full control." },
+    { "id": "addon-email-pro", "name": "Professional Email Setup", "price": 3000, "lay": "yourname@yourdomain.com email with Google Workspace or Zoho." },
+    { "id": "addon-analytics", "name": "Analytics Dashboard", "price": 8000, "lay": "Custom dashboard showing your website traffic, conversions, and user behavior." },
+    { "id": "addon-chatwidget", "name": "Live Chat Widget", "price": 2000, "lay": "A chat bubble on your website where visitors can talk to you in real time." },
+    { "id": "addon-whatsapp", "name": "WhatsApp Chat Button", "price": 2000, "lay": "A floating WhatsApp button on your site. Visitors tap it to message you directly." },
+    { "id": "addon-gdpr", "name": "Cookie Consent Banner", "price": 3000, "lay": "GDPR-compliant cookie popup that lets visitors accept or decline cookies." },
+    { "id": "addon-backup", "name": "Daily Backup Service (1 year)", "price": 8000, "lay": "Automatic daily backups of your entire website and database stored securely." },
+    { "id": "addon-cdn", "name": "CDN Setup (CloudFlare)", "price": 2000, "lay": "Makes your site load fast worldwide by caching it on servers in 300+ cities." },
+    { "id": "addon-logo", "name": "Logo Design", "price": 8000, "lay": "Professional logo design with 3 concepts and unlimited revisions until you love it." },
+    { "id": "addon-copywriting", "name": "Website Copywriting (per page)", "price": 3000, "lay": "Professional website content written by a human copywriter. SEO-optimized." },
+    { "id": "addon-training", "name": "1-hour Training Session", "price": 2000, "lay": "A video call where we teach you how to manage your website, CMS, or admin panel." },
+    { "id": "addon-priority", "name": "Priority Support (1 month)", "price": 10000, "lay": "Jump the queue. Your support tickets are answered within 2 hours, 7 days a week." }
+  ],
+
+  "testimonials": [
+    {
+      "name": "Rajesh Sharma",
+      "company": "GreenLeaf Organics",
+      "role": "Founder",
+      "text": "StackFox built our entire e-commerce platform in just 3 weeks. The service configurator made it easy to pick exactly what we needed without overpaying.",
+      "rating": 5
+    },
+    {
+      "name": "Priya Mehta",
+      "company": "HealthFirst Clinics",
+      "role": "Operations Head",
+      "text": "The healthcare bundle was exactly what we needed. Patient portal, appointment booking, and telemedicine all in one package. Our patient satisfaction went up 40%.",
+      "rating": 5
+    },
+    {
+      "name": "Amit Patel",
+      "company": "TechVentures",
+      "role": "CTO",
+      "text": "As a technical person, I appreciated the transparency. Every service priced individually, no hidden costs. The team delivered clean, maintainable code.",
+      "rating": 5
+    },
+    {
+      "name": "Sneha Reddy",
+      "company": "EduBridge Academy",
+      "role": "Director",
+      "text": "Our LMS platform handles 5000+ students smoothly. The offline mode in the mobile app was a game-changer for students in rural areas.",
+      "rating": 5
+    },
+    {
+      "name": "Vikram Singh",
+      "company": "PropertyDekho",
+      "role": "CEO",
+      "text": "The real estate bundle saved us months of development time. Virtual tours, map integration, and lead management — all production-ready from day one.",
+      "rating": 4
+    },
+    {
+      "name": "Ananya Gupta",
+      "company": "FoodBox",
+      "role": "Co-founder",
+      "text": "From zero to taking online orders in 2 weeks. The WhatsApp integration alone brought us 30% more orders. Highly recommend StackFox.",
+      "rating": 5
+    }
+  ],
+
+  "faq": [
+    {
+      "q": "Are the prices final or negotiable?",
+      "a": "All prices shown are indicative starting points. Final pricing depends on project complexity, timeline, and specific requirements. We provide a detailed quote after understanding your needs."
+    },
+    {
+      "q": "How does the service builder work?",
+      "a": "Think of it like shopping on Amazon. Browse services by category, add what you need to your cart, and checkout. You can also pick pre-built packages or industry bundles for better value."
+    },
+    {
+      "q": "Do you offer EMI or installment payments?",
+      "a": "Yes! For projects above INR 50,000, we offer milestone-based billing. You pay in installments as we deliver each phase. Razorpay also supports EMI on credit cards."
+    },
+    {
+      "q": "What if I need something not listed?",
+      "a": "No problem! Use the contact form or chat to describe what you need. We'll create a custom quote within 24 hours. The listed services cover 90% of typical needs."
+    },
+    {
+      "q": "How long does a typical project take?",
+      "a": "Each service shows an estimated timeline. A simple website takes 1-2 weeks, a mobile app 3-5 weeks, and a full SaaS product 6-10 weeks. We provide exact timelines in your project proposal."
+    },
+    {
+      "q": "Do you provide post-launch support?",
+      "a": "Every project includes 30 days of free bug-fix support. After that, you can choose a monthly maintenance retainer starting at INR 15,000/month for ongoing support."
+    },
+    {
+      "q": "Can I see your previous work?",
+      "a": "Yes! Check our Portfolio section for case studies with live links, tech stack details, and project outcomes. We can also arrange reference calls with past clients."
+    },
+    {
+      "q": "What technologies do you work with?",
+      "a": "React, Next.js, Node.js, Python, React Native, Flutter, MongoDB, PostgreSQL, AWS, GCP, Docker, Kubernetes — and more. We pick the best tech for each project, not a one-size-fits-all approach."
+    },
+    {
+      "q": "Is GST included in the prices?",
+      "a": "Prices shown are exclusive of GST. 18% GST will be added at checkout as per Indian tax regulations. GST breakdown is shown clearly in your invoice."
+    },
+    {
+      "q": "Do you sign NDAs?",
+      "a": "Absolutely. We sign NDAs before any project discussion if requested. Your ideas and data are kept strictly confidential."
+    }
+  ],
+
+  "careers": {
+    "openPositions": [
+      {
+        "id": "job-001",
+        "title": "Senior Full-Stack Developer",
+        "type": "full-time",
+        "location": "Jaipur / Remote",
+        "experience": "3-6 years",
+        "salary": "8-15 LPA",
+        "skills": ["React", "Node.js", "MongoDB", "TypeScript", "AWS"],
+        "description": "Build and ship production-grade web applications for diverse clients. Lead technical decisions and mentor junior developers."
+      },
+      {
+        "id": "job-002",
+        "title": "React Native Developer",
+        "type": "full-time",
+        "location": "Jaipur / Remote",
+        "experience": "2-4 years",
+        "salary": "6-12 LPA",
+        "skills": ["React Native", "JavaScript", "Redux", "REST APIs", "Firebase"],
+        "description": "Build cross-platform mobile apps that delight users. Work closely with designers and backend engineers."
+      },
+      {
+        "id": "job-003",
+        "title": "UI/UX Designer",
+        "type": "full-time",
+        "location": "Jaipur / Remote",
+        "experience": "2-5 years",
+        "salary": "5-10 LPA",
+        "skills": ["Figma", "User Research", "Prototyping", "Design Systems", "Interaction Design"],
+        "description": "Design beautiful, user-centric interfaces. Conduct user research and create design systems that scale across products."
+      },
+      {
+        "id": "job-004",
+        "title": "DevOps Engineer",
+        "type": "full-time",
+        "location": "Remote",
+        "experience": "2-5 years",
+        "salary": "7-14 LPA",
+        "skills": ["Docker", "Kubernetes", "AWS", "CI/CD", "Terraform"],
+        "description": "Build and maintain cloud infrastructure, CI/CD pipelines, and monitoring systems. Keep everything running smoothly."
+      },
+      {
+        "id": "job-005",
+        "title": "AI/ML Engineer",
+        "type": "full-time",
+        "location": "Jaipur / Remote",
+        "experience": "2-5 years",
+        "salary": "8-18 LPA",
+        "skills": ["Python", "PyTorch", "LLMs", "RAG", "Vector Databases"],
+        "description": "Build AI-powered features for client projects. Fine-tune models, build RAG pipelines, and deploy AI at scale."
+      },
+      {
+        "id": "job-006",
+        "title": "Technical Content Writer",
+        "type": "freelance",
+        "location": "Remote",
+        "experience": "1-3 years",
+        "salary": "2-5 LPA",
+        "skills": ["Technical Writing", "SEO", "Developer Docs", "Blog Writing"],
+        "description": "Write technical blog posts, documentation, and marketing content. Translate complex tech into layman-friendly language."
+      },
+      {
+        "id": "job-007",
+        "title": "Full-Stack Intern",
+        "type": "internship",
+        "location": "Jaipur",
+        "experience": "0-1 years",
+        "salary": "10-20K/month stipend",
+        "skills": ["JavaScript", "React basics", "Node.js basics", "Git"],
+        "description": "Learn by building real client projects. 6-month internship with mentorship, code reviews, and potential full-time conversion."
+      },
+      {
+        "id": "job-008",
+        "title": "QA Engineer",
+        "type": "full-time",
+        "location": "Jaipur / Remote",
+        "experience": "1-3 years",
+        "salary": "4-8 LPA",
+        "skills": ["Selenium", "Cypress", "API Testing", "Jest", "Manual Testing"],
+        "description": "Ensure every feature we ship is bug-free. Write automated tests, perform manual testing, and maintain quality standards."
+      }
+    ],
+    "projectsFeed": [
+      {
+        "id": "proj-001",
+        "title": "Quantum Healthcare SaaS",
+        "status": "live",
+        "type": "Web App",
+        "stack": ["React", "Node.js", "AWS"],
+        "description": "Building a HIPAA-compliant portal for patient record management and real-time telemedicine.",
+        "spots": 2,
+        "date": "Started Apr 2024"
+      },
+      {
+        "id": "proj-002",
+        "title": "PropTech Mobile App",
+        "status": "ongoing",
+        "type": "Mobile (iOS/Android)",
+        "stack": ["React Native", "Firebase"],
+        "description": "Cross-platform property listing app with AR virtual tours and real-time agent chat.",
+        "spots": 1,
+        "date": "Est. Completion: June 2024"
+      },
+      {
+        "id": "proj-003",
+        "title": "AI Logistics Optimizer",
+        "status": "ongoing",
+        "type": "AI / GenAI",
+        "stack": ["Python", "FastAPI", "OpenAI"],
+        "description": "LLM-powered route optimization and automated warehouse reporting for a Jaipur-based logistics firm.",
+        "spots": 1,
+        "date": "Phase 2 in progress"
+      },
+      {
+        "id": "proj-004",
+        "title": "EduNext E-Learning v2",
+        "status": "upcoming",
+        "type": "Web Platform",
+        "stack": ["Next.js", "PostgreSQL"],
+        "description": "Redesigning the core learning engine to support 100k+ concurrent users and AI-assisted grading.",
+        "spots": 3,
+        "date": "Launching July 2024"
+      },
+      {
+        "id": "proj-005",
+        "title": "FinShield Security Audit",
+        "status": "upcoming",
+        "type": "Cybersecurity",
+        "stack": ["Pen-testing", "Audit"],
+        "description": "Comprehensive security hardening for a fintech startup's payment gateway.",
+        "spots": 1,
+        "date": "Starts next month"
+      }
+    ],
+    "perks": [
+      "Remote-first culture — work from anywhere in India",
+      "Flexible hours — we care about output, not clock-watching",
+      "Learning budget of INR 25,000/year for courses and conferences",
+      "Health insurance for you and your family",
+      "Annual team retreat",
+      "MacBook Pro for all full-time engineers",
+      "Open-source Fridays — contribute to open source on company time",
+      "No micro-management — we hire adults and trust them"
+    ]
+  },
+
+  "company": {
+    "story": "StackFox by Artwall Labs was born from a simple frustration: getting a quote for IT services shouldn't require 10 meetings and 3 proposals. We built the first platform where businesses can browse, configure, and price technology services as easily as shopping on Amazon. A premium product of Artwall Labs, designed for transparency and speed.",
+    "values": [
+      { "title": "Radical Transparency", "description": "Every price visible. Every timeline honest. No hidden costs, no surprise invoices." },
+      { "title": "Ship Fast, Iterate Faster", "description": "We believe in getting working software to you quickly, then improving based on real feedback." },
+      { "title": "Client-First Engineering", "description": "We write code for your business goals, not to show off technical complexity. Simple is better." },
+      { "title": "Teach, Don't Gate-keep", "description": "Every service has a layman explanation. We want you to understand what you are buying." }
+    ],
+    "stats": [
+      { "label": "Projects Delivered", "value": "200+" },
+      { "label": "Happy Clients", "value": "120+" },
+      { "label": "Team Members", "value": "25+" },
+      { "label": "Industries Served", "value": "15+" }
+    ]
+  },
+  "resources": [
+    {
+      "id": "scaling-web-apps-2025",
+      "title": "Scaling Web Apps in 2025: From MVP to 100k Users",
+      "category": "Development",
+      "date": "May 10, 2025",
+      "author": "StackFox Team",
+      "readTime": "6 min",
+      "excerpt": "A deep dive into serverless architecture, database sharding, and why your first choice of tech stack matters more than you think.",
+      "content": "Building a scalable web application is not just about choosing the right framework. It's about architecture. In this guide, we explore how to use Next.js, Node.js and AWS to build systems that scale automatically with your user base.\n\n### Why Architecture Matters\nMost startups fail not because they couldn't build the product, but because they couldn't handle the growth. Horizontal scaling vs Vertical scaling is the first decision you must master...\n\n### The StackFox Way\nWe recommend a serverless-first approach for 90% of Indian startups. It reduces DevOps overhead and allows you to pay only for what you use."
+    },
+    {
+      "id": "ai-genai-business-efficiency",
+      "title": "How Generative AI is Changing Business Efficiency",
+      "category": "AI",
+      "date": "May 15, 2025",
+      "author": "Artwall Labs",
+      "readTime": "8 min",
+      "excerpt": "Stop using ChatGPT as a toy. Learn how to integrate LLMs into your internal workflows to save 20+ hours a week.",
+      "content": "AI is no longer a buzzword. It's a utility. From automated customer support to smart document analysis, businesses are saving thousands of dollars every month by automating repetitive tasks.\n\n### Integration vs Standalone\nUsing a chatbot on a website is step one. Step two is integrating AI into your existing CRM. Imagine your leads being scored automatically based on their LinkedIn profile data..."
+    },
+    {
+      "id": "mobile-first-india-growth",
+      "title": "Mobile-First Design: Winning the Indian Market",
+      "category": "Design",
+      "date": "May 20, 2025",
+      "author": "Design Pack",
+      "readTime": "5 min",
+      "excerpt": "The average Indian user has a budget smartphone and intermittent 4G. Here is how to design apps that actually work for them.",
+      "content": "India is a mobile-first country. But it's also a 'low-bandwidth' country in many regions. Designing for high-end iPhones in Bangalore is easy. Designing for a sub-₹15k Android phone in a Tier-2 city is where the real challenge lies."
+    }
+  ]
+}

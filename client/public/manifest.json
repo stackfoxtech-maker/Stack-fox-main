@@ -1,0 +1,19 @@
+{
+  "name": "StackFox — IT Consultancy & Solutions",
+  "short_name": "StackFox",
+  "description": "Premium IT services. Pick, price & quote with the StackFox Build & Price tool.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF8",
+  "theme_color": "#FF4D00",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"]
+}

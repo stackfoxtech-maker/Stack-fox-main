@@ -1,0 +1,50 @@
+{
+  "name": "@stackfox/api",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "worker": "tsx src/workers/index.ts",
+    "worker:dev": "tsx watch src/workers/index.ts",
+    "worker:start": "node dist/workers/index.js",
+    "test:isolation": "tsx tests/tenant-isolation.mts",
+    "test:access": "tsx tests/access-control.mts",
+    "test:kit": "tsx tests/reports-handover.mts",
+    "test": "tsx tests/tenant-isolation.mts && tsx tests/access-control.mts && tsx tests/reports-handover.mts && tsx tests/staff-surfaces.mts && tsx tests/cart.mts",
+    "test:staff": "tsx tests/staff-surfaces.mts",
+    "test:cart": "tsx tests/cart.mts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "@fastify/cors": "^9.0.0",
+    "@fastify/helmet": "^11.0.0",
+    "@fastify/multipart": "^8.0.0",
+    "@fastify/rate-limit": "^9.0.0",
+    "@fastify/swagger": "^8.0.0",
+    "@fastify/swagger-ui": "^4.0.0",
+    "@stackfox/core": "workspace:*",
+    "@stackfox/prisma": "workspace:*",
+    "@supabase/supabase-js": "^2.112.4",
+    "bullmq": "^5.0.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^4.28.0",
+    "fastify-plugin": "^4.5.1",
+    "ioredis": "^5.4.0",
+    "jsonwebtoken": "^9.0.0",
+    "pino": "^9.0.0",
+    "pino-pretty": "^11.0.0",
+    "razorpay": "^2.9.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@stackfox/tsconfig": "workspace:*",
+    "@types/jsonwebtoken": "^9.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}

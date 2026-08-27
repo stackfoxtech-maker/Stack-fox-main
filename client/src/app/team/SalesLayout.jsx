@@ -1,0 +1,64 @@
+import { NavLink, Outlet } from 'react-router-dom';
+import { LayoutDashboard, Users, GitBranch, Mic, MessageSquare, Phone, Calendar, FileText, BookOpen, Menu, X, LogOut, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { cn } from '@lib/utils';
+import useAuthStore from '@store/authStore';
+
+const navItems = [
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/app/team/sales' },
+  { label: 'Leads', icon: Users, path: '/app/team/sales/leads' },
+  { label: 'Pipeline', icon: GitBranch, path: '/app/team/sales/pipeline' },
+  { label: 'Pitch Studio', icon: Mic, path: '/app/team/sales/pitch-studio' },
+  { label: 'Objections', icon: MessageSquare, path: '/app/team/sales/objections' },
+  { label: 'Sales Call', icon: Phone, path: '/app/team/sales/sales-call' },
+  { label: 'Follow-ups', icon: Calendar, path: '/app/team/sales/follow-ups' },
+  { label: 'Proposals', icon: FileText, path: '/app/team/sales/proposals' },
+  { label: 'Knowledge Center', icon: BookOpen, path: '/app/team/sales/knowledge-center' },
+];
+
+export default function SalesLayout() {
+  const [open, setOpen] = useState(false);
+  const { user, logout } = useAuthStore();
+
+  return (
+    <div className="min-h-screen bg-warm-50 flex">
+      <aside className={cn('fixed inset-y-0 left-0 z-40 w-60 bg-white border-r border-warm-200 flex flex-col transition-transform lg:translate-x-0 lg:static', open ? 'translate-x-0' : '-translate-x-full')}>
+        <div className="flex items-center justify-between px-5 h-16 border-b border-warm-100">
+          <NavLink to="/" className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-fox-500 rounded-lg flex items-center justify-center shadow-sm shadow-fox-200">
+              <img src="/logo.png" alt="StackFox" className="w-4 h-4 object-contain" />
+            </div>
+            <span className="font-semibold text-sm"><span className="text-warm-900">stack</span><span className="text-fox-500">fox</span></span>
+          </NavLink>
+          <button onClick={() => setOpen(false)} className="lg:hidden p-1"><X size={16} /></button>
+        </div>
+        <div className="px-3 py-2">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-fox-50 text-fox-700">
+            <Sparkles size={16} />
+            <span className="text-xs font-semibold uppercase tracking-wide">Sales Dashboard</span>
+          </div>
+        </div>
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          {navItems.map((item) => (
+            <NavLink key={item.path} to={item.path} end={item.path === '/app/team/sales'} onClick={() => setOpen(false)}
+              className={({ isActive }) => cn('flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors', isActive ? 'bg-fox-50 text-fox-600' : 'text-warm-600 hover:bg-warm-50')}>
+              <item.icon size={18} />{item.label}
+            </NavLink>
+          ))}
+        </nav>
+        <div className="px-3 py-4 border-t border-warm-100">
+          <p className="px-3 text-xs text-warm-500 truncate mb-2">{user?.name}</p>
+          <button onClick={logout} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-danger-500 hover:bg-danger-50 w-full"><LogOut size={16} />Log out</button>
+        </div>
+      </aside>
+      {open && <div className="fixed inset-0 bg-black/30 z-30 lg:hidden" onClick={() => setOpen(false)} />}
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="h-16 bg-white border-b border-warm-200 flex items-center px-4 lg:px-6 gap-4 sticky top-0 z-20">
+          <button onClick={() => setOpen(true)} className="lg:hidden p-2 hover:bg-warm-100 rounded-lg"><Menu size={20} /></button>
+          <h1 className="text-lg font-semibold text-warm-900">Salesperson Dashboard</h1>
+        </header>
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto"><Outlet /></main>
+      </div>
+    </div>
+  );
+}

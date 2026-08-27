@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="StackFox — Browse, configure, and purchase IT services like shopping on Amazon. Web development, mobile apps, AI, automation, and more. Smart Code, Swift Delivery." />
+    <meta name="theme-color" content="#FF4D00" />
+    <meta name="author" content="Artwall Labs" />
+
+    <meta property="og:title" content="StackFox — Smart Code, Swift Delivery" />
+    <meta property="og:description" content="India's first service-shopping platform for IT solutions. Browse 240+ services, build your cart, and get a quote instantly." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://stackfox.in" />
+    <meta property="og:image" content="/og-image.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="StackFox — Smart Code, Swift Delivery" />
+    <meta name="twitter:description" content="Browse, configure, and purchase IT services. 240+ services across 13 categories." />
+
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('[SW] Registered', reg.scope))
+            .catch(err => console.log('[SW] Registration failed', err));
+        });
+      }
+    </script>
+
+    <title>StackFox — Smart Code, Swift Delivery</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

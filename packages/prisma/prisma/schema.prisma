@@ -1,0 +1,1199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════
+// IDENTITY & ACCESS
+// ═══════════════════════════════════════════════════════════
+
+model Org {
+  id             String   @id // ORG-YYYY-NNNN
+  name           String
+  type           String   @default("INDIVIDUAL") // INDIVIDUAL|SOLE_PROP|LLP|PVT_LTD|OPC|SECTION8
+  gstin          String?
+  gstinVerified  Boolean  @default(false) @map("gstin_verified")
+  pan            String?
+  billingAddress Json     @default("{}") @map("billing_address")
+  contactEmail   String?  @map("contact_email")
+  contactPhone   String?  @map("contact_phone")
+  tier           String?  // STARTER|GROWTH|PREMIUM
+  status         String   @default("ACTIVE") // ACTIVE|INACTIVE|SUSPENDED
+  creditTier     String   @default("T0") @map("credit_tier") // T0|T1|T2
+  healthState    String   @default("ACTIVE") @map("health_state") // ACTIVE|COOLING|DORMANT|LOST
+  kycStatus      String   @default("NONE") @map("kyc_status") // NONE|BASIC|ENHANCED|CLEARED
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  users             User[]
+  apiKeys           ApiKey[]
+  orders            Order[]
+  invoices          Invoice[]
+  webhookEndpoints  WebhookEndpoint[]
+  complianceItems   ComplianceItem[]
+  screeningResults  ScreeningResult[]
+  rfps              Rfp[]
+  engagements       Engagement[]
+
+  @@map("orgs")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  orgId     String?  @map("org_id")
+  name      String
+  email     String   @unique
+  phone     String?
+  role      String   // 18 roles (11 internal + 7 external)
+  isActive  Boolean  @default(true) @map("is_active")
+  // Staff profile — surfaced on the team dashboard and capacity planning.
+  designation String?
+  skills      String[] @default([])
+  avatarUrl   String?  @map("avatar_url")
+  authData  Json     @default("{}") @map("auth_data")
+  notificationPrefs Json @default("{}") @map("notification_prefs")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  org        Org?        @relation(fields: [orgId], references: [id])
+  workspaces Workspace[]
+  signatures Signature[]
+  referrals  Referral[]
+  writtenReviews Review[] @relation("Reviewer")
+  receivedReviews Review[] @relation("Reviewee")
+
+  @@map("users")
+}
+
+model ApiKey {
+  id        String    @id @default(uuid())
+  orgId     String    @map("org_id")
+  prefix    String    // sk_live_{org}_
+  keyHash   String    @unique @map("key_hash") // SHA-256
+  scopes    String[]
+  lastUsed  DateTime? @map("last_used")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  org Org @relation(fields: [orgId], references: [id])
+
+  @@map("api_keys")
+}
+
+// ═══════════════════════════════════════════════════════════
+// SERVICE CATALOGUE
+// ═══════════════════════════════════════════════════════════
+
+model ServiceUnit {
+  id              String  @id // SF-CAT-NNN
+  categoryTier1   String  @map("category_tier1")
+  categoryTier2   String? @map("category_tier2")
+  name            String
+  slug            String  @unique
+  baseWeight      Int     @map("base_weight")
+  sacCode         String  @map("sac_code") // 998314 etc
+  status          String  @default("DRAFT") // DRAFT|PUBLISHED|ARCHIVED
+  currentVersion  Int     @default(1) @map("current_version")
+  // v3 additions
+  starterPrice        Int?   @map("starter_price") // paise
+  starterTimelineDays Int?   @map("starter_timeline_days")
+  growthPreset        Json?  @map("growth_preset")
+  premiumMinimum      Int?   @map("premium_minimum") // paise
+  premiumIncludes     Json?  @map("premium_includes")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  sdpVersions   SdpVersion[]
+  featureUnits  FeatureUnit[]
+  depsFrom      Dependency[]  @relation("dep_from")
+  depsTo        Dependency[]  @relation("dep_to")
+  projects      Project[]
+  packages      Package[]
+
+  @@map("service_units")
+}
+
+model SdpVersion {
+  id          String    @id @default(uuid())
+  serviceId   String    @map("service_id")
+  version     Int
+  sandboxStatus String? @map("sandbox_status") // PENDING|BUILDING|READY|FAILED
+  sandboxUrl    String? @map("sandbox_url")
+  sections    Json      // 13 sections (B1.1–B1.13)
+  publishedAt DateTime? @map("published_at")
+
+  service ServiceUnit @relation(fields: [serviceId], references: [id])
+
+  @@unique([serviceId, version])
+  @@map("sdp_versions")
+}
+
+model FeatureUnit {
+  id             String  @id // SF-CAT-NNN-Fnn
+  serviceId      String  @map("service_id")
+  name           String
+  description    String?
+  weight         Int     // Fibonacci 1–13
+  defaultState   Boolean @default(false) @map("default_state")
+  acceptCriteria String? @map("accept_criteria")
+  dependencies   Json    @default("[]")
+  sortOrder      Int     @default(0) @map("sort_order")
+
+  service ServiceUnit @relation(fields: [serviceId], references: [id])
+
+  @@map("feature_units")
+}
+
+model Dependency {
+  id     String @id @default(uuid())
+  fromId String @map("from_id")
+  toId   String @map("to_id")
+  type   String // REQUIRES|RECOMMENDS|ENHANCES|CONFLICTS
+
+  from ServiceUnit @relation("dep_from", fields: [fromId], references: [id])
+  to   ServiceUnit @relation("dep_to", fields: [toId], references: [id])
+
+  @@unique([fromId, toId, type])
+  @@map("dependencies")
+}
+
+model Bundle {
+  id             String @id
+  name           String
+  members        Json   // [{serviceId, features[]}]
+  discountPct    Int    @map("discount_pct")
+  matchThreshold Int    @default(90) @map("match_threshold")
+  status         String @default("ACTIVE")
+
+  @@map("bundles")
+}
+
+model RateCard {
+  id            String   @id @default(uuid())
+  type          String   // POINT|ROLE
+  key           String   // "point" or role slug
+  rate          Int      // paise
+  effectiveFrom DateTime @map("effective_from")
+
+  @@unique([type, key, effectiveFrom])
+  @@map("rate_cards")
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUILDER & ESTIMATES
+// ═══════════════════════════════════════════════════════════
+
+model Workspace {
+  id            String   @id @default(uuid())
+  userId        String?  @map("user_id")
+  canvas        Json     @default("[]") // [{serviceId, features:{fid:bool}}]
+  customLines   Json     @default("[]") @map("custom_lines")
+  canonicalHash String   @map("canonical_hash")
+  timelineMult  Decimal  @default(1.00) @map("timeline_mult") @db.Decimal(3, 2)
+  seStatus      String?  @map("se_status") // null|SE_QUEUE|SE_APPROVED|SE_RETURNED
+  seUserId      String?  @map("se_user_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user        User?        @relation(fields: [userId], references: [id])
+  estimates   Estimate[]
+  customLineItems CustomLine[]
+  sdnNotes    SdnNote[]
+
+  @@map("workspaces")
+}
+
+model Quote {
+  id              String    @id @default(uuid())
+  quoteNumber     String    @unique @map("quote_number")
+  userId          String    @map("user_id")
+  items           Json      @default("[]")
+  subtotal        Int
+  gstAmount       Int       @map("gst_amount")
+  total           Int
+  tier            String    @default("GROWTH") // STARTER|GROWTH|PREMIUM
+  estimateRange   Json      @default("{}")      // {format, low, mid, high} — frozen at quote creation
+  status          String    @default("draft")   // draft|checkout|paid
+  checkoutDetails Json      @default("{}")       // account/engagement/payment-terms captured across checkout steps
+  razorpayOrderId String?   @map("razorpay_order_id")
+  paidAt          DateTime? @map("paid_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  validUntil      DateTime  @map("valid_until")
+
+  @@map("quotes")
+}
+
+model CustomLine {
+  id             String  @id @default(uuid())
+  workspaceId    String  @map("workspace_id")
+  title          String
+  description    String
+  acceptCriteria String  @map("accept_criteria")
+  deliverables   Json    @default("[]")
+  estHours       Json    @map("est_hours") // {role: {o, l, p}}
+  confidence     String  // HIGH|MEDIUM|LOW
+  sortOrder      Int     @default(0) @map("sort_order")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("custom_lines")
+}
+
+model Estimate {
+  id          String   @id // EST-YYYY-MM-XXXX
+  workspaceId String   @map("workspace_id")
+  snapshot    Json     // frozen workspace state
+  hash        String   // SHA-256 (G-039)
+  rateVersion String   @map("rate_version")
+  totals      Json     // {base,features,custom,mult,discount,subtotal,gst,grand}
+  lockedUntil DateTime @map("locked_until") // +15 days
+  status      String   @default("ACTIVE") // ACTIVE|EXPIRED|CONVERTED
+  source      String   @default("BUILDER") // BUILDER|TOOL|WHATSAPP
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  orders    Order[]
+
+  @@map("estimates")
+}
+
+// ═══════════════════════════════════════════════════════════
+// ORDERS, ENGAGEMENTS, CONTRACTS
+// ═══════════════════════════════════════════════════════════
+
+model Order {
+  id               String    @id // ORD-YYYY-MM-XXXX
+  orgId            String    @map("org_id")
+  estimateId       String?   @map("estimate_id")
+  engagementId     String?   @map("engagement_id")
+  projectName      String?   @map("project_name")
+  primaryContact   Json?     @map("primary_contact")
+  commsPref        String    @default("PORTAL") @map("comms_pref")
+  paymentMode      String    @default("MILESTONE") @map("payment_mode")
+  clauseConfig     Json?     @map("clause_config")
+  milestoneMode    String    @default("A") @map("milestone_mode")
+  tier             String?   // STARTER|GROWTH|PREMIUM
+  referralCode     String?   @map("referral_code")
+  services         Json?     // [serviceId, ...] for express checkout
+  subtotal         Int?      // paise
+  gst              Int?      // paise
+  grandTotal       Int?      @map("grand_total") // paise
+  razorpayOrderId  String?   @map("razorpay_order_id")
+  status           String    @default("PENDING")
+  paidAt           DateTime? @map("paid_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  org       Org       @relation(fields: [orgId], references: [id])
+  estimate  Estimate? @relation(fields: [estimateId], references: [id])
+  contracts Contract[]
+  projects  Project[]
+  payments  Payment[]
+
+  @@map("orders")
+}
+
+model Engagement {
+  id           String    @id // ENG-YYYY-NNNN
+  clientId     String    @map("client_id")
+  model        String    // FPM|TNM|RET|DED|DSC
+  programId    String?   @map("program_id")
+  commercial   Json
+  methodology  String    @default("MILESTONE")
+  status       String    @default("DRAFT")
+  rateCardVer  Int?      @map("rate_card_ver")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  executedAt   DateTime? @map("executed_at")
+  endsAt       DateTime? @map("ends_at")
+
+  client      Org         @relation(fields: [clientId], references: [id])
+  program     Program?    @relation(fields: [programId], references: [id])
+  contracts   Contract[]
+  projects    Project[]
+  invoices    Invoice[]
+  timesheets  Timesheet[]
+  credits     Credit[]    @relation("credit_source")
+  consumedCredits Credit[] @relation("credit_consumed")
+  revrecLedger RevrecLedger[]
+  wipLedger    WipLedger[]
+  bench        Bench[]
+
+  @@map("engagements")
+}
+
+model Contract {
+  id             String    @id @default(uuid())
+  orderId        String?   @map("order_id")
+  engagementId   String?   @map("engagement_id")
+  type           String    // SOW|MSA|NDA|IP_WFH|IP_LIC|DPA|TNM_WO|RET_AGR|DED_AGR|DSC_CHARTER|CR|MICRO_SOW
+  sdpVersionPins Json?     @map("sdp_version_pins")
+  clauseConfig   Json?     @map("clause_config")
+  templateVer    Int       @default(1) @map("template_ver")
+  fileKey        String?   @map("file_key")
+  wormKey        String?   @map("worm_key")
+  docHash        String?   @map("doc_hash") // SHA-256
+  evidencePack   Json?     @map("evidence_pack")
+  status         String    @default("DRAFT") // DRAFT|CLIENT_SIGNED|EXECUTED|AMENDED|TERMINATED
+  createdAt      DateTime  @default(now()) @map("created_at")
+  executedAt     DateTime? @map("executed_at")
+
+  order      Order?      @relation(fields: [orderId], references: [id])
+  engagement Engagement? @relation(fields: [engagementId], references: [id])
+  signatures Signature[]
+
+  @@map("contracts")
+}
+
+model Signature {
+  id           String   @id @default(uuid())
+  contractId   String   @map("contract_id")
+  signerUserId String   @map("signer_user_id")
+  side         String   // CLIENT|STACKFOX
+  rail         String   // AADHAAR|CLICK
+  evidence     Json
+  signedAt     DateTime @default(now()) @map("signed_at")
+
+  contract Contract @relation(fields: [contractId], references: [id])
+  signer   User     @relation(fields: [signerUserId], references: [id])
+
+  @@map("signatures")
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROJECTS & LIFECYCLE
+// ═══════════════════════════════════════════════════════════
+
+model Project {
+  id             String   @id // SF-CAT-YYYY-XXXX
+  name           String   @default("") // client-facing title; id doubles as the project number
+  engagementId   String   @map("engagement_id")
+  orderId        String?  @map("order_id")
+  serviceId      String   @map("service_id")
+  status         String   @default("DRAFT")
+  configSnapshot Json     @map("config_snapshot")
+  pmUserId       String?  @map("pm_user_id")
+  riskRegister   Json     @default("[]") @map("risk_register")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  engagement     Engagement     @relation(fields: [engagementId], references: [id])
+  order          Order?         @relation(fields: [orderId], references: [id])
+  service        ServiceUnit    @relation(fields: [serviceId], references: [id])
+  milestones     Milestone[]
+  changeRequests ChangeRequest[]
+  tickets        Ticket[]
+  files          File[]
+  credentialVault CredentialVault[]
+  showcaseItems  ShowcaseItem[]
+  tasks          Task[]
+  handover       Handover?
+
+  @@map("projects")
+}
+
+model Milestone {
+  id            String    @id @default(uuid())
+  projectId     String    @map("project_id")
+  number        Int
+  name          String
+  status        String    @default("UPCOMING") // UPCOMING|IN_PROGRESS|IN_REVIEW|REVISION|APPROVED
+  paymentPct    Int       @map("payment_pct")
+  deliverables  Json
+  dueDate       DateTime? @map("due_date") @db.Date
+  approvedAt    DateTime? @map("approved_at")
+  feedbackRound Int       @default(0) @map("feedback_round")
+  maxRounds     Int       @default(2) @map("max_rounds")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, number])
+  @@map("milestones")
+}
+
+model Feedback {
+  id         String   @id @default(cuid())
+  raisedBy   String   @map("raised_by")
+  projectRef String?  @map("project_ref")
+  orgId      String?  @map("org_id")
+  status     String   @default("NEW") // NEW|ACKNOWLEDGED|ACTIONED|CLOSED
+  response   String?
+  respondedBy String? @map("responded_by")
+  respondedAt DateTime? @map("responded_at")
+  rating     Int
+  nps        Int
+  comment    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("feedback")
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  reviewerId  String   @map("reviewer_id")
+  revieweeId  String   @map("reviewee_id")
+  rating      Int
+  comment     String?
+  period      String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  reviewer User @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee User @relation("Reviewee", fields: [revieweeId], references: [id])
+
+  @@map("reviews")
+}
+
+model ChangeRequest {
+  id                 String   @id // CR-YYYY-XXXX
+  projectId          String?  @map("project_id")
+  title              String
+  description        String
+  urgency            String   @default("MEDIUM")
+  scopeImpact        String?  @map("scope_impact")
+  costDelta          Int?     @map("cost_delta") // paise
+  timelineDelta      Int?     @map("timeline_delta") // days
+  affectedMilestones Int[]    @map("affected_milestones")
+  invoiceId          String?  @map("invoice_id")
+  status             String   @default("DRAFT") // DRAFT|SUBMITTED|ASSESSED|APPROVED|REJECTED|PAID|LAPSED
+  raisedBy           String   @map("raised_by")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@map("change_requests")
+}
+
+model Ticket {
+  id             String    @id // TKT-YYYY-XXXX
+  projectId      String?   @map("project_id")
+  raisedBy       String    @map("raised_by")
+  subject        String
+  description    String
+  category       String    @default("general") // general|bug|billing|feature|urgent
+  priority       String    @default("medium")  // low|medium|high|urgent
+  severity       String    @default("P3")      // P1|P2|P3|P4 — PM-side triage
+  status         String    @default("OPEN")    // OPEN|ACKNOWLEDGED|IN_PROGRESS|RESOLVED|VERIFIED|CLOSED|REOPENED
+  resolution     String?
+  slaDeadline    DateTime? @map("sla_deadline")
+  engagementId   String?   @map("engagement_id")
+  escalationLvl  Int       @default(1) @map("escalation_lvl")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  resolvedAt     DateTime? @map("resolved_at")
+  closedAt       DateTime? @map("closed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  project Project?      @relation(fields: [projectId], references: [id])
+  replies TicketReply[]
+
+  @@map("tickets")
+}
+
+model TicketReply {
+  id         String   @id @default(cuid())
+  ticketId   String   @map("ticket_id")
+  senderId   String   @map("sender_id")
+  senderName String   @map("sender_name")
+  senderRole String   @map("sender_role")
+  message    String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_replies")
+}
+
+// ═══════════════════════════════════════════════════════════
+// EVENT STORE (append-only)
+// ═══════════════════════════════════════════════════════════
+
+model Event {
+  seq          BigInt   @id @default(autoincrement())
+  projectId    String?  @map("project_id")
+  engagementId String?  @map("engagement_id")
+  programId    String?  @map("program_id")
+  code         String   // 372 event codes
+  payload      Json     @default("{}")
+  actor        String   // user_id or 'SYSTEM'
+  humanReadable String? @map("human_readable") // rendered by the activityTranslator worker
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([projectId, createdAt])
+  @@index([code])
+  @@index([engagementId, createdAt])
+  @@map("events")
+}
+
+// ═══════════════════════════════════════════════════════════
+// FINANCE
+// ═══════════════════════════════════════════════════════════
+
+model Invoice {
+  id           String    @id // INV-YYYY-MM-XXXX
+  orderId      String?   @map("order_id")
+  engagementId String?   @map("engagement_id")
+  orgId        String    @map("org_id")
+  milestoneRef String?   @map("milestone_ref")
+  sacCode      String    @map("sac_code")
+  gstType      String    @map("gst_type") // CGST_SGST|IGST
+  subtotal     Int       // paise
+  cgst         Int       @default(0)
+  sgst         Int       @default(0)
+  igst         Int       @default(0)
+  grandTotal   Int       @map("grand_total")
+  status       String    @default("DRAFT") // DRAFT|SENT|VIEWED|PAID|PARTIALLY_PAID|OVERDUE|CANCELLED|DISPUTED
+  dunningStage Int       @default(0) @map("dunning_stage")
+  razorpayOrderId      String?  @map("razorpay_order_id")
+  stripePaymentIntentId String? @map("stripe_payment_intent_id")
+  paymentLink  String?   @map("payment_link")
+  utr          String?
+  fileKey      String?   @map("file_key")
+  dueDate      DateTime? @map("due_date") @db.Date
+  paidAt       DateTime? @map("paid_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  org        Org         @relation(fields: [orgId], references: [id])
+  engagement Engagement? @relation(fields: [engagementId], references: [id])
+
+  @@map("invoices")
+}
+
+model Credit {
+  id            String    @id @default(uuid())
+  clientId      String    @map("client_id")
+  sourceEngId   String    @map("source_eng_id")
+  amount        Int       // paise
+  expiresAt     DateTime  @map("expires_at")
+  consumedBy    String?   @map("consumed_by")
+  status        String    @default("ISSUED") // ISSUED|RESERVED|CONSUMED|EXPIRED
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  sourceEng   Engagement  @relation("credit_source", fields: [sourceEngId], references: [id])
+  consumedEng Engagement? @relation("credit_consumed", fields: [consumedBy], references: [id])
+
+  @@map("credits")
+}
+
+model RevrecLedger {
+  id           String   @id @default(uuid())
+  engagementId String   @map("engagement_id")
+  date         DateTime @default(now()) @db.Date
+  recognised   Int      // paise
+  invoiceId    String?  @map("invoice_id")
+  amount       Int      @default(0) // paise; mirrors `recognised` for ledger reads
+  period       String   @default("") // YYYY-MM
+  type         String   @default("RECOGNIZED")
+  description  String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  engagement Engagement @relation(fields: [engagementId], references: [id])
+
+  @@index([engagementId, date])
+  @@map("revrec_ledger")
+}
+
+model WipLedger {
+  id           String   @id @default(uuid())
+  engagementId String   @map("engagement_id")
+  snapshotDate DateTime @default(now()) @map("snapshot_date") @db.Date
+  accrued      Int
+  invoiced     Int
+  wip          Int
+  projectId    String?  @map("project_id")
+  hours        Float    @default(0)
+  amount       Int      @default(0) // paise
+  period       String   @default("") // YYYY-MM
+  description  String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  engagement Engagement @relation(fields: [engagementId], references: [id])
+
+  @@index([engagementId, snapshotDate])
+  @@map("wip_ledger")
+}
+
+// ═══════════════════════════════════════════════════════════
+// T&M / RETAINER / DEDICATED
+// ═══════════════════════════════════════════════════════════
+
+model Timesheet {
+  id           String    @id @default(uuid())
+  engagementId String    @map("engagement_id")
+  weekStart    DateTime  @map("week_start") @db.Date
+  status       String    @default("DRAFT") // DRAFT|SUBMITTED|PARTIAL|APPROVED|DEEMED
+  submittedAt  DateTime? @map("submitted_at")
+  deemedAt     DateTime? @map("deemed_at")
+  resolvedAt   DateTime? @map("resolved_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  engagement Engagement      @relation(fields: [engagementId], references: [id])
+  lines      TimesheetLine[]
+
+  @@unique([engagementId, weekStart])
+  @@map("timesheets")
+}
+
+model TimesheetLine {
+  id          String  @id @default(uuid())
+  timesheetId String  @map("timesheet_id")
+  role        String
+  taskSummary String  @map("task_summary")
+  hours       Decimal @db.Decimal(5, 2)
+  rate        Int     // paise/hr, pinned
+  status      String  @default("PENDING") // PENDING|APPROVED|QUERIED|DEEMED
+  queryNote   String? @map("query_note")
+  locked      Boolean @default(false)
+
+  timesheet Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+
+  @@map("timesheet_lines")
+}
+
+model Bench {
+  id         String    @id @default(uuid())
+  personId   String    @map("person_id")
+  role       String
+  skills     String[]
+  costPerDay Int       @map("cost_per_day")
+  enteredAt  DateTime  @default(now()) @map("entered_at")
+  exitedAt   DateTime? @map("exited_at")
+  deployedTo String?   @map("deployed_to")
+
+  engagement Engagement? @relation(fields: [deployedTo], references: [id])
+
+  @@map("bench")
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROGRAMS & STAKEHOLDERS
+// ═══════════════════════════════════════════════════════════
+
+model Program {
+  id             String   @id // PGM-YYYY-NN
+  clientId       String   @map("client_id")
+  name           String
+  leadUserId     String?  @map("lead_user_id")
+  budgetEnvelope Int?     @map("budget_envelope")
+  raid           Json     @default("[]")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  engagements  Engagement[]
+  stakeholders Stakeholder[]
+
+  @@map("programs")
+}
+
+model Stakeholder {
+  id        String  @id @default(uuid())
+  programId String? @map("program_id")
+  projectId String? @map("project_id")
+  name      String
+  role      String  // SPONSOR|APPROVER|USER|TECH|FINANCE
+  influence String  @default("M") // H|M|L
+  contact   Json
+
+  program Program? @relation(fields: [programId], references: [id])
+
+  @@map("stakeholders")
+}
+
+// ═══════════════════════════════════════════════════════════
+// RFP, SDN, FILES, VAULT, FLAGS, WEBHOOKS, NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════
+
+model Rfp {
+  id           String    @id @default(uuid())
+  orgId        String?   @map("org_id")
+  title        String   @default("")
+  brief        Json?    // scope narrative supplied by the issuer
+  createdBy    String?  @map("created_by")
+  issuer       String
+  deadline     DateTime?
+  budgetSignal String?   @map("budget_signal")
+  scorecard    Json?
+  status       String    @default("INTAKE") // INTAKE|SCORING|BID|NO_BID|DRAFTING|SUBMITTED|WON|LOST
+  lossReason   String?   @map("loss_reason")
+  decisionNote String?   @map("decision_note")
+  submittedAt  DateTime? @map("submitted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  org      Org?      @relation(fields: [orgId], references: [id])
+  sdnNotes SdnNote[]
+
+  @@map("rfps")
+}
+
+model SdnNote {
+  id          String   @id @default(uuid())
+  enquiryRef  String?  @map("enquiry_ref")
+  seUserId    String?  @map("se_user_id")
+  content     Json
+  workspaceId String?  @map("workspace_id")
+  fileKey     String?  @map("file_key")
+  rfpId       String?  @map("rfp_id")
+  category    String   @default("GENERAL")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id])
+  rfp       Rfp?       @relation(fields: [rfpId], references: [id])
+
+  @@map("sdn_notes")
+}
+
+model File {
+  id         String   @id @default(uuid())
+  projectId  String?  @map("project_id")
+  milestoneNum Int?   @map("milestone_num")
+  name       String
+  storageKey String   @map("r2_key") // column name kept; bucket is Supabase Storage
+  sizeBytes  Int?     @map("size_bytes")
+  mimeType   String?  @map("mime_type")
+  version    Int      @default(1)
+  comments   Json     @default("[]")
+  uploadedBy String   @map("uploaded_by")
+  archived   Boolean  @default(false)
+  archivedAt DateTime? @map("archived_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@map("files")
+}
+
+// Post-delivery handover: the record that a project was formally delivered to
+// the client, what was handed over, and when the client accepted it.
+// Warranty runs from deliveredAt.
+model Handover {
+  id           String    @id @default(uuid())
+  projectId    String    @unique @map("project_id")
+  status       String    @default("PREPARING") // PREPARING|READY|ACCEPTED|DISPUTED
+  deliveredAt  DateTime? @map("delivered_at")
+  acceptedAt   DateTime? @map("accepted_at")
+  acceptedBy   String?   @map("accepted_by")
+  acceptanceEvidence Json? @map("acceptance_evidence") // ip, userAgent, hash
+  warrantyDays Int       @default(30) @map("warranty_days")
+  notes        String?
+  checklist    Json      @default("[]") // [{ key, label, done }]
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("handovers")
+}
+
+model CredentialVault {
+  id             String    @id @default(uuid())
+  projectId      String    @map("project_id")
+  systemName     String    @map("system_name")
+  encryptedBlob  Bytes     @map("encrypted_blob") // AES-256-GCM
+  recoveryMethod String?   @map("recovery_method")
+  accessedAt     DateTime? @map("accessed_at")
+  accessLog      Json      @default("[]") @map("access_log")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("credential_vault")
+}
+
+model Flag {
+  id           String   @id
+  description  String?
+  type         String   @default("BOOL") // BOOL|VARIANT
+  rules        Json     @default("{}")
+  defaultValue Boolean  @default(false) @map("default_value")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("flags")
+}
+
+model WebhookEndpoint {
+  id        String   @id @default(uuid())
+  orgId     String   @map("org_id")
+  url       String
+  secret    String
+  events    String[]
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  org        Org                @relation(fields: [orgId], references: [id])
+  deliveries WebhookDelivery[]
+
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id         String   @id @default(uuid())
+  endpointId String   @map("endpoint_id")
+  eventCode  String   @map("event_code")
+  payload    Json
+  httpStatus Int?     @map("http_status")
+  attempt    Int      @default(1)
+  latencyMs  Int?     @map("latency_ms")
+  status     String   @default("PENDING") // PENDING|DELIVERED|FAILED
+  respondedAt DateTime? @map("responded_at")
+  error      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id])
+
+  @@map("webhook_deliveries")
+}
+
+model NotificationContent {
+  key      String  @id // {event_code}.{channel}
+  subject  String?
+  body     String
+  ctaLabel String? @map("cta_label")
+  ctaUrlTpl String? @map("cta_url_tpl")
+
+  @@map("notifications_content")
+}
+
+model ComplianceItem {
+  id          String    @id @default(uuid())
+  orgId       String    @map("org_id")
+  type        String
+  dueDate     DateTime? @map("due_date") @db.Date
+  status      String    @default("UPCOMING")
+  penaltyRule Json?     @map("penalty_rule")
+  engagementId String?  @map("engagement_id")
+  period      String?
+  data        Json?
+  filedAt     DateTime? @map("filed_at")
+
+  org Org @relation(fields: [orgId], references: [id])
+
+  @@map("compliance_items")
+}
+
+model ScreeningResult {
+  id         String    @id @default(uuid())
+  orgId      String?   @map("org_id")
+  userId     String?   @map("user_id")
+  checkType  String    @map("check_type") // SANCTIONS|KYC_BO|KYC_EDD
+  result     String    // PASS|HOLD|FAIL
+  details    Json?
+  reviewNote String?   @map("review_note")
+  reviewedBy String?   @map("reviewed_by")
+  reviewedAt DateTime? @map("reviewed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  org Org? @relation(fields: [orgId], references: [id])
+
+  @@map("screening_results")
+}
+
+// ═══════════════════════════════════════════════════════════
+// v3 B2C ADDITIONS (6 new tables) → 48 total
+// ═══════════════════════════════════════════════════════════
+
+model Package {
+  id            String   @id // PKG-CAT-NNN
+  serviceId     String   @map("service_id")
+  name          String
+  nameHi        String?  @map("name_hi")
+  flatPrice     Int      @map("flat_price") // paise
+  timelineDays  Int      @map("timeline_days")
+  featurePreset Json     @map("feature_preset")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  service    ServiceUnit @relation(fields: [serviceId], references: [id])
+  previews   Preview[]
+  blueprints Blueprint[]
+
+  @@map("packages")
+}
+
+model Preview {
+  id         String    @id @default(uuid())
+  phone      String?   // absent for previews generated from the service catalogue
+  packageId  String?   @map("package_id")
+  serviceId  String?   @map("service_id")
+  inputData  Json      @map("input_data")
+  templateId String?   @map("template_id")
+  previewUrl String?   @map("preview_url")
+  status     String    @default("PENDING") // PENDING|GENERATED|VIEWED|EXPIRED|CONVERTED
+  expiresAt  DateTime? @map("expires_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  package Package? @relation(fields: [packageId], references: [id])
+
+  @@map("previews")
+}
+
+model Referral {
+  id               String    @id @default(uuid())
+  referrerType     String    @map("referrer_type") // CLIENT|FREELANCER|CA
+  referrerId       String    @map("referrer_id")
+  code             String    @unique
+  referredEmail    String    @map("referred_email")
+  referredName     String?   @map("referred_name")
+  referredOrderId  String?   @map("referred_order_id")
+  status           String    @default("PENDING") // PENDING|SENT|DUPLICATE|CONVERTED|PAID|EXPIRED
+  commissionPct    Int?      @map("commission_pct")
+  commissionAmount Int?      @map("commission_amount") // paise
+  sentAt           DateTime? @map("sent_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  referrer User? @relation(fields: [referrerId], references: [id])
+
+  @@map("referrals")
+}
+
+model Blueprint {
+  id                   String    @id @default(uuid())
+  phone                String?
+  industry             String?
+  advisorAnswers       Json      @default("{}") @map("advisor_answers")
+  outputPdfKey         String?   @map("output_pdf_key")
+  recommendedPackageId String?   @map("recommended_package_id")
+  creditExpiresAt      DateTime? @map("credit_expires_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  recommendedPackage Package? @relation(fields: [recommendedPackageId], references: [id])
+
+  @@map("blueprints")
+}
+
+model ShowcaseItem {
+  id                  String   @id @default(uuid())
+  projectId           String?  @map("project_id")
+  category            String?
+  tier                String?
+  published           Boolean  @default(false)
+  beforeScreenshotKey String?  @map("before_screenshot_key")
+  afterScreenshotKey  String?  @map("after_screenshot_key")
+  reviewText          String?  @map("review_text")
+  reviewRating        Int?     @map("review_rating")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@map("showcase_items")
+}
+
+model Glossary {
+  term      String  @id
+  tooltipEn String  @map("tooltip_en")
+  tooltipHi String  @map("tooltip_hi")
+  category  String?
+
+  @@map("glossary")
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOOL TABLES (Part 15.0)
+// ═══════════════════════════════════════════════════════════
+
+model FeatureFlag {
+  key       String   @id
+  enabled   Boolean  @default(false)
+  metadata  Json     @default("{}")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+}
+
+model ToolSession {
+  id           String   @id @default(uuid())
+  tool         String
+  userId       String?  @map("user_id")
+  input        Json
+  output       Json?
+  status       String   @default("PROCESSING")
+  leadCaptured Boolean  @default(false) @map("lead_captured")
+  leadEmail    String?  @map("lead_email")
+  leadPhone    String?  @map("lead_phone")
+  utmSource    String?  @map("utm_source")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  conversions ToolConversion[]
+
+  @@map("tool_sessions")
+}
+
+model ToolConversion {
+  id             String   @id @default(uuid())
+  sessionId      String   @map("session_id")
+  conversionType String?  @map("conversion_type")
+  targetId       String?  @map("target_id")
+  email          String?
+  source         String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  session ToolSession @relation(fields: [sessionId], references: [id])
+
+  @@map("tool_conversions")
+}
+
+model ToolInvoice {
+  id            String   @id @default(uuid())
+  sessionId     String?  @map("session_id")
+  userId        String?  @map("user_id")
+  invoiceNumber String?  @map("invoice_number")
+  data          Json
+  pdfKey        String?  @map("pdf_key")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("tool_invoices")
+}
+
+// ═══════════════════════════════════════════════════════════
+// LEADS & CRM
+// ═══════════════════════════════════════════════════════════
+
+model Lead {
+  id            String    @id @default(uuid())
+  name          String
+  email         String
+  phone         String?
+  company       String?
+  message       String?
+  preferredDate DateTime? @map("preferred_date")
+  source        String    @default("demo_page") // demo_page|contact|referral|tool
+  status        String    @default("NEW") // NEW|CONTACTED|QUALIFIED|CONVERTED|LOST
+  assignedTo    String?   @map("assigned_to")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@map("leads")
+}
+
+// ═══════════════════════════════════════════════════════════
+// PAYMENTS
+// ═══════════════════════════════════════════════════════════
+
+model Payment {
+  id               String   @id @default(uuid())
+  orderId          String   @map("order_id")
+  gateway          String   // RAZORPAY|STRIPE|BANK_TRANSFER
+  gatewayPaymentId String?  @map("gateway_payment_id")
+  gatewayOrderId   String?  @map("gateway_order_id")
+  amount           Int      // paise
+  currency         String   @default("INR")
+  status           String   @default("PENDING") // PENDING|CAPTURED|FAILED|REFUNDED
+  method           String?  // upi|card|netbanking|wallet
+  metadata         Json?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+// ═══════════════════════════════════════════════════════════
+// HIRING
+// ═══════════════════════════════════════════════════════════
+
+model Job {
+  id          String   @id
+  title       String
+  type        String   // full-time|part-time|contract|freelance|internship
+  location    String
+  experience  String
+  salary      String?
+  skills      Json     @default("[]")
+  description String
+  status      String   @default("OPEN") // OPEN|CLOSED
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  applications JobApplication[]
+
+  @@map("jobs")
+}
+
+model JobApplication {
+  id           String   @id @default(uuid())
+  jobId        String   @map("job_id")
+  name         String
+  email        String
+  phone        String?
+  experience   String?
+  coverLetter  String?  @map("cover_letter")
+  portfolioUrl String?  @map("portfolio_url")
+  linkedinUrl  String?  @map("linkedin_url")
+  status       String   @default("submitted") // submitted|screening|interview|technical|offer|hired|rejected|withdrawn
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  job Job @relation(fields: [jobId], references: [id])
+
+  @@map("job_applications")
+}
+
+// ═══════════════════════════════════════════════════════════
+// PER-USER NOTIFICATIONS, MESSAGING, TASKS
+// ═══════════════════════════════════════════════════════════
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("user_notifications")
+}
+
+model Conversation {
+  id             String   @id @default(uuid())
+  title          String?
+  participantIds String[] @map("participant_ids")
+  projectId      String?  @map("project_id")
+  lastMessageAt  DateTime @default(now()) @map("last_message_at")
+  readReceipts   Json     @default("{}") @map("read_receipts") // { userId: ISO timestamp }
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  messages Message[]
+
+  @@index([lastMessageAt])
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String   @map("conversation_id")
+  senderId       String   @map("sender_id")
+  text           String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  projectId   String?   @map("project_id")
+  assigneeId  String    @map("assignee_id")
+  title       String
+  description String?
+  status      String    @default("todo") // backlog|todo|in-progress|review|done
+  priority    String    @default("medium") // low|medium|high|urgent
+  dueDate     DateTime? @map("due_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@map("tasks")
+}
+
+model BlogPost {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  excerpt     String?
+  content     String
+  category    String?
+  featured    Boolean  @default(false)
+  // SUGGESTED entries come from the team knowledge base and are not public
+  // until an editor publishes them.
+  status      String   @default("PUBLISHED") // SUGGESTED|DRAFT|PUBLISHED|ARCHIVED
+  suggestedBy String?  @map("suggested_by")
+  publishedAt DateTime @default(now()) @map("published_at")
+  author      String?
+  coverImage  String?  @map("cover_image")
+  tags        String[] @default([])
+
+  @@map("blog_posts")
+}
