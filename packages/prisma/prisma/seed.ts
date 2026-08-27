@@ -105,25 +105,27 @@ async function seed() {
       },
     });
 
-    // Create 3-5 feature units per service
+    // Create 3-5 feature units per service in parallel
     const featureCount = Math.min(5, Math.max(3, Math.ceil(svc.price / 10000)));
     const featureNames = generateFeatureNames(svc.name, svc.catId, featureCount);
-    for (let i = 0; i < featureNames.length; i++) {
-      const featureId = `${serviceId}-F${String(i + 1).padStart(2, "0")}`;
-      await prisma.featureUnit.upsert({
-        where: { id: featureId },
-        update: { name: featureNames[i] },
-        create: {
-          id: featureId,
-          serviceId,
-          name: featureNames[i],
-          description: `${featureNames[i]} for ${svc.name}`,
-          weight: [1, 2, 3, 5, 8][i % 5],
-          defaultState: i < 2,
-          sortOrder: i,
-        },
-      });
-    }
+    await Promise.all(
+      featureNames.map((featureName, idx) => {
+        const featureId = `${serviceId}-F${String(idx + 1).padStart(2, "0")}`;
+        return prisma.featureUnit.upsert({
+          where: { id: featureId },
+          update: { name: featureName },
+          create: {
+            id: featureId,
+            serviceId,
+            name: featureName,
+            description: `${featureName} for ${svc.name}`,
+            weight: [1, 2, 3, 5, 8][idx % 5],
+            defaultState: idx < 2,
+            sortOrder: idx,
+          },
+        });
+      })
+    );
   }
 
   // ── 2. Bundles (from packages + industryBundles) ─────
@@ -233,7 +235,36 @@ async function seed() {
     },
   });
 
-  // ── 5. Feature flags ──────────────────────────────
+  // ── 5. Demo sales team users ───────────────────────
+  console.log("  → Demo sales team users...");
+  const salesPassword = process.env.SALES_PASSWORD || "Sales@Stackfox2025";
+  const salesPasswordHash = createHash("sha256").update(salesPassword).digest("hex");
+  const demoSalesUsers = [
+    { name: "Sales Executive", email: "sales@stackfox.tech", role: "SE" },
+    { name: "Senior Sales Manager", email: "sales.lead@stackfox.tech", role: "SENIOR_PM" },
+    { name: "Sales Manager", email: "sales.manager@stackfox.tech", role: "SALES" },
+  ];
+  for (const u of demoSalesUsers) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: {
+        role: u.role,
+        authData: {
+          provider: "email",
+          verified: true,
+          passwordHash: salesPasswordHash,
+        },
+      },
+      create: {
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        authData: { provider: "email", verified: true, passwordHash: salesPasswordHash },
+      },
+    });
+  }
+
+  // ── 6. Feature flags ──────────────────────────────
   console.log("  → Feature flags...");
   const flags = [
     { key: "STARTER_CHECKOUT", enabled: true },

@@ -2,7 +2,7 @@
 // Caches the app shell and serves from cache when offline.
 // Dynamic API calls (quotes, login) always go to network.
 
-const CACHE_NAME = 'stackfox-v1';
+const CACHE_NAME = 'stackfox-v2';
 const SHELL_URLS = [
   '/',
   '/index.html',
@@ -40,8 +40,9 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Always go to network for API calls
+  // Always go to network for API calls and cross-origin requests
   if (url.pathname.startsWith('/api/')) return;
+  if (url.origin !== self.location.origin) return;
 
   // For navigation and static assets: try network, fall back to cache
   event.respondWith(
