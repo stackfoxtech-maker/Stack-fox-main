@@ -120,6 +120,7 @@ const SalesCall = lazy(() => import('@app/team/SalesCall'));
 const FollowUps = lazy(() => import('@app/team/FollowUps'));
 const Proposals = lazy(() => import('@app/team/Proposals'));
 const SalesKnowledge = lazy(() => import('@app/team/SalesKnowledge'));
+const PitchHistory = lazy(() => import('@app/team/PitchHistory'));
 
 // Admin dashboard
 const AdminLayout = lazy(() => import('@app/admin/AdminLayout'));
@@ -346,6 +347,7 @@ export default function AppRoutes() {
           <Route path="follow-ups" element={<FollowUps />} />
           <Route path="proposals" element={<Proposals />} />
           <Route path="knowledge-center" element={<SalesKnowledge />} />
+          <Route path="pitch-history" element={<PitchHistory />} />
         </Route>
       </Route>
 

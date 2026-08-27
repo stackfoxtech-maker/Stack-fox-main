@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, GitBranch, Mic, MessageSquare, Phone, Calendar, FileText, BookOpen, Menu, X, LogOut, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Users, GitBranch, Mic, MessageSquare, Phone, Calendar, FileText, BookOpen, Menu, X, LogOut, Sparkles, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@lib/utils';
 import useAuthStore from '@store/authStore';
@@ -14,6 +14,7 @@ const navItems = [
   { label: 'Follow-ups', icon: Calendar, path: '/app/team/sales/follow-ups' },
   { label: 'Proposals', icon: FileText, path: '/app/team/sales/proposals' },
   { label: 'Knowledge Center', icon: BookOpen, path: '/app/team/sales/knowledge-center' },
+  { label: 'Pitch History', icon: TrendingUp, path: '/app/team/sales/pitch-history' },
 ];
 
 export default function SalesLayout() {
