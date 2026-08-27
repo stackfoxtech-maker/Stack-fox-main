@@ -68,7 +68,7 @@ const app = Fastify({
 async function start() {
   const corsOrigins = (
     process.env.CORS_ORIGIN ??
-    "http://localhost:3000,http://localhost:5173,https://stackfox-client-stackfox1.vercel.app,https://stackfox-client.vercel.app,https://stackfox-client-git-main-stackfox1.vercel.app"
+    "http://localhost:3000,http://localhost:5173,https://stackfox.in,https://www.stackfox.in,https://stackfox-client-stackfox1.vercel.app,https://stackfox-client.vercel.app,https://stackfox-client-git-main-stackfox1.vercel.app"
   )
     .split(",")
     .map((o) => o.trim());
