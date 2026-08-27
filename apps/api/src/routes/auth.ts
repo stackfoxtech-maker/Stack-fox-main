@@ -377,7 +377,9 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(503).send({ message: "Sign-in is temporarily unavailable" });
     }
 
-    return reply.redirect(authorizeUrl(state));
+    const url = authorizeUrl(state);
+    app.log.info({ googleAuthorizeUrl: url }, "Google OAuth redirect");
+    return reply.redirect(url);
   });
 
   // GET /auth/google/callback — finish the flow
