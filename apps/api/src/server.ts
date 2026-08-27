@@ -66,7 +66,11 @@ const app = Fastify({
 });
 
 async function start() {
-  const corsOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:3000")
+  const defaultOrigins =
+    process.env.NODE_ENV === "production"
+      ? "https://stackfox-client-stackfox1.vercel.app,https://stackfox-client.vercel.app,https://stackfox-client-git-main-stackfox1.vercel.app"
+      : "http://localhost:3000,http://localhost:5173";
+  const corsOrigins = (process.env.CORS_ORIGIN ?? defaultOrigins)
     .split(",")
     .map((o) => o.trim());
   await app.register(cors, {
