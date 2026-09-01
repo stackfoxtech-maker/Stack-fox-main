@@ -3,7 +3,8 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { canonicalHash } from "../lib/hash";
-import { createRazorpayOrder } from "../lib/payments";
+import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
+import { recordInvoicePayment } from "../lib/billing";
 import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import { redis } from "../lib/redis";
@@ -344,6 +345,39 @@ export async function checkoutRoutes(app: FastifyInstance) {
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
+
+    // Payment capture. The client posts the Razorpay handshake from the
+    // checkout `/pay` step; verify it and settle the first invoice. Without a
+    // handshake the invoice stays SENT (pay-later / bank-transfer path).
+    const pay = req.body as {
+      razorpay_order_id?: string;
+      razorpay_payment_id?: string;
+      razorpay_signature?: string;
+    };
+    if (pay?.razorpay_payment_id && pay?.razorpay_signature) {
+      const orderId = pay.razorpay_order_id ?? session.razorpayOrderId;
+      const valid =
+        !!orderId &&
+        verifyRazorpaySignature(orderId, pay.razorpay_payment_id, pay.razorpay_signature);
+      if (!valid) {
+        return reply.code(400).send({ error: "Payment signature verification failed" });
+      }
+      const paidInvoice = await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: { status: "PAID", paidAt: new Date(), utr: pay.razorpay_payment_id },
+      });
+      await recordInvoicePayment(paidInvoice, {
+        gateway: "RAZORPAY",
+        gatewayPaymentId: pay.razorpay_payment_id,
+        gatewayOrderId: orderId,
+      });
+      await emitEvent({
+        code: "INVOICE_PAID",
+        payload: { invoiceId: invoice.id, gateway: "razorpay", razorpayPaymentId: pay.razorpay_payment_id },
+        actor: req.user!.sub,
+        engagementId: engId,
+      });
+    }
 
     // Emit events
     await emitEvent({ code: "ESTIMATE_CONVERTED", payload: { estimateId: estimate.id }, actor: req.user!.sub });

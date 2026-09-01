@@ -21,6 +21,7 @@ import "./referralProcessor";
 import "./whatsappCommerce";
 
 import { redis } from "../lib/redis";
+import { registerSchedules, pruneStaleSchedulers } from "../lib/scheduler";
 
 /**
  * Worker entrypoint.
@@ -34,6 +35,18 @@ import { redis } from "../lib/redis";
  * which suits single-container deploys.
  */
 console.log("[workers] 18 workers subscribed");
+
+// Register the cron-shaped jobs the periodic workers depend on. Best-effort:
+// a Redis hiccup at boot must not stop the on-demand workers (docgen, notify,
+// webhooks) from coming up.
+void (async () => {
+  try {
+    await pruneStaleSchedulers();
+    await registerSchedules();
+  } catch (err) {
+    console.error("[workers] schedule registration failed:", (err as Error).message);
+  }
+})();
 
 async function shutdown(signal: string) {
   console.log(`[workers] ${signal} received, draining…`);

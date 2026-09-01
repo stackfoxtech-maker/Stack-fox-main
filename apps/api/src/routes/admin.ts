@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
+import { bumpSessionEpoch } from "../lib/session";
 import { paginated, pageParams } from "../lib/http";
 import { INTERNAL_ROLES, CLIENT_ROLES } from "@stackfox/core";
 import { ok, withId } from "../lib/http";
@@ -223,6 +224,11 @@ export async function adminRoutes(app: FastifyInstance) {
       data,
       select: { id: true, email: true, name: true, role: true, orgId: true, isActive: true },
     });
+
+    // A role change or a deactivation must not leave a stale session live.
+    if (data.role !== undefined || data.isActive === false) {
+      await bumpSessionEpoch(id).catch(() => {});
+    }
     return ok(withId(updated));
   });
 

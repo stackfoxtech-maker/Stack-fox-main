@@ -144,115 +144,6 @@ function Tour({ steps, active, onComplete }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   COMPONENT: Admin Auth Modal
-   ───────────────────────────────────────────────────────────────────────────── */
-function AdminAuth({ onClose, onVerified }) {
-  const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState(1); 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleRequestOtp = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await api.post('/auth/request-otp', { email });
-      setStep(2);
-      toast.success('Code sent to your email');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send OTP. Admin email required.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await api.post('/auth/verify-otp', { email, otp });
-      if (res.data.data.isAdminVerified) {
-        toast.success('Admin mode enabled');
-        onVerified(email);
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Invalid or expired code.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/40 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 border border-warm-200 animate-scale-in relative">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-fox-100 text-fox-600 rounded-lg">
-            <Lock size={20} />
-          </div>
-          <div>
-            <h3 className="font-bold text-warm-900 leading-none">Admin Verification</h3>
-            <p className="text-xs text-warm-500 mt-1">Secondary security layer required.</p>
-          </div>
-        </div>
-
-        {error && (
-          <div className="bg-error-50 text-error-700 text-xs p-3 rounded-lg mb-4 border border-error-100">
-            {error}
-          </div>
-        )}
-
-        {step === 1 ? (
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-warm-400 uppercase tracking-wider mb-1 block">Admin Email</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-                <input 
-                  type="email" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@stackfox.in" 
-                  className="input-fx pl-10"
-                />
-              </div>
-            </div>
-            <Button variant="primary" className="w-full" disabled={loading} onClick={handleRequestOtp}>
-              {loading ? <Loader2 className="animate-spin" size={18} /> : 'Send OTP'}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-warm-400 uppercase tracking-wider mb-1 block">Enter 6-Digit Code</label>
-              <input 
-                type="text" 
-                maxLength={6}
-                value={otp} 
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                placeholder="000000" 
-                className="input-fx text-center text-xl tracking-[0.5em] font-mono"
-              />
-              <p className="text-[10px] text-warm-400 mt-2 text-center">Sent to {email}</p>
-            </div>
-            <Button variant="primary" className="w-full" disabled={loading} onClick={handleVerifyOtp}>
-              {loading ? <Loader2 className="animate-spin" size={18} /> : 'Verify & Enable'}
-            </Button>
-            <button onClick={() => setStep(1)} className="w-full text-xs text-warm-400 hover:text-fox-500 transition-colors">
-              Try different email
-            </button>
-          </div>
-        )}
-
-        <button onClick={onClose} className="absolute top-4 right-4 text-warm-400 hover:text-warm-600">
-          <X size={18} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function AddCategoryModal({ onClose, onSave, loading }) {
   const [name, setName] = useState('');
   const [laymanTip, setLaymanTip] = useState('');
@@ -451,13 +342,15 @@ export default function Builder() {
     items, addItem, removeItem, updateQuantity, toggleCart, itemCount, clearCart,
     curIdx, setCurIdx, setMetadata
   } = useCartStore();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isAdmin } = useAuthStore();
 
   // 2. Local States
   const [activeCat, setActiveCat] = useState(params.get('category') || 'all');
   const [search, setSearch] = useState(params.get('q') || '');
-  const [isAdminMode, setIsAdminMode] = useState(false);
-  const [showAdminAuth, setShowAdminAuth] = useState(false);
+  // Inline catalogue editing was retired — see the note by the "Edit catalogue"
+  // shortcut below. Kept as a const so the (now inert) edit affordances in the
+  // service list still compile; a later pass can strip them entirely.
+  const isAdminMode = false;
   const [showTour, setShowTour] = useState(false);
   const [catalog, setCatalog] = useState({ services: [], categories: [], packages: [], bundles: [] });
   const [isLoading, setIsLoading] = useState(true);
@@ -779,13 +672,6 @@ export default function Builder() {
   return (
     <Section className="relative">
       <Tour steps={SF_DATA.tourSteps} active={showTour} onComplete={() => { localStorage.setItem('fox_tour_seen', 'true'); setShowTour(false); }} />
-      
-      {showAdminAuth && (
-        <AdminAuth 
-          onClose={() => setShowAdminAuth(false)} 
-          onVerified={() => { setIsAdminMode(true); setShowAdminAuth(false); }}
-        />
-      )}
 
       {/* CRUD Modals */}
       {addCatOpen && (
@@ -821,50 +707,23 @@ export default function Builder() {
         />
       )}
 
-      {/* Admin Floating Trigger */}
-      <div className="fixed top-24 right-4 z-40 flex flex-col gap-2">
-        {isAdminMode ? (
-          <>
-            <div className="bg-success-600 text-white p-2 rounded-xl shadow-lg flex items-center gap-3 animate-slide-in">
-              <ShieldCheck size={18} />
-              <span className="text-xs font-bold uppercase">Admin Mode</span>
-              <button onClick={() => setIsAdminMode(false)} className="p-1.5 hover:bg-white/20 rounded-lg">
-                <Lock size={16} />
-              </button>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="bg-white border-fox-200 text-fox-600 shadow-sm justify-start"
-              onClick={() => setAddCatOpen(true)}
-            >
-              <Plus size={14} className="mr-1" /> Category
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="bg-white border-fox-200 text-fox-600 shadow-sm justify-start"
-              onClick={() => setAddPkgOpen(true)}
-            >
-              <Plus size={14} className="mr-1" /> Package
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="bg-white border-fox-200 text-fox-600 shadow-sm justify-start"
-              onClick={() => setAddBndlOpen(true)}
-            >
-              <Plus size={14} className="mr-1" /> Bundle
-            </Button>
-          </>
-        ) : (
-          isAuthenticated && user?.role === 'admin' && (
-            <button onClick={() => setShowAdminAuth(true)} className="bg-white border border-warm-200 p-2 rounded-xl shadow-sm hover:text-fox-600 text-warm-400">
-              <Edit3 size={18} />
-            </button>
-          )
-        )}
-      </div>
+      {/*
+        Catalogue editing lives in the admin app (/app/admin/catalog), which is
+        wired to the real /admin/* endpoints. The old inline editor here spoke
+        to /admin/catalog/* routes that never existed and was gated on a role
+        string ("admin") the API never emits ("ADMIN"), so it was unreachable
+        and non-functional. Admins get a shortcut to the real editor instead.
+      */}
+      {isAuthenticated && isAdmin() && (
+        <div className="fixed top-24 right-4 z-40">
+          <Link
+            to="/app/admin/catalog"
+            className="flex items-center gap-2 bg-white border border-warm-200 px-3 py-2 rounded-xl shadow-sm text-xs font-semibold text-warm-600 hover:text-fox-600"
+          >
+            <Edit3 size={15} /> Edit catalogue
+          </Link>
+        </div>
+      )}
 
       <SectionHeading
         label="Build & Price"

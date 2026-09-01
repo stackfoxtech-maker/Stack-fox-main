@@ -4,6 +4,7 @@ import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
 import { verifyRazorpaySignature } from "../lib/payments";
+import { recordInvoicePayment } from "../lib/billing";
 import { clientScope } from "../lib/scope";
 import { pageParams } from "../lib/http";
 import { requireRole } from "../plugins/auth";
@@ -120,6 +121,8 @@ export async function financeRoutes(app: FastifyInstance) {
       },
     });
 
+    await recordInvoicePayment(updated, { gateway: "BANK_TRANSFER", gatewayPaymentId: utr, method: "bank_transfer" });
+
     await emitEvent({
       code: "INVOICE_PAID",
       payload: { invoiceId: id, utr },
@@ -154,6 +157,10 @@ export async function financeRoutes(app: FastifyInstance) {
         ...(normalized === "PAID" ? { paidAt: existing.paidAt ?? new Date() } : {}),
       },
     });
+
+    if (normalized === "PAID" && existing.status !== "PAID") {
+      await recordInvoicePayment(updated, { gateway: "BANK_TRANSFER", method: "manual" });
+    }
 
     await emitEvent({
       code: "INVOICE_STATUS_CHANGED",

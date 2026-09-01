@@ -7,7 +7,7 @@ import { toJson } from "../lib/json";
 import { ok, withId, paginated, pageParams } from "../lib/http";
 import { INTERNAL_ROLES, CLIENT_ROLES, isInternalRole } from "@stackfox/core";
 import { ensurePersonalOrg } from "../lib/scope";
-import { redis } from "../lib/redis";
+import { bumpSessionEpoch } from "../lib/session";
 
 
 const ALL_ROLES = [...INTERNAL_ROLES, ...CLIENT_ROLES] as readonly string[];
@@ -184,12 +184,11 @@ export async function userRoutes(app: FastifyInstance) {
       },
     });
 
-    // Changing a password must end every other session.
-    try {
-      await redis.del(`refresh:${req.user!.sub}`);
-    } catch {
-      req.log.warn("Could not clear the refresh token after a password change");
-    }
+    // Changing a password must end every other session. The epoch bump is the
+    // durable part (invalidates outstanding access tokens even with Redis down).
+    await bumpSessionEpoch(req.user!.sub).catch(() => {
+      req.log.warn("Could not bump session epoch after a password change");
+    });
 
     return ok({ success: true });
   });
@@ -246,12 +245,12 @@ export async function userRoutes(app: FastifyInstance) {
 
     const user = await prisma.user.update({ where: { id }, data, select: PUBLIC_SELECT });
 
-    // A deactivated or demoted user must not keep an active session.
-    try {
-      await redis.del(`refresh:${id}`);
-    } catch {
-      /* best effort */
-    }
+    // A deactivated or demoted user must not keep an active session. The epoch
+    // bump invalidates their outstanding access tokens even if Redis is down;
+    // it also clears the refresh token.
+    await bumpSessionEpoch(id).catch(() => {
+      /* DB write is best-effort here — role/status change already persisted */
+    });
 
     await emitEvent({
       code: role !== undefined ? "USER_ROLE_CHANGED" : "USER_STATUS_CHANGED",

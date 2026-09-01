@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
+import { recordInvoicePayment } from "../lib/billing";
 
 const MIN_AMOUNT_PAISE = 100;
 
@@ -77,7 +78,13 @@ export async function paymentRoutes(app: FastifyInstance) {
 
     const updated = await prisma.invoice.update({
       where: { id: invoice.id },
-      data: { status: "PAID", paidAt: new Date() },
+      data: { status: "PAID", paidAt: new Date(), utr: razorpay_payment_id },
+    });
+
+    await recordInvoicePayment(updated, {
+      gateway: "RAZORPAY",
+      gatewayPaymentId: razorpay_payment_id,
+      gatewayOrderId: razorpay_order_id,
     });
 
     await emitEvent({

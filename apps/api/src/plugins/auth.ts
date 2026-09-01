@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import fp from "fastify-plugin";
 import jwt from "jsonwebtoken";
 import { redis } from "../lib/redis";
+import { getSessionEpoch } from "../lib/session";
 
 const JWT_SECRET = process.env.JWT_SECRET ?? process.env.NEXTAUTH_SECRET ?? "dev-secret-change-me";
 
@@ -10,6 +11,8 @@ export interface JwtPayload {
   email: string;
   role: string;
   orgId?: string;
+  /** Session epoch at issue time — see lib/session.ts. Absent on pre-upgrade tokens (treated as 0). */
+  epoch?: number;
 }
 
 export function signToken(payload: JwtPayload): string {
@@ -60,7 +63,22 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
           return;
         }
       } catch (err: any) {
-        req.log.warn({ err: err.message }, "Token denylist unavailable; accepting token");
+        req.log.warn({ err: err.message }, "Token denylist unavailable; falling back to session epoch");
+      }
+
+      // Session-epoch check. Unlike the Redis denylist this is backed by the
+      // user row, so logout / password reset still revoke tokens when Redis is
+      // down. getSessionEpoch is Redis-cached, DB-authoritative.
+      try {
+        const currentEpoch = await getSessionEpoch(payload.sub);
+        if ((payload.epoch ?? 0) < currentEpoch) {
+          req.log.info({ url: req.url }, "Rejected a token from a revoked session");
+          return;
+        }
+      } catch (err: any) {
+        // Both Redis and the DB are unreachable — the request will fail
+        // elsewhere anyway; log and accept rather than lock everyone out.
+        req.log.warn({ err: err.message }, "Session-epoch check failed; accepting token");
       }
 
       req.user = payload;

@@ -14,7 +14,7 @@
     "test:isolation": "tsx tests/tenant-isolation.mts",
     "test:access": "tsx tests/access-control.mts",
     "test:kit": "tsx tests/reports-handover.mts",
-    "test": "tsx tests/tenant-isolation.mts && tsx tests/access-control.mts && tsx tests/reports-handover.mts && tsx tests/staff-surfaces.mts && tsx tests/cart.mts",
+    "test": "tsx tests/run-all.mts",
     "test:staff": "tsx tests/staff-surfaces.mts",
     "test:cart": "tsx tests/cart.mts"
   },
@@ -36,6 +36,7 @@
     "fastify-plugin": "^4.5.1",
     "ioredis": "^5.4.0",
     "jsonwebtoken": "^9.0.0",
+    "pdf-lib": "^1.17.1",
     "pino": "^9.0.0",
     "pino-pretty": "^11.0.0",
     "razorpay": "^2.9.0",

@@ -1,76 +1,209 @@
+import { createHash } from "crypto";
 import { createWorker, QUEUE } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
 import { uploadFile, copyToWorm } from "../lib/storage";
 import { emitEvent } from "../lib/events";
+import { renderDocument, inr, type DocLineItem } from "../lib/pdf";
+import * as ids from "../lib/id";
+
+const GST_RATE = 0.18;
+
+function num(v: unknown, fallback = 0): number {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 createWorker(QUEUE.docGen, async (job) => {
-  const { type, engagementId, projectId, milestoneNumber, orderId, contractId } = job.data;
+  const { type } = job.data;
 
+  // ── Milestone invoice ──────────────────────────────────────────────────────
+  // Emitted when a milestone is approved. Creates the Invoice row (if it does
+  // not exist yet) and the PDF, so milestone billing is a real artifact rather
+  // than an event with nothing behind it.
   if (type === "milestone-invoice") {
+    const { projectId, milestoneNumber, engagementId } = job.data;
+
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      include: { engagement: true, milestones: true },
+      include: { engagement: { include: { client: true } }, milestones: true },
     });
-    if (!project) return;
+    if (!project?.engagement) return;
 
     const milestone = project.milestones.find((m) => m.number === milestoneNumber);
     if (!milestone) return;
 
-    const pdfContent = Buffer.from(
-      JSON.stringify({
-        type: "milestone-invoice",
-        project: project.id,
-        milestone: milestone.name,
-        number: milestoneNumber,
-        paymentPct: milestone.paymentPct,
-        generatedAt: new Date().toISOString(),
-      })
-    );
+    const milestoneRef = `M${milestoneNumber}`;
+    const commercial = (project.engagement.commercial ?? {}) as Record<string, unknown>;
+    const engagementGrand = num(commercial.grand);
+    const invoiceGross = Math.round((engagementGrand * milestone.paymentPct) / 100);
+    const subtotal = Math.round(invoiceGross / (1 + GST_RATE));
+    const gst = invoiceGross - subtotal;
 
-    const key = `invoices/${engagementId}/${projectId}/milestone-${milestoneNumber}.pdf`;
-    await uploadFile(key, pdfContent, "application/pdf");
+    let invoice = await prisma.invoice.findFirst({
+      where: { engagementId: project.engagementId, milestoneRef },
+    });
+
+    if (!invoice && invoiceGross > 0) {
+      invoice = await prisma.invoice.create({
+        data: {
+          id: ids.invoiceId(),
+          orderId: project.orderId,
+          engagementId: project.engagementId,
+          orgId: project.engagement.clientId,
+          milestoneRef,
+          sacCode: "998314",
+          gstType: "IGST",
+          subtotal,
+          igst: gst,
+          grandTotal: invoiceGross,
+          status: "SENT",
+          dueDate: new Date(Date.now() + 7 * 86400000),
+        },
+      });
+      await emitEvent({
+        code: "INVOICE_CREATED",
+        payload: { invoiceId: invoice.id, milestoneRef, projectId },
+        actor: "system",
+        engagementId: project.engagementId ?? undefined,
+        projectId,
+      });
+    }
+
+    const items: DocLineItem[] = [
+      {
+        desc: `${milestone.name} — milestone ${milestoneNumber} (${milestone.paymentPct}%)`,
+        amount: inr(invoice ? invoice.subtotal : subtotal),
+      },
+      { desc: `IGST @ ${Math.round(GST_RATE * 100)}%`, amount: inr(invoice ? invoice.igst : gst) },
+    ];
+
+    const pdf = await renderDocument({
+      title: "Tax Invoice",
+      subtitle: project.engagement.client?.name,
+      reference: invoice?.id ?? `${project.id}/${milestoneRef}`,
+      meta: [
+        { label: "Engagement", value: project.engagementId ?? "—" },
+        { label: "Project", value: project.id },
+        { label: "Milestone", value: `${milestone.name} (#${milestoneNumber})` },
+        { label: "SAC code", value: "998314" },
+        { label: "Date", value: new Date().toISOString().slice(0, 10) },
+      ],
+      lineItems: items,
+      total: { desc: "Amount due", amount: inr(invoice ? invoice.grandTotal : invoiceGross) },
+      footer: "Payable within 7 days. This is a computer-generated invoice.",
+    });
+
+    const key = invoice
+      ? `invoices/${project.engagementId}/${invoice.id}.pdf`
+      : `invoices/${project.engagementId}/${projectId}/${milestoneRef}.pdf`;
+    await uploadFile(key, pdf, "application/pdf");
+
+    if (invoice) {
+      await prisma.invoice.update({ where: { id: invoice.id }, data: { fileKey: key } });
+    }
 
     await emitEvent({
       code: "INVOICE_GENERATED",
-      payload: { projectId, milestoneNumber, key },
+      payload: { projectId, milestoneNumber, invoiceId: invoice?.id, key },
       actor: "system",
-      engagementId,
+      engagementId: engagementId ?? project.engagementId ?? undefined,
       projectId,
     });
+    return;
   }
 
+  // ── Contract ───────────────────────────────────────────────────────────────
   if (type === "contract") {
-    const contract = await prisma.contract.findUnique({ where: { id: contractId } });
+    const { contractId } = job.data;
+    const contract = await prisma.contract.findUnique({
+      where: { id: contractId },
+      include: { engagement: { include: { client: true } }, order: true },
+    });
     if (!contract) return;
 
-    const pdfContent = Buffer.from(
-      JSON.stringify({
-        type: "contract",
-        contractId,
-        contractType: contract.type,
-        generatedAt: new Date().toISOString(),
-      })
+    const clauses = (contract.clauseConfig ?? {}) as Record<string, unknown>;
+    const clauseLines = Object.entries(clauses).map(
+      ([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`,
     );
 
-    const key = `contracts/${engagementId}/${contractId}.pdf`;
-    await uploadFile(key, pdfContent, "application/pdf");
-    await copyToWorm(key, pdfContent);
+    const pdf = await renderDocument({
+      title: `${contract.type} Agreement`,
+      subtitle: contract.engagement?.client?.name,
+      reference: contract.id,
+      meta: [
+        { label: "Type", value: contract.type },
+        { label: "Engagement", value: contract.engagementId ?? "—" },
+        { label: "Order", value: contract.orderId ?? "—" },
+        { label: "Template version", value: String(contract.templateVer) },
+        { label: "Status", value: contract.status },
+        { label: "Date", value: new Date().toISOString().slice(0, 10) },
+      ],
+      body: [
+        `This ${contract.type} is entered into between StackFox and ${
+          contract.engagement?.client?.name ?? "the Client"
+        } and governs the engagement referenced above. The parties agree to the Statement of Deliverable Practice (SDP) versions pinned to this contract and to the clause configuration recorded below.`,
+        ...(clauseLines.length ? ["Clause configuration:", ...clauseLines] : []),
+        "Execution of this document is recorded via the StackFox e-signature ledger; the signed copy is retained in write-once storage as the contract of record.",
+      ],
+      footer: "Draft pending signature unless marked EXECUTED above.",
+    });
+
+    const key = `contracts/${contract.engagementId}/${contract.id}.pdf`;
+    const wormKey = `contracts/${contract.engagementId}/${contract.id}.worm.pdf`;
+    const docHash = createHash("sha256").update(pdf).digest("hex");
+
+    await uploadFile(key, pdf, "application/pdf");
+    await copyToWorm(wormKey, pdf).catch(() => {});
 
     await prisma.contract.update({
-      where: { id: contractId },
-      data: { fileKey: key },
+      where: { id: contract.id },
+      data: { fileKey: key, wormKey, docHash },
     });
 
     await emitEvent({
       code: "CONTRACT_GENERATED",
-      payload: { contractId, key },
+      payload: { contractId: contract.id, key, docHash },
       actor: "system",
-      engagementId,
+      engagementId: contract.engagementId ?? undefined,
     });
+    return;
   }
 
-  if (type === "estimate-pdf") {
-    const key = `estimates/${job.data.estimateId}.pdf`;
-    await uploadFile(key, Buffer.from(JSON.stringify(job.data)), "application/pdf");
+  // ── Estimate ───────────────────────────────────────────────────────────────
+  // routes/estimates.ts enqueues this with type "estimate"; keep "estimate-pdf"
+  // working too since older jobs / callers use that.
+  if (type === "estimate" || type === "estimate-pdf") {
+    const estimateId = job.data.estimateId as string;
+    const estimate = await prisma.estimate.findUnique({ where: { id: estimateId } });
+    if (!estimate) return;
+
+    const t = (estimate.totals ?? {}) as Record<string, unknown>;
+    const pdf = await renderDocument({
+      title: "Project Estimate",
+      reference: estimate.id,
+      meta: [
+        { label: "Rate version", value: estimate.rateVersion },
+        { label: "Status", value: estimate.status },
+        { label: "Valid until", value: estimate.lockedUntil.toISOString().slice(0, 10) },
+      ],
+      lineItems: [
+        { desc: "Base", amount: inr(num(t.base)) },
+        { desc: "Features", amount: inr(num(t.features)) },
+        { desc: "Custom", amount: inr(num(t.custom)) },
+        { desc: "Discount", amount: inr(-Math.abs(num(t.discount))) },
+        { desc: "GST", amount: inr(num(t.gst)) },
+      ],
+      total: { desc: "Grand total", amount: inr(num(t.grand)) },
+      footer: "Indicative estimate. Final commercials are fixed at contract.",
+    });
+
+    const key = `estimates/${estimate.id}.pdf`;
+    await uploadFile(key, pdf, "application/pdf");
+    await emitEvent({
+      code: "ESTIMATE_PDF_GENERATED",
+      payload: { estimateId: estimate.id, key },
+      actor: "system",
+    });
+    return;
   }
 });

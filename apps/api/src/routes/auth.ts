@@ -10,6 +10,7 @@ import { toJson } from "../lib/json";
 import { isInternalRole } from "@stackfox/core";
 import { sendMail, isMailConfigured, passwordResetEmail, verifyEmailMessage } from "../lib/mailer";
 import { authorizeUrl, exchangeCode, isGoogleConfigured } from "../lib/googleOAuth";
+import { getSessionEpoch, bumpSessionEpoch } from "../lib/session";
 import { webAppUrl } from "../lib/urls";
 import { randomBytes } from "crypto";
 
@@ -65,7 +66,10 @@ async function deliver(
  * /auth/refresh-token will always reject.
  */
 async function issueSession(user: { id: string; email: string; role: string }, orgId?: string) {
-  const payload = { sub: user.id, email: user.email, role: user.role, orgId };
+  // Stamp the token with the user's current session epoch so a later
+  // logout / password reset (which bumps the epoch) invalidates it.
+  const epoch = await getSessionEpoch(user.id);
+  const payload = { sub: user.id, email: user.email, role: user.role, orgId, epoch };
   const accessToken = signToken(payload);
   const refreshToken = signRefreshToken(payload);
   try { await redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000); } catch {}
@@ -187,7 +191,13 @@ export async function authRoutes(app: FastifyInstance) {
     const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
     if (!user || !user.isActive) return reply.code(401).send({ message: "User not found" });
 
-    const payload = { sub: user.id, email: user.email, role: user.role, orgId: user.orgId ?? undefined };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      orgId: user.orgId ?? undefined,
+      epoch: await getSessionEpoch(user.id),
+    };
     // Rotate on every use so a leaked token has a single-use lifetime.
     const refreshToken = signRefreshToken(payload);
     try { await redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000); } catch {}
@@ -250,10 +260,11 @@ export async function authRoutes(app: FastifyInstance) {
       data: { authData: toJson({ ...authData, passwordHash: await hashPassword(password) }) },
     });
 
-    // Burn the token and drop every existing session.
+    // Drop every existing session: epoch bump invalidates all outstanding
+    // access tokens (Redis-independent) and clears the refresh token.
+    await bumpSessionEpoch(userId);
     try {
       await redis.del(key);
-      await redis.del(`refresh:${userId}`);
     } catch {}
 
     return { success: true, message: "Password reset" };
@@ -510,12 +521,16 @@ export async function authRoutes(app: FastifyInstance) {
     if (header?.startsWith("Bearer ")) {
       const token = header.slice(7);
       try {
-        await redis.set(`blacklist:${token}`, "1", "EX", 86400);
-        // Without this the 30-day refresh token survives logout and can mint
-        // fresh access tokens indefinitely.
         const decoded = verifyToken(token);
-        await redis.del(`refresh:${decoded.sub}`);
-      } catch {}
+        // Epoch bump is the durable revocation — it invalidates every token for
+        // this user via the user row, so it works even with Redis down. It also
+        // drops the refresh token. The denylist write below is a best-effort
+        // fast path for the common (Redis up) case.
+        await bumpSessionEpoch(decoded.sub);
+        await redis.set(`blacklist:${token}`, "1", "EX", 86400).catch(() => {});
+      } catch {
+        // Token already invalid/expired — nothing to revoke.
+      }
     }
     return { success: true };
   });

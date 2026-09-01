@@ -173,7 +173,14 @@ async function start() {
 
   if (WORKERS_INLINE) {
     await import("./workers/index");
-    app.log.info("Background workers running inline (WORKERS_INLINE=true)");
+    app.log.info("Background workers + job scheduler running inline (WORKERS_INLINE=true)");
+  } else {
+    app.log.warn(
+      "WORKERS_INLINE is not set and this process runs HTTP only. A separate " +
+        "`pnpm --filter @stackfox/api worker` process MUST be running, or ALL " +
+        "background work is dead: invoice/contract PDFs, notifications, webhooks, " +
+        "dunning, SLA breaches, rev-rec, renewals, retention, timesheet compilation.",
+    );
   }
 
   await app.listen({ port, host });
