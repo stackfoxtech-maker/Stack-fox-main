@@ -16,6 +16,7 @@
     --color-border: #EEEDEA;
     --color-border-hover: #C8C7C2;
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     --radius-sm: 0.5rem;
     --radius-md: 0.75rem;
@@ -66,6 +67,15 @@
     line-height: 1.7;
     overflow-x: hidden;
     min-height: 100vh;
+  }
+
+  /* Outfit is the display face — headings render in it, body copy stays Inter.
+     Before this, Outfit was never loaded and headings fell back to Inter. */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
   }
 
   #root {
