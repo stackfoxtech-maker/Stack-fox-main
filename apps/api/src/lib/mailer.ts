@@ -96,6 +96,31 @@ export function passwordResetEmail(to: string, token: string): MailMessage {
   };
 }
 
+export function otpEmail(to: string, code: string): MailMessage {
+  return {
+    to,
+    subject: `${code} is your StackFox verification code`,
+    html: `
+<!doctype html>
+<html><body style="margin:0;padding:0;background:#faf8f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#faf8f5;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #ece7e1;border-radius:16px;padding:32px;">
+        <tr><td align="center">
+          <p style="margin:0 0 24px;font-size:20px;font-weight:600;color:#1c1917;">stack<span style="color:#f97316;">fox</span></p>
+          <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#1c1917;">Your verification code</h1>
+          <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#57534e;">Enter this code to continue. It expires in 5 minutes.</p>
+          <p style="margin:0 0 20px;font-size:34px;font-weight:700;letter-spacing:8px;color:#1c1917;font-family:'SFMono-Regular',Consolas,monospace;">${code}</p>
+          <p style="margin:0;font-size:13px;line-height:1.6;color:#a8a29e;">If you did not request this, you can ignore this email.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`,
+    text: `Your StackFox verification code is ${code}\n\nIt expires in 5 minutes. If you did not request this, ignore this email.`,
+  };
+}
+
 export function verifyEmailMessage(to: string, token: string): MailMessage {
   const url = `${webAppUrl()}/verify-email?token=${encodeURIComponent(token)}`;
   return {

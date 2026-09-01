@@ -8,7 +8,7 @@ import { hashPassword, verifyPassword, needsRehash, generateToken, hashToken } f
 import { ensurePersonalOrg } from "../lib/scope";
 import { toJson } from "../lib/json";
 import { isInternalRole } from "@stackfox/core";
-import { sendMail, isMailConfigured, passwordResetEmail, verifyEmailMessage } from "../lib/mailer";
+import { sendMail, isMailConfigured, passwordResetEmail, verifyEmailMessage, otpEmail } from "../lib/mailer";
 import { authorizeUrl, exchangeCode, isGoogleConfigured } from "../lib/googleOAuth";
 import { getSessionEpoch, bumpSessionEpoch } from "../lib/session";
 import { webAppUrl } from "../lib/urls";
@@ -304,12 +304,31 @@ export async function authRoutes(app: FastifyInstance) {
     if (!email && !phone) return reply.code(400).send({ error: "email or phone required" });
 
     const otp = String(randomInt(100000, 999999));
-    const key = `otp:${email ?? phone}`;
-    try { await redis.set(key, otp, "EX", 300); } catch {} // 5 min TTL
+    const identifier = email ?? phone!;
 
-    // TODO: send OTP via email (Resend) or SMS/WhatsApp
-    if (process.env.NODE_ENV === "development") {
-      app.log.info(`OTP for ${email ?? phone}: ${otp}`);
+    let stored = true;
+    try {
+      await redis.set(`otp:${identifier}`, otp, "EX", 300); // 5 min TTL
+    } catch {
+      stored = false;
+    }
+    if (!stored) {
+      return reply.code(503).send({ error: "One-time codes are temporarily unavailable" });
+    }
+
+    // Email delivery via Resend. SMS/WhatsApp for phone-only OTP is not wired
+    // yet — the code is logged outside production so local phone flows still work.
+    if (email && isMailConfigured()) {
+      const result = await sendMail(otpEmail(email, otp));
+      if (!result.delivered) {
+        app.log.error({ email, error: result.error }, "OTP email failed");
+        return reply.code(502).send({ error: "We could not send your code. Please try again shortly." });
+      }
+    } else if (process.env.NODE_ENV === "production" && email) {
+      app.log.error({ email }, "OTP requested but no email provider is configured");
+      return reply.code(503).send({ error: "One-time codes are not available on this server" });
+    } else {
+      app.log.info(`[dev] OTP for ${identifier}: ${otp}`);
     }
 
     return { success: true, message: "OTP sent" };
