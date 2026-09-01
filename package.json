@@ -13,7 +13,9 @@
     "db:generate": "turbo db:generate",
     "db:push": "turbo db:push",
     "db:migrate": "turbo db:migrate",
+    "db:deploy": "pnpm --filter @stackfox/prisma db:deploy",
     "db:seed": "turbo db:seed",
+    "check:contract": "node scripts/check-api-contract.mjs",
     "clean": "turbo clean",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
   },
