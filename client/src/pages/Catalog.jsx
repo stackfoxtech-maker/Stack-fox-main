@@ -22,9 +22,6 @@ export default function Catalog() {
   const { addItem } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
-  if (loading) return <Section><div className="flex justify-center py-20"><Spinner size="lg" /></div></Section>;
-  if (error) return <Section><p className="text-danger-600">Failed to load catalogue.</p></Section>;
-
   const filtered = useMemo(() => {
     let result = services;
     if (activeCat !== 'all') result = result.filter((s) => s.catId === activeCat);
@@ -41,6 +38,9 @@ export default function Catalog() {
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paged = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  if (loading) return <Section><div className="flex justify-center py-20"><Spinner size="lg" /></div></Section>;
+  if (error) return <Section><p className="text-danger-600">Failed to load catalogue.</p></Section>;
 
   return (
     <Section>
