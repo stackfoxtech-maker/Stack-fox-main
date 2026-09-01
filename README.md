@@ -8,8 +8,8 @@ AI-powered IT consultancy platform — service catalog, estimation, engagement, 
 stackfox/
 ├── apps/
 │   ├── api/            # Fastify 4 REST API (port 4000)
-│   └── web/            # Next.js 14 marketing site (port 3000)
-├── client/             # Vite + React dashboard (port 5173)
+│   └── web/            # Next.js 14 skeleton — NOT in use (see note below)
+├── client/             # Vite + React app: storefront + all dashboards (port 5173)
 ├── packages/
 │   ├── prisma/         # Shared Prisma schema & client
 │   └── core/           # Shared types, validators, state machines
@@ -19,6 +19,11 @@ stackfox/
 └── pnpm-workspace.yaml
 ```
 
+> **`apps/web` is a stub.** It contains a single placeholder page and is not
+> deployed. The public marketing pages live in `client/src/pages`. `packages/ui`
+> is likewise unused. Both are candidates for removal — decide before building
+> new work on either.
+
 - **Turborepo** orchestrates `apps/*` and `packages/*`.
 - **client/** is a standalone Vite app; it proxies `/api/*` to the API server during development.
 
@@ -27,13 +32,12 @@ stackfox/
 | Layer | Technology |
 |-------|-----------|
 | **API** | Fastify 4, TypeScript, Prisma 5, BullMQ, Redis |
-| **Marketing** | Next.js 14, React 18, Tailwind CSS |
-| **Dashboard** | Vite 5, React 18, Tailwind CSS, React Router, Zustand |
+| **Web app** (storefront + dashboards) | Vite 5, React 18, Tailwind CSS, React Router, Zustand |
 | **Database** | PostgreSQL (Supabase) |
 | **Auth** | JWT (jsonwebtoken) |
 | **AI** | Google Gemini |
 | **Payments** | Razorpay, Stripe |
-| **Storage** | Cloudflare R2 / S3 |
+| **Storage** | Supabase Storage |
 | **Queue** | BullMQ + Redis / Upstash |
 
 ## Features
@@ -157,11 +161,11 @@ RAZORPAY_KEY_ID=rzp_...
 RAZORPAY_KEY_SECRET=<secret>
 STRIPE_SECRET_KEY=sk_...
 
-# ── Storage (Cloudflare R2) ──────────────────────────
-R2_ACCOUNT_ID=<account-id>
-R2_ACCESS_KEY_ID=<access-key>
-R2_SECRET_ACCESS_KEY=<secret>
-R2_BUCKET_NAME=stackfox-uploads
+# ── Storage (Supabase Storage — same project as the DB) ──
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_SECRET_KEY=<service-role-key>
+SUPABASE_STORAGE_BUCKET=stackfox-files
+SUPABASE_WORM_BUCKET=stackfox-worm
 
 # ── Server ────────────────────────────────────────────
 PORT=4000
@@ -175,7 +179,7 @@ LOG_LEVEL=debug
 ### Development
 
 ```bash
-# Start API + Web (Turborepo)
+# Start the API (Turborepo)
 pnpm dev
 
 # In a separate terminal — start client dashboard
@@ -185,8 +189,7 @@ pnpm dev
 
 This starts:
 - **API** at `http://localhost:4000` (Fastify)
-- **Web** at `http://localhost:3000` (Next.js)
-- **Client** at `http://localhost:5173` (Vite)
+- **Client** at `http://localhost:5173` (Vite) — storefront + dashboards
 
 ### Verify Setup
 
@@ -210,7 +213,9 @@ pnpm --filter packages/prisma db:studio
 | `pnpm typecheck` | `turbo typecheck` | TypeScript check all packages |
 | `pnpm db:generate` | `turbo db:generate` | Generate Prisma client |
 | `pnpm db:push` | `turbo db:push` | Push schema to database |
-| `pnpm db:migrate` | `turbo db:migrate` | Run Prisma migrations |
+| `pnpm db:migrate` | `turbo db:migrate` | Create a new migration (dev) |
+| `pnpm db:deploy` | `prisma migrate deploy` | Apply pending migrations (prod) |
+| `pnpm check:contract` | `node scripts/check-api-contract.mjs` | Verify client calls match API routes |
 | `pnpm db:seed` | `turbo db:seed` | Seed the database |
 | `pnpm clean` | `turbo clean` | Remove build artifacts |
 
@@ -315,7 +320,6 @@ cd client && pnpm build && cd ..
 
 Build outputs:
 - `apps/api/dist/` — compiled API server
-- `apps/web/.next/` — Next.js production build
 - `client/dist/` — static Vite build
 
 ### Run Production
@@ -324,10 +328,6 @@ Build outputs:
 # API
 cd apps/api
 node dist/server.js
-
-# Web
-cd apps/web
-pnpm start
 
 # Client — serve client/dist/ with nginx or any static file server
 ```
@@ -349,11 +349,10 @@ docker run -p 4000:4000 stackfox-api
 | Service | Recommendation |
 |---------|---------------|
 | **API** | Railway, Render, or Fly.io |
-| **Web** | Vercel (Next.js) |
 | **Client** | Vercel (Vite/static) or nginx on any VPS |
 | **Database** | Supabase (PostgreSQL) |
 | **Redis** | Upstash |
-| **Storage** | Cloudflare R2 |
+| **Storage** | Supabase Storage |
 
 ## Project Structure
 
