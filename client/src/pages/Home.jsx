@@ -137,12 +137,13 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════
           HERO — split layout with oversized number accent
           ══════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-warm-white min-h-[92vh] flex items-center">
-        {/* Geometric background accents */}
-        <div className="absolute top-0 right-0 w-[55%] h-full bg-warm-50 clip-hero" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-fox-500/[0.04] -translate-x-1/2 translate-y-1/2" />
-        <div className="absolute top-24 right-24 w-40 h-40 rounded-full border border-fox-200/50" />
-        <div className="absolute top-32 right-32 w-20 h-20 rounded-full border border-fox-300/30" />
+      <section className="relative overflow-hidden bg-warm-white flex items-center lg:min-h-[92vh]">
+        {/* Geometric background accents — desktop only; on mobile they crowd the
+            stacked content and add nothing. */}
+        <div className="absolute top-0 right-0 w-[55%] h-full bg-warm-50 clip-hero hidden lg:block" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-fox-500/[0.04] -translate-x-1/2 translate-y-1/2 hidden lg:block" />
+        <div className="absolute top-24 right-24 w-40 h-40 rounded-full border border-fox-200/50 hidden lg:block" />
+        <div className="absolute top-32 right-32 w-20 h-20 rounded-full border border-fox-300/30 hidden lg:block" />
 
         <style>{`
           .clip-hero { clip-path: polygon(8% 0%, 100% 0%, 100% 100%, 0% 100%); }
@@ -167,8 +168,8 @@ export default function Home() {
           }
         `}</style>
 
-        <div className="container-fx relative py-24 md:py-32 w-full">
-          <div className="grid lg:grid-cols-12 gap-16 items-center">
+        <div className="container-fx relative py-12 sm:py-20 md:py-32 w-full">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
             {/* Left */}
             <div className="lg:col-span-6 xl:col-span-7">
               <div className="anim-1">
