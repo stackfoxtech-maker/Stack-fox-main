@@ -1,5 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from './api';
+
+// Stable references so consumers that put these arrays in effect/memo deps
+// don't re-run on every render while the fetch is in flight.
+const EMPTY_ARR = Object.freeze([]);
+const EMPTY_OBJ = Object.freeze({});
 
 export function useStorefrontData() {
   const [data, setData] = useState(null);
@@ -31,11 +36,13 @@ export function useStorefrontData() {
 
 export function useCatalogue() {
   const { data, loading, error } = useStorefrontData();
-  const services = data?.services ?? [];
-  const categories = data?.categories ?? [];
-  const packages = data?.packages ?? [];
-  const bundles = data?.industryBundles ?? [];
-  const addons = data?.addons ?? [];
-  const meta = data?.meta ?? {};
-  return { services, categories, packages, bundles, addons, meta, data, loading, error };
+  return useMemo(() => ({
+    services: data?.services ?? EMPTY_ARR,
+    categories: data?.categories ?? EMPTY_ARR,
+    packages: data?.packages ?? EMPTY_ARR,
+    bundles: data?.industryBundles ?? EMPTY_ARR,
+    addons: data?.addons ?? EMPTY_ARR,
+    meta: data?.meta ?? EMPTY_OBJ,
+    data, loading, error,
+  }), [data, loading, error]);
 }

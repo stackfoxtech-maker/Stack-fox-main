@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Search, X, ArrowRight, CornerDownLeft, Sparkles, 
   Clock, TrendingUp, Rocket, Cloud, Smartphone, 
@@ -11,7 +11,6 @@ import { useCatalogue } from '@lib/useStorefrontData';
 export default function SearchOverlay({ isOpen, onClose }) {
   const { services, categories } = useCatalogue();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -23,32 +22,26 @@ export default function SearchOverlay({ isOpen, onClose }) {
     } else {
       document.body.style.overflow = '';
       setQuery('');
-      setResults([]);
     }
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  // Handle Search Logic
-  useEffect(() => {
-    if (query.trim().length < 2) {
-      setResults([]);
-      return;
-    }
+  // Derive results during render — deriving via setState in an effect caused an
+  // infinite render loop when useCatalogue returned fresh [] refs each render.
+  const results = useMemo(() => {
+    if (query.trim().length < 2) return [];
 
     const q = query.toLowerCase();
-    // Join services with their categories for searching
     const allServices = services.map(s => {
       const category = categories.find(c => c.id === s.catId);
       return { ...s, category: category?.name || 'Other' };
     });
 
-    const filtered = allServices.filter(s => 
-      s.name?.toLowerCase().includes(q) || 
+    return allServices.filter(s =>
+      s.name?.toLowerCase().includes(q) ||
       (s.lay || s.description || '').toLowerCase().includes(q) ||
       s.category?.toLowerCase().includes(q)
     ).slice(0, 6);
-
-    setResults(filtered);
   }, [query, services, categories]);
 
   // Handle Hotkeys
