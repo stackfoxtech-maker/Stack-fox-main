@@ -1,15 +1,19 @@
-import { useState, useMemo } from 'react';
-import { Search, Plus, Filter, X, Phone, Mail, Globe, MapPin, Building2, Calendar, IndianRupee, MessageSquare, Wand2, ChevronRight, Share2 } from 'lucide-react';
-import { Button, Input, Textarea, Select, Modal, Badge } from '@components/ui/Primitives';
+import { useEffect, useMemo, useState } from 'react';
+import { Search, Plus, Filter, MessageSquare, Wand2, ChevronRight, Share2, Copy, MessageCircle } from 'lucide-react';
+import { Button, Input, Textarea, Modal, Badge, Spinner } from '@components/ui/Primitives';
 import { businessCategories, leadStatuses, getPitch } from '@data/salesPitchLibrary';
-import { cn, formatDate } from '@lib/utils';
+import { cn } from '@lib/utils';
+import { apiGet, apiPost } from '@lib/api';
 import { toast } from 'react-hot-toast';
 
-const mockLeads = [
-  { id: 1, businessName: 'FitZone Gym', ownerName: 'Rahul Verma', contact: '+91 98765 43210', email: 'rahul@fitzone.com', category: 'gym', location: 'Patna', status: 'New Lead', priority: 'High', value: 50000, date: '2026-08-26' },
-  { id: 2, businessName: 'Spice Garden Restaurant', ownerName: 'Priya Sharma', contact: '+91 87654 32109', email: 'priya@spicegarden.com', category: 'restaurant', location: 'Patna', status: 'Interested', priority: 'Medium', value: 35000, date: '2026-08-25' },
-  { id: 3, businessName: 'Patna Dental Care', ownerName: 'Dr. Amit Kumar', contact: '+91 76543 21098', email: 'amit@patnadental.com', category: 'dental', location: 'Patna', status: 'Meeting Scheduled', priority: 'High', value: 45000, date: '2026-08-24' },
-];
+// The pipeline stores lowercase ids; the sales team thinks in these labels.
+const STAGE_LABEL = {
+  new: 'New Lead', contacted: 'Contacted', interested: 'Interested',
+  meeting: 'Meeting Scheduled', demo: 'Demo Completed', proposal: 'Proposal Sent',
+  negotiation: 'Negotiation', won: 'Won', 'not-interested': 'Not Interested',
+  lost: 'Lost', followup: 'Follow Up Later',
+};
+const PRIORITY_LABEL = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };
 
 const followUpSuggestions = {
   'New Lead': { type: 'Call', action: 'Introduce yourself and understand their current website situation', timing: 'Within 24 hours' },
@@ -25,15 +29,43 @@ const followUpSuggestions = {
   'Follow Up Later': { type: 'WhatsApp', action: 'Set a reminder to follow up at the agreed time', timing: 'As scheduled' },
 };
 
+/** API lead -> the shape this screen's UI was written against. */
+const toRow = (l) => ({
+  id: l.id,
+  businessName: l.company || l.name || '—',
+  ownerName: l.ownerName || l.name || '',
+  contact: l.phone || '',
+  email: l.email || '',
+  category: l.category || '',
+  location: l.location || '',
+  status: STAGE_LABEL[l.stage] || 'New Lead',
+  priority: PRIORITY_LABEL[l.priority] || 'Medium',
+  value: l.value || 0,
+});
+
+const EMPTY_FORM = {
+  businessName: '', ownerName: '', contact: '', email: '', category: '', location: '',
+  website: '', status: 'New Lead', priority: 'Medium', value: '', notes: '',
+};
+
 export default function Leads() {
-  const [leads, setLeads] = useState(mockLeads);
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [form, setForm] = useState({
-    businessName: '', ownerName: '', contact: '', email: '', category: '', location: '', website: '', socialMedia: '', status: 'New Lead', priority: 'Medium', value: '', notes: '',
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
+
+  const load = () => {
+    setLoading(true);
+    apiGet('/leads', { limit: 200 })
+      .then((r) => setLeads((r.data?.data ?? []).map(toRow)))
+      .catch(() => toast.error('Could not load leads'))
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, []);
 
   const filtered = leads.filter((l) => {
     if (search && !l.businessName.toLowerCase().includes(search.toLowerCase()) && !l.ownerName.toLowerCase().includes(search.toLowerCase())) return false;
@@ -44,35 +76,49 @@ export default function Leads() {
   const selectedPitch = selectedLead ? getPitch(selectedLead.category, { name: selectedLead.businessName, city: selectedLead.location }) : null;
   const suggestion = selectedLead ? followUpSuggestions[selectedLead.status] : null;
 
-  const pitchHistory = useMemo(() => {
-    try {
-      const stored = localStorage.getItem('pitchHistory');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  }, [selectedLead]);
-
   const logPitchUsage = (leadId, category, outcome) => {
-    const history = JSON.parse(localStorage.getItem('pitchHistory') || '[]');
-    history.push({ leadId, category, outcome, date: new Date().toISOString() });
-    localStorage.setItem('pitchHistory', JSON.stringify(history.slice(-50)));
+    try {
+      const history = JSON.parse(localStorage.getItem('pitchHistory') || '[]');
+      history.push({ leadId, category, outcome, date: new Date().toISOString() });
+      localStorage.setItem('pitchHistory', JSON.stringify(history.slice(-50)));
+    } catch { /* storage unavailable */ }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newLead = { ...form, id: Date.now(), value: Number(form.value) || 0, date: new Date().toISOString().split('T')[0] };
-    setLeads([...leads, newLead]);
-    setShowModal(false);
-    setForm({ businessName: '', ownerName: '', contact: '', email: '', category: '', location: '', website: '', socialMedia: '', status: 'New Lead', priority: 'Medium', value: '', notes: '' });
-    toast.success('Lead added successfully!');
+    if (saving) return;
+    setSaving(true);
+    try {
+      await apiPost('/leads', {
+        businessName: form.businessName,
+        ownerName: form.ownerName,
+        contact: form.contact,
+        email: form.email,
+        category: form.category,
+        location: form.location,
+        website: form.website,
+        stage: form.status,
+        priority: form.priority,
+        value: Number(form.value) || 0,
+        notes: form.notes || undefined,
+      });
+      toast.success('Lead added');
+      setShowModal(false);
+      setForm(EMPTY_FORM);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not save the lead');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const getPriorityColor = (p) => ({ High: 'badge-danger', Medium: 'badge-warning', Low: 'badge-neutral' }[p] || 'badge-neutral');
-  const getStatusColor = (s) => {
-    const map = { 'New Lead': 'badge-info', 'Contacted': 'badge-info', 'Interested': 'badge-fox', 'Meeting Scheduled': 'badge-warning', 'Demo Completed': 'badge-warning', 'Proposal Sent': 'badge-fox', 'Negotiation': 'badge-warning', 'Won': 'badge-success', 'Not Interested': 'badge-neutral', 'Lost': 'badge-danger', 'Follow Up Later': 'badge-neutral' };
-    return map[s] || 'badge-neutral';
-  };
+  const getPriorityColor = (p) => ({ High: 'danger', Medium: 'warning', Low: 'neutral' }[p] || 'neutral');
+  const getStatusColor = (s) => ({
+    'New Lead': 'info', 'Contacted': 'info', 'Interested': 'fox', 'Meeting Scheduled': 'warning',
+    'Demo Completed': 'warning', 'Proposal Sent': 'fox', 'Negotiation': 'warning', 'Won': 'success',
+    'Not Interested': 'neutral', 'Lost': 'danger', 'Follow Up Later': 'neutral',
+  }[s] || 'neutral');
 
   const sharePitch = (lead) => {
     const pitch = getPitch(lead.category, { name: lead.businessName, city: lead.location });
@@ -137,13 +183,13 @@ export default function Leads() {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex flex-col gap-1">
-                        <span className="flex items-center gap-1.5 text-warm-600"><Phone size={12} />{lead.contact}</span>
-                        <span className="flex items-center gap-1.5 text-warm-500 text-xs"><Mail size={12} />{lead.email}</span>
+                        <span className="flex items-center gap-1.5 text-warm-600 text-xs">{lead.contact || '—'}</span>
+                        <span className="flex items-center gap-1.5 text-warm-500 text-xs">{lead.email}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-warm-600 capitalize">{lead.category?.replace('-', ' ')}</td>
-                    <td className="px-5 py-3.5"><Badge variant={getStatusColor(lead.status)?.replace('badge-', '') || 'neutral'}>{lead.status}</Badge></td>
-                    <td className="px-5 py-3.5"><Badge variant={getPriorityColor(lead.priority)?.replace('badge-', '') || 'neutral'}>{lead.priority}</Badge></td>
+                    <td className="px-5 py-3.5"><Badge variant={getStatusColor(lead.status)}>{lead.status}</Badge></td>
+                    <td className="px-5 py-3.5"><Badge variant={getPriorityColor(lead.priority)}>{lead.priority}</Badge></td>
                     <td className="px-5 py-3.5 font-mono text-warm-900">₹{lead.value?.toLocaleString()}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
@@ -160,7 +206,11 @@ export default function Leads() {
               </tbody>
             </table>
           </div>
-          {filtered.length === 0 && <div className="p-10 text-center text-warm-500">No leads found</div>}
+          {loading ? (
+            <div className="p-10 flex justify-center"><Spinner /></div>
+          ) : filtered.length === 0 ? (
+            <div className="p-10 text-center text-warm-500">No leads yet — add your first one.</div>
+          ) : null}
         </div>
 
         <div className="space-y-4">
@@ -173,7 +223,7 @@ export default function Leads() {
                 </div>
                 <p className="text-sm text-warm-700 leading-relaxed mb-3">{selectedPitch.mainPitch}</p>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={() => { navigator.clipboard.writeText(selectedPitch.mainPitch); toast.success('Pitch copied!'); }}><Copy size={14} /> Copy</Button>
+                  <Button size="sm" onClick={() => { navigator.clipboard?.writeText(selectedPitch.mainPitch); toast.success('Pitch copied'); }}><Copy size={14} /> Copy</Button>
                   <Button size="sm" variant="outline" onClick={() => sharePitch(selectedLead)}><MessageCircle size={14} /> WhatsApp</Button>
                 </div>
               </div>
@@ -192,14 +242,11 @@ export default function Leads() {
               <div className="bg-white rounded-2xl border border-warm-200 p-5">
                 <h3 className="font-semibold text-warm-900 mb-3">Quick Actions</h3>
                 <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-between" onClick={() => { navigator.clipboard.writeText(selectedPitch.shortPitch); toast.success('Short pitch copied!'); }}>
+                  <Button variant="outline" className="w-full justify-between" onClick={() => { navigator.clipboard?.writeText(selectedPitch.shortPitch); toast.success('Short pitch copied'); }}>
                     Copy Short Pitch <ChevronRight size={16} />
                   </Button>
                   <Button variant="outline" className="w-full justify-between" onClick={() => sharePitch(selectedLead)}>
                     Share on WhatsApp <Share2 size={16} />
-                  </Button>
-                  <Button variant="outline" className="w-full justify-between" onClick={() => { navigator.clipboard.writeText(selectedPitch.mainPitch); toast.success('Main pitch copied!'); }}>
-                    Copy Main Pitch <ChevronRight size={16} />
                   </Button>
                 </div>
               </div>
@@ -207,7 +254,7 @@ export default function Leads() {
           ) : (
             <div className="bg-warm-50 border border-warm-200 rounded-2xl p-6 text-center">
               <MessageSquare size={32} className="text-warm-300 mx-auto mb-2" />
-              <p className="text-sm text-warm-500">Select a lead to view auto-generated pitch and smart follow-up suggestions</p>
+              <p className="text-sm text-warm-500">Select a lead to view its auto-generated pitch and follow-up suggestion.</p>
             </div>
           )}
         </div>
@@ -217,21 +264,20 @@ export default function Leads() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Business Name" required value={form.businessName} onChange={(e) => setForm({ ...form, businessName: e.target.value })} placeholder="e.g., FitZone Gym" />
-            <Input label="Owner Name" required value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} placeholder="e.g., Rahul Verma" />
-            <Input label="Contact Number" required value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="+91 98765 43210" />
+            <Input label="Owner Name" value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} placeholder="e.g., Rahul Verma" />
+            <Input label="Contact Number" value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="+91 98765 43210" />
             <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" />
             <div>
               <label className="block text-sm font-medium text-warm-700 mb-1.5">Business Category</label>
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input-fx" required>
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input-fx">
                 <option value="">Select category</option>
                 {businessCategories.map((cat) => <option key={cat.id} value={cat.id}>{cat.group} — {cat.name}</option>)}
               </select>
             </div>
             <Input label="Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g., Patna" />
             <Input label="Website" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://example.com" />
-            <Input label="Social Media" value={form.socialMedia} onChange={(e) => setForm({ ...form, socialMedia: e.target.value })} placeholder="@businessname" />
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">Status</label>
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">Stage</label>
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="input-fx">
                 {leadStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -251,7 +297,7 @@ export default function Leads() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button type="submit">Save Lead</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Lead'}</Button>
           </div>
         </form>
       </Modal>

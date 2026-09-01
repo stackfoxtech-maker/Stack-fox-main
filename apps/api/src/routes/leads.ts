@@ -327,6 +327,20 @@ export async function leadRoutes(app: FastifyInstance) {
   });
 
   // ── Proposals ───────────────────────────────────────────────────────────────
+  app.get("/proposals", async (req) => {
+    const q = req.query as Record<string, string>;
+    const where: any = {};
+    if (q.status && q.status !== "all") where.status = q.status;
+    if (q.mine === "1") where.lead = { assignedTo: req.user!.sub };
+    const items = await prisma.proposal.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: { lead: { select: { id: true, name: true, company: true, category: true } } },
+    });
+    return ok(withIds(items));
+  });
+
   app.post("/leads/:id/proposals", async (req, reply) => {
     const { id } = req.params as { id: string };
     const b = req.body as Record<string, any>;

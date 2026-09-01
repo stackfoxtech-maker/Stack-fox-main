@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { ChevronRight, GripVertical } from 'lucide-react';
-import { businessCategories, leadStatuses } from '@data/salesPitchLibrary';
+import { useEffect, useState } from 'react';
+import { GripVertical } from 'lucide-react';
+import { businessCategories } from '@data/salesPitchLibrary';
 import { cn, formatINRShort } from '@lib/utils';
+import { Spinner } from '@components/ui/Primitives';
+import { apiGet, apiPatch } from '@lib/api';
+import { toast } from 'react-hot-toast';
 
 const pipelineStages = [
   { id: 'new', label: 'New Lead', color: 'bg-info-50 border-info-200' },
@@ -17,63 +20,61 @@ const pipelineStages = [
   { id: 'followup', label: 'Follow Up Later', color: 'bg-warm-50 border-warm-200' },
 ];
 
-const statusToStage = {
-  'New Lead': 'new',
-  'Contacted': 'contacted',
-  'Interested': 'interested',
-  'Meeting Scheduled': 'meeting',
-  'Demo Completed': 'demo',
-  'Proposal Sent': 'proposal',
-  'Negotiation': 'negotiation',
-  'Won': 'won',
-  'Not Interested': 'not-interested',
-  'Lost': 'lost',
-  'Follow Up Later': 'followup',
-};
-
-const mockPipelineLeads = [
-  { id: 1, businessName: 'FitZone Gym', category: 'gym', value: 50000, priority: 'High', status: 'New Lead' },
-  { id: 2, businessName: 'Spice Garden', category: 'restaurant', value: 35000, priority: 'Medium', status: 'Interested' },
-  { id: 3, businessName: 'Patna Dental', category: 'dental', value: 45000, priority: 'High', status: 'Meeting Scheduled' },
-  { id: 4, businessName: 'City Plaza', category: 'hotel', value: 80000, priority: 'High', status: 'Proposal Sent' },
-  { id: 5, businessName: 'Kumar Electronics', category: 'electronics', value: 25000, priority: 'Low', status: 'Contacted' },
-  { id: 6, businessName: 'Singh Properties', category: 'real-estate', value: 60000, priority: 'High', status: 'Negotiation' },
-];
+const PRIORITY_LABEL = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };
 
 export default function Pipeline() {
-  const [leads, setLeads] = useState(mockPipelineLeads);
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [moving, setMoving] = useState(null);
 
-  const moveLead = (leadId, newStatus) => {
-    setLeads(leads.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
+  useEffect(() => {
+    apiGet('/leads', { limit: 300 })
+      .then((r) =>
+        setLeads(
+          (r.data?.data ?? []).map((l) => ({
+            id: l.id,
+            businessName: l.company || l.name || '—',
+            category: l.category || '',
+            value: l.value || 0,
+            priority: PRIORITY_LABEL[l.priority] || 'Medium',
+            stage: l.stage || 'new',
+          })),
+        ),
+      )
+      .catch(() => toast.error('Could not load the pipeline'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const moveLead = async (leadId, toStageId) => {
+    if (moving) return;
+    setMoving(leadId);
+    const prev = leads;
+    setLeads((ls) => ls.map((l) => (l.id === leadId ? { ...l, stage: toStageId } : l)));
+    try {
+      await apiPatch(`/leads/${leadId}/stage`, { stage: toStageId });
+    } catch (err) {
+      setLeads(prev);
+      toast.error(err.response?.data?.message || 'Could not move the lead');
+    } finally {
+      setMoving(null);
+    }
   };
 
-  const getStageLeads = (stageId) => {
-    const statusMap = {
-      new: 'New Lead', contacted: 'Contacted', interested: 'Interested',
-      meeting: 'Meeting Scheduled', demo: 'Demo Completed', proposal: 'Proposal Sent',
-      negotiation: 'Negotiation', won: 'Won', 'not-interested': 'Not Interested',
-      lost: 'Lost', followup: 'Follow Up Later',
-    };
-    return leads.filter(l => l.status === statusMap[stageId]);
-  };
-
-  const getCategoryName = (catId) => {
-    const cat = businessCategories.find(c => c.id === catId);
-    return cat ? cat.name : catId;
-  };
-
+  const getCategoryName = (catId) => businessCategories.find((c) => c.id === catId)?.name || catId;
   const getPriorityColor = (p) => ({ High: 'border-l-danger-500', Medium: 'border-l-warning-500', Low: 'border-l-warm-300' }[p] || 'border-l-warm-300');
+
+  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-display-sm text-warm-900">Lead Pipeline</h2>
-        <p className="text-warm-500 text-sm mt-1">Visualize and manage your sales pipeline</p>
+        <p className="text-warm-500 text-sm mt-1">Visualise and manage your sales pipeline</p>
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
         {pipelineStages.map((stage) => {
-          const stageLeads = getStageLeads(stage.id);
+          const stageLeads = leads.filter((l) => l.stage === stage.id);
           return (
             <div key={stage.id} className={cn('flex-shrink-0 w-72 rounded-2xl border p-4', stage.color)}>
               <div className="flex items-center justify-between mb-4">
@@ -82,7 +83,7 @@ export default function Pipeline() {
               </div>
               <div className="space-y-3">
                 {stageLeads.map((lead) => (
-                  <div key={lead.id} className={cn('bg-white rounded-xl border-l-4 p-3 shadow-sm hover:shadow-md transition cursor-pointer', getPriorityColor(lead.priority))}>
+                  <div key={lead.id} className={cn('bg-white rounded-xl border-l-4 p-3 shadow-sm hover:shadow-md transition', getPriorityColor(lead.priority), moving === lead.id && 'opacity-50')}>
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-medium text-sm text-warm-900">{lead.businessName}</h4>
                       <GripVertical size={14} className="text-warm-300" />
@@ -95,8 +96,8 @@ export default function Pipeline() {
                     <div className="mt-3 pt-2 border-t border-warm-100">
                       <p className="text-xs text-warm-500 mb-1.5">Move to:</p>
                       <div className="flex flex-wrap gap-1">
-                        {pipelineStages.filter(s => s.id !== stage.id).slice(0, 5).map((s) => (
-                          <button key={s.id} onClick={() => moveLead(lead.id, s.label)} className="text-xs px-2 py-1 rounded-md bg-warm-50 text-warm-600 hover:bg-warm-100 transition">
+                        {pipelineStages.filter((s) => s.id !== stage.id).slice(0, 5).map((s) => (
+                          <button key={s.id} disabled={!!moving} onClick={() => moveLead(lead.id, s.id)} className="text-xs px-2 py-1 rounded-md bg-warm-50 text-warm-600 hover:bg-warm-100 transition disabled:opacity-50">
                             {s.label}
                           </button>
                         ))}

@@ -1,21 +1,26 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Users, UserPlus, Mic, Phone, Calendar, FileText, TrendingUp, Target, Award, XCircle, BarChart3, Plus, ArrowRight, BookOpen, Lightbulb, ThumbsUp, ThumbsDown, RotateCcw, Share2, Printer } from 'lucide-react';
 import { businessCategories, getPitch } from '@data/salesPitchLibrary';
+import { apiGet } from '@lib/api';
 import { toast } from 'react-hot-toast';
 
-const kpis = [
-  { label: 'Total Leads', value: '48', icon: Users, color: 'text-info-500' },
-  { label: 'New Leads', value: '12', icon: UserPlus, color: 'text-success-500' },
-  { label: 'Follow-ups Today', value: '5', icon: Calendar, color: 'text-warning-500' },
-  { label: 'Meetings Today', value: '3', icon: Phone, color: 'text-fox-500' },
-  { label: 'Deals in Progress', value: '8', icon: TrendingUp, color: 'text-info-500' },
-  { label: 'Deals Won', value: '15', icon: Award, color: 'text-success-500' },
-  { label: 'Deals Lost', value: '4', icon: XCircle, color: 'text-danger-500' },
-  { label: 'Monthly Sales', value: '₹2.4L', icon: BarChart3, color: 'text-fox-500' },
-  { label: 'Monthly Target', value: '₹3L', icon: Target, color: 'text-warning-500' },
-  { label: 'Conversion Rate', value: '31%', icon: TrendingUp, color: 'text-success-500' },
-];
+const lakhs = (rupees) => (rupees >= 100000 ? `₹${(rupees / 100000).toFixed(1)}L` : `₹${(rupees / 1000).toFixed(0)}K`);
+
+function buildKpis(s) {
+  s = s ?? {};
+  return [
+    { label: 'Total Leads', value: String(s.totalLeads ?? 0), icon: Users, color: 'text-info-500' },
+    { label: 'New Leads', value: String(s.newLeads ?? 0), icon: UserPlus, color: 'text-success-500' },
+    { label: 'Follow-ups Due', value: String(s.followUpsToday ?? 0), icon: Calendar, color: 'text-warning-500' },
+    { label: 'In Progress', value: String(s.inProgress ?? 0), icon: TrendingUp, color: 'text-info-500' },
+    { label: 'Deals Won', value: String(s.won ?? 0), icon: Award, color: 'text-success-500' },
+    { label: 'Deals Lost', value: String(s.lost ?? 0), icon: XCircle, color: 'text-danger-500' },
+    { label: 'Month Value Won', value: lakhs(s.monthlyValueWon ?? 0), icon: BarChart3, color: 'text-fox-500' },
+    { label: 'Monthly Target', value: s.monthlyTarget ? lakhs(s.monthlyTarget) : '—', icon: Target, color: 'text-warning-500' },
+    { label: 'Conversion Rate', value: `${s.conversionRate ?? 0}%`, icon: TrendingUp, color: 'text-success-500' },
+  ];
+}
 
 const quickActions = [
   { label: 'Add New Lead', icon: UserPlus, path: '/app/team/sales/leads', color: 'bg-fox-500 hover:bg-fox-600 text-white' },
@@ -42,6 +47,15 @@ const pitchOfTheDayCategories = ['gym', 'restaurant', 'cafe', 'hospital', 'clini
 export default function SalesDashboard() {
   const [quickCategory, setQuickCategory] = useState('');
   const [coachingDismissed, setCoachingDismissed] = useState(false);
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    apiGet('/leads/stats', { mine: '1' })
+      .then((r) => setStats(r.data?.data ?? null))
+      .catch(() => { /* KPIs just render as em-dashes */ });
+  }, []);
+
+  const kpis = buildKpis(stats);
   const quickPitch = quickCategory ? getPitch(quickCategory) : null;
   const pitchOfTheDay = useMemo(() => {
     const dayIndex = new Date().getDate() % pitchOfTheDayCategories.length;

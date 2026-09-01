@@ -129,6 +129,7 @@ api.interceptors.response.use(
 export const apiGet = (url, params) => api.get(url, { params });
 export const apiPost = (url, data) => api.post(url, data);
 export const apiPut = (url, data) => api.put(url, data);
+export const apiPatch = (url, data) => api.patch(url, data);
 export const apiDelete = (url) => api.delete(url);
 
 // File upload with progress

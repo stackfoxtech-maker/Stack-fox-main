@@ -1,8 +1,21 @@
-import { useState, useMemo } from 'react';
-import { FileText, Download, Printer, CheckCircle, Wand2, MessageCircle, Share2, Sparkles } from 'lucide-react';
-import { Button, Input, Textarea, Select, Badge } from '@components/ui/Primitives';
+import { useEffect, useState, useMemo } from 'react';
+import { FileText, Printer, CheckCircle, Wand2, MessageCircle, Sparkles, Send } from 'lucide-react';
+import { Button, Input, Textarea, Badge } from '@components/ui/Primitives';
 import { businessCategories, getPitch } from '@data/salesPitchLibrary';
+import { formatDate } from '@lib/utils';
+import { apiGet, apiPost } from '@lib/api';
 import { toast } from 'react-hot-toast';
+
+/** Pull the min/max rupee figures out of a price string like "₹15,000 - ₹75,000+". */
+function priceRange(...strings) {
+  const nums = strings
+    .filter(Boolean)
+    .join(' ')
+    .replace(/,/g, '')
+    .match(/\d+/g)?.map(Number) ?? [];
+  if (!nums.length) return { min: 0, max: 0 };
+  return { min: Math.min(...nums), max: Math.max(...nums) };
+}
 
 const websitePackages = [
   { id: 'basic', name: 'Basic Website', price: '₹15,000 - ₹25,000', features: ['5-7 Pages', 'Mobile Responsive', 'Contact Form', 'Google Maps', 'Basic SEO'] },
@@ -38,9 +51,32 @@ export default function Proposals() {
   const [showForm, setShowForm] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [form, setForm] = useState({
-    leadName: '', businessName: '', category: '', email: '', phone: '', websitePackage: '', seoPackage: '', marketingPackage: '', timeline: '4-6 weeks', price: '', challenges: '', solution: '', notes: '',
+    leadId: '', leadName: '', businessName: '', category: '', email: '', phone: '', websitePackage: '', seoPackage: '', marketingPackage: '', timeline: '4-6 weeks', price: '', challenges: '', solution: '', notes: '',
   });
   const [pitchInserted, setPitchInserted] = useState(false);
+  const [leads, setLeads] = useState([]);
+  const [saved, setSaved] = useState([]);
+  const [savedId, setSavedId] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const loadSaved = () => apiGet('/proposals', { mine: '1' }).then((r) => setSaved(r.data?.data ?? [])).catch(() => {});
+  useEffect(() => {
+    apiGet('/leads', { limit: 200 }).then((r) => setLeads(r.data?.data ?? [])).catch(() => {});
+    loadSaved();
+  }, []);
+
+  const pickLead = (id) => {
+    const l = leads.find((x) => x.id === id);
+    setForm((f) => ({
+      ...f,
+      leadId: id,
+      leadName: l?.ownerName || l?.name || '',
+      businessName: l?.company || l?.name || '',
+      category: l?.category || f.category,
+      email: l?.email || '',
+      phone: l?.phone || '',
+    }));
+  };
 
   const selectedWebsite = websitePackages.find(p => p.id === form.websitePackage);
   const selectedSEO = seoPackages.find(p => p.id === form.seoPackage);
@@ -77,14 +113,54 @@ export default function Proposals() {
     window.open('https://wa.me/?text=' + text, '_blank');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setShowPreview(true);
+    if (!form.leadId) {
+      toast('Preview only — pick a lead to save this proposal.', { icon: 'ℹ️' });
+      return;
+    }
+    if (busy) return;
+    setBusy(true);
+    try {
+      const wp = websitePackages.find((p) => p.id === form.websitePackage);
+      const sp = seoPackages.find((p) => p.id === form.seoPackage);
+      const mp = marketingPackages.find((p) => p.id === form.marketingPackage);
+      const r = priceRange(wp?.price, sp?.price, mp?.price);
+      const res = await apiPost(`/leads/${form.leadId}/proposals`, {
+        title: `${form.businessName || 'Proposal'} — ${wp?.name || 'website'}`,
+        packages: {
+          website: wp?.name, seo: sp?.name, marketing: mp?.name, timeline: form.timeline,
+        },
+        notes: form.solution || form.challenges || undefined,
+        totalMin: r.min,
+        totalMax: r.max,
+      });
+      setSavedId(res.data?.data?.id ?? res.data?.data?._id ?? null);
+      toast.success('Proposal saved');
+      loadSaved();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not save the proposal');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const sendProposal = async () => {
+    if (!savedId || busy) return;
+    setBusy(true);
+    try {
+      await apiPost(`/proposals/${savedId}/send`);
+      toast.success('Proposal marked as sent — the lead moved to "Proposal Sent"');
+      loadSaved();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not send');
+    } finally {
+      setBusy(false);
+    }
   };
+
+  const handlePrint = () => window.print();
 
   return (
     <div className="space-y-6">
@@ -95,6 +171,20 @@ export default function Proposals() {
         </div>
         <Button onClick={() => setShowForm(true)}><FileText size={16} /> Create Proposal</Button>
       </div>
+
+      {saved.length > 0 && !showForm && !showPreview && (
+        <div className="bg-white rounded-2xl border border-warm-200 divide-y divide-warm-100">
+          {saved.slice(0, 8).map((p) => (
+            <div key={p.id} className="flex items-center justify-between px-5 py-3">
+              <div>
+                <p className="text-sm font-medium text-warm-900">{p.title}</p>
+                <p className="text-xs text-warm-500">{p.lead?.company || p.lead?.name} · {formatDate(p.createdAt)}</p>
+              </div>
+              <Badge variant={p.status === 'ACCEPTED' ? 'success' : p.status === 'SENT' ? 'fox' : p.status === 'REJECTED' ? 'danger' : 'neutral'}>{p.status}</Badge>
+            </div>
+          ))}
+        </div>
+      )}
 
       {showForm && (
         <div className="bg-white rounded-2xl border border-warm-200 p-6">
@@ -116,6 +206,13 @@ export default function Proposals() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">Lead <span className="text-warm-400 font-normal">(links the proposal to a pipeline lead)</span></label>
+              <select value={form.leadId} onChange={(e) => pickLead(e.target.value)} className="input-fx">
+                <option value="">Not linked — preview only</option>
+                {leads.map((l) => <option key={l.id} value={l.id}>{l.company || l.name}</option>)}
+              </select>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label="Client Name" required value={form.leadName} onChange={(e) => setForm({ ...form, leadName: e.target.value })} placeholder="Client name" />
               <Input label="Business Name" required value={form.businessName} onChange={(e) => setForm({ ...form, businessName: e.target.value })} placeholder="Business name" />
@@ -189,10 +286,14 @@ export default function Proposals() {
               <h3 className="text-xl font-bold">Proposal</h3>
               <p className="text-fox-100 text-sm">{form.businessName} — {new Date().toLocaleDateString()}</p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={handlePrint} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition"><Printer size={18} /></button>
-              <button onClick={shareWhatsApp} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition"><MessageCircle size={18} /></button>
-              <button className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition"><Download size={18} /></button>
+            <div className="flex items-center gap-2">
+              {savedId && (
+                <button onClick={sendProposal} disabled={busy} className="px-3 py-2 rounded-lg bg-white text-fox-600 text-sm font-semibold hover:bg-fox-50 transition flex items-center gap-1.5 disabled:opacity-60">
+                  <Send size={15} /> Send to client
+                </button>
+              )}
+              <button onClick={handlePrint} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition" title="Print"><Printer size={18} /></button>
+              <button onClick={shareWhatsApp} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition" title="Share on WhatsApp"><MessageCircle size={18} /></button>
             </div>
           </div>
           <div className="p-8 space-y-8 max-w-4xl">

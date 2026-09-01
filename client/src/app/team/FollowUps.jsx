@@ -1,18 +1,16 @@
-import { useState, useMemo } from 'react';
-import { Plus, Calendar, Phone, MessageCircle, Mail, Copy, CheckCircle, Wand2, TrendingUp } from 'lucide-react';
-import { Button, Input, Textarea, Select, Modal, Badge } from '@components/ui/Primitives';
+import { useEffect, useMemo, useState } from 'react';
+import { Plus, Calendar, Phone, MessageCircle, Mail, Copy, CheckCircle, Wand2 } from 'lucide-react';
+import { Button, Input, Textarea, Modal, Badge, Spinner } from '@components/ui/Primitives';
 import { followUpTypes, getPitch } from '@data/salesPitchLibrary';
-import { cn, formatDate, formatDateTime } from '@lib/utils';
+import { cn, formatDate } from '@lib/utils';
+import { apiGet, apiPost, apiPatch } from '@lib/api';
 import { toast } from 'react-hot-toast';
 
 const typeIcons = { Call: Phone, WhatsApp: MessageCircle, Email: Mail, Meeting: Calendar, Demo: Calendar };
 
-const mockFollowUps = [
-  { id: 1, leadName: 'Rajesh Kumar', business: 'Kumar Electronics', action: 'Call to discuss proposal', type: 'Call', date: '2026-08-26', time: '10:00 AM', notes: 'Discuss website pricing and timeline', completed: false, category: 'electronics' },
-  { id: 2, leadName: 'Priya Sharma', business: 'Sharma Cafe', action: 'Send website mockup on WhatsApp', type: 'WhatsApp', date: '2026-08-26', time: '02:00 PM', notes: 'Send cafe website example and pricing', completed: false, category: 'cafe' },
-  { id: 3, leadName: 'Amit Singh', business: 'Singh Real Estate', action: 'Schedule site visit', type: 'Meeting', date: '2026-08-26', time: '04:00 PM', notes: 'Visit property location for photos', completed: false, category: 'real-estate' },
-  { id: 4, leadName: 'Neha Gupta', business: 'Gupta Clinic', action: 'Follow up on proposal', type: 'Call', date: '2026-08-27', time: '11:00 AM', notes: 'Check if they reviewed the proposal', completed: false, category: 'clinic' },
-];
+// UI label <-> API channel
+const CHANNEL_TO_TYPE = { CALL: 'Call', WHATSAPP: 'WhatsApp', EMAIL: 'Email', MEETING: 'Meeting', DEMO: 'Demo' };
+const TYPE_TO_CHANNEL = { Call: 'CALL', WhatsApp: 'WHATSAPP', Email: 'EMAIL', Meeting: 'MEETING', Demo: 'DEMO' };
 
 const baseSuggestedMessages = {
   Call: "Hi {name}, just calling to follow up on our previous conversation about {business}. Do you have 5 minutes to discuss the next steps?",
@@ -23,48 +21,70 @@ const baseSuggestedMessages = {
 };
 
 const categoryFollowUpTips = {
-  'gym': 'Share a sample gym website with online trial booking. Mention how other gyms increased memberships by 30%.',
-  'restaurant': 'Share a sample restaurant website with online table booking. Mention how other restaurants reduced missed bookings by 50%.',
-  'cafe': 'Share a sample cafe website with menu display and ordering. Mention how cafes increased foot traffic with online presence.',
-  'hotel': 'Share a sample hotel website with booking system. Mention how direct bookings save 20-25% commission.',
-  'clinic': 'Share a sample clinic website with appointment booking. Mention how clinics reduced no-shows by 30% with automated reminders.',
-  'hospital': 'Share a sample hospital website with department pages and online appointments. Emphasize trust and credibility.',
+  gym: 'Share a sample gym website with online trial booking. Mention how other gyms increased memberships by 30%.',
+  restaurant: 'Share a sample restaurant website with online table booking. Mention how other restaurants reduced missed bookings by 50%.',
+  cafe: 'Share a sample cafe website with menu display and ordering. Mention how cafes increased foot traffic with online presence.',
+  hotel: 'Share a sample hotel website with booking system. Mention how direct bookings save 20-25% commission.',
+  clinic: 'Share a sample clinic website with appointment booking. Mention how clinics reduced no-shows by 30% with automated reminders.',
+  hospital: 'Share a sample hospital website with department pages and online appointments. Emphasize trust and credibility.',
   'real-estate': 'Share a sample real estate website with property listings. Mention how agencies increased buyer enquiries by 25%.',
-  'school': 'Share a sample school website with admission forms. Mention how schools increased admissions with online presence.',
+  school: 'Share a sample school website with admission forms. Mention how schools increased admissions with online presence.',
   'car-dealer': 'Share a sample car dealer website with inventory and EMI calculator. Mention how dealers increased enquiries by 20%.',
 };
 
-export default function FollowUps() {
-  const [followUps, setFollowUps] = useState(mockFollowUps);
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ leadName: '', business: '', action: '', type: 'Call', date: '', time: '', notes: '', category: '' });
-  const [selectedFollowUp, setSelectedFollowUp] = useState(null);
+const toRow = (f) => {
+  const d = new Date(f.dueAt);
+  return {
+    id: f.id,
+    leadId: f.lead?.id ?? f.leadId,
+    leadName: f.lead?.name || '',
+    business: f.lead?.company || f.lead?.name || '',
+    category: f.lead?.category || '',
+    type: CHANNEL_TO_TYPE[f.channel] || 'Call',
+    action: f.note || `${CHANNEL_TO_TYPE[f.channel] || 'Follow up'} with ${f.lead?.company || f.lead?.name || 'the lead'}`,
+    notes: f.note || '',
+    date: d.toISOString().slice(0, 10),
+    time: d.toTimeString().slice(0, 5),
+    completed: f.status !== 'PENDING',
+    status: f.status,
+  };
+};
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayFollowUps = followUps.filter(f => f.date === today && !f.completed);
-  const upcomingFollowUps = followUps.filter(f => f.date > today && !f.completed);
+export default function FollowUps() {
+  const [rows, setRows] = useState([]);
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [selectedFollowUp, setSelectedFollowUp] = useState(null);
+  const [form, setForm] = useState({ leadId: '', type: 'Call', date: '', time: '', note: '' });
+
+  const load = () => {
+    setLoading(true);
+    Promise.all([
+      apiGet('/followups', { status: 'PENDING' }),
+      apiGet('/leads', { limit: 200 }),
+    ])
+      .then(([fu, ld]) => {
+        setRows((fu.data?.data ?? []).map(toRow));
+        setLeads((ld.data?.data ?? []).map((l) => ({ id: l.id, label: l.company || l.name, category: l.category })));
+      })
+      .catch(() => toast.error('Could not load follow-ups'))
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, []);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayFollowUps = useMemo(() => rows.filter((f) => f.date <= today && !f.completed), [rows, today]);
+  const upcomingFollowUps = useMemo(() => rows.filter((f) => f.date > today && !f.completed), [rows, today]);
 
   const selectedPitch = selectedFollowUp ? getPitch(selectedFollowUp.category, { name: selectedFollowUp.business }) : null;
   const categoryTip = selectedFollowUp ? categoryFollowUpTips[selectedFollowUp.category] : null;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setFollowUps([...followUps, { ...form, id: Date.now(), completed: false }]);
-    setShowModal(false);
-    setForm({ leadName: '', business: '', action: '', type: 'Call', date: '', time: '', notes: '', category: '' });
-    toast.success('Follow-up added!');
-  };
-
-  const toggleComplete = (id) => {
-    setFollowUps(followUps.map(f => f.id === id ? { ...f, completed: !f.completed } : f));
-  };
-
   const getSuggestedMessage = (type, leadName, business) => {
     let msg = baseSuggestedMessages[type] || baseSuggestedMessages.Call;
     msg = msg.replace('{name}', leadName || '[Name]').replace('{business}', business || '[Business]');
-    if (selectedPitch && type === 'WhatsApp') {
-      msg += '\n\n' + selectedPitch.whatsappPitch;
-    }
+    if (selectedPitch && type === 'WhatsApp') msg += '\n\n' + selectedPitch.whatsappPitch;
     return msg;
   };
 
@@ -73,6 +93,44 @@ export default function FollowUps() {
     const text = encodeURIComponent((pitch?.whatsappPitch || 'Hi ' + fu.leadName + '!') + '\n\n' + fu.action);
     window.open('https://wa.me/?text=' + text, '_blank');
   };
+
+  const complete = async (id) => {
+    setRows((rs) => rs.map((f) => (f.id === id ? { ...f, completed: true } : f)));
+    try {
+      await apiPatch(`/followups/${id}`, { status: 'DONE' });
+    } catch {
+      toast.error('Could not mark it done');
+      load();
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (saving) return;
+    if (!form.leadId || !form.date) {
+      toast.error('Pick a lead and a date');
+      return;
+    }
+    setSaving(true);
+    try {
+      const dueAt = new Date(`${form.date}T${form.time || '10:00'}`).toISOString();
+      await apiPost(`/leads/${form.leadId}/followups`, {
+        dueAt,
+        channel: TYPE_TO_CHANNEL[form.type] || 'CALL',
+        note: form.note || undefined,
+      });
+      toast.success('Follow-up scheduled');
+      setShowModal(false);
+      setForm({ leadId: '', type: 'Call', date: '', time: '', note: '' });
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not save the follow-up');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const formLead = leads.find((l) => l.id === form.leadId);
 
   return (
     <div className="space-y-6">
@@ -84,156 +142,150 @@ export default function FollowUps() {
         <Button onClick={() => setShowModal(true)}><Plus size={16} /> Add Follow-Up</Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl border border-warm-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Calendar size={18} className="text-fox-500" />
-              <h3 className="font-semibold text-warm-900">Today's Follow-ups ({todayFollowUps.length})</h3>
-            </div>
-            {todayFollowUps.length > 0 && (
-              <span className="text-xs text-warm-500">{todayFollowUps.filter(f => !f.completed).length} pending</span>
-            )}
-          </div>
-          <div className="space-y-3">
-            {todayFollowUps.length === 0 && <p className="text-sm text-warm-500 text-center py-6">No follow-ups scheduled for today</p>}
-            {todayFollowUps.map((fu) => {
-              const Icon = typeIcons[fu.type] || Phone;
-              return (
-                <div key={fu.id} className="p-4 rounded-xl border border-warm-100 hover:bg-warm-50 transition">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-medium text-warm-900">{fu.leadName}</p>
-                      <p className="text-xs text-warm-500">{fu.business}</p>
+      {loading ? (
+        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-2xl border border-warm-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Calendar size={18} className="text-fox-500" />
+                  <h3 className="font-semibold text-warm-900">Due &amp; overdue ({todayFollowUps.length})</h3>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {todayFollowUps.length === 0 && <p className="text-sm text-warm-500 text-center py-6">Nothing due right now</p>}
+                {todayFollowUps.map((fu) => (
+                  <div key={fu.id} className="p-4 rounded-xl border border-warm-100 hover:bg-warm-50 transition">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-warm-900">{fu.leadName}</p>
+                        <p className="text-xs text-warm-500">{fu.business}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="fox">{fu.type}</Badge>
+                        <button onClick={() => complete(fu.id)} className="p-1 rounded-lg hover:bg-warm-100 text-warm-400 hover:text-success-500 transition" title="Mark done">
+                          <CheckCircle size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="fox">{fu.type}</Badge>
-                      <button onClick={() => toggleComplete(fu.id)} className="p-1 rounded-lg hover:bg-warm-100 text-warm-400 hover:text-success-500 transition">
-                        <CheckCircle size={16} />
-                      </button>
+                    <p className="text-sm text-warm-700 mb-1">{fu.action}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-warm-400">{formatDate(fu.date)} {fu.time}</span>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => shareWhatsApp(fu)} className="text-xs text-success-600 hover:text-success-700 flex items-center gap-1">
+                          <MessageCircle size={12} /> WhatsApp
+                        </button>
+                        <button onClick={() => navigator.clipboard?.writeText(getSuggestedMessage(fu.type, fu.leadName, fu.business))} className="text-xs text-fox-500 hover:text-fox-700 flex items-center gap-1">
+                          <Copy size={12} /> Copy message
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-sm text-warm-700 mb-1">{fu.action}</p>
-                  <p className="text-xs text-warm-500 mb-2">{fu.notes}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-warm-400">{fu.time}</span>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => shareWhatsApp(fu)} className="text-xs text-success-600 hover:text-success-700 flex items-center gap-1">
-                        <MessageCircle size={12} /> WhatsApp
-                      </button>
-                      <button onClick={() => navigator.clipboard.writeText(getSuggestedMessage(fu.type, fu.leadName, fu.business))} className="text-xs text-fox-500 hover:text-fox-700 flex items-center gap-1">
-                        <Copy size={12} /> Copy message
-                      </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-warm-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Calendar size={18} className="text-info-500" />
+                <h3 className="font-semibold text-warm-900">Upcoming</h3>
+              </div>
+              <div className="space-y-3">
+                {upcomingFollowUps.length === 0 && <p className="text-sm text-warm-500 text-center py-6">No upcoming follow-ups</p>}
+                {upcomingFollowUps.map((fu) => (
+                  <div key={fu.id} onClick={() => setSelectedFollowUp(fu)} className={cn('p-4 rounded-xl border cursor-pointer transition', selectedFollowUp?.id === fu.id ? 'border-fox-300 bg-fox-50' : 'border-warm-100 hover:bg-warm-50')}>
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-warm-900">{fu.leadName}</p>
+                        <p className="text-xs text-warm-500">{fu.business}</p>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="info">{fu.type}</Badge>
+                        <p className="text-xs text-warm-400 mt-1">{formatDate(fu.date)}</p>
+                      </div>
                     </div>
+                    {fu.notes && <p className="text-sm text-warm-700">{fu.notes}</p>}
+                    {categoryTip && selectedFollowUp?.id === fu.id && (
+                      <div className="mt-3 p-3 rounded-xl bg-success-50 border border-success-100">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Wand2 size={12} className="text-success-600" />
+                          <span className="text-xs font-medium text-success-700">Category Tip</span>
+                        </div>
+                        <p className="text-xs text-success-600">{categoryTip}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {selectedFollowUp && selectedPitch && (
+            <div className="bg-fox-50 border border-fox-200 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-fox-800">Smart Follow-Up for {selectedFollowUp.business}</h3>
+                  <p className="text-sm text-fox-600">Category: {selectedPitch.categoryName}</p>
+                </div>
+                <Badge variant="fox">{selectedFollowUp.type}</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">Suggested Message</h4>
+                  <div className="bg-white rounded-xl p-4 border border-fox-100">
+                    <p className="text-sm text-warm-700 whitespace-pre-line">{getSuggestedMessage(selectedFollowUp.type, selectedFollowUp.leadName, selectedFollowUp.business)}</p>
+                  </div>
+                  <Button size="sm" variant="outline" className="mt-2" onClick={() => { navigator.clipboard?.writeText(getSuggestedMessage(selectedFollowUp.type, selectedFollowUp.leadName, selectedFollowUp.business)); toast.success('Message copied'); }}>
+                    <Copy size={14} /> Copy Message
+                  </Button>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">Pitch Context</h4>
+                  <div className="bg-white rounded-xl p-4 border border-fox-100 space-y-2">
+                    <p className="text-sm text-warm-700">{selectedPitch.shortPitch}</p>
+                    <p className="text-xs text-warm-500">ROI: {selectedPitch.roiProjection}</p>
+                    <p className="text-xs text-warm-500">Quick win: {selectedPitch.quickWin}</p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-warm-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar size={18} className="text-info-500" />
-            <h3 className="font-semibold text-warm-900">Upcoming Follow-ups</h3>
-          </div>
-          <div className="space-y-3">
-            {upcomingFollowUps.length === 0 && <p className="text-sm text-warm-500 text-center py-6">No upcoming follow-ups</p>}
-            {upcomingFollowUps.map((fu) => (
-              <div key={fu.id} onClick={() => setSelectedFollowUp(fu)} className={cn('p-4 rounded-xl border cursor-pointer transition', selectedFollowUp?.id === fu.id ? 'border-fox-300 bg-fox-50' : 'border-warm-100 hover:bg-warm-50')}>
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-medium text-warm-900">{fu.leadName}</p>
-                    <p className="text-xs text-warm-500">{fu.business}</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant="info">{fu.type}</Badge>
-                    <p className="text-xs text-warm-400 mt-1">{formatDate(fu.date)}</p>
-                  </div>
-                </div>
-                <p className="text-sm text-warm-700 mb-1">{fu.action}</p>
-                <p className="text-xs text-warm-500">{fu.notes}</p>
-                {categoryTip && selectedFollowUp?.id === fu.id && (
-                  <div className="mt-3 p-3 rounded-xl bg-success-50 border border-success-100">
-                    <div className="flex items-center gap-1 mb-1">
-                      <Wand2 size={12} className="text-success-600" />
-                      <span className="text-xs font-medium text-success-700">Category Tip</span>
-                    </div>
-                    <p className="text-xs text-success-600">{categoryTip}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {selectedFollowUp && selectedPitch && (
-        <div className="bg-fox-50 border border-fox-200 rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-semibold text-fox-800">Smart Follow-Up for {selectedFollowUp.business}</h3>
-              <p className="text-sm text-fox-600">Category: {selectedPitch.categoryName} | Status: {selectedFollowUp.status}</p>
-            </div>
-            <Badge variant="fox">{selectedFollowUp.type}</Badge>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">Suggested Message</h4>
-              <div className="bg-white rounded-xl p-4 border border-fox-100">
-                <p className="text-sm text-warm-700 whitespace-pre-line">{getSuggestedMessage(selectedFollowUp.type, selectedFollowUp.leadName, selectedFollowUp.business)}</p>
-              </div>
-              <Button size="sm" variant="outline" className="mt-2" onClick={() => { navigator.clipboard.writeText(getSuggestedMessage(selectedFollowUp.type, selectedFollowUp.leadName, selectedFollowUp.business)); toast.success('Message copied!'); }}>
-                <Copy size={14} /> Copy Message
-              </Button>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">Pitch Context</h4>
-              <div className="bg-white rounded-xl p-4 border border-fox-100 space-y-2">
-                <p className="text-sm text-warm-700">{selectedPitch.shortPitch}</p>
-                <p className="text-xs text-warm-500">ROI: {selectedPitch.roiProjection}</p>
-                <p className="text-xs text-warm-500">Quick win: {selectedPitch.quickWin}</p>
               </div>
             </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add Follow-Up" size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Lead Name" required value={form.leadName} onChange={(e) => setForm({ ...form, leadName: e.target.value })} placeholder="Client name" />
-            <Input label="Business Name" required value={form.business} onChange={(e) => setForm({ ...form, business: e.target.value })} placeholder="Business name" />
-            <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">Business Category</label>
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input-fx">
-                <option value="">Select category</option>
-                {businessCategories.map((cat) => <option key={cat.id} value={cat.id}>{cat.group} — {cat.name}</option>)}
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">Lead</label>
+              <select value={form.leadId} onChange={(e) => setForm({ ...form, leadId: e.target.value })} className="input-fx" required>
+                <option value="">Select a lead</option>
+                {leads.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">Follow-up Type</label>
+              <label className="block text-sm font-medium text-warm-700 mb-1.5">Channel</label>
               <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="input-fx">
                 {followUpTypes.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <Input label="Date" type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
             <Input label="Time" type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
-            <Input label="Action" required value={form.action} onChange={(e) => setForm({ ...form, action: e.target.value })} placeholder="What to do" />
             <div className="sm:col-span-2">
-              <Textarea label="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Additional notes..." />
+              <Textarea label="Note" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="What is this follow-up about?" />
             </div>
           </div>
-          {form.type && (
+          {form.type && form.leadId && (
             <div className="p-4 rounded-xl bg-fox-50 border border-fox-100">
-              <p className="text-xs font-medium text-fox-700 mb-1">Suggested Message:</p>
-              <p className="text-sm text-fox-600">{getSuggestedMessage(form.type, form.leadName, form.business)}</p>
+              <p className="text-xs font-medium text-fox-700 mb-1">Suggested message:</p>
+              <p className="text-sm text-fox-600 whitespace-pre-line">{getSuggestedMessage(form.type, formLead?.label, formLead?.label)}</p>
             </div>
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button type="submit">Save Follow-Up</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Follow-Up'}</Button>
           </div>
         </form>
       </Modal>
