@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePageTitle } from '@lib/hooks';
 import { BookOpen, Search } from 'lucide-react';
+import { apiGet } from '@lib/api';
 
-const terms = [
+// Fallback set — shown until the admin-managed glossary (/tools/glossary) has
+// entries, and if that request fails.
+const FALLBACK_TERMS = [
   { term: 'API', def: 'Application Programming Interface — a set of rules that allows software applications to communicate with each other.' },
   { term: 'Agile', def: 'An iterative approach to project management and software development that delivers work in small increments.' },
   { term: 'AWS', def: 'Amazon Web Services — a cloud computing platform offering infrastructure, storage, and managed services.' },
@@ -38,6 +41,20 @@ const terms = [
 export default function Glossary() {
   usePageTitle('IT Glossary');
   const [query, setQuery] = useState('');
+  const [terms, setTerms] = useState(FALLBACK_TERMS);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGet('/tools/glossary')
+      .then((r) => {
+        const rows = Array.isArray(r.data) ? r.data : [];
+        if (!cancelled && rows.length) {
+          setTerms(rows.map((g) => ({ term: g.term, def: g.tooltipEn || g.tooltipHi || '' })));
+        }
+      })
+      .catch(() => { /* keep the fallback set */ });
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = terms.filter((t) => t.term.toLowerCase().includes(query.toLowerCase()) || t.def.toLowerCase().includes(query.toLowerCase()));
   const letters = [...new Set(filtered.map((t) => t.term[0]))].sort();

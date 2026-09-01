@@ -38,8 +38,11 @@ COPY --from=build /repo/packages ./packages
 COPY --from=build /repo/shared ./shared
 COPY --from=build /repo/package.json ./package.json
 
-WORKDIR /repo/apps/api
 ENV NODE_ENV=production
 EXPOSE 4000
 
-CMD ["node", "dist/server.js"]
+# Apply any pending migrations (advisory-locked, safe with one instance), then
+# start the server. `migrate deploy` never generates or resets — it only runs
+# committed migration files.
+WORKDIR /repo
+CMD sh -c "pnpm --filter @stackfox/prisma exec prisma migrate deploy && cd apps/api && node dist/server.js"
