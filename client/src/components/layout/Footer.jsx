@@ -34,18 +34,15 @@ export default function Footer() {
     <footer className="bg-warm-900 text-warm-300 mt-auto">
       <div className="container-fx">
         {/* CTA Band */}
-        <div className="py-12 md:py-16 border-b border-warm-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="py-14 md:py-20 border-b border-warm-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div>
-            <h3 className="text-display-sm text-white mb-2">Ready to build something great?</h3>
-            <p className="text-warm-400 max-w-md">
-              Browse 240+ services, configure your perfect solution, and get started today.
+            <h3 className="text-2xl md:text-display-lg text-white mb-3">Ready to price your project?</h3>
+            <p className="text-warm-400 max-w-md text-body-lg">
+              Open the builder, add the pieces you need, and see the number in a couple of minutes.
             </p>
           </div>
-          <Link
-            to="/builder"
-            className="btn-fox text-base px-8 py-3.5 shrink-0"
-          >
-            Start Building <ArrowUpRight size={18} />
+          <Link to="/builder" className="btn-fox text-base px-8 shrink-0">
+            Start building <ArrowUpRight size={18} />
           </Link>
         </div>
 
@@ -84,7 +81,7 @@ export default function Footer() {
           {/* Link columns */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">{title}</h4>
+              <h4 className="text-label text-warm-400 mb-4 uppercase">{title}</h4>
               <ul className="space-y-2.5">
                 {links.map((link) => (
                   <li key={link.href}>

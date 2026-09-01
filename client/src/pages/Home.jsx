@@ -265,24 +265,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 5 · Closing CTA ──────────────────────────────────── */}
-      <section className="section-padding bg-warm-900">
-        <div className="container-fx">
-          <motion.div {...revealOnScroll} className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl text-white md:text-display-lg">Ready to price your project?</h2>
-            <p className="mx-auto mt-4 max-w-lg text-body-lg text-warm-300">
-              Open the builder, add the pieces you need, and see the number in a couple of minutes.
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3">
-              <Link to="/builder" className="btn-fox">Start building <ArrowRight size={16} /></Link>
-              <Link to="/contact" className="text-body-sm font-medium text-warm-200 underline decoration-warm-600 underline-offset-4 hover:text-white">
-                Book a free call
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
+      {/* Closing CTA is the Footer's own band — no need to repeat it here. */}
       <FoxBot />
     </>
   );

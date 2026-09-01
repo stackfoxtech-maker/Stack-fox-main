@@ -262,14 +262,14 @@ export default function Navbar() {
   return (
     <nav
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        'fixed top-0 left-0 right-0 z-50 transition-[background,box-shadow,border-color] duration-medium ease-enter',
         isScrolled
-          ? 'bg-white/90 backdrop-blur-lg shadow-nav border-b border-warm-100'
-          : 'bg-warm-white/60 backdrop-blur-sm'
+          ? 'bg-warm-white/92 backdrop-blur-lg shadow-nav border-b border-warm-200'
+          : 'bg-warm-white/70 backdrop-blur-sm border-b border-transparent'
       )}
     >
       <div className="container-fx">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-[4.25rem]">
           {/* Logo */}
           <FoxLogo />
 
@@ -283,9 +283,9 @@ export default function Navbar() {
                   if (link.inactive) handleInactiveClick(e);
                 }}
                 className={cn(
-                  'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+                  'px-3.5 py-2 text-body-sm font-medium rounded-sm transition-colors duration-short',
                   isLinkActive(link.href, location.pathname)
-                    ? 'text-fox-500 bg-fox-50'
+                    ? 'text-fox-700 bg-fox-50'
                     : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50'
                 )}
               >
