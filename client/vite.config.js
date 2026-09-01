@@ -13,9 +13,10 @@ export default defineConfig({
       '@app': path.resolve(__dirname, './src/app'),
       '@lib': path.resolve(__dirname, './src/lib'),
       '@store': path.resolve(__dirname, './src/store'),
-      // The catalogue is the single file the API also prices the cart against.
-      // Keeping two copies in sync by hand is how they drifted (255 items here
-      // vs 123 in shared/), so this exact-match alias must come before '@data'.
+      // The catalogue has one canonical home: ../shared/stackfox-data.json.
+      // The API prices the cart against it and the DB seed reads it too, so the
+      // client resolves the same file rather than keeping its own copy. This
+      // exact-match alias must come before the generic '@data' below.
       '@data/stackfox-data.json': path.resolve(__dirname, '../shared/stackfox-data.json'),
       '@data': path.resolve(__dirname, './src/data'),
     },

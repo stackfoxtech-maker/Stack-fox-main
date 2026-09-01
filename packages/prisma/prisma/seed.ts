@@ -5,7 +5,7 @@ import { createHash } from "crypto";
 
 config({ path: resolve(__dirname, "../../..", ".env") });
 
-import data from "../../../client/src/data/stackfox-data.json";
+import data from "../../../shared/stackfox-data.json";
 const prisma = new PrismaClient();
 
 function slugify(text: string): string {

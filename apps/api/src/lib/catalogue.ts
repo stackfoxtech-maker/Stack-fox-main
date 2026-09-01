@@ -45,8 +45,8 @@ interface RawCatalogue {
 
 /**
  * Candidate locations, in order. `CATALOGUE_PATH` wins so a deployment can
- * point somewhere else without a rebuild; `shared/` is the canonical home; the
- * client copy is a workspace fallback for local development.
+ * point somewhere else without a rebuild; `shared/stackfox-data.json` is the
+ * single canonical source — the client and the DB seed read the same file.
  */
 function candidatePaths(): string[] {
   const paths: string[] = [];
@@ -55,7 +55,6 @@ function candidatePaths(): string[] {
     resolve(__dirname, "../../../../shared/stackfox-data.json"),
     resolve(process.cwd(), "shared/stackfox-data.json"),
     resolve(process.cwd(), "../../shared/stackfox-data.json"),
-    resolve(__dirname, "../../../../client/src/data/stackfox-data.json"),
   );
   return paths;
 }
