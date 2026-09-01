@@ -35,18 +35,10 @@ function walk(dir, out = []) {
  *  - /admin/:x, /admin/:x/:x — Catalog.jsx builds the path from a fixed tab set
  *    (`/admin/${tab}` where tab ∈ services|features|dependencies|bundles); every
  *    concrete path resolves, the checker just can't see through the variable.
- *  - /admin/catalog/* — dead code in Builder.jsx's retired inline editor
- *    (isAdminMode is hard-false); scheduled for deletion.
  */
 const ALLOW = new Set([
   "/admin/:x",
   "/admin/:x/:x",
-  "/admin/catalog/:x/:x",
-  "/admin/catalog/bundles",
-  "/admin/catalog/categories",
-  "/admin/catalog/packages",
-  "/admin/catalog/services",
-  "/admin/catalog/services/:x",
 ]);
 
 const norm = (u) =>

@@ -1,12 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { 
-  Search, ShoppingCart, Info, X, Plus, Check, 
-  ChevronDown, ChevronUp, Edit3, Save, Lock, 
-  Eye, CornerDownRight, Sparkles, Share2, 
-  Layout, ArrowRight, ShieldCheck, Mail, Loader2,
-  FileText, Download, Upload, Globe, Trash2,
-  Package, Briefcase, ChevronLeft, ChevronRight
+import {
+  Search, ShoppingCart, Info, X, Plus, Check,
+  Edit3, Sparkles, Share2, ArrowRight, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePageTitle, useDebounce } from '@lib/hooks';
@@ -21,70 +17,6 @@ import { BrandLogo } from '@components/ui/BrandLogo';
 import SF_DATA from '@data/stackfox-data.json';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
-
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   HELPER: Inline Edit Field (Ef)
-   Only visible/active in Admin Mode
-   ───────────────────────────────────────────────────────────────────────────── */
-function EditableField({ value, onSave, isAdmin, className, type = "text", displayValue }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [val, setVal] = useState(value);
-  const inputRef = useRef(null);
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) inputRef.current.focus();
-  }, [isEditing]);
-
-  if (!isAdmin) return <span className={className}>{displayValue || value}</span>;
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-1 inline-flex">
-        {type === "textarea" ? (
-          <textarea
-            ref={inputRef}
-            value={val}
-            onChange={(e) => setVal(e.target.value)}
-            className="input-fx text-xs py-1 px-2 min-h-[60px]"
-          />
-        ) : (
-          <input
-            ref={inputRef}
-            type={type === "number" ? "number" : "text"}
-            value={val}
-            onChange={(e) => setVal(e.target.value)}
-            className="input-fx text-xs py-1 px-2 h-7"
-          />
-        )}
-        <div className="flex flex-col gap-1">
-          <button 
-            onClick={() => { onSave(val); setIsEditing(false); }}
-            className="p-1 bg-success-500 text-white rounded hover:bg-success-600 shadow-sm"
-          >
-            <Check size={12} />
-          </button>
-          <button 
-            onClick={() => { setVal(value); setIsEditing(false); }}
-            className="p-1 bg-warm-200 text-warm-700 rounded hover:bg-warm-300"
-          >
-            <X size={12} />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <span 
-      onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-      className={cn(className, "cursor-edit hover:bg-fox-50 border-b border-dashed border-fox-200 px-1 rounded transition-colors group/ef inline-flex items-center gap-1")}
-    >
-      {displayValue || value}
-      <Edit3 size={10} className="opacity-0 group-hover/ef:opacity-50" />
-    </span>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    COMPONENT: Guided Tour
@@ -144,190 +76,6 @@ function Tour({ steps, active, onComplete }) {
   );
 }
 
-function AddCategoryModal({ onClose, onSave, loading }) {
-  const [name, setName] = useState('');
-  const [laymanTip, setLaymanTip] = useState('');
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/40 backdrop-blur-xs">
-      <div className="bg-white rounded-3xl shadow-xl max-w-sm w-full p-6 border border-warm-200 animate-scale-in relative">
-        <h3 className="text-xl font-bold text-warm-900 mb-4">New Category</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Internal Name</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Website Development" className="input-fx" />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Layman Tip</label>
-            <textarea value={laymanTip} onChange={e => setLaymanTip(e.target.value)} placeholder="e.g. Think of this as your digital showroom..." className="input-fx min-h-[80px]" />
-          </div>
-          <Button variant="primary" className="w-full" disabled={loading} onClick={() => onSave({ name, laymanTip, dataId: name.toLowerCase().replace(/\s+/g, '-') })}>
-            {loading ? <Loader2 className="animate-spin" size={18} /> : 'Create Category'}
-          </Button>
-        </div>
-        <button onClick={onClose} className="absolute top-4 right-4 text-warm-400 hover:text-warm-600"><X size={18} /></button>
-      </div>
-    </div>
-  );
-}
-
-function AddServiceModal({ onClose, onSave, loading, categories, initialCatId }) {
-  const [form, setForm] = useState({ name: '', price: 0, catId: initialCatId || '', lay: '', estimatedTime: '', unit: '' });
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/40 backdrop-blur-xs">
-      <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 border border-warm-200 animate-scale-in relative">
-        <h3 className="text-xl font-bold text-warm-900 mb-4">New Service</h3>
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
-          <div>
-            <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Service Name</label>
-            <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="input-fx" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-             <div>
-               <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Category</label>
-               <select value={form.catId} onChange={e => setForm({...form, catId: e.target.value})} className="input-fx">
-                 <option value="">Select...</option>
-                 {categories.map(c => <option key={c.dataId} value={c.dataId}>{c.name}</option>)}
-               </select>
-             </div>
-             <div>
-               <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Starting Price</label>
-               <input type="number" value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})} className="input-fx" />
-             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-               <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Delivery Est.</label>
-               <input value={form.estimatedTime} onChange={e => setForm({...form, estimatedTime: e.target.value})} placeholder="e.g. 3-5 days" className="input-fx" />
-            </div>
-            <div>
-               <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Price Unit</label>
-               <input value={form.unit} onChange={e => setForm({...form, unit: e.target.value})} placeholder="e.g. Per Page" className="input-fx" />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Layman Explanation</label>
-            <textarea value={form.lay} onChange={e => setForm({...form, lay: e.target.value})} className="input-fx min-h-[60px]" />
-          </div>
-          <Button variant="primary" className="w-full" disabled={loading} onClick={() => onSave({ ...form, dataId: form.name.toLowerCase().replace(/\s+/g, '-') })}>
-            {loading ? <Loader2 className="animate-spin" size={18} /> : 'Create Service'}
-          </Button>
-        </div>
-        <button onClick={onClose} className="absolute top-4 right-4 text-warm-400 hover:text-warm-600"><X size={18} /></button>
-      </div>
-    </div>
-  );
-}
-
-
-function AddPackageModal({ onClose, onSave, loading, allServices }) {
-  const [form, setForm] = useState({ name: '', price: 0, savings: 0, items: [], isPopular: false });
-  const toggleItem = (id) => {
-    setForm(f => ({ ...f, items: f.items.includes(id) ? f.items.filter(x => x !== id) : [...f.items, id] }));
-  };
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/40 backdrop-blur-xs">
-      <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 border border-warm-200 animate-scale-in relative">
-        <h3 className="text-xl font-bold text-warm-900 mb-4">New Package</h3>
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
-          <div>
-            <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Package Name</label>
-            <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="input-fx" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-             <div>
-               <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Price</label>
-               <input type="number" value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})} className="input-fx" />
-             </div>
-             <div>
-               <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Savings Text</label>
-               <input type="number" value={form.savings} onChange={e => setForm({...form, savings: Number(e.target.value)})} placeholder="e.g. 5000" className="input-fx" />
-             </div>
-          </div>
-          <div>
-            <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Select Services</label>
-            <div className="grid grid-cols-1 gap-2 border border-warm-100 rounded-xl p-3 max-h-[200px] overflow-y-auto">
-               {allServices.map(s => (
-                 <label key={s.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-warm-50 p-1 rounded">
-                   <input type="checkbox" checked={form.items.includes(s.id)} onChange={() => toggleItem(s.id)} />
-                   {s.name}
-                 </label>
-               ))}
-            </div>
-          </div>
-          <Button variant="primary" className="w-full" disabled={loading} onClick={() => onSave({ ...form, dataId: form.name.toLowerCase().replace(/\s+/g, '-') })}>
-            {loading ? <Loader2 className="animate-spin" size={18} /> : 'Create Package'}
-          </Button>
-        </div>
-        <button onClick={onClose} className="absolute top-4 right-4 text-warm-400 hover:text-warm-600"><X size={18} /></button>
-      </div>
-    </div>
-  );
-}
-
-function AddBundleModal({ onClose, onSave, loading, allServices }) {
-  const [form, setForm] = useState({ name: '', price: 0, description: '', items: [], features: [] });
-  const [feature, setFeature] = useState('');
-  const toggleItem = (id) => {
-    setForm(f => ({ ...f, items: f.items.includes(id) ? f.items.filter(x => x !== id) : [...f.items, id] }));
-  };
-  const addFeature = () => {
-    if (!feature) return;
-    setForm(f => ({ ...f, features: [...f.features, feature] }));
-    setFeature('');
-  };
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/40 backdrop-blur-xs">
-      <div className="bg-white rounded-3xl shadow-xl max-w-lg w-full p-6 border border-warm-200 animate-scale-in relative">
-        <h3 className="text-xl font-bold text-warm-900 mb-4">Industry Bundle Editor</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto px-1">
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Bundle Name</label>
-              <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="input-fx" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Price</label>
-              <input type="number" value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})} className="input-fx" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Description</label>
-              <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="input-fx min-h-[60px]" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Marketing Features</label>
-              <div className="flex gap-2 mb-2">
-                <input value={feature} onChange={e => setFeature(e.target.value)} className="input-fx" placeholder="e.g. 24/7 Support" />
-                <Button variant="ghost" size="sm" onClick={addFeature}><Plus size={14} /></Button>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {form.features.map((f, i) => <span key={i} className="badge-fx badge-neutral flex gap-1 items-center">{f} <X size={10} className="cursor-pointer" onClick={() => setForm(prev => ({...prev, features: prev.features.filter((_, idx) => idx !== i)}))} /></span>)}
-              </div>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <label className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-1 block">Component Services</label>
-            <div className="border border-warm-100 rounded-xl p-3 h-full max-h-[400px] overflow-y-auto space-y-1">
-               {allServices.map(s => (
-                 <label key={s.id} className="flex items-center gap-2 text-[11px] cursor-pointer hover:bg-warm-50 p-1.5 rounded transition-colors group">
-                   <input type="checkbox" checked={form.items.includes(s.id)} onChange={() => toggleItem(s.id)} />
-                   <span className="flex-1 truncate">{s.name}</span>
-                   <span className="text-[10px] text-warm-300 font-bold opacity-0 group-hover:opacity-100">+{s.price}</span>
-                 </label>
-               ))}
-            </div>
-          </div>
-        </div>
-        <div className="mt-6">
-          <Button variant="primary" className="w-full" disabled={loading} onClick={() => onSave({ ...form, dataId: form.name.toLowerCase().replace(/\s+/g, '-') })}>
-            {loading ? <Loader2 className="animate-spin" size={18} /> : 'Publish Bundle'}
-          </Button>
-        </div>
-        <button onClick={onClose} className="absolute top-4 right-4 text-warm-400 hover:text-warm-600"><X size={18} /></button>
-      </div>
-    </div>
-  );
-}
-
 
 /* ─────────────────────────────────────────────────────────────────────────────
    MAIN PAGE: Builder
@@ -347,10 +95,6 @@ export default function Builder() {
   // 2. Local States
   const [activeCat, setActiveCat] = useState(params.get('category') || 'all');
   const [search, setSearch] = useState(params.get('q') || '');
-  // Inline catalogue editing was retired — see the note by the "Edit catalogue"
-  // shortcut below. Kept as a const so the (now inert) edit affordances in the
-  // service list still compile; a later pass can strip them entirely.
-  const isAdminMode = false;
   const [showTour, setShowTour] = useState(false);
   const [tourHintDismissed, setTourHintDismissed] = useState(
     () => typeof localStorage !== 'undefined' && localStorage.getItem('fox_tour_seen') === 'true'
@@ -359,11 +103,6 @@ export default function Builder() {
   const [catalog, setCatalog] = useState({ services: [], categories: [], packages: [], bundles: [] });
   const [isLoading, setIsLoading] = useState(true);
   
-  const [addCatOpen, setAddCatOpen] = useState(false);
-  const [addItemOpen, setAddItemOpen] = useState(null); 
-  const [addPkgOpen, setAddPkgOpen] = useState(false);
-  const [addBndlOpen, setAddBndlOpen] = useState(false);
-  const [formBusy, setFormBusy] = useState(false);
 
   // Category chip rail: horizontal scroll controls
   const catRailRef = useRef(null);
@@ -478,104 +217,6 @@ export default function Builder() {
       }
     }
   }, [params, isLoading, catalog.services]);
-
-  // -- Catalog Management Handlers --
-  const handleCreateCategory = async (catData) => {
-    setFormBusy(true);
-    try {
-      const res = await api.post('/admin/catalog/categories', catData);
-      setCatalog(prev => ({ ...prev, categories: [...prev.categories, res.data.data.category] }));
-      toast.success('Category created!');
-      setAddCatOpen(false);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create category');
-    } finally {
-      setFormBusy(false);
-    }
-  };
-
-  const updateService = async (id, updates) => {
-    try {
-      const fieldMap = { lay: 'laymanExplanation' };
-      const apiUpdates = {};
-      Object.keys(updates).forEach(k => {
-        apiUpdates[fieldMap[k] || k] = updates[k];
-      });
-      
-      const svc = catalog.services.find(s => s.id === id);
-      if (!svc?._dbId) throw new Error("No DB ID");
-
-      await api.patch(`/admin/catalog/services/${svc._dbId}`, apiUpdates);
-      
-      setCatalog(prev => ({
-        ...prev,
-        services: prev.services.map(s => s.id === id ? { ...s, ...updates } : s)
-      }));
-      toast.success('Updated');
-    } catch (err) {
-      toast.error('Update failed');
-    }
-  };
-
-  const handleCreateService = async (svcData) => {
-    setFormBusy(true);
-    try {
-      const res = await api.post('/admin/catalog/services', svcData);
-      const s = res.data.data.service;
-      const mapped = { ...s, id: s.dataId, lay: s.laymanExplanation, _dbId: s._id };
-      setCatalog(prev => ({ ...prev, services: [...prev.services, mapped] }));
-      toast.success('Service created!');
-      setAddItemOpen(null);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create service');
-    } finally {
-      setFormBusy(false);
-    }
-  };
-
-  const handleCreatePackage = async (pkgData) => {
-    setFormBusy(true);
-    try {
-      const res = await api.post('/admin/catalog/packages', pkgData);
-      const p = res.data.data.package;
-      setCatalog(prev => ({ ...prev, packages: [...prev.packages, { ...p, id: p.dataId, _dbId: p._id }] }));
-      toast.success('Package published!');
-      setAddPkgOpen(false);
-    } catch (err) {
-      toast.error('Failed to create package');
-    } finally {
-      setFormBusy(false);
-    }
-  };
-
-  const handleCreateBundle = async (bndlData) => {
-    setFormBusy(true);
-    try {
-      const res = await api.post('/admin/catalog/bundles', bndlData);
-      const b = res.data.data.bundle;
-      setCatalog(prev => ({ ...prev, bundles: [...prev.bundles, { ...b, id: b.dataId, _dbId: b._id }] }));
-      toast.success('Industry bundle published!');
-      setAddBndlOpen(false);
-    } catch (err) {
-      toast.error('Failed to create bundle');
-    } finally {
-      setFormBusy(false);
-    }
-  };
-
-  const handleDeactivate = async (type, id, dbId) => {
-    if (!window.confirm(`Deactivate this ${type}? It will no longer be visible to customers.`)) return;
-    try {
-      await api.delete(`/admin/catalog/${type}s/${dbId}`);
-      setCatalog(prev => ({
-        ...prev,
-        [type + 's']: prev[type + 's'].filter(item => (item._dbId || item._id) !== dbId)
-      }));
-      toast.success(`${type} deactivated`);
-    } catch (err) {
-      toast.error(`Failed to deactivate ${type}`);
-    }
-  };
 
   // Filter Logic
   const filteredServices = useMemo(() => {
@@ -696,40 +337,6 @@ export default function Builder() {
         </div>
       )}
 
-      {/* CRUD Modals */}
-      {addCatOpen && (
-        <AddCategoryModal 
-          onClose={() => setAddCatOpen(false)} 
-          loading={formBusy} 
-          onSave={handleCreateCategory} 
-        />
-      )}
-      {addItemOpen && (
-        <AddServiceModal 
-          onClose={() => setAddItemOpen(null)} 
-          categories={catalog.categories} 
-          initialCatId={addItemOpen}
-          loading={formBusy} 
-          onSave={handleCreateService} 
-        />
-      )}
-      {addPkgOpen && (
-        <AddPackageModal
-          onClose={() => setAddPkgOpen(false)}
-          allServices={catalog.services}
-          loading={formBusy}
-          onSave={handleCreatePackage}
-        />
-      )}
-      {addBndlOpen && (
-        <AddBundleModal
-          onClose={() => setAddBndlOpen(false)}
-          allServices={catalog.services}
-          loading={formBusy}
-          onSave={handleCreateBundle}
-        />
-      )}
-
       {/*
         Catalogue editing lives in the admin app (/app/admin/catalog), which is
         wired to the real /admin/* endpoints. The old inline editor here spoke
@@ -750,8 +357,8 @@ export default function Builder() {
 
       <SectionHeading
         label="Build & Price"
-        title={isAdminMode ? "Catalog Editor" : "Service Builder"}
-        description={isAdminMode ? "Edit catalog items directly. Changes are live." : "Browse and select services."}
+        title="Service Builder"
+        description="Browse and select services."
       />
 
       {/* Search Bar */}
@@ -890,9 +497,6 @@ export default function Builder() {
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      {filteredServices.map(b => (
                        <div key={b.id} className="card-fx p-6 bg-white border border-warm-200 rounded-3xl relative">
-                          {isAdminMode && (
-                            <button onClick={() => handleDeactivate('bundle', b.id, b._dbId || b._id)} className="absolute top-4 right-4 text-[10px] text-red-400 hover:text-red-700 font-black uppercase tracking-widest">Deactivate</button>
-                          )}
                           <h3 className="text-lg font-bold text-warm-900">{b.name}</h3>
                           <p className="text-sm text-warm-500 mt-2 line-clamp-2 leading-relaxed">{b.description}</p>
                           <div className="mt-4 flex items-center justify-between">
@@ -913,9 +517,6 @@ export default function Builder() {
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      {filteredServices.map(p => (
                        <div key={p.id} className="card-fx p-6 bg-white border border-warm-200 rounded-3xl relative">
-                          {isAdminMode && (
-                            <button onClick={() => handleDeactivate('package', p.id, p._dbId || p._id)} className="absolute top-4 right-4 text-[10px] text-red-400 hover:text-red-700 font-black uppercase tracking-widest">Deactivate</button>
-                          )}
                           <h3 className="text-lg font-bold text-warm-900">{p.name}</h3>
                           <p className="text-sm text-warm-500 mt-2 leading-relaxed">{p.description}</p>
                           <div className="mt-4 flex items-center justify-between">
@@ -934,7 +535,7 @@ export default function Builder() {
               {(activeCat !== 'industry-bundles' && activeCat !== 'service-packages') && 
                (activeCat === 'all' ? catalog.categories : catalog.categories.filter(c => c.dataId === activeCat)).map(cat => {
                 const catServices = filteredServices.filter(s => s.catId === cat.dataId);
-                if (catServices.length === 0 && !isAdminMode) return null;
+                if (catServices.length === 0) return null;
 
                 return (
                   <div key={cat.dataId} className="space-y-6">
@@ -944,11 +545,6 @@ export default function Builder() {
                            {cat.name}
                            <span className="text-[10px] bg-warm-100 text-warm-500 px-2 py-0.5 rounded-full">{catServices.length} items</span>
                          </h2>
-                         {isAdminMode && (
-                           <Button variant="ghost" size="sm" onClick={() => setAddItemOpen(cat.dataId)} className="text-fox-600">
-                             <Plus size={14} className="mr-1" /> Add Service
-                           </Button>
-                         )}
                       </div>
                       {cat.laymanTip && (
                         <p className="text-warm-500 text-sm mt-1 italic">“{cat.laymanTip}”</p>
@@ -966,26 +562,23 @@ export default function Builder() {
                           >
                             <div className="flex items-start justify-between mb-3 gap-3">
                               <div className="flex-1">
-                                <EditableField isAdmin={isAdminMode} value={svc.name} className="font-bold text-warm-900 block" onSave={(v) => updateService(svc.id, { name: v })} />
+                                <span className="font-bold text-warm-900 block">{svc.name}</span>
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="text-[10px] text-warm-400 font-bold uppercase">{svc.estimatedTime || '3-5 days'}</span>
                                   {svc.lay && <Info size={12} className="text-warm-300" title={svc.lay} />}
                                 </div>
                               </div>
                               <div className="text-right">
-                                <EditableField isAdmin={isAdminMode} type="number" value={svc.price} className="text-lg font-black text-warm-900" displayValue={fmt(svc.price)} onSave={(v) => updateService(svc.id, { price: Number(v) })} />
+                                <span className="text-lg font-black text-warm-900">{fmt(svc.price)}</span>
                                 <p className="text-[9px] text-warm-300 font-bold uppercase tracking-widest">Starting</p>
                               </div>
                             </div>
 
                             <div className="bg-warm-50 rounded-2xl p-3 mb-4 flex-1">
-                               <EditableField isAdmin={isAdminMode} type="textarea" value={svc.lay || "Explaining this service..."} className="text-xs text-warm-600 block leading-relaxed italic" onSave={(v) => updateService(svc.id, { lay: v })} />
+                               <span className="text-xs text-warm-600 block leading-relaxed italic">{svc.lay || "Explaining this service..."}</span>
                             </div>
 
                             <div className="flex items-center justify-between pt-3 border-t border-warm-100 gap-2">
-                               {isAdminMode && (
-                                 <button onClick={() => handleDeactivate('service', svc.id, svc._dbId || svc._id)} className="text-[10px] text-red-500 hover:text-red-700 font-black uppercase tracking-tighter">Deactivate</button>
-                               )}
                                <div className="flex-1 flex justify-between items-center text-[9px] font-bold text-warm-400 uppercase">
                                  <span>{svc.unit || 'Standard'}</span>
                                  <button onClick={() => !isInCart && handleAdd(svc)} className={cn("p-1.5 rounded-xl transition-all", isInCart ? "bg-success-50 text-success-600" : "bg-fox-50 text-fox-600 hover:bg-fox-500 hover:text-white")}>
