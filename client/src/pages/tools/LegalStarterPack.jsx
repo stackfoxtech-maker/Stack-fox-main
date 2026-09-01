@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { apiPost } from '@lib/api';
 
 const FIELDS = [
@@ -16,7 +17,6 @@ export default function LegalStarterPack() {
   const [docs, setDocs] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [watermark, setWatermark] = useState(true);
 
   const update = (id, val) => setForm((p) => ({ ...p, [id]: val }));
 
@@ -29,7 +29,7 @@ export default function LegalStarterPack() {
     setLoading(true);
     setError('');
     try {
-      const res = await apiPost('/tools/legal', { params: form });
+      const res = await apiPost('/tools/legal', { templateType: 'starter-pack', params: form });
       setDocs(res.data.document);
     } catch (err) {
       setError(err.response?.data?.error || 'Could not generate documents. Try again.');
@@ -71,36 +71,24 @@ export default function LegalStarterPack() {
         <div className="bg-[#FAFAF8] border rounded-2xl p-8">
           <h2 className="text-2xl font-bold mb-4">Your Legal Documents</h2>
 
-          <label className="flex items-center gap-3 mb-4 text-sm font-medium cursor-pointer">
-            <input
-              type="checkbox"
-              checked={watermark}
-              onChange={(e) => setWatermark(e.target.checked)}
-              className="w-4 h-4"
-            />
-            Keep watermark (free) — remove for ₹499
-          </label>
-
           <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 rounded-xl p-4 max-h-[400px] overflow-auto">
             {docs}
           </pre>
 
+          <p className="mt-4 text-xs text-gray-500">
+            AI-generated starter templates — have a lawyer review before use.
+          </p>
+
           <div className="mt-6 flex flex-wrap gap-3">
-            {watermark && (
-              <button
-                onClick={async () => {
-                  try {
-                    await apiPost('/tools/legal/remove-watermark', { sessionId: 'local' });
-                    setWatermark(false);
-                  } catch {
-                    setWatermark(false);
-                  }
-                }}
-                className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600"
-              >
-                Remove Watermark — ₹499
-              </button>
-            )}
+            <button
+              onClick={() => navigator.clipboard?.writeText(docs).then(
+                () => toast.success('Copied to clipboard'),
+                () => {},
+              )}
+              className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600"
+            >
+              Copy Documents
+            </button>
             <Link to="/contact" className="px-5 py-2.5 border-2 border-orange-500 text-orange-600 rounded-xl font-semibold hover:bg-orange-50">
               Get Expert Legal Review
             </Link>

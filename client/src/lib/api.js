@@ -1,9 +1,14 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-export const API_BASE = import.meta.env.VITE_API_URL ||
+// Production builds must set VITE_API_URL (Vercel env). The Railway URL below
+// is only a last-resort fallback so a misconfigured build still reaches an API
+// instead of hitting the SPA's own origin — it is not the source of truth.
+export const API_BASE =
+  import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD
-    ? 'https://stackfox-api-production-c639.up.railway.app'
+    ? (console.warn('VITE_API_URL is not set — falling back to the default API host'),
+       'https://stackfox-api-production-c639.up.railway.app')
     : '/api');
 
 const api = axios.create({

@@ -23,11 +23,9 @@ COPY apps/api apps/api
 RUN pnpm --filter @stackfox/prisma exec prisma generate
 RUN pnpm --filter @stackfox/prisma build
 RUN pnpm --filter @stackfox/core build
-# tsc exits non-zero here due to known pre-existing type errors in a few
-# background workers (tracked separately) — noEmitOnError:false in
-# apps/api/tsconfig.json means it still emits correct, runnable JS despite
-# the exit code, verified by booting the built server locally.
-RUN pnpm --filter @stackfox/api build; test -f apps/api/dist/server.js
+# `tsc` gates the image — the API type-checks clean, so a real type error must
+# fail the build rather than ship. (The old worker type errors are fixed.)
+RUN pnpm --filter @stackfox/api build && test -f apps/api/dist/server.js
 
 FROM node:20-slim AS runtime
 WORKDIR /repo
