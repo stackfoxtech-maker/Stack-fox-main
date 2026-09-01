@@ -13,7 +13,7 @@ export default function Pricing() {
   return (
     <>
       <Section>
-        <SectionHeading label="Pricing" title="Transparent pricing, no surprises" description="Every service is individually priced. All prices are indicative and exclusive of 18% GST." />
+        <SectionHeading title="Transparent pricing, no surprises" description="Every service is individually priced. All prices are indicative and exclusive of 18% GST." />
 
         {/* Price ranges by category */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
@@ -26,7 +26,7 @@ export default function Pricing() {
               <Link key={cat.id} to={`/catalog?category=${cat.id}`} className="card-fx p-5 group">
                 <h3 className="text-sm font-semibold text-warm-900 mb-1 group-hover:text-fox-500 transition-colors">{cat.name}</h3>
                 <p className="text-xs text-warm-500 mb-3">{services.length} services</p>
-                <div className="font-mono text-sm text-warm-700">
+                <div className="tabular-nums text-sm font-medium text-warm-700">
                   {formatINR(min)} – {formatINR(max)}
                 </div>
               </Link>
@@ -54,8 +54,8 @@ export default function Pricing() {
                     <span className="font-medium text-warm-900">{pkg.name}</span>
                     {pkg.popular && <span className="badge-fx badge-fox ml-2 text-[10px]">Popular</span>}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono font-medium">{formatINR(pkg.price)}</td>
-                  <td className="py-3 px-4 text-right text-success-700 font-mono">{formatINR(pkg.savings)}</td>
+                  <td className="py-3 px-4 text-right tabular-nums font-medium">{formatINR(pkg.price)}</td>
+                  <td className="py-3 px-4 text-right text-success-700 tabular-nums">{formatINR(pkg.savings)}</td>
                   <td className="py-3 px-4 text-center text-warm-500">{pkg.items.length}</td>
                   <td className="py-3 px-4 text-right">
                     <Link to="/packages" className="text-fox-500 text-xs hover:underline">Details</Link>
