@@ -79,8 +79,13 @@ export default function Login() {
                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            <div className="flex justify-end">
-              <Link to="/forgot-password" className="text-xs text-fox-500 hover:underline">Forgot password?</Link>
+            <div className="flex justify-end -mt-1">
+              <Link
+                to="/forgot-password"
+                className="inline-flex min-h-[36px] items-center px-1 text-sm font-medium text-fox-600 hover:text-fox-700 hover:underline"
+              >
+                Forgot password?
+              </Link>
             </div>
             <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full">
               Log in <ArrowRight size={18} />
