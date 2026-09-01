@@ -122,8 +122,9 @@ function Detail({ id }) {
     }
     setBusy(true);
     try {
-      await apiPost(`/workspaces/${id}/${kind === 'approve' ? 'se-approve' : 'se-return'}`,
-        kind === 'return' ? { notes: notes.trim() } : {});
+      const action = kind === 'approve' ? 'se-approve' : 'se-return';
+      const body = kind === 'return' ? { notes: notes.trim() } : {};
+      await apiPost(`/workspaces/${id}/${action}`, body);
       toast.success(kind === 'approve' ? 'Workspace approved' : 'Sent back to the client');
       navigate('/app/team/se-queue');
     } catch (e) {
