@@ -45,7 +45,7 @@ export function FoxBot() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
       {open && (
         <div
           className="mb-3 w-76 bg-white rounded-2xl border border-warm-200 shadow-[0_16px_64px_rgba(0,0,0,0.12)] p-4 animate-scale-in flex flex-col"
@@ -137,7 +137,7 @@ export function FoxBot() {
       )}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-14 h-14 rounded-full bg-fox-500 hover:bg-fox-600 text-white flex items-center justify-center transition-all hover:scale-105 shadow-[0_8px_32px_rgba(255,77,0,0.35)] active:scale-95 group"
+        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-fox-500 hover:bg-fox-600 text-white flex items-center justify-center transition-all hover:scale-105 shadow-[0_8px_32px_rgba(255,77,0,0.35)] active:scale-95 group"
         aria-label="Open FoxBot chat"
       >
         {open ? <X size={24} /> : <BrandLogo size={24} className="group-hover:animate-bounce" />}
