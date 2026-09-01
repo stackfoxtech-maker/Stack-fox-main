@@ -352,6 +352,10 @@ export default function Builder() {
   // service list still compile; a later pass can strip them entirely.
   const isAdminMode = false;
   const [showTour, setShowTour] = useState(false);
+  const [tourHintDismissed, setTourHintDismissed] = useState(
+    () => typeof localStorage !== 'undefined' && localStorage.getItem('fox_tour_seen') === 'true'
+  );
+  const dismissTourHint = () => { localStorage.setItem('fox_tour_seen', 'true'); setTourHintDismissed(true); };
   const [catalog, setCatalog] = useState({ services: [], categories: [], packages: [], bundles: [] });
   const [isLoading, setIsLoading] = useState(true);
   
@@ -432,8 +436,8 @@ export default function Builder() {
 
     fetchData();
 
-    const hasSeenTour = localStorage.getItem('fox_tour_seen');
-    if (!hasSeenTour) setShowTour(true);
+    // Tour is opt-in via the dismissible hint bar — auto-popping a full-screen
+    // modal over the builder blocked the task on every first visit.
 
     const cartParam = params.get('cart');
     if (cartParam) {
@@ -671,7 +675,26 @@ export default function Builder() {
 
   return (
     <Section className="relative">
-      <Tour steps={SF_DATA.tourSteps} active={showTour} onComplete={() => { localStorage.setItem('fox_tour_seen', 'true'); setShowTour(false); }} />
+      <Tour steps={SF_DATA.tourSteps} active={showTour} onComplete={() => { dismissTourHint(); setShowTour(false); }} />
+
+      {!tourHintDismissed && !showTour && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-fox-200 bg-fox-50 px-4 py-3">
+          <p className="text-sm text-warm-700">
+            New here? Pick exactly the services you need and watch your total update live.
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="primary" size="sm" onClick={() => setShowTour(true)}>
+              Take a 60-second tour <ArrowRight size={14} />
+            </Button>
+            <button
+              onClick={dismissTourHint}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-warm-500 hover:bg-warm-100 hover:text-warm-800 transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* CRUD Modals */}
       {addCatOpen && (
