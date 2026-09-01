@@ -9,13 +9,6 @@
       "cwd": "apps/api"
     },
     {
-      "name": "web",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
-      "port": 3000,
-      "cwd": "apps/web"
-    },
-    {
       "name": "client",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],
