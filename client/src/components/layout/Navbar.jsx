@@ -300,7 +300,7 @@ export default function Navbar() {
             {/* Search Button */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-2.5 rounded-xl hover:bg-warm-100 transition-colors text-warm-700"
+              className="p-3 rounded-xl hover:bg-warm-100 transition-colors text-warm-700"
               aria-label="Search"
             >
               <Search size={20} />
@@ -309,7 +309,7 @@ export default function Navbar() {
             {/* Builder (Mobile Shortcut) */}
             <Link
               to="/builder"
-              className="lg:hidden p-2.5 rounded-xl hover:bg-warm-100 transition-colors text-warm-700"
+              className="lg:hidden p-3 rounded-xl hover:bg-warm-100 transition-colors text-warm-700"
               aria-label="Builder"
             >
               <Hammer size={20} />
@@ -318,7 +318,7 @@ export default function Navbar() {
             {/* Cart */}
             <button
               onClick={toggleCart}
-              className="relative p-2.5 rounded-xl hover:bg-warm-100 transition-colors"
+              className="relative p-3 rounded-xl hover:bg-warm-100 transition-colors"
               aria-label="Cart"
             >
               <ShoppingCart size={20} className="text-warm-700" />
@@ -350,7 +350,7 @@ export default function Navbar() {
             {/* Mobile menu toggle */}
             <button
               onClick={toggleMobileMenu}
-              className="lg:hidden p-2.5 rounded-xl hover:bg-warm-100 transition-colors"
+              className="lg:hidden p-3 rounded-xl hover:bg-warm-100 transition-colors"
               aria-label="Menu"
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
