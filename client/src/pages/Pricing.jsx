@@ -1,10 +1,16 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, HelpCircle } from 'lucide-react';
+import { ArrowRight, Plus, Minus } from 'lucide-react';
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, cn } from '@lib/utils';
 import { Section, SectionHeading } from '@components/ui/Primitives';
+import { fadeUp, stagger, revealOnScroll, inView } from '@components/motion';
 import data from '@data/stackfox-data.json';
+
+// A handful of ₹2 placeholder rows sit in the catalogue; ignore anything that
+// small so the range reads as a real starting price, not a bug.
+const realPrices = (services) => services.map((s) => s.price).filter((p) => p >= 500);
 
 export default function Pricing() {
   usePageTitle('Pricing');
@@ -13,80 +19,96 @@ export default function Pricing() {
   return (
     <>
       <Section>
-        <SectionHeading title="Transparent pricing, no surprises" description="Every service is individually priced. All prices are indicative and exclusive of 18% GST." />
+        <SectionHeading
+          label="The catalog"
+          title="Transparent pricing, no surprises"
+          description="Every service is priced individually. Ranges below are indicative and exclude 18% GST — you'll see an exact quote after a free call."
+        />
 
-        {/* Price ranges by category */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+        <motion.div
+          variants={stagger} initial="hidden" whileInView="show" viewport={inView}
+          className="mb-16 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {data.categories.map((cat) => {
             const services = data.services.filter((s) => s.catId === cat.id);
-            const prices = services.map((s) => s.price);
-            const min = Math.min(...prices);
-            const max = Math.max(...prices);
+            const prices = realPrices(services);
+            const min = prices.length ? Math.min(...prices) : 0;
+            const max = prices.length ? Math.max(...prices) : 0;
             return (
-              <Link key={cat.id} to={`/catalog?category=${cat.id}`} className="card-fx p-5 group">
-                <h3 className="text-sm font-semibold text-warm-900 mb-1 group-hover:text-fox-500 transition-colors">{cat.name}</h3>
-                <p className="text-xs text-warm-500 mb-3">{services.length} services</p>
-                <div className="tabular-nums text-sm font-medium text-warm-700">
-                  {formatINR(min)} – {formatINR(max)}
-                </div>
-              </Link>
+              <motion.div key={cat.id} variants={fadeUp}>
+                <Link
+                  to={`/catalog?category=${cat.id}`}
+                  className="group flex h-full flex-col rounded-md border border-warm-200 bg-white p-5 shadow-sm transition-transform duration-short hover:-translate-y-1 hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between">
+                    <h3 className="text-title text-warm-900 group-hover:text-fox-700">{cat.name}</h3>
+                    <ArrowRight size={15} className="mt-1 text-warm-300 transition-colors group-hover:text-fox-500" />
+                  </div>
+                  <p className="mt-0.5 text-body-sm text-sage-700">{services.length} services</p>
+                  <p className="mt-4 price-tag text-body-lg text-warm-900">
+                    {formatINR(min)} <span className="text-warm-400">–</span> {formatINR(max)}
+                  </p>
+                </Link>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
-        {/* Package pricing */}
-        <SectionHeading label="Packages" title="Bundle pricing" description="Save 15–30% with curated packages." center={false} />
-        <div className="overflow-x-auto mb-12">
-          <table className="w-full text-sm">
+        <SectionHeading label="Packages" title="Bundle pricing" description="Curated bundles that save 15–30% versus picking the pieces one by one." center={false} />
+        <motion.div {...revealOnScroll} className="-mx-4 overflow-x-auto px-4">
+          <table className="w-full min-w-[36rem] text-body-sm">
             <thead>
-              <tr className="border-b border-warm-200">
-                <th className="text-left py-3 px-4 font-semibold text-warm-700">Package</th>
-                <th className="text-right py-3 px-4 font-semibold text-warm-700">Price</th>
-                <th className="text-right py-3 px-4 font-semibold text-warm-700">Savings</th>
-                <th className="text-center py-3 px-4 font-semibold text-warm-700">Services</th>
-                <th className="text-right py-3 px-4"></th>
+              <tr className="border-b border-warm-200 text-label uppercase text-warm-500">
+                <th className="py-3 pr-4 text-left font-medium">Package</th>
+                <th className="py-3 px-4 text-right font-medium">Price</th>
+                <th className="py-3 px-4 text-right font-medium">You save</th>
+                <th className="py-3 px-4 text-center font-medium">Services</th>
+                <th className="py-3 pl-4" />
               </tr>
             </thead>
             <tbody>
               {data.packages.map((pkg) => (
-                <tr key={pkg.id} className="border-b border-warm-100 hover:bg-warm-50 transition-colors">
-                  <td className="py-3 px-4">
+                <tr key={pkg.id} className="border-b border-warm-100 transition-colors hover:bg-warm-50">
+                  <td className="py-3.5 pr-4">
                     <span className="font-medium text-warm-900">{pkg.name}</span>
-                    {pkg.popular && <span className="badge-fx badge-fox ml-2 text-[10px]">Popular</span>}
+                    {pkg.popular && <span className="badge-fx badge-fox ml-2 text-caption">Popular</span>}
                   </td>
-                  <td className="py-3 px-4 text-right tabular-nums font-medium">{formatINR(pkg.price)}</td>
-                  <td className="py-3 px-4 text-right text-success-700 tabular-nums">{formatINR(pkg.savings)}</td>
-                  <td className="py-3 px-4 text-center text-warm-500">{pkg.items.length}</td>
-                  <td className="py-3 px-4 text-right">
-                    <Link to="/packages" className="text-fox-500 text-xs hover:underline">Details</Link>
+                  <td className="py-3.5 px-4 text-right price-tag text-warm-900">{formatINR(pkg.price)}</td>
+                  <td className="py-3.5 px-4 text-right price-tag text-sage-700">{formatINR(pkg.savings)}</td>
+                  <td className="py-3.5 px-4 text-center text-warm-500">{pkg.items.length}</td>
+                  <td className="py-3.5 pl-4 text-right">
+                    <Link to="/packages" className="inline-flex items-center gap-1 text-body-sm font-medium text-fox-600 hover:text-fox-700">
+                      Details <ArrowRight size={13} />
+                    </Link>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </motion.div>
       </Section>
 
-      {/* FAQ */}
       <Section className="bg-white">
         <SectionHeading label="FAQ" title="Common questions" />
-        <div className="max-w-2xl mx-auto space-y-2">
-          {data.faq.map((item, i) => (
-            <div key={i} className="border border-warm-200 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-warm-900 hover:bg-warm-50 transition-colors"
-              >
-                {item.q}
-                <HelpCircle size={16} className={cn('text-warm-400 shrink-0 ml-2 transition-transform', openFaq === i && 'rotate-45')} />
-              </button>
-              {openFaq === i && (
-                <div className="px-5 pb-4 text-sm text-warm-600 leading-relaxed animate-fade-in">
-                  {item.a}
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="mx-auto max-w-2xl space-y-2.5">
+          {data.faq.map((item, i) => {
+            const open = openFaq === i;
+            return (
+              <div key={i} className="overflow-hidden rounded-md border border-warm-200 bg-warm-white">
+                <button
+                  onClick={() => setOpenFaq(open ? null : i)}
+                  aria-expanded={open}
+                  className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left text-body-md font-medium text-warm-900 hover:bg-warm-50"
+                >
+                  {item.q}
+                  {open ? <Minus size={16} className="shrink-0 text-fox-500" /> : <Plus size={16} className="shrink-0 text-warm-400" />}
+                </button>
+                {open && (
+                  <div className="animate-fade-in px-5 pb-4 text-body-sm leading-relaxed text-warm-600">{item.a}</div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </Section>
     </>

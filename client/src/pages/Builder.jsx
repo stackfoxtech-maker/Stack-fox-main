@@ -30,7 +30,7 @@ function Tour({ steps, active, onComplete }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-warm-200 animate-scale-in">
+      <div className="bg-white rounded-md shadow-2xl max-w-md w-full overflow-hidden border border-warm-200 animate-scale-in">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <span className="text-3xl">{current.icon}</span>
@@ -437,7 +437,7 @@ export default function Builder() {
         <button
           onClick={() => setActiveCat('all')}
           className={cn(
-            'px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all shrink-0',
+            'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0',
             activeCat === 'all' ? 'bg-warm-900 text-white' : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300'
           )}
         >
@@ -446,7 +446,7 @@ export default function Builder() {
         <button
           onClick={() => setActiveCat('industry-bundles')}
           className={cn(
-            'px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
+            'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
             activeCat === 'industry-bundles' ? 'bg-fox-500 text-white ring-4 ring-fox-50' : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300'
           )}
         >
@@ -455,7 +455,7 @@ export default function Builder() {
         <button
           onClick={() => setActiveCat('service-packages')}
           className={cn(
-            'px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
+            'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
             activeCat === 'service-packages' ? 'bg-fox-500 text-white ring-4 ring-fox-50' : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300'
           )}
         >
@@ -467,7 +467,7 @@ export default function Builder() {
             key={cat.dataId}
             onClick={() => setActiveCat(cat.dataId)}
             className={cn(
-              'px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
+              'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
               activeCat === cat.dataId ? 'bg-fox-500 text-white ring-4 ring-fox-50' : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300'
             )}
           >
@@ -482,10 +482,10 @@ export default function Builder() {
         <div className="lg:col-span-8 space-y-12">
           {isLoading ? (
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               {[1,2,3,4].map(i => <div key={i} className="bg-white rounded-3xl p-5 h-40 animate-pulse border border-warm-100" />)}
+               {[1,2,3,4].map(i => <div key={i} className="bg-white rounded-lg p-5 h-40 animate-pulse border border-warm-100" />)}
              </div>
           ) : filteredServices.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-3xl border border-warm-100">
+            <div className="text-center py-20 bg-white rounded-lg border border-warm-100">
                <p className="text-warm-500">No services found.</p>
                <Button variant="ghost" className="mt-4" onClick={() => { setSearch(''); setActiveCat('all'); }}>Reset</Button>
             </div>
@@ -493,14 +493,14 @@ export default function Builder() {
             <div className="space-y-16">
               {activeCat === 'industry-bundles' && (
                 <div className="space-y-6">
-                   <h2 className="text-2xl font-black text-warm-900">Industry-Specific Bundles</h2>
+                   <h2 className="text-2xl font-semibold text-warm-900">Industry-Specific Bundles</h2>
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      {filteredServices.map(b => (
-                       <div key={b.id} className="card-fx p-6 bg-white border border-warm-200 rounded-3xl relative">
+                       <div key={b.id} className="card-fx p-6 bg-white border border-warm-200 rounded-lg relative">
                           <h3 className="text-lg font-bold text-warm-900">{b.name}</h3>
                           <p className="text-sm text-warm-500 mt-2 line-clamp-2 leading-relaxed">{b.description}</p>
                           <div className="mt-4 flex items-center justify-between">
-                            <span className="text-xl font-black">{fmt(b.price)}</span>
+                            <span className="text-xl font-semibold">{fmt(b.price)}</span>
                             <Button size="sm" variant="outline" onClick={() => (b.items || []).forEach(id => {
                               const svc = catalog.services.find(s => s.id === id);
                               if (svc) addItem({ itemId: id, itemType: 'service', name: svc.name, price: svc.price }, isAuthenticated);
@@ -513,14 +513,14 @@ export default function Builder() {
               )}
               {activeCat === 'service-packages' && (
                 <div className="space-y-6">
-                   <h2 className="text-2xl font-black text-warm-900">Recommended Packages</h2>
+                   <h2 className="text-2xl font-semibold text-warm-900">Recommended Packages</h2>
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      {filteredServices.map(p => (
-                       <div key={p.id} className="card-fx p-6 bg-white border border-warm-200 rounded-3xl relative">
+                       <div key={p.id} className="card-fx p-6 bg-white border border-warm-200 rounded-lg relative">
                           <h3 className="text-lg font-bold text-warm-900">{p.name}</h3>
                           <p className="text-sm text-warm-500 mt-2 leading-relaxed">{p.description}</p>
                           <div className="mt-4 flex items-center justify-between">
-                            <span className="text-xl font-black">{fmt(p.price)}</span>
+                            <span className="text-xl font-semibold">{fmt(p.price)}</span>
                             <Button size="sm" variant="outline" onClick={() => (p.items || []).forEach(id => {
                               const svc = catalog.services.find(s => s.id === id);
                               if (svc) addItem({ itemId: id, itemType: 'service', name: svc.name, price: svc.price }, isAuthenticated);
@@ -541,7 +541,7 @@ export default function Builder() {
                   <div key={cat.dataId} className="space-y-6">
                     <div className="border-b border-warm-100 pb-4">
                       <div className="flex items-center justify-between">
-                         <h2 className="text-2xl font-black text-warm-900 flex items-center gap-2">
+                         <h2 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
                            {cat.name}
                            <span className="text-[10px] bg-warm-100 text-warm-500 px-2 py-0.5 rounded-full">{catServices.length} items</span>
                          </h2>
@@ -555,36 +555,39 @@ export default function Builder() {
                       {catServices.map(svc => {
                         const isInCart = cartItemIds.has(svc.id);
                         return (
-                          <div 
-                            key={svc.id} 
+                          <div
+                            key={svc.id}
                             id={`service-${svc.id}`}
-                            className="card-fx p-5 flex flex-col group min-h-[160px] bg-white border border-warm-200 rounded-3xl hover:border-fox-300 transition-all"
+                            className={cn(
+                              'flex min-h-[150px] flex-col rounded-md border bg-white p-5 transition-colors duration-short',
+                              isInCart ? 'border-sage-300 bg-sage-50/40' : 'border-warm-200 hover:border-warm-300'
+                            )}
                           >
-                            <div className="flex items-start justify-between mb-3 gap-3">
+                            <div className="mb-3 flex items-start justify-between gap-3">
                               <div className="flex-1">
-                                <span className="font-bold text-warm-900 block">{svc.name}</span>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-[10px] text-warm-400 font-bold uppercase">{svc.estimatedTime || '3-5 days'}</span>
-                                  {svc.lay && <Info size={12} className="text-warm-300" title={svc.lay} />}
-                                </div>
+                                <span className="block text-body-md font-semibold text-warm-900">{svc.name}</span>
+                                <span className="mt-1 block text-caption font-medium uppercase tracking-wide text-warm-400">{svc.estimatedTime || '3-5 days'}</span>
                               </div>
                               <div className="text-right">
-                                <span className="text-lg font-black text-warm-900">{fmt(svc.price)}</span>
-                                <p className="text-[9px] text-warm-300 font-bold uppercase tracking-widest">Starting</p>
+                                <span className="price-tag block text-body-lg text-warm-900">{fmt(svc.price)}</span>
+                                <p className="text-caption uppercase tracking-wide text-warm-400">Starting</p>
                               </div>
                             </div>
 
-                            <div className="bg-warm-50 rounded-2xl p-3 mb-4 flex-1">
-                               <span className="text-xs text-warm-600 block leading-relaxed italic">{svc.lay || "Explaining this service..."}</span>
-                            </div>
+                            <p className="mb-4 flex-1 text-body-sm leading-relaxed text-warm-500">{svc.lay || 'A single, individually priced piece of your build.'}</p>
 
-                            <div className="flex items-center justify-between pt-3 border-t border-warm-100 gap-2">
-                               <div className="flex-1 flex justify-between items-center text-[9px] font-bold text-warm-400 uppercase">
-                                 <span>{svc.unit || 'Standard'}</span>
-                                 <button onClick={() => !isInCart && handleAdd(svc)} className={cn("p-1.5 rounded-xl transition-all", isInCart ? "bg-success-50 text-success-600" : "bg-fox-50 text-fox-600 hover:bg-fox-500 hover:text-white")}>
-                                   {isInCart ? <Check size={14} /> : <Plus size={14} />}
-                                 </button>
-                               </div>
+                            <div className="flex items-center justify-between gap-2 border-t border-warm-100 pt-3">
+                               <span className="text-caption font-medium uppercase tracking-wide text-warm-400">{svc.unit || 'Standard'}</span>
+                               <button
+                                 onClick={() => !isInCart && handleAdd(svc)}
+                                 aria-label={isInCart ? 'Added' : `Add ${svc.name}`}
+                                 className={cn(
+                                   'grid h-8 w-8 place-items-center rounded-sm transition-colors',
+                                   isInCart ? 'bg-sage-100 text-sage-700' : 'bg-fox-50 text-fox-600 hover:bg-fox-500 hover:text-white'
+                                 )}
+                               >
+                                 {isInCart ? <Check size={15} /> : <Plus size={15} />}
+                               </button>
                             </div>
                           </div>
                         );
@@ -600,43 +603,41 @@ export default function Builder() {
         {/* Right Sidebar */}
         <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
           {suggestions.length > 0 && (
-            <div className="bg-fox-50 rounded-3xl p-6 border border-fox-100">
-               <h3 className="font-bold text-fox-900 mb-4 flex items-center gap-2"><Sparkles size={18} /> Recommended</h3>
-               <div className="space-y-3">
+            <div className="rounded-lg border border-warm-200 bg-white p-6">
+               <h3 className="mb-4 flex items-center gap-2 text-title text-warm-900"><Sparkles size={16} className="text-fox-500" /> Often added together</h3>
+               <div className="space-y-2">
                  {suggestions.map(s => (
-                   <button key={s.id} onClick={() => handleAdd(s)} className="w-full text-left bg-white/60 p-3 rounded-2xl border border-fox-200 hover:border-fox-500 flex items-center justify-between">
-                     <span className="text-xs font-bold truncate">{s.name}</span>
-                     <Plus size={14} className="text-fox-500" />
+                   <button key={s.id} onClick={() => handleAdd(s)} className="flex w-full items-center justify-between gap-2 rounded-sm border border-warm-200 bg-warm-white px-3 py-2.5 text-left transition-colors hover:border-fox-300">
+                     <span className="truncate text-body-sm font-medium text-warm-800">{s.name}</span>
+                     <Plus size={14} className="shrink-0 text-fox-500" />
                    </button>
                  ))}
                </div>
             </div>
           )}
-           <Link to="/advisor" className="group relative block overflow-hidden rounded-3xl bg-gradient-to-br from-fox-500 to-fox-600 p-6 text-white shadow-lg shadow-fox-500/20 transition-all hover:shadow-xl hover:shadow-fox-500/30 hover:-translate-y-0.5">
-             <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 transition-transform group-hover:scale-150" />
-             <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-white/5 transition-transform group-hover:scale-125" />
-             <div className="relative z-10">
-               <div className="flex items-center gap-2 mb-2 font-bold text-lg">
-                 <Sparkles className="h-5 w-5 text-yellow-200" />
-                 Not sure what you need?
-               </div>
-               <p className="text-sm text-white/85 leading-relaxed max-w-sm">Answer 10 quick questions and let our AI advisor recommend the perfect configuration for your project.</p>
-               <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm">
-                 Start advisor <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
-               </div>
+           <Link to="/advisor" className="group block rounded-lg border border-sage-200 bg-sage-50 p-6 transition-transform duration-short hover:-translate-y-0.5">
+             <div className="mb-2 flex items-center gap-2 text-title text-sage-800">
+               <Sparkles className="h-5 w-5 text-sage-600" />
+               Not sure what you need?
              </div>
+             <p className="max-w-sm text-body-sm leading-relaxed text-sage-800/90">
+               Answer 10 quick questions and our advisor suggests a configuration for your project.
+             </p>
+             <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-sage-800">
+               Start advisor <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+             </span>
            </Link>
-          <div className="bg-white rounded-3xl border border-warm-200 p-6">
-            <h3 className="font-bold text-warm-900 mb-4">Building Guidance</h3>
+          <div className="rounded-lg border border-warm-200 bg-white p-6">
+            <h3 className="text-title text-warm-900 mb-4">How building works</h3>
             <div className="space-y-4">
                {[
-                  { step: 1, text: 'Browse our catalog of 240+ services and select exactly what your project needs.' },
-                 { step: 2, text: 'Watch your indicative quote update in real-time as you add or remove atomic pieces.' },
-                 { step: 3, text: 'Submit your cart to receive a final, detailed technical proposal within 24 hours.' }
-               ].map((item) => (
-                 <div key={item.step} className="flex gap-3">
-                   <div className="w-5 h-5 bg-fox-500 text-white rounded text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm shadow-fox-100">{item.step}</div>
-                   <p className="text-xs text-warm-600 leading-relaxed">{item.text}</p>
+                  'Browse 240+ services and pick exactly what your project needs.',
+                  'Watch your indicative quote update as you add or remove pieces.',
+                  'Submit your cart to get a detailed proposal within 24 hours.',
+               ].map((text, i) => (
+                 <div key={i} className="flex gap-3">
+                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-pill bg-sage-50 font-mono text-[11px] text-sage-700">{i + 1}</span>
+                   <p className="text-body-sm leading-relaxed text-warm-600">{text}</p>
                  </div>
                ))}
             </div>
@@ -646,12 +647,12 @@ export default function Builder() {
 
       {itemCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden">
-          <div className="bg-fox-600 text-white rounded-3xl p-4 flex items-center justify-between" onClick={toggleCart}>
+          <div className="bg-fox-600 text-white rounded-lg p-4 flex items-center justify-between" onClick={toggleCart}>
             <div className="flex items-center gap-3">
               <ShoppingCart size={24} />
               <div className="font-bold">{itemCount} items Selected</div>
             </div>
-            <div className="font-black text-lg">→</div>
+            <div className="font-semibold text-lg">→</div>
           </div>
         </div>
       )}
