@@ -107,7 +107,7 @@ const TeamQuality = lazy(() => import('@app/team/PmDashboards').then((m) => ({ d
 const TeamFinance = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.Finance })));
 const TeamClients = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.Clients })));
 const TeamAnalyticsDash = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.Analysis })));
-const TeamSEQueue = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.SEQueue })));
+const TeamSEQueue = lazy(() => import('@app/team/SEWorkspace'));
 
 // Salesperson Dashboard
 const SalesLayout = lazy(() => import('@app/team/SalesLayout'));
@@ -332,6 +332,7 @@ export default function AppRoutes() {
           <Route path="clients" element={<TeamClients />} />
           <Route path="analytics" element={<TeamAnalyticsDash />} />
           <Route path="se-queue" element={<TeamSEQueue />} />
+          <Route path="se-queue/:id" element={<TeamSEQueue />} />
         </Route>
       </Route>
 
