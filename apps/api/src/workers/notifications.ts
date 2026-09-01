@@ -6,6 +6,8 @@ interface NotifyJob {
   payload?: Record<string, unknown>;
   engagementId?: string;
   projectId?: string;
+  /** Notify these users directly, in addition to any engagement/project subscribers. */
+  userIds?: string[];
 }
 
 /**
@@ -15,9 +17,11 @@ interface NotifyJob {
  * a deploy, and fall back to a humanised event code.
  */
 createWorker<NotifyJob>(QUEUE.notifications, async (job) => {
-  const { code, payload, engagementId, projectId } = job.data;
+  const { code, payload, engagementId, projectId, userIds } = job.data;
 
-  const subscribers = await getSubscribers(engagementId, projectId);
+  const subscribers = Array.from(
+    new Set([...(await getSubscribers(engagementId, projectId)), ...(userIds ?? [])]),
+  );
   if (subscribers.length === 0) return;
 
   const template = await prisma.notificationContent

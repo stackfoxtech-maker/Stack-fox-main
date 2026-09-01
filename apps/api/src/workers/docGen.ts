@@ -206,4 +206,50 @@ createWorker(QUEUE.docGen, async (job) => {
     });
     return;
   }
+
+  // ── Sales proposal ─────────────────────────────────────────────────────────
+  if (type === "proposal") {
+    const proposal = await prisma.proposal.findUnique({
+      where: { id: job.data.proposalId },
+      include: { lead: true },
+    });
+    if (!proposal) return;
+
+    const pkgs = (proposal.packages ?? {}) as Record<string, unknown>;
+    const lines: DocLineItem[] = Object.entries(pkgs)
+      .filter(([, v]) => v)
+      .map(([k, v]) => ({
+        desc: k.replace(/^\w/, (c) => c.toUpperCase()),
+        amount: typeof v === "object" ? "" : String(v),
+      }));
+
+    const range = proposal.totalMin === proposal.totalMax
+      ? inr(proposal.totalMax)
+      : `${inr(proposal.totalMin)} – ${inr(proposal.totalMax)}`;
+
+    const pdf = await renderDocument({
+      title: "Proposal",
+      subtitle: proposal.lead.company ?? proposal.lead.name,
+      reference: proposal.id,
+      meta: [
+        { label: "Prepared for", value: proposal.lead.ownerName ?? proposal.lead.name },
+        { label: "Business", value: proposal.lead.company ?? "—" },
+        { label: "Date", value: new Date().toISOString().slice(0, 10) },
+      ],
+      lineItems: lines.length ? lines : undefined,
+      total: { desc: "Estimated investment", amount: range },
+      body: proposal.notes ? [proposal.notes] : undefined,
+      footer: "Indicative pricing. Final scope and cost are confirmed at contract.",
+    });
+
+    const key = `proposals/${proposal.leadId}/${proposal.id}.pdf`;
+    await uploadFile(key, pdf, "application/pdf");
+    await prisma.proposal.update({ where: { id: proposal.id }, data: { fileKey: key } });
+    await emitEvent({
+      code: "PROPOSAL_PDF_GENERATED",
+      payload: { proposalId: proposal.id, leadId: proposal.leadId, key },
+      actor: "system",
+    });
+    return;
+  }
 });

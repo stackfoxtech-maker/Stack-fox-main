@@ -41,6 +41,7 @@ export const QUEUE = {
   previewGen: "preview-gen",
   referralProcessor: "referral-processor",
   whatsappCommerce: "whatsapp-commerce",
+  salesFollowup: "sales-followup",
 } as const;
 
 export type QueueName = (typeof QUEUE)[keyof typeof QUEUE];

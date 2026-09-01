@@ -19,6 +19,7 @@ import "./archiveRetention";
 import "./previewGen";
 import "./referralProcessor";
 import "./whatsappCommerce";
+import "./salesFollowup";
 
 import { redis } from "../lib/redis";
 import { registerSchedules, pruneStaleSchedulers } from "../lib/scheduler";
@@ -34,7 +35,7 @@ import { registerSchedules, pruneStaleSchedulers } from "../lib/scheduler";
  * production shape) or inline with the API by setting `WORKERS_INLINE=true`,
  * which suits single-container deploys.
  */
-console.log("[workers] 18 workers subscribed");
+console.log("[workers] 19 workers subscribed");
 
 // Register the cron-shaped jobs the periodic workers depend on. Best-effort:
 // a Redis hiccup at boot must not stop the on-demand workers (docgen, notify,

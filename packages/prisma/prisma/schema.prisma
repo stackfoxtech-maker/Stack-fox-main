@@ -1048,13 +1048,85 @@ model Lead {
   company       String?
   message       String?
   preferredDate DateTime? @map("preferred_date")
-  source        String    @default("demo_page") // demo_page|contact|referral|tool
+  source        String    @default("demo_page") // demo_page|contact|referral|tool|rfp
+  // Inquiry lifecycle — used by /project-inquiries and /lead/demo intake.
   status        String    @default("NEW") // NEW|CONTACTED|QUALIFIED|CONVERTED|LOST
   assignedTo    String?   @map("assigned_to")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
 
+  // ── Sales-CRM fields (null on plain intake leads) ────────────────────────────
+  ownerName       String?   @map("owner_name")
+  category        String?   // business vertical: gym|restaurant|clinic|…
+  location        String?
+  website         String?
+  priority        String    @default("MEDIUM") // LOW|MEDIUM|HIGH
+  value           Int       @default(0) // estimated deal value, rupees
+  // Pipeline column. null = not yet triaged into the sales pipeline.
+  stage           String?   // new|contacted|interested|meeting|demo|proposal|negotiation|won|not-interested|lost|followup
+  lastContactedAt DateTime? @map("last_contacted_at")
+
+  activities LeadActivity[]
+  followUps  FollowUp[]
+  proposals  Proposal[]
+
+  @@index([stage])
+  @@index([assignedTo])
   @@map("leads")
+}
+
+model LeadActivity {
+  id        String   @id @default(uuid())
+  leadId    String   @map("lead_id")
+  type      String   // NOTE|CALL|EMAIL|MEETING|STAGE_CHANGE|FOLLOWUP|PROPOSAL
+  body      String
+  actorId   String?  @map("actor_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
+  @@map("lead_activities")
+}
+
+model FollowUp {
+  id          String    @id @default(uuid())
+  leadId      String    @map("lead_id")
+  dueAt       DateTime  @map("due_at")
+  channel     String    @default("CALL") // CALL|WHATSAPP|EMAIL|MEETING|DEMO
+  note        String?
+  status      String    @default("PENDING") // PENDING|DONE|SKIPPED
+  assignedTo  String?   @map("assigned_to")
+  reminderSentAt DateTime? @map("reminder_sent_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([status, dueAt])
+  @@index([assignedTo, dueAt])
+  @@map("follow_ups")
+}
+
+model Proposal {
+  id        String    @id @default(uuid())
+  leadId    String    @map("lead_id")
+  title     String
+  // Selected offering, free-form: { website?, seo?, marketing?, addons?[], custom?[] }
+  packages  Json      @default("{}")
+  notes     String?
+  totalMin  Int       @default(0) @map("total_min") // rupees
+  totalMax  Int       @default(0) @map("total_max")
+  status    String    @default("DRAFT") // DRAFT|SENT|ACCEPTED|REJECTED
+  fileKey   String?   @map("file_key")
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  sentAt    DateTime? @map("sent_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("proposals")
 }
 
 // ═══════════════════════════════════════════════════════════

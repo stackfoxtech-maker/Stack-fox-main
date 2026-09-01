@@ -48,6 +48,7 @@ import { cartRoutes } from "./routes/cart";
 import { quoteRoutes, backfillPaidQuotes } from "./routes/quotes";
 import { analyticsRoutes } from "./routes/analytics";
 import { referralRoutes } from "./routes/referrals";
+import { leadRoutes } from "./routes/leads";
 import { settingsRoutes } from "./routes/settings";
 import { reviewRoutes } from "./routes/reviews";
 import { knowledgeRoutes } from "./routes/knowledge";
@@ -160,6 +161,7 @@ async function start() {
   await app.register(quoteRoutes, { prefix: "/" });
   await app.register(analyticsRoutes, { prefix: "/" });
   await app.register(referralRoutes, { prefix: "/" });
+  await app.register(leadRoutes, { prefix: "/" });
   await app.register(settingsRoutes, { prefix: "/" });
   await app.register(reviewRoutes, { prefix: "/" });
   await app.register(knowledgeRoutes, { prefix: "/" });

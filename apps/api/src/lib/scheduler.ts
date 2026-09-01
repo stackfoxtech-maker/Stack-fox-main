@@ -54,6 +54,10 @@ const SCHEDULES: Schedule[] = [
   // 05:00 on the first day of Jan / Apr / Jul / Oct. The worker fans out to
   // every engagement with paid invoices in that window.
   { queue: "softex", id: "softex-quarterly", pattern: "0 5 1 1,4,7,10 *", job: { name: "quarter-close" } },
+
+  // Sales follow-ups due today / overdue -> nudge the assigned rep. Twice a day
+  // so a morning-scheduled follow-up for the afternoon still gets a reminder.
+  { queue: "salesFollowup", id: "sales-followup", pattern: "0 8,13 * * 1-6", job: { name: "sweep" } },
 ];
 
 export async function registerSchedules(): Promise<void> {
