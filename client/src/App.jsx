@@ -24,7 +24,7 @@ export default function App() {
   }, [isAuthenticated]);
 
   return (
-    <MotionConfig reducedMotion="user" transition={{ duration: 0.32, ease: [0.2, 0.7, 0.2, 1] }}>
+    <MotionConfig reducedMotion="user">
       <AppRoutes />
       <CartDrawer />
     </MotionConfig>

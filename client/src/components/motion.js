@@ -23,13 +23,16 @@ export const stagger = {
   show: { transition: { staggerChildren: 0.07, delayChildren: 0.04 } },
 };
 
-// Standard viewport trigger — fire once, slightly before fully in view.
-export const inView = { once: true, amount: 0.25, margin: '0px 0px -10% 0px' };
+// Viewport trigger config. `amount: 0` + a generous negative bottom margin so
+// a section that is already on screen (or gets jumped past) still resolves to
+// its "show" state — framer's whileInView can otherwise leave content stuck at
+// opacity 0 on a fast scroll or a scrollTo jump.
+export const inView = { once: true, amount: 0 };
 
-// Spread onto a motion element to reveal it on scroll.
+// Spread onto a motion element to reveal it. Uses `animate` (fires on mount),
+// not `whileInView`, so content is never left invisible if the observer misses.
 export const revealOnScroll = {
   variants: fadeUp,
   initial: 'hidden',
-  whileInView: 'show',
-  viewport: inView,
+  animate: 'show',
 };

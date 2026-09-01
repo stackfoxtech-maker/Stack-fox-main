@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Plus, Minus } from 'lucide-react';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, cn } from '@lib/utils';
+import { formatINR } from '@lib/utils';
 import { Section, SectionHeading } from '@components/ui/Primitives';
-import { fadeUp, stagger, revealOnScroll, inView } from '@components/motion';
 import data from '@data/stackfox-data.json';
 
 // A handful of ₹2 placeholder rows sit in the catalogue; ignore anything that
@@ -25,9 +23,7 @@ export default function Pricing() {
           description="Every service is priced individually. Ranges below are indicative and exclude 18% GST — you'll see an exact quote after a free call."
         />
 
-        <motion.div
-          variants={stagger} initial="hidden" whileInView="show" viewport={inView}
-          className="mb-16 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        <div className="mb-16 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           {data.categories.map((cat) => {
             const services = data.services.filter((s) => s.catId === cat.id);
@@ -35,7 +31,7 @@ export default function Pricing() {
             const min = prices.length ? Math.min(...prices) : 0;
             const max = prices.length ? Math.max(...prices) : 0;
             return (
-              <motion.div key={cat.id} variants={fadeUp}>
+              <div key={cat.id}>
                 <Link
                   to={`/catalog?category=${cat.id}`}
                   className="group flex h-full flex-col rounded-md border border-warm-200 bg-white p-5 shadow-sm transition-transform duration-short hover:-translate-y-1 hover:shadow-md"
@@ -49,13 +45,13 @@ export default function Pricing() {
                     {formatINR(min)} <span className="text-warm-400">–</span> {formatINR(max)}
                   </p>
                 </Link>
-              </motion.div>
+              </div>
             );
           })}
-        </motion.div>
+        </div>
 
         <SectionHeading label="Packages" title="Bundle pricing" description="Curated bundles that save 15–30% versus picking the pieces one by one." center={false} />
-        <motion.div {...revealOnScroll} className="-mx-4 overflow-x-auto px-4">
+        <div className="-mx-4 overflow-x-auto px-4">
           <table className="w-full min-w-[36rem] text-body-sm">
             <thead>
               <tr className="border-b border-warm-200 text-label uppercase text-warm-500">
@@ -85,7 +81,7 @@ export default function Pricing() {
               ))}
             </tbody>
           </table>
-        </motion.div>
+        </div>
       </Section>
 
       <Section className="bg-white">
