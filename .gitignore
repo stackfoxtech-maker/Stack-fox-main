@@ -13,6 +13,8 @@ client/build/
 server/dist/
 apps/*/dist/
 packages/*/dist/
+apps/*/.next/
+.next/
 *.tsbuildinfo
 
 # ── Environment variables ────────────────────
@@ -67,3 +69,4 @@ docker-compose.override.yml
 .cache/
 .parcel-cache/
 .turbo/
+.gstack/
