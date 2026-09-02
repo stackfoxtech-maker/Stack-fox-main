@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Users, Briefcase, Rocket, Building2, ArrowRight } from 'lucide-react';
+import LeadInquiryModal from '@components/LeadInquiryModal';
 
 const programs = [
   {
@@ -18,7 +20,7 @@ const programs = [
     description: 'White-label our services or co-deliver projects. Get priority support, co-branded collateral, and revenue sharing on every deal.',
     perks: ['Revenue sharing up to 20%', 'White-label options', 'Dedicated partner manager'],
     cta: 'Apply Now',
-    href: '#',
+    apply: 'partner',
     color: 'blue',
   },
   {
@@ -28,7 +30,7 @@ const programs = [
     description: 'Building something new? Get up to 40% off on development, design, and marketing services. Available for startups under 2 years old with less than ₹2Cr revenue.',
     perks: ['Up to 40% discount', 'Flexible payment plans', 'Mentorship sessions'],
     cta: 'Apply Now',
-    href: '#',
+    apply: 'startup',
     color: 'emerald',
   },
   {
@@ -38,7 +40,7 @@ const programs = [
     description: 'Dedicated account teams, SLA-backed delivery, volume pricing, and custom integrations for large organizations with ongoing needs.',
     perks: ['Volume pricing', 'Dedicated account team', 'Custom SLAs & compliance'],
     cta: 'Contact Sales',
-    href: '#',
+    apply: 'enterprise',
     color: 'purple',
   },
 ];
@@ -50,17 +52,20 @@ const colorMap = {
   purple: 'bg-purple-500/10 text-purple-500',
 };
 
+
 export default function Programs() {
+  const [applyTo, setApplyTo] = useState(null);
+
   return (
     <div className="min-h-screen bg-warm-50 py-12 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-warm-900 mb-3">Programs & Partnerships</h1>
+          <h1 className="text-4xl font-bold text-warm-900 mb-3">Programs &amp; Partnerships</h1>
           <p className="text-warm-500 max-w-xl mx-auto">Grow with StackFox — whether you are referring clients, partnering as an agency, launching a startup, or scaling an enterprise.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {programs.map(prog => (
+          {programs.map((prog) => (
             <div key={prog.title} className="bg-white rounded-2xl border border-warm-200 p-6 flex flex-col">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${colorMap[prog.color]}`}>
                 <prog.icon size={22} />
@@ -75,13 +80,29 @@ export default function Programs() {
                   </li>
                 ))}
               </ul>
-              <a href={prog.href} className="inline-flex items-center gap-2 text-sm font-semibold text-fox-500 hover:text-fox-600 transition">
-                {prog.cta} <ArrowRight size={16} />
-              </a>
+              {prog.href ? (
+                <a href={prog.href} className="inline-flex items-center gap-2 text-sm font-semibold text-fox-500 hover:text-fox-600 transition">
+                  {prog.cta} <ArrowRight size={16} />
+                </a>
+              ) : (
+                <button onClick={() => setApplyTo(prog)} className="inline-flex items-center gap-2 text-sm font-semibold text-fox-500 hover:text-fox-600 transition self-start">
+                  {prog.cta} <ArrowRight size={16} />
+                </button>
+              )}
             </div>
           ))}
         </div>
       </div>
+
+      {applyTo && (
+        <LeadInquiryModal
+          title={`${applyTo.cta} — ${applyTo.title}`}
+          subtitle={applyTo.tagline}
+          source={`program-${applyTo.apply}`}
+          context={`Interested in the ${applyTo.title}.`}
+          onClose={() => setApplyTo(null)}
+        />
+      )}
     </div>
   );
 }
