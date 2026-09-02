@@ -12,7 +12,7 @@ import { CURRENCIES, FBT_PAIRS } from '@lib/constants';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
 import useUiStore from '@store/uiStore';
-import { Button, Section, SectionHeading } from '@components/ui/Primitives';
+import { Button, Section } from '@components/ui/Primitives';
 import { BrandLogo } from '@components/ui/BrandLogo';
 import SF_DATA from '@data/stackfox-data.json';
 import api from '@lib/api';
@@ -135,9 +135,9 @@ export default function Builder() {
   const navigate = useNavigate();
   
   // 1. Stores
-  const { 
+  const {
     items, addItem, removeItem, updateQuantity, toggleCart, itemCount, clearCart,
-    curIdx, setCurIdx, setMetadata
+    curIdx, setCurIdx, setMetadata, subtotal: cartSubtotal
   } = useCartStore();
   const { user, isAuthenticated, isAdmin } = useAuthStore();
 
@@ -422,33 +422,52 @@ export default function Builder() {
         </div>
       )}
 
-      <SectionHeading
-        label="Build & Price"
-        title="Service Builder"
-        description="Browse and select services."
-      />
+      {/* Header — Calm Guidance, matches the marketing pages */}
+      <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-xl">
+          <span className="eyebrow mb-4">Build &amp; price</span>
+          <h1 className="text-3xl text-warm-900 md:text-display-lg">Assemble your project, piece by piece</h1>
+          <p className="mt-3 text-body-lg text-warm-600">
+            {catalog.services.length}+ individually priced pieces across {catalog.categories.length} domains.
+            Add what you need and watch the total update — GST and all.
+          </p>
+        </div>
+        {itemCount > 0 && (
+          <button
+            onClick={toggleCart}
+            className="flex shrink-0 items-center gap-3 self-start rounded-md border border-warm-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md md:self-auto"
+          >
+            <ShoppingCart size={18} className="text-fox-600" />
+            <span className="text-left">
+              <span className="block text-caption uppercase tracking-wide text-warm-500">{itemCount} piece{itemCount > 1 ? 's' : ''}</span>
+              <span className="price-tag block text-body-md text-warm-900">{fmt(cartSubtotal || items.reduce((s, i) => s + i.price * i.quantity, 0))}</span>
+            </span>
+            <ArrowRight size={15} className="text-warm-400" />
+          </button>
+        )}
+      </div>
 
-      {/* Search Bar */}
-      <div className="max-w-4xl mx-auto mb-8 flex flex-col md:flex-row gap-4">
+      {/* Search + currency */}
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             type="text"
-            placeholder="Search services..."
+            placeholder="Search 255 services…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="input-fx pl-11 pr-4"
           />
         </div>
-        
-        <div className="flex gap-2 shrink-0">
-          <select value={curIdx} onChange={(e) => setCurIdx(Number(e.target.value))} className="bg-white border border-warm-200 rounded-xl px-2 text-xs font-bold">
+        <div className="flex gap-2">
+          <select
+            value={curIdx}
+            onChange={(e) => setCurIdx(Number(e.target.value))}
+            className="rounded-sm border border-warm-200 bg-white px-3 text-body-sm font-semibold text-warm-700"
+          >
             {CURRENCIES.map((c, i) => <option key={c.code} value={i}>{c.code}</option>)}
           </select>
-          <Button variant="ghost" onClick={handleShare}><Share2 size={16} /></Button>
-          {itemCount > 0 && (
-            <Button variant="primary" onClick={toggleCart}><ShoppingCart size={16} /> {itemCount}</Button>
-          )}
+          <Button variant="ghost" onClick={handleShare} aria-label="Copy a shareable link"><Share2 size={16} /></Button>
         </div>
       </div>
 
