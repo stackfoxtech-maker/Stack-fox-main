@@ -52,6 +52,22 @@ export function verifyRazorpaySignature(
   return expected === signature;
 }
 
+/**
+ * Verify a Razorpay *webhook* payload. Unlike the checkout handshake above,
+ * webhooks are signed with the per-webhook secret configured in the Razorpay
+ * dashboard (Settings → Webhooks), not the API key secret — and over the exact
+ * raw request bytes, so pass `req.rawBody`, never a re-serialised object.
+ */
+export function verifyRazorpayWebhookSignature(rawBody: string, signature: string): boolean {
+  const { createHmac, timingSafeEqual } = require("crypto");
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET ?? "";
+  if (!secret || !signature || !rawBody) return false;
+  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+  const a = Buffer.from(expected);
+  const b = Buffer.from(signature);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 // Stripe integration
 let stripe: any = null;
 
