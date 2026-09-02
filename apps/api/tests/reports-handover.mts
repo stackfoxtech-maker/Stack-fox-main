@@ -73,9 +73,17 @@ checks.push([`engagement report present`, typeof d?.engagement?.totals === "obje
 
 const gen = await post("/reports/generate", { type: "spend" });
 checks.push([`reports/generate -> ${gen.s}`, gen.s === 200]);
-checks.push([`generate returns a download URL`, typeof gen.b?.data?.downloadUrl === "string"]);
-if (gen.b?.data?.downloadUrl) {
-  const dl = await fetch(gen.b.data.downloadUrl);
+// A downloadable copy is only persisted when report storage (Supabase) is
+// configured; otherwise the endpoint returns the payload with downloadUrl:null
+// by design. Assert the string + fetch only when storage is available.
+const storageEnv = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY);
+const genUrl = gen.b?.data?.downloadUrl;
+checks.push([
+  `generate download URL (${genUrl})`,
+  storageEnv ? typeof genUrl === "string" : genUrl === null || typeof genUrl === "string",
+]);
+if (typeof genUrl === "string") {
+  const dl = await fetch(genUrl);
   checks.push([`download URL fetches -> ${dl.status}`, dl.status === 200]);
 }
 const bad = await post("/reports/generate", { type: "nonsense" });
