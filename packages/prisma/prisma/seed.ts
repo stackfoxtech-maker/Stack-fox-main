@@ -15,6 +15,25 @@ function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+// ServiceUnit.slug is @unique, but shared/stackfox-data.json has 12 services
+// all named "End-to-End Workflow Test (₹5)" (one placeholder per category), so
+// slugify(name) collides and the seed hit P2002. Disambiguate deterministically
+// with the (already-unique) service id — iteration order is stable, so a
+// re-seed produces the same slugs.
+const usedSlugs = new Set<string>();
+function uniqueSlug(name: string, serviceId: string): string {
+  const base = slugify(name) || serviceId.toLowerCase();
+  if (!usedSlugs.has(base)) {
+    usedSlugs.add(base);
+    return base;
+  }
+  let candidate = `${base}-${serviceId.toLowerCase().replace(/^sf-/, "")}`;
+  let n = 2;
+  while (usedSlugs.has(candidate)) candidate = `${base}-${n++}`;
+  usedSlugs.add(candidate);
+  return candidate;
+}
+
 function categoryToTier1(catId: string): string {
   const map: Record<string, string> = {
     "web-dev": "WEB",
@@ -60,12 +79,13 @@ async function seed() {
   console.log(`  → ${data.services.length} services...`);
   for (const svc of data.services) {
     const serviceId = `SF-${categoryToTier1(svc.catId)}-${svc.id.split("-").pop()?.padStart(3, "0")}`;
+    const slug = uniqueSlug(svc.name, serviceId);
     await prisma.serviceUnit.upsert({
       where: { id: serviceId },
       update: {
         name: svc.name,
         categoryTier1: categoryToTier1(svc.catId),
-        slug: slugify(svc.name),
+        slug,
         baseWeight: Math.ceil(svc.price / 1000),
         sacCode: sacCodeForCategory(svc.catId),
         status: "PUBLISHED",
@@ -86,7 +106,7 @@ async function seed() {
         id: serviceId,
         name: svc.name,
         categoryTier1: categoryToTier1(svc.catId),
-        slug: slugify(svc.name),
+        slug,
         baseWeight: Math.ceil(svc.price / 1000),
         sacCode: sacCodeForCategory(svc.catId),
         status: "PUBLISHED",
