@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
-import { verifyRazorpaySignature, getStripe } from "../lib/payments";
+import { verifyRazorpayWebhookSignature, getStripe } from "../lib/payments";
 import { recordInvoicePayment } from "../lib/billing";
 import { clientScope } from "../lib/scope";
 import { pageParams } from "../lib/http";
@@ -305,11 +305,20 @@ export async function financeRoutes(app: FastifyInstance) {
 
   // Razorpay webhook
   app.post("/webhooks/razorpay", async (req, reply) => {
+    if (!process.env.RAZORPAY_WEBHOOK_SECRET) {
+      req.log.error("RAZORPAY_WEBHOOK_SECRET not set — Razorpay webhooks cannot be verified");
+      return reply.code(503).send({ error: "Webhook verification not configured" });
+    }
+
     const signature = req.headers["x-razorpay-signature"] as string;
     if (!signature) return reply.code(400).send({ error: "Missing signature" });
 
-    const body = (req as any).rawBody ?? JSON.stringify(req.body);
-    if (!verifyRazorpaySignature(body, signature)) {
+    // Razorpay signs the exact bytes it sent — the parsed/re-serialised object
+    // will not byte-match once key order or whitespace differs.
+    const rawBody = (req as { rawBody?: string }).rawBody;
+    if (!rawBody) return reply.code(400).send({ error: "Missing body" });
+
+    if (!verifyRazorpayWebhookSignature(rawBody, signature)) {
       return reply.code(400).send({ error: "Invalid signature" });
     }
 
