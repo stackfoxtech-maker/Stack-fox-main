@@ -21,6 +21,12 @@ const OAUTH_ERRORS = {
 
 const PHONE_RE = /^(\+?\d{10,15})$/;
 
+// Phone/SMS OTP login. Off until MSG91 has a DLT-approved OTP template
+// (MSG91_OTP_TEMPLATE_ID on the API) — without it MSG91 accepts the send but
+// nothing is delivered, so the tab would be a dead end. Flip on with
+// VITE_PHONE_OTP=true once SMS actually works.
+const PHONE_OTP_ENABLED = import.meta.env.VITE_PHONE_OTP === 'true';
+
 export default function Login() {
   usePageTitle('Log in');
   const [mode, setMode] = useState('password'); // 'password' | 'otp'
@@ -91,25 +97,27 @@ export default function Login() {
             </div>
           </div>
 
-          {/* mode switch */}
-          <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-warm-100 mt-4 text-sm font-medium">
-            <button
-              type="button"
-              onClick={() => setMode('password')}
-              className={`py-2 rounded-lg transition ${mode === 'password' ? 'bg-white shadow-sm text-warm-900' : 'text-warm-500'}`}
-            >
-              Email &amp; password
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('otp'); setOtpStep('enter-phone'); }}
-              className={`py-2 rounded-lg transition ${mode === 'otp' ? 'bg-white shadow-sm text-warm-900' : 'text-warm-500'}`}
-            >
-              Phone OTP
-            </button>
-          </div>
+          {/* mode switch — only shown when there's more than one method */}
+          {PHONE_OTP_ENABLED && (
+            <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-warm-100 mt-4 text-sm font-medium">
+              <button
+                type="button"
+                onClick={() => setMode('password')}
+                className={`py-2 rounded-lg transition ${mode === 'password' ? 'bg-white shadow-sm text-warm-900' : 'text-warm-500'}`}
+              >
+                Email &amp; password
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('otp'); setOtpStep('enter-phone'); }}
+                className={`py-2 rounded-lg transition ${mode === 'otp' ? 'bg-white shadow-sm text-warm-900' : 'text-warm-500'}`}
+              >
+                Phone OTP
+              </button>
+            </div>
+          )}
 
-          {mode === 'password' ? (
+          {mode === 'password' || !PHONE_OTP_ENABLED ? (
             <form onSubmit={handlePassword} className="space-y-4 mt-4">
               <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required autoFocus />
               <div className="relative">
