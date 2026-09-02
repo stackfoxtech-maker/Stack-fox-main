@@ -3,16 +3,27 @@ import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
 import { recordInvoicePayment } from "../lib/billing";
+import { requireAuth } from "../plugins/auth";
+import { clientScope } from "../lib/scope";
 
 const MIN_AMOUNT_PAISE = 100;
 
 export async function paymentRoutes(app: FastifyInstance) {
   // POST /payments/create-order — create a Razorpay order for an invoice balance
   app.post("/payments/create-order", async (req, reply) => {
+    // Was unauthenticated: any caller could probe invoice ids for their amounts
+    // and stomp `razorpayOrderId` on an invoice mid-payment. Now a client may
+    // only create an order for an invoice billed to their own org.
+    if (!requireAuth(req, reply)) return;
+    const scope = await clientScope(req, reply);
+    if (scope === undefined) return;
+
     const { invoiceId } = req.body as { invoiceId?: string };
     if (!invoiceId) return reply.code(400).send({ message: "invoiceId is required" });
 
-    const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
+    const invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId, ...(scope !== null ? { orgId: scope } : {}) },
+    });
     if (!invoice) return reply.code(404).send({ message: "Invoice not found" });
 
     // Bill only what is still outstanding. A PARTIALLY_PAID invoice (settled in
@@ -61,6 +72,9 @@ export async function paymentRoutes(app: FastifyInstance) {
 
   // POST /payments/verify — verify the Razorpay payment signature and mark the invoice paid
   app.post("/payments/verify", async (req, reply) => {
+    // The HMAC over order_id|payment_id (signed with the key secret) is the real
+    // gate here, but this still mutates an invoice — require a session too.
+    if (!requireAuth(req, reply)) return;
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId } = req.body as {
       razorpay_order_id?: string;
       razorpay_payment_id?: string;
