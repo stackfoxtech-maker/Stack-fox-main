@@ -9,7 +9,7 @@ import { ensurePersonalOrg } from "../lib/scope";
 import { toJson } from "../lib/json";
 import { isInternalRole } from "@stackfox/core";
 import { sendMail, isMailConfigured, passwordResetEmail, verifyEmailMessage, otpEmail } from "../lib/mailer";
-import { sendOtpSms, isSmsConfigured } from "../lib/sms";
+import { sendPhoneOtp, verifyPhoneOtp, isSmsConfigured } from "../lib/sms";
 import { authorizeUrl, exchangeCode, isGoogleConfigured } from "../lib/googleOAuth";
 import { getSessionEpoch, bumpSessionEpoch } from "../lib/session";
 import { webAppUrl } from "../lib/urls";
@@ -304,12 +304,28 @@ export async function authRoutes(app: FastifyInstance) {
     const { email, phone } = req.body as { email?: string; phone?: string };
     if (!email && !phone) return reply.code(400).send({ error: "email or phone required" });
 
-    const otp = String(randomInt(100000, 999999));
-    const identifier = email ?? phone!;
+    // ── Phone: MSG91 generates, stores and rate-limits the code ────────────────
+    if (phone && !email) {
+      if (isSmsConfigured()) {
+        const result = await sendPhoneOtp(phone);
+        if (!result.ok) {
+          app.log.error({ phone, error: result.error }, "OTP SMS failed");
+          return reply.code(502).send({ error: "We could not send your code. Please try again shortly." });
+        }
+        return { success: true, message: "OTP sent", channel: "sms" };
+      }
+      if (process.env.NODE_ENV === "production") {
+        return reply.code(503).send({ error: "Phone verification is not available on this server" });
+      }
+      app.log.info(`[dev] no SMS provider — phone OTP for ${phone} would be sent by MSG91`);
+      return { success: true, message: "OTP sent", channel: "log" };
+    }
 
+    // ── Email: we generate + store in Redis, Resend delivers ───────────────────
+    const otp = String(randomInt(100000, 999999));
     let stored = true;
     try {
-      await redis.set(`otp:${identifier}`, otp, "EX", 300); // 5 min TTL
+      await redis.set(`otp:${email}`, otp, "EX", 300); // 5 min TTL
     } catch {
       stored = false;
     }
@@ -317,31 +333,20 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(503).send({ error: "One-time codes are temporarily unavailable" });
     }
 
-    // Email via Resend, phone via SMS/WhatsApp. Whichever channel the caller
-    // gave; the code is logged (dev only) when no provider is configured.
-    let channel: "email" | "sms" | "log" = "log";
-    if (email && isMailConfigured()) {
-      channel = "email";
-      const result = await sendMail(otpEmail(email, otp));
+    if (isMailConfigured()) {
+      const result = await sendMail(otpEmail(email!, otp));
       if (!result.delivered) {
         app.log.error({ email, error: result.error }, "OTP email failed");
         return reply.code(502).send({ error: "We could not send your code. Please try again shortly." });
       }
-    } else if (phone && isSmsConfigured()) {
-      channel = "sms";
-      const result = await sendOtpSms(phone, otp);
-      if (!result.delivered) {
-        app.log.error({ phone, error: result.error }, "OTP SMS failed");
-        return reply.code(502).send({ error: "We could not send your code. Please try again shortly." });
-      }
-    } else if (process.env.NODE_ENV === "production") {
-      app.log.error({ via: email ? "email" : "phone" }, "OTP requested but no delivery provider is configured");
-      return reply.code(503).send({ error: "One-time codes are not available on this server" });
-    } else {
-      app.log.info(`[dev] OTP for ${identifier}: ${otp}`);
+      return { success: true, message: "OTP sent", channel: "email" };
     }
-
-    return { success: true, message: "OTP sent", channel };
+    if (process.env.NODE_ENV === "production") {
+      app.log.error({ email }, "OTP requested but no email provider is configured");
+      return reply.code(503).send({ error: "One-time codes are not available on this server" });
+    }
+    app.log.info(`[dev] OTP for ${email}: ${otp}`);
+    return { success: true, message: "OTP sent", channel: "log" };
   });
 
   // POST /auth/otp/verify
@@ -351,16 +356,31 @@ export async function authRoutes(app: FastifyInstance) {
       phone?: string;
       code: string;
     };
-    const identifier = email ?? phone;
-    if (!identifier) return reply.code(400).send({ error: "email or phone required" });
+    if (!email && !phone) return reply.code(400).send({ error: "email or phone required" });
+    if (!code) return reply.code(400).send({ error: "code required" });
 
-    let stored: string | null = null;
-    try { stored = await redis.get(`otp:${identifier}`); } catch {}
-    if (!stored || stored !== code) {
-      return reply.code(401).send({ error: "Invalid or expired OTP" });
+    if (phone && !email) {
+      // MSG91 holds the code for phone.
+      if (!isSmsConfigured()) {
+        return reply.code(503).send({ error: "Phone verification is not available on this server" });
+      }
+      const result = await verifyPhoneOtp(phone, code);
+      if (!result.ok) {
+        const ipBlocked = /whitelist/i.test(result.error ?? "");
+        if (ipBlocked) app.log.error({ error: result.error }, "MSG91 rejected the server IP");
+        return reply.code(ipBlocked ? 503 : 401).send({
+          error: ipBlocked ? "Phone verification is misconfigured" : "Invalid or expired code",
+        });
+      }
+    } else {
+      // Email code lives in Redis.
+      let stored: string | null = null;
+      try { stored = await redis.get(`otp:${email}`); } catch {}
+      if (!stored || stored !== code) {
+        return reply.code(401).send({ error: "Invalid or expired OTP" });
+      }
+      try { await redis.del(`otp:${email}`); } catch {}
     }
-
-    try { await redis.del(`otp:${identifier}`); } catch {}
 
     let user = await prisma.user.findFirst({
       where: email ? { email } : { phone },

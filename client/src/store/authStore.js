@@ -70,6 +70,40 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  /** Request an OTP. Pass { email } or { phone } (E.164 or a 10-digit Indian number). */
+  sendOtp: async ({ email, phone }) => {
+    set({ isLoading: true });
+    try {
+      await api.post('/auth/otp/send', { email, phone });
+      return { success: true };
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Could not send the code.';
+      toast.error(msg);
+      return { success: false, message: msg };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  /** Verify an OTP and start a session. Same identifier you passed to sendOtp. */
+  verifyOtp: async ({ email, phone, code }) => {
+    set({ isLoading: true });
+    try {
+      const res = await api.post('/auth/otp/verify', { email, phone, code });
+      const { user, accessToken, refreshToken } = res.data.data;
+      storeTokens({ accessToken, refreshToken });
+      get().setUser(user);
+      toast.success(`Welcome, ${user.name.split(' ')[0]}!`);
+      return { success: true, user };
+    } catch (err) {
+      const msg = err.response?.data?.error || 'That code did not work.';
+      toast.error(msg);
+      return { success: false, message: msg };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   /**
    * Finishes a Google sign-in. The redirect only carries tokens, so the profile
    * is fetched with them — which also proves the token works before we send the
