@@ -11,11 +11,13 @@ import { isStorageConfigured } from "./lib/storage";
 import { authPlugin } from "./plugins/auth";
 
 /**
- * Background workers normally run as their own process
- * (`pnpm --filter @stackfox/api worker`). Single-container deploys can instead
- * set WORKERS_INLINE=true to host them alongside the HTTP server.
+ * Background workers run inline with the HTTP server by default — the deploy is
+ * a single container (Dockerfile.server), so this is the only way they run at
+ * all. Set WORKERS_INLINE=false ONLY when a dedicated worker process
+ * (`pnpm --filter @stackfox/api worker`) is also running, to avoid processing
+ * every job twice.
  */
-const WORKERS_INLINE = process.env.WORKERS_INLINE === "true";
+const WORKERS_INLINE = process.env.WORKERS_INLINE !== "false";
 import { authRoutes } from "./routes/auth";
 import { catalogueRoutes } from "./routes/catalogue";
 import { workspaceRoutes } from "./routes/workspaces";
@@ -175,13 +177,13 @@ async function start() {
 
   if (WORKERS_INLINE) {
     await import("./workers/index");
-    app.log.info("Background workers + job scheduler running inline (WORKERS_INLINE=true)");
+    app.log.info("Background workers + job scheduler running inline");
   } else {
     app.log.warn(
-      "WORKERS_INLINE is not set and this process runs HTTP only. A separate " +
-        "`pnpm --filter @stackfox/api worker` process MUST be running, or ALL " +
+      "WORKERS_INLINE=false — this process serves HTTP only. A separate " +
+        "`pnpm --filter @stackfox/api worker` process must be running, or ALL " +
         "background work is dead: invoice/contract PDFs, notifications, webhooks, " +
-        "dunning, SLA breaches, rev-rec, renewals, retention, timesheet compilation.",
+        "dunning, SLA breaches, rev-rec, renewals, retention, sales follow-ups.",
     );
   }
 

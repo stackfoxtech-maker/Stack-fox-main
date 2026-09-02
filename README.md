@@ -325,12 +325,17 @@ Build outputs:
 ### Run Production
 
 ```bash
-# API
+# API — also runs the BullMQ workers + job scheduler inline by default
 cd apps/api
 node dist/server.js
 
 # Client — serve client/dist/ with nginx or any static file server
 ```
+
+**Background workers** run inside the API process by default (the deploy is a
+single container). To run them separately instead, start
+`pnpm --filter @stackfox/api worker` **and** set `WORKERS_INLINE=false` on the
+API process so jobs aren't processed twice.
 
 ### Docker
 
