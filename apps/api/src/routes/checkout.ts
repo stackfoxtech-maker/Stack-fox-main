@@ -9,6 +9,7 @@ import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import { redis } from "../lib/redis";
 import { toJson } from "../lib/json";
+import { resolveGstType, splitGst } from "../lib/gst";
 
 interface CheckoutSession {
   estimateId: string;
@@ -322,10 +323,11 @@ export async function checkoutRoutes(app: FastifyInstance) {
       ? Math.round(totals.grand * 0.95)
       : Math.round(totals.grand * 0.3);
 
-    const gstType = determineGstType(user.orgId);
+    const billTo = await prisma.org.findUnique({ where: { id: user.orgId } });
+    const gstType = resolveGstType(billTo);
     const gstRate = 0.18;
     const subtotal = Math.round(invoiceAmount / (1 + gstRate));
-    const gstAmount = invoiceAmount - subtotal;
+    const { cgst, sgst, igst } = splitGst(invoiceAmount - subtotal, gstType);
 
     const invoice = await prisma.invoice.create({
       data: {
@@ -337,9 +339,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
         sacCode: "998314",
         gstType,
         subtotal,
-        cgst: gstType === "CGST_SGST" ? Math.round(gstAmount / 2) : 0,
-        sgst: gstType === "CGST_SGST" ? Math.round(gstAmount / 2) : 0,
-        igst: gstType === "IGST" ? gstAmount : 0,
+        cgst,
+        sgst,
+        igst,
         grandTotal: invoiceAmount,
         status: "SENT",
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -479,11 +481,6 @@ function getContractTypes(tier: string): string[] {
   if (tier === "STARTER") return ["MICRO_SOW"];
   if (tier === "GROWTH") return ["SOW", "MSA"];
   return ["SOW", "MSA", "NDA", "IP_WFH", "DPA"];
-}
-
-function determineGstType(_orgId: string): string {
-  // TODO: check org billing state vs StackFox state (Rajasthan)
-  return "IGST";
 }
 
 async function getEstimateTotals(estimateId: string) {

@@ -5,6 +5,7 @@ import { uploadFile, copyToWorm } from "../lib/storage";
 import { emitEvent } from "../lib/events";
 import { renderDocument, inr, type DocLineItem } from "../lib/pdf";
 import * as ids from "../lib/id";
+import { resolveGstType, splitGst } from "../lib/gst";
 
 const GST_RATE = 0.18;
 
@@ -37,7 +38,8 @@ createWorker(QUEUE.docGen, async (job) => {
     const engagementGrand = num(commercial.grand);
     const invoiceGross = Math.round((engagementGrand * milestone.paymentPct) / 100);
     const subtotal = Math.round(invoiceGross / (1 + GST_RATE));
-    const gst = invoiceGross - subtotal;
+    const gstType = resolveGstType(project.engagement.client);
+    const { cgst, sgst, igst } = splitGst(invoiceGross - subtotal, gstType);
 
     let invoice = await prisma.invoice.findFirst({
       where: { engagementId: project.engagementId, milestoneRef },
@@ -52,9 +54,11 @@ createWorker(QUEUE.docGen, async (job) => {
           orgId: project.engagement.clientId,
           milestoneRef,
           sacCode: "998314",
-          gstType: "IGST",
+          gstType,
           subtotal,
-          igst: gst,
+          cgst,
+          sgst,
+          igst,
           grandTotal: invoiceGross,
           status: "SENT",
           dueDate: new Date(Date.now() + 7 * 86400000),
@@ -74,7 +78,12 @@ createWorker(QUEUE.docGen, async (job) => {
         desc: `${milestone.name} — milestone ${milestoneNumber} (${milestone.paymentPct}%)`,
         amount: inr(invoice ? invoice.subtotal : subtotal),
       },
-      { desc: `IGST @ ${Math.round(GST_RATE * 100)}%`, amount: inr(invoice ? invoice.igst : gst) },
+      ...(gstType === "CGST_SGST"
+        ? [
+            { desc: `CGST @ ${GST_RATE * 50}%`, amount: inr(invoice ? invoice.cgst : cgst) },
+            { desc: `SGST @ ${GST_RATE * 50}%`, amount: inr(invoice ? invoice.sgst : sgst) },
+          ]
+        : [{ desc: `IGST @ ${Math.round(GST_RATE * 100)}%`, amount: inr(invoice ? invoice.igst : igst) }]),
     ];
 
     const pdf = await renderDocument({

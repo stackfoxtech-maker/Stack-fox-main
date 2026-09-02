@@ -7,6 +7,21 @@ import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
 import useAuthStore from '@store/authStore';
 
+// Delivery progress from the project's milestones (weighted by payment %, since
+// that's how the engagement values each stage). `/projects` includes them.
+// The API doesn't send a `progress` field, so the old `p.progress || 0` was
+// always 0.
+const projectProgress = (p) => {
+  const ms = p?.milestones || [];
+  if (!ms.length) return 0;
+  const done = (m) => m.status === 'APPROVED' || Boolean(m.approvedAt);
+  const totalPct = ms.reduce((s, m) => s + (m.paymentPct || 0), 0);
+  if (totalPct > 0) {
+    return Math.round((ms.filter(done).reduce((s, m) => s + (m.paymentPct || 0), 0) / totalPct) * 100);
+  }
+  return Math.round((ms.filter(done).length / ms.length) * 100);
+};
+
 const StatCard = ({ label, value, icon: Icon, color, to }) => (
   <Link to={to} className="bg-white rounded-md border border-warm-200 p-5 hover:shadow-card transition-shadow group">
     <div className="flex items-center justify-between mb-3">
@@ -87,7 +102,7 @@ export default function Overview() {
                   <p className="text-xs text-warm-500">{p.id} &middot; {formatDate(p.createdAt)}</p>
                 </div>
                 <Badge variant={getStatusBadge(p.status)?.replace('badge-', '')}>{capitalize(p.status)}</Badge>
-                <div className="text-sm font-mono text-warm-700">{p.progress || 0}%</div>
+                <div className="text-sm font-mono text-warm-700">{projectProgress(p)}%</div>
               </Link>
             ))}
           </div>
