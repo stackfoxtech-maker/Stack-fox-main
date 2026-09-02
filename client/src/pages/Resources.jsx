@@ -160,26 +160,25 @@ export default function Resources() {
         )}
 
         {/* Newsletter Signup */}
-        <div className="mt-24 bg-warm-900 rounded-[2.5rem] p-8 md:p-16 relative overflow-hidden">
+        <div className="mt-24 bg-warm-900 rounded-lg p-8 md:p-16 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-fox-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-fox-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-          
+
           <div className="relative max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Stay ahead of the curve.</h2>
-            <p className="text-warm-400 mb-8 leading-relaxed">
+            <h2 className="text-3xl md:text-display-lg text-white mb-4">Stay ahead of the curve.</h2>
+            <p className="text-warm-300 mb-8 leading-relaxed">
               Get our monthly briefing on tech trends, automation hacks, and scaling strategies delivered straight to your inbox.
             </p>
             <form className="flex flex-col sm:flex-row gap-3" onSubmit={(e) => e.preventDefault()}>
               <input 
                 type="email" 
                 placeholder="Enter your email" 
-                className="flex-1 px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-warm-600 focus:outline-none focus:ring-2 focus:ring-fox-500 transition-all"
+                className="flex-1 px-6 py-4 rounded-sm bg-white/10 border border-white/15 text-white placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-fox-500 transition-all"
               />
               <Button variant="primary" size="lg" className="px-10">
                 Join 500+ builders
               </Button>
             </form>
-            <p className="text-[10px] text-warm-600 mt-4 uppercase tracking-widest font-bold">
+            <p className="text-label text-warm-300 mt-4 uppercase">
               No spam. Just value. Unsubscribe anytime.
             </p>
           </div>

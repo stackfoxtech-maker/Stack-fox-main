@@ -96,7 +96,10 @@ async function start() {
   app.addContentTypeParser(
     "application/json",
     { parseAs: "string" },
-    (_req, body: string, done) => {
+    (req, body: string, done) => {
+      // Keep the raw text around for webhook signature verification
+      // (Stripe/Razorpay sign the exact bytes, not the re-serialised object).
+      (req as { rawBody?: string }).rawBody = body;
       if (!body || body.trim() === "") return done(null, {});
       try {
         done(null, JSON.parse(body));

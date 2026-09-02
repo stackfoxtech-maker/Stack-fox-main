@@ -6,6 +6,11 @@ import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
+import {
+  computeInvoice,
+  renderGstInvoicePdf,
+  type GstInvoiceInput,
+} from "../lib/gstInvoice";
 
 /** Tier pricing spread applied on top of the point rate card. */
 const TIER_MULTIPLIER: Record<string, number> = {
@@ -147,43 +152,77 @@ Return as structured JSON.`;
   });
 
   // Invoice Generator Tool
+  //
+  // Full GST invoice engine (see lib/gstInvoice.ts): tax / proforma / credit /
+  // debit note, intra vs inter-State and export/SEZ supply, per-line discounts,
+  // round-off, SAC-wise tax breakup, amount-in-words, and a single-page A4 PDF
+  // returned inline as base64 so the tool works with no storage round-trip.
   app.post(
     "/tools/invoice",
     { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
-    async (req) => {
-    const body = req.body as any;
-    const session = await prisma.toolSession.create({
-      data: { tool: "INVOICE", input: body, status: "PROCESSING" },
-    });
+    async (req, reply) => {
+      const body = (req.body ?? {}) as GstInvoiceInput;
+      const session = await prisma.toolSession.create({
+        data: { tool: "INVOICE", input: toJson(body), status: "PROCESSING" },
+      });
 
-    const subtotal = body.lineItems?.reduce((s: number, l: any) => s + (l.amount ?? 0), 0) ?? 0;
-    const gstRate = 0.18;
-    const gst = Math.round(subtotal * gstRate);
+      let computed;
+      try {
+        computed = computeInvoice(body);
+      } catch (err) {
+        await prisma.toolSession.update({
+          where: { id: session.id },
+          data: { status: "FAILED" },
+        });
+        return reply.code(400).send({ error: "Could not compute invoice from the supplied data." });
+      }
 
-    const invoice = {
-      from: body.from,
-      to: body.to,
-      lineItems: body.lineItems,
-      subtotal,
-      gst,
-      total: subtotal + gst,
-      sacCode: "998314",
-      generatedAt: new Date().toISOString(),
-    };
+      let pdfBase64: string | null = null;
+      try {
+        const pdf = await renderGstInvoicePdf(computed);
+        pdfBase64 = pdf.toString("base64");
+      } catch (err) {
+        req.log.error(err, "GST invoice PDF render failed");
+      }
 
-    const toolInvoice = await prisma.toolInvoice.create({
-      data: {
+      const toolInvoice = await prisma.toolInvoice.create({
+        data: {
+          sessionId: session.id,
+          userId: req.user?.sub ?? null,
+          invoiceNumber: computed.invoiceNumber,
+          data: toJson(computed),
+        },
+      });
+
+      await prisma.toolSession.update({
+        where: { id: session.id },
+        data: { output: toJson({ ...computed, pdf: undefined }), status: "COMPLETED" },
+      });
+
+      return {
         sessionId: session.id,
-        data: invoice,
-      },
-    });
+        invoiceId: toolInvoice.id,
+        invoice: computed,
+        pdfBase64,
+      };
+    },
+  );
 
-    await prisma.toolSession.update({
-      where: { id: session.id },
-      data: { output: invoice, status: "COMPLETED" },
-    });
+  // Re-fetch a previously generated tool invoice (and regenerate its PDF).
+  app.get("/tools/invoice/:id", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const row = await prisma.toolInvoice.findUnique({ where: { id } });
+    if (!row) return reply.code(404).send({ error: "Invoice not found" });
 
-    return { sessionId: session.id, invoiceId: toolInvoice.id, invoice };
+    const data = row.data as Record<string, unknown>;
+    let pdfBase64: string | null = null;
+    try {
+      // `data` is already a ComputedInvoice; recompute the PDF from it.
+      pdfBase64 = (await renderGstInvoicePdf(data as any)).toString("base64");
+    } catch {
+      /* older rows may predate the engine — return JSON only */
+    }
+    return { invoiceId: row.id, invoice: data, pdfBase64 };
   });
 
   // Express Checkout (Starter tier 3-field)

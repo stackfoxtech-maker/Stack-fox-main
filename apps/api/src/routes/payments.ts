@@ -15,7 +15,13 @@ export async function paymentRoutes(app: FastifyInstance) {
     const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
     if (!invoice) return reply.code(404).send({ message: "Invoice not found" });
 
-    const balance = invoice.status === "PAID" ? 0 : invoice.grandTotal;
+    // Bill only what is still outstanding. A PARTIALLY_PAID invoice (settled in
+    // part via a bank UTR) must not be charged its full grand total again, and a
+    // PAID or CANCELLED one is not payable at all.
+    const balance =
+      invoice.status === "PAID" || invoice.status === "CANCELLED"
+        ? 0
+        : Math.max(0, invoice.grandTotal - (invoice.amountPaid ?? 0));
     if (balance < MIN_AMOUNT_PAISE) {
       return reply.code(400).send({ message: `Nothing to pay, or amount below minimum (${MIN_AMOUNT_PAISE} paise)` });
     }
@@ -76,15 +82,28 @@ export async function paymentRoutes(app: FastifyInstance) {
       return reply.code(400).send({ message: "Order does not match this invoice" });
     }
 
+    // This flow always creates an order for the full outstanding balance (see
+    // /create-order), so the invoice is now settled — but the Payment row and
+    // rev-rec entry must reflect what was actually charged in this transaction,
+    // not the grand total, or an invoice part-paid by bank transfer first is
+    // double-counted in the ledger.
+    const charged = Math.max(0, invoice.grandTotal - (invoice.amountPaid ?? 0));
+
     const updated = await prisma.invoice.update({
       where: { id: invoice.id },
-      data: { status: "PAID", paidAt: new Date(), utr: razorpay_payment_id },
+      data: {
+        status: "PAID",
+        paidAt: new Date(),
+        utr: razorpay_payment_id,
+        amountPaid: invoice.grandTotal,
+      },
     });
 
     await recordInvoicePayment(updated, {
       gateway: "RAZORPAY",
       gatewayPaymentId: razorpay_payment_id,
       gatewayOrderId: razorpay_order_id,
+      amount: charged || undefined,
     });
 
     await emitEvent({

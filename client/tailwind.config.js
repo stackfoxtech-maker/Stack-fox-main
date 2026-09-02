@@ -32,14 +32,17 @@ export default {
           900: '#1E2F27',
         },
         // Warm neutrals — a touch warmer + more saturated than before. Names unchanged.
+        // warm-400 darkened 2026-09-02: #9C968A only hit 2.8:1 on the warm-white
+        // ground and was used as body/secondary text in 270+ places. #6E6860 is
+        // 5.2:1 (WCAG AA). warm-300 stays light — it's borders + decoration only.
         warm: {
           white: '#FAF8F5',
           50: '#F5F3EF',
           100: '#EDEAE4',
           200: '#DEDAD1',
           300: '#C6C1B5',
-          400: '#9C968A',
-          500: '#756F63',
+          400: '#6E6860',
+          500: '#5E594F',
           600: '#57524A',
           700: '#3E3A34',
           800: '#2A2723',

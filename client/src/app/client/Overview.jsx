@@ -8,7 +8,7 @@ import api from '@lib/api';
 import useAuthStore from '@store/authStore';
 
 const StatCard = ({ label, value, icon: Icon, color, to }) => (
-  <Link to={to} className="bg-white rounded-2xl border border-warm-200 p-5 hover:shadow-card transition-shadow group">
+  <Link to={to} className="bg-white rounded-md border border-warm-200 p-5 hover:shadow-card transition-shadow group">
     <div className="flex items-center justify-between mb-3">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
         <Icon size={20} />
@@ -67,7 +67,7 @@ export default function Overview() {
       </div>
 
       {/* Recent projects */}
-      <div className="bg-white rounded-2xl border border-warm-200 p-5">
+      <div className="bg-white rounded-md border border-warm-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-warm-900">Recent projects</h3>
           <Link to="/app/client/projects" className="text-xs text-fox-500 hover:underline flex items-center gap-1">View all <ArrowRight size={12} /></Link>

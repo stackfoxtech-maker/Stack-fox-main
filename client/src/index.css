@@ -17,7 +17,8 @@
     --color-bg-elevated: #FFFFFF;
     --color-text: #1A1918;
     --color-text-secondary: #57524A;
-    --color-text-muted: #9C968A;
+    /* was #9C968A — 2.8:1 on the warm ground, failed AA. #6E6860 is 5.2:1. */
+    --color-text-muted: #6E6860;
     --color-border: #EDEAE4;
     --color-border-hover: #C6C1B5;
     --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
@@ -212,6 +213,29 @@
     border-radius: var(--radius-pill);
     background: var(--color-sage-light);
     color: var(--color-sage-dark);
+  }
+
+  /* Photography frame — warm ground shows through a hair of padding, soft
+     shadow does the separating (DESIGN.md: shadow over border). */
+  .img-frame {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--color-bg-sunken);
+    box-shadow: var(--shadow-md);
+  }
+  .img-frame > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .img-frame-sm { border-radius: var(--radius-md); }
+
+  /* Subtle warm dot grid — the one allowed background texture besides grain.
+     No wavy dividers, no blobs. */
+  .dot-grid {
+    background-image: radial-gradient(circle at 1px 1px, rgba(26,25,24,0.06) 1px, transparent 0);
+    background-size: 28px 28px;
   }
 
   .bg-noise {

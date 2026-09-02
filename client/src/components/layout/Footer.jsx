@@ -31,13 +31,13 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-warm-900 text-warm-300 mt-auto">
+    <footer className="bg-warm-900 text-warm-200 mt-auto">
       <div className="container-fx">
         {/* CTA Band */}
         <div className="py-14 md:py-20 border-b border-warm-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div>
             <h3 className="text-2xl md:text-display-lg text-white mb-3">Ready to price your project?</h3>
-            <p className="text-warm-400 max-w-md text-body-lg">
+            <p className="text-warm-300 max-w-md text-body-lg">
               Open the builder, add the pieces you need, and see the number in a couple of minutes.
             </p>
           </div>
@@ -57,12 +57,12 @@ export default function Footer() {
                   <span className="text-white">stack</span>
                   <span className="text-fox-500">fox</span>
                 </span>
-                <span className="text-[10px] font-bold text-warm-500 leading-none mt-1 tracking-tight">
+                <span className="text-[10px] font-bold text-warm-300 leading-none mt-1 tracking-tight">
                   by ARTWALL LABS
                 </span>
               </div>
             </div>
-            <p className="text-sm text-warm-400 mb-5 leading-relaxed">
+            <p className="text-sm text-warm-300 mb-5 leading-relaxed">
               Smart Code, Swift Delivery. A premium product of Artwall Labs.
             </p>
             <div className="space-y-2.5 text-sm">
@@ -81,11 +81,11 @@ export default function Footer() {
           {/* Link columns */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-label text-warm-400 mb-4 uppercase">{title}</h4>
+              <h4 className="text-label text-warm-300 mb-4 uppercase">{title}</h4>
               <ul className="space-y-2.5">
                 {links.map((link) => (
                   <li key={link.href}>
-                    <Link to={link.href} className="text-sm text-warm-400 hover:text-fox-400 transition-colors">
+                    <Link to={link.href} className="text-sm text-warm-300 hover:text-fox-400 transition-colors">
                       {link.label}
                     </Link>
                   </li>
@@ -96,13 +96,13 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="py-6 border-t border-warm-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-warm-500">
+        <div className="py-6 border-t border-warm-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-warm-300">
           <p>&copy; {year} Artwall Labs. All rights reserved.</p>
           <div className="flex items-center gap-1 text-xs">
             <span className="font-mono text-fox-500">BUILD</span>
-            <span className="text-warm-600">&middot;</span>
+            <span className="text-warm-500">&middot;</span>
             <span className="font-mono text-fox-500">SHIP</span>
-            <span className="text-warm-600">&middot;</span>
+            <span className="text-warm-500">&middot;</span>
             <span className="font-mono text-fox-500">SCALE</span>
           </div>
         </div>

@@ -34,7 +34,7 @@ export default function FAQ() {
 
       <div className="space-y-3">
         {filtered.map((f, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-warm-200 overflow-hidden">
+          <div key={i} className="bg-white rounded-md border border-warm-200 overflow-hidden">
             <button onClick={() => setOpen(open === i ? null : i)} className="w-full flex items-center justify-between px-6 py-4 text-left">
               <span className="font-medium text-warm-900 text-sm">{f.q}</span>
               <ChevronDown size={18} className={`text-warm-400 transition-transform ${open === i ? 'rotate-180' : ''}`} />

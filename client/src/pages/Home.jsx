@@ -3,12 +3,29 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight, ShoppingCart, Globe, Smartphone, Brain, Zap, Palette, Server,
   Cloud, TrendingUp, MessageCircle, Box, Wrench, Code2, Check, Star, Shield,
-  Search, Layers, PhoneCall,
+  Search, Layers, PhoneCall, Quote,
 } from 'lucide-react';
-import { usePageTitle } from '@lib/hooks';
+import { motion } from 'framer-motion';
+import { usePageTitle, useCountUp } from '@lib/hooks';
+import { Reveal } from '@components/Reveal';
+import { fadeUp } from '@components/motion';
 import { BrandLogo } from '@components/ui/BrandLogo';
 import { FoxBot } from '@components/ui/FoxBot';
 import SF_DATA from '@data/stackfox-data.json';
+
+const EASE = [0.2, 0.7, 0.2, 1];
+/* Hero left column — headline lines and copy rise in sequence. */
+const heroStagger = { hidden: {}, show: { transition: { staggerChildren: 0.09, delayChildren: 0.12 } } };
+const heroLine = {
+  hidden: { opacity: 0, y: 16, filter: 'blur(6px)' },
+  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.55, ease: EASE } },
+};
+/* Quote card — line items cascade in after the card settles, then the total ticks. */
+const cardList = { hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.42 } } };
+const cardRow = {
+  hidden: { opacity: 0, x: 10 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.34, ease: EASE } },
+};
 
 const iconMap = {
   globe: Globe, smartphone: Smartphone, brain: Brain, zap: Zap,
@@ -25,14 +42,24 @@ const STEPS = [
   { icon: PhoneCall, title: 'Book a call', body: 'Send us the itemised plan. We confirm scope on a free call and start.' },
 ];
 
-/* Soft warm wash behind the hero — replaces the old decorative circles. */
+/* Soft warm wash behind the hero — replaces the old decorative circles.
+   The two washes drift slowly so the ground feels alive, not static.
+   MotionConfig reducedMotion="user" freezes the drift for those who ask. */
 function HeroBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute -top-40 -right-32 h-[36rem] w-[36rem] rounded-full opacity-70 blur-3xl"
-        style={{ background: 'radial-gradient(circle at 30% 30%, rgba(255,77,0,0.10), transparent 70%)' }} />
-      <div className="absolute -bottom-48 -left-40 h-[32rem] w-[32rem] rounded-full opacity-60 blur-3xl"
-        style={{ background: 'radial-gradient(circle at 60% 40%, rgba(91,138,114,0.10), transparent 70%)' }} />
+      <motion.div
+        className="absolute -top-40 -right-32 h-[36rem] w-[36rem] rounded-full opacity-70 blur-3xl"
+        style={{ background: 'radial-gradient(circle at 30% 30%, rgba(255,77,0,0.10), transparent 70%)' }}
+        animate={{ x: [0, 24, 0], y: [0, -18, 0] }}
+        transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute -bottom-48 -left-40 h-[32rem] w-[32rem] rounded-full opacity-60 blur-3xl"
+        style={{ background: 'radial-gradient(circle at 60% 40%, rgba(91,138,114,0.10), transparent 70%)' }}
+        animate={{ x: [0, -20, 0], y: [0, 16, 0] }}
+        transition={{ duration: 28, repeat: Infinity, ease: 'easeInOut' }}
+      />
       <div className="absolute inset-0 bg-grain opacity-60" />
     </div>
   );
@@ -55,6 +82,9 @@ export default function Home() {
   const subtotal = chips.filter((c) => picked.includes(c.id)).reduce((s, c) => s + c.price, 0);
   const gst = Math.round(subtotal * 0.18);
   const total = subtotal + gst;
+  // Signature moment (DESIGN.md): the running total counts up as pieces change.
+  // startDelay lets the first tick land just after the line items cascade in.
+  const { ref: totalRef, value: shownTotal } = useCountUp(total, { duration: 700, startDelay: 900 });
 
   const categories = SF_DATA.categories || [];
   const serviceCount = (SF_DATA.services || []).length;
@@ -66,29 +96,29 @@ export default function Home() {
         <HeroBackdrop />
         <div className="container-fx relative py-12 sm:py-16 lg:py-24">
           <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
-            <div className="animate-fade-up lg:col-span-6 xl:col-span-7">
-              <span className="chip-sage mb-6">
+            <motion.div variants={heroStagger} initial="hidden" animate="show" className="lg:col-span-6 xl:col-span-7">
+              <motion.span variants={fadeUp} className="chip-sage mb-6">
                 <Zap size={14} className="text-sage-600" /> 240 services · one live total
-              </span>
+              </motion.span>
               <h1 className="text-warm-900"
                 style={{ fontSize: 'clamp(2.35rem, 6vw, 3.5rem)', lineHeight: 1.05, letterSpacing: '-0.025em' }}>
-                Build anything.<br />
-                Price <span className="italic text-fox-600">every</span> piece.
+                <motion.span variants={heroLine} className="block">Build anything.</motion.span>
+                <motion.span variants={heroLine} className="block">Price every piece.</motion.span>
               </h1>
-              <p className="mt-5 max-w-md text-body-lg text-warm-600">
+              <motion.p variants={fadeUp} className="mt-5 max-w-md text-body-lg text-warm-600">
                 Browse services, add what you need, and watch your total update as you go.
                 Talk to us only when you're ready.
-              </p>
-              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+              </motion.p>
+              <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
                 <Link to="/builder" className="btn-fox">
                   Start building <ArrowRight size={16} />
                 </Link>
                 <Link to="/pricing" className="text-body-sm font-medium text-warm-600 underline decoration-warm-300 underline-offset-4 hover:text-fox-600">
                   See how pricing works
                 </Link>
-              </div>
+              </motion.div>
 
-              <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-warm-200 pt-6">
+              <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-warm-200 pt-6">
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-2.5">
                     {[11, 12, 13, 14].map((i) => (
@@ -104,11 +134,16 @@ export default function Home() {
                     </span>
                   </div>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
-            {/* Itemised quote card */}
-            <div className="animate-fade-up lg:col-span-6 xl:col-span-5" style={{ animationDelay: '80ms' }}>
+            {/* Itemised quote card — assembles itself on load: rows cascade in, then the total ticks up. */}
+            <motion.div
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.18, ease: EASE }}
+              className="lg:col-span-6 xl:col-span-5"
+            >
               <div className="rounded-md border border-warm-200 bg-white p-5 shadow-lg sm:p-6">
                 <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                   <h2 className="text-title text-warm-900">Your project, itemised</h2>
@@ -116,13 +151,15 @@ export default function Home() {
                 </div>
                 <p className="mb-4 text-caption text-warm-500">Indicative pricing · final quote after a free call</p>
 
-                <div className="space-y-2">
+                <motion.div variants={cardList} initial="hidden" animate="show" className="space-y-2">
                   {chips.map((c) => {
                     const on = picked.includes(c.id);
                     const Icon = c.icon;
                     return (
-                      <button
+                      <motion.button
                         key={c.id}
+                        variants={cardRow}
+                        whileTap={{ scale: 0.985 }}
                         onClick={() => toggle(c.id)}
                         aria-pressed={on}
                         className={`flex w-full items-center gap-3 rounded-sm border px-3 py-2.5 text-left transition-colors duration-short ${
@@ -130,23 +167,31 @@ export default function Home() {
                         }`}
                       >
                         <span className={`grid h-6 w-6 flex-shrink-0 place-items-center rounded-sm ${on ? 'bg-sage-100 text-sage-700' : 'bg-white text-warm-400'}`}>
-                          {on ? <Check size={13} /> : <Icon size={13} />}
+                          <motion.span
+                            key={on ? 'on' : 'off'}
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.16, ease: EASE }}
+                            className="grid place-items-center"
+                          >
+                            {on ? <Check size={13} /> : <Icon size={13} />}
+                          </motion.span>
                         </span>
                         <span className="flex-1 text-body-sm font-medium text-warm-800">{c.label}</span>
                         <span className={`price-tag text-body-sm ${on ? 'text-warm-900' : 'text-warm-400'}`}>{inr(c.price)}</span>
-                      </button>
+                      </motion.button>
                     );
                   })}
-                </div>
+                </motion.div>
 
                 <div className="mt-4 space-y-1.5 border-t border-warm-200 pt-4 text-body-sm text-warm-500">
                   <div className="flex justify-between"><span>Subtotal · {picked.length} pieces</span><span className="price-tag">{inr(subtotal)}</span></div>
                   <div className="flex justify-between"><span>GST 18%</span><span className="price-tag">{inr(gst)}</span></div>
                 </div>
-                <div className="mt-3 flex items-baseline justify-between border-t-2 border-warm-900 pt-3">
+                <div ref={totalRef} className="mt-3 flex items-baseline justify-between border-t-2 border-warm-900 pt-3">
                   <span className="text-title text-warm-900">Total</span>
-                  <span key={total} className="animate-fade-in font-display text-2xl font-bold tabular-nums tracking-tight text-warm-900">
-                    {inr(total)}
+                  <span className="font-display text-2xl font-bold tabular-nums tracking-tight text-fox-600">
+                    {inr(shownTotal)}
                   </span>
                 </div>
 
@@ -154,7 +199,7 @@ export default function Home() {
                   Build the real thing <ArrowRight size={15} />
                 </Link>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -162,33 +207,54 @@ export default function Home() {
       {/* ── 2 · How it works ─────────────────────────────────── */}
       <section className="section-padding bg-white">
         <div className="container-fx">
-          <div className="max-w-xl">
+          <Reveal className="max-w-xl">
             <span className="eyebrow mb-4">One step at a time</span>
             <h2 className="text-3xl text-warm-900 md:text-display-lg">How it works, in three steps</h2>
             <p className="mt-4 text-body-lg text-warm-600">
               No lengthy proposals. Browse, build a plan, and book a call when it looks right.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
+          <Reveal stagger className="mt-12 grid gap-5 md:grid-cols-3">
             {STEPS.map((s, i) => (
-              <div key={s.title} className="rounded-md border border-warm-200 bg-warm-white p-6 shadow-sm">
+              <Reveal.Item key={s.title} className="rounded-md border border-warm-200 bg-warm-white p-6 shadow-sm">
                 <div className="mb-5 flex items-center gap-3">
                   <span className="grid h-9 w-9 place-items-center rounded-pill bg-sage-50 font-mono text-sm text-sage-700">{i + 1}</span>
-                  <s.icon size={18} className="text-warm-400" />
+                  <s.icon size={18} className="text-fox-500" />
                 </div>
                 <h3 className="text-title text-warm-900">{s.title}</h3>
                 <p className="mt-1.5 text-body-sm text-warm-600">{s.body}</p>
-              </div>
+              </Reveal.Item>
             ))}
-          </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── Assembly band — "building software is easy now" ──── */}
+      <section className="relative overflow-hidden bg-warm-50">
+        <motion.img
+          src="/img/home-blocks.webp" width="1400" height="788" loading="lazy" alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover"
+          initial={{ scale: 1.14 }}
+          whileInView={{ scale: 1 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 1.6, ease: EASE }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-warm-white via-warm-white/85 to-transparent" />
+        <div className="container-fx relative py-16 md:py-24">
+          <Reveal className="max-w-md">
+            <p className="font-display text-display-md text-warm-900">
+              Piece by piece, a real product — priced before you commit to a single line of code.
+            </p>
+          </Reveal>
         </div>
       </section>
 
       {/* ── 3 · Browse the catalog ───────────────────────────── */}
       <section className="section-padding bg-warm-white" id="services">
         <div className="container-fx">
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <Reveal className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div className="max-w-xl">
               <span className="eyebrow mb-4">The catalog</span>
               <h2 className="text-3xl text-warm-900 md:text-display-lg">13 domains, {serviceCount}+ priced pieces</h2>
@@ -199,15 +265,14 @@ export default function Home() {
             <Link to="/catalog" className="btn-outline self-start md:self-auto">
               Browse everything <ArrowRight size={15} />
             </Link>
-          </div>
+          </Reveal>
 
-          <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <Reveal stagger className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {categories.map((cat) => {
               const Icon = iconMap[cat.icon] || Globe;
               const count = (SF_DATA.services || []).filter((s) => s.catId === cat.id).length;
               return (
-                <Link
-                  key={cat.id}
+                <Reveal.Item key={cat.id} as={Link}
                   to={`/builder?category=${cat.id}`}
                   className="group flex h-full flex-col rounded-md border border-warm-200 bg-white p-5 shadow-sm transition-transform duration-short hover:-translate-y-1 hover:shadow-md"
                 >
@@ -217,21 +282,44 @@ export default function Home() {
                   <h3 className="text-body-md font-semibold text-warm-900">{cat.name}</h3>
                   <p className="mt-0.5 text-body-sm text-sage-700">{count} pieces</p>
                   <p className="mt-2 hidden text-body-sm leading-snug text-warm-500 sm:line-clamp-2">{cat.description}</p>
-                </Link>
+                </Reveal.Item>
               );
             })}
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ── 4 · Proof ────────────────────────────────────────── */}
-      <section className="border-y border-warm-200 bg-white py-10">
+      <section className="bg-white section-padding">
         <div className="container-fx">
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-body-sm text-warm-500">
-            <span className="inline-flex items-center gap-2"><Shield size={15} className="text-warm-400" /> GST registered</span>
-            <span className="inline-flex items-center gap-2"><Check size={15} className="text-sage-600" /> NDA on request</span>
-            <span className="inline-flex items-center gap-2"><Check size={15} className="text-sage-600" /> ISO 27001 aligned</span>
-            <span className="inline-flex items-center gap-2"><Zap size={15} className="text-fox-500" /> 24-hour response</span>
+          <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
+            <Reveal variant="fade" className="lg:col-span-5">
+              <div className="img-frame aspect-[4/3]">
+                <img
+                  src="/img/founder-desk.webp" width="1200" height="900" loading="lazy"
+                  alt="A StackFox client working through her itemised project plan"
+                />
+              </div>
+            </Reveal>
+
+            <Reveal className="lg:col-span-7">
+              <span className="eyebrow mb-4">Why teams pick us</span>
+              <Quote size={28} className="mb-3 text-fox-500" aria-hidden />
+              <blockquote className="font-display text-display-sm text-warm-900">
+                "I priced the whole build in an afternoon, sent the list, and had a
+                call booked by the next morning. No back-and-forth, no guessing."
+              </blockquote>
+              <p className="mt-4 text-body-sm text-warm-600">
+                Neha R. · founder, D2C skincare · shipped a storefront + subscriptions in 6 weeks
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 border-t border-warm-200 pt-6 text-body-sm text-warm-600">
+                <span className="inline-flex items-center gap-2"><Shield size={15} className="text-sage-600" /> GST registered</span>
+                <span className="inline-flex items-center gap-2"><Check size={15} className="text-sage-600" /> NDA on request</span>
+                <span className="inline-flex items-center gap-2"><Check size={15} className="text-sage-600" /> ISO 27001 aligned</span>
+                <span className="inline-flex items-center gap-2"><Zap size={15} className="text-fox-500" /> 24-hour response</span>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>

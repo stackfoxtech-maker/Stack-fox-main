@@ -46,13 +46,13 @@ export default function Packages() {
 
                 <div className="mb-5">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold font-mono text-warm-900">{formatINR(pkg.price)}</span>
+                    <span className="price-tag text-3xl text-warm-900">{formatINR(pkg.price)}</span>
                   </div>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="text-sm text-warm-400 line-through">{formatINR(individualTotal)}</span>
+                    <span className="text-body-sm text-warm-500 line-through">{formatINR(individualTotal)}</span>
                     <span className="badge-fx badge-success">Save {formatINR(pkg.savings)}</span>
                   </div>
-                  <p className="text-[10px] text-warm-400 mt-1">+ 18% GST</p>
+                  <p className="text-caption text-warm-500 mt-1">+ 18% GST</p>
                 </div>
 
                 <div className="mb-5">

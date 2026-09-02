@@ -539,6 +539,8 @@ model Invoice {
   sgst         Int       @default(0)
   igst         Int       @default(0)
   grandTotal   Int       @map("grand_total")
+  amountPaid   Int       @default(0) @map("amount_paid") // paise; maintained by recordInvoicePayment / webhooks
+  gstRate      Int       @default(18) @map("gst_rate") // percent
   status       String    @default("DRAFT") // DRAFT|SENT|VIEWED|PAID|PARTIALLY_PAID|OVERDUE|CANCELLED|DISPUTED
   dunningStage Int       @default(0) @map("dunning_stage")
   razorpayOrderId      String?  @map("razorpay_order_id")

@@ -33,6 +33,10 @@ export default function Contact() {
         </div>
 
         <div className="md:col-span-2 space-y-6">
+          <div className="img-frame img-frame-sm aspect-[4/3]">
+            <img src="/img/contact-call.webp" width="1200" height="900" loading="lazy"
+              alt="A StackFox advisor on a friendly project call" />
+          </div>
           <div className="card-fx p-5">
             <h3 className="font-semibold text-warm-900 mb-4">Get in touch</h3>
             <div className="space-y-4 text-sm">
@@ -49,7 +53,7 @@ export default function Contact() {
           </div>
           <div className="card-fx p-5">
             <h3 className="font-semibold text-warm-900 mb-2">Office hours</h3>
-            <p className="text-sm text-warm-500 italic">24*7 Office Hours</p>
+            <p className="text-body-sm text-warm-600">Round the clock — someone answers within 24 hours, always.</p>
           </div>
         </div>
       </div>

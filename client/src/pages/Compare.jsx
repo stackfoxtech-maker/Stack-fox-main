@@ -34,7 +34,7 @@ export default function Compare() {
         </h1>
         <p className="text-warm-500 mb-8">Select 2 to 4 services to compare side by side.</p>
 
-        <div className="bg-white rounded-2xl border border-warm-200 overflow-x-auto">
+        <div className="bg-white rounded-md border border-warm-200 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-warm-200">
@@ -47,7 +47,7 @@ export default function Compare() {
                         {allServices.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
                       {selected.length > 2 && (
-                        <button onClick={() => removeSlot(i)} className="text-warm-400 hover:text-red-500"><X size={16} /></button>
+                        <button onClick={() => removeSlot(i)} className="text-warm-400 hover:text-danger-500"><X size={16} /></button>
                       )}
                     </div>
                   </th>

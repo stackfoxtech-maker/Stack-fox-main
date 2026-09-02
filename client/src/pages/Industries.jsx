@@ -4,6 +4,7 @@ import { Check, ShoppingCart, ArrowRight, Heart, Building2, GraduationCap, Utens
 import { usePageTitle } from '@lib/hooks';
 import { formatINR } from '@lib/utils';
 import { Section, SectionHeading, Button } from '@components/ui/Primitives';
+import { Reveal } from '@components/Reveal';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
 import data from '@data/stackfox-data.json';
@@ -20,6 +21,11 @@ export default function Industries() {
     <Section>
       <SectionHeading label="Industries" title="Solutions built for your industry" description="Pre-configured bundles with everything your industry needs. Customize further in the Service Builder." />
 
+      <Reveal variant="fade" className="img-frame mb-12 aspect-[16/7]">
+        <img src="/img/industries-hero.webp" width="1400" height="612" loading="lazy"
+          alt="An independent shop owner in the doorway of her storefront at golden hour" />
+      </Reveal>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {data.industryBundles.map((bundle) => {
           const Icon = bundleIcons[bundle.id] || Building2;
@@ -28,32 +34,32 @@ export default function Industries() {
           return (
             <div key={bundle.id} className="card-fx-elevated p-6 flex flex-col">
               <div className="flex items-start gap-4 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-fox-50 text-fox-500 flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-md bg-fox-50 text-fox-600 flex items-center justify-center shrink-0">
                   <Icon size={24} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-warm-900">{bundle.name}</h3>
-                  <p className="text-sm text-warm-500 mt-1">{bundle.description}</p>
+                  <h3 className="text-title text-warm-900">{bundle.name}</h3>
+                  <p className="text-body-sm text-warm-600 mt-1">{bundle.description}</p>
                 </div>
               </div>
 
               <div className="flex items-baseline gap-2 mb-4 ml-16">
-                <span className="text-2xl font-bold font-mono text-warm-900">{formatINR(bundle.price)}</span>
-                <span className="text-xs text-warm-400">+ GST</span>
+                <span className="price-tag text-2xl text-warm-900">{formatINR(bundle.price)}</span>
+                <span className="text-body-sm text-warm-500">+ GST</span>
               </div>
 
               {/* Features */}
               <div className="mb-4 ml-16">
-                <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">What's included</h4>
+                <h4 className="text-label uppercase text-warm-500 mb-2">What's included</h4>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   {bundle.features.slice(0, isExpanded ? bundle.features.length : 4).map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-warm-700">
+                    <li key={i} className="flex items-start gap-2 text-body-sm text-warm-700">
                       <Check size={14} className="text-success-500 shrink-0 mt-0.5" /> {f}
                     </li>
                   ))}
                 </ul>
                 {bundle.features.length > 4 && (
-                  <button onClick={() => setExpanded(isExpanded ? null : bundle.id)} className="text-xs text-fox-500 font-medium hover:underline mt-2">
+                  <button onClick={() => setExpanded(isExpanded ? null : bundle.id)} className="text-body-sm text-fox-600 font-medium hover:underline mt-2">
                     {isExpanded ? 'Show less' : `+${bundle.features.length - 4} more features`}
                   </button>
                 )}
