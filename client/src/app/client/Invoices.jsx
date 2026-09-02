@@ -47,11 +47,16 @@ export default function Invoices() {
         },
         prefill: { email: invoice.clientDetails?.email || '' },
         theme: { color: '#FF4D00' },
+        modal: { ondismiss: () => toast('Payment cancelled — this invoice is unchanged.') },
       };
 
       try {
         await loadRazorpay();
-        new window.Razorpay(options).open();
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', (resp) => {
+          toast.error(resp.error?.description || 'Payment failed. Try another method or retry.');
+        });
+        rzp.open();
       } catch {
         toast.error('Could not load the payment gateway. Check your connection and retry.');
       }
