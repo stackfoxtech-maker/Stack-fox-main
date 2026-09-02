@@ -308,10 +308,70 @@ async function seed() {
     });
   }
 
+  // ── Blog posts ────────────────────────────────────
+  // The blog moved from a hard-coded array to the BlogPost table; the seed
+  // needs to plant the baseline published posts the public /blog serves.
+  console.log("  → blog posts...");
+  const posts = [
+    {
+      title: "Why we publish every price",
+      category: "Philosophy",
+      excerpt: "Agencies hide pricing behind a sales call. Here is why StackFox does the opposite.",
+      content:
+        "Most software agencies treat pricing as a negotiation. You describe your project, sit through two or three calls, and eventually receive a number you cannot sanity-check. We think that is backwards. Every one of our 240+ service pieces has a public price. You can assemble a plan, see the total — GST included — and only talk to us when the shape of it looks right.",
+    },
+    {
+      title: "How to scope a web app without over-buying",
+      category: "Guides",
+      excerpt: "A short checklist for deciding what actually belongs in v1.",
+      content:
+        "The most expensive mistake in a first build is paying for scope you will not use for a year. Start from the one workflow that has to work on launch day and add only what that workflow needs. Auth, a database, the core screens, and a way to get data out. Everything else — analytics dashboards, admin tooling, a second user role — can wait until real usage tells you where the pressure is.",
+    },
+    {
+      title: "GST, SAC codes and software invoices in India",
+      category: "Finance",
+      excerpt: "What the 998314 on your invoice means and when CGST+SGST becomes IGST.",
+      content:
+        "Software development in India is classified under SAC 998314 and attracts 18% GST. Whether that shows up as CGST+SGST (9% + 9%) or a single IGST line depends on place of supply: intra-state supplies split it, inter-state supplies use IGST. A registered buyer can claim the full amount as input tax credit, which is why a compliant tax invoice with both parties' GSTINs matters.",
+    },
+    {
+      title: "Milestone-based payments, explained",
+      category: "How we work",
+      excerpt: "Why we bill in stages and what each stage buys you.",
+      content:
+        "A fixed-scope project is split into milestones, each worth a percentage of the total. You approve the work at each stage before the next payment is due, and each milestone includes two rounds of revisions. It keeps both sides honest: we do not get ahead of what has been signed off, and you never pay for a phase you have not seen.",
+    },
+    {
+      title: "Handover: what you get on day one of ownership",
+      category: "How we work",
+      excerpt: "Source, credentials, docs and a 30-day warranty — the full kit.",
+      content:
+        "When a project is delivered you receive a handover kit: the full source repository, every production credential in an encrypted vault you control, deployment and architecture documentation, and a training session for your team. From acceptance, a 30-day warranty covers bug fixes and minor adjustments at no cost.",
+    },
+  ];
+  for (const p of posts) {
+    const slug = slugify(p.title); // 5 hand-picked, distinct titles
+    await prisma.blogPost.upsert({
+      where: { slug },
+      update: { title: p.title, excerpt: p.excerpt, content: p.content, category: p.category, status: "PUBLISHED" },
+      create: {
+        title: p.title,
+        slug,
+        excerpt: p.excerpt,
+        content: p.content,
+        category: p.category,
+        status: "PUBLISHED",
+        author: "StackFox",
+        tags: [],
+      },
+    });
+  }
+
   console.log("✅ Seed complete!");
   console.log(`   Services: ${data.services.length}`);
   console.log(`   Bundles: ${data.packages.length + data.industryBundles.length}`);
   console.log(`   Rate cards: ${rates.length}`);
+  console.log(`   Blog posts: ${posts.length}`);
 }
 
 function generateFeatureNames(

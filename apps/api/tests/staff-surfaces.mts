@@ -68,7 +68,15 @@ for (const path of ["/analytics/overview", "/analytics/revenue", "/analytics/con
 
 const st = await get("/settings", at);
 checks.push([`staff /settings -> ${st.s}`, st.s === 200]);
-checks.push([`settings reports storage as configured`, st.b.data?.integrations?.storage?.configured === true]);
+// Storage (Supabase) can only be "configured" when its env is present. In a
+// hermetic CI without those secrets, assert the shape; a configured env asserts
+// the value.
+const storageEnv = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY);
+const storageCfg = st.b.data?.integrations?.storage?.configured;
+checks.push([
+  `settings reports storage integration (configured=${storageCfg})`,
+  storageEnv ? storageCfg === true : typeof storageCfg === "boolean",
+]);
 checks.push([`settings reads feature flags from the table`, Array.isArray(st.b.data?.featureFlags)]);
 const stc = await get("/settings", ct);
 checks.push([`client /settings -> ${stc.s}`, stc.s === 403]);
