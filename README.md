@@ -167,6 +167,23 @@ SUPABASE_SECRET_KEY=<service-role-key>
 SUPABASE_STORAGE_BUCKET=stackfox-files
 SUPABASE_WORM_BUCKET=stackfox-worm
 
+# ── Email (Resend) — password reset, email verification, email OTP ──
+RESEND_API_KEY=re_...
+MAIL_FROM=StackFox <hello@stackfox.in>
+
+# ── SMS / WhatsApp OTP (optional; set one) ──────────────
+MSG91_AUTH_KEY=<msg91-auth-key>
+MSG91_SENDER_ID=STKFOX
+MSG91_OTP_TEMPLATE_ID=<template-id>
+# — or —
+WHATSAPP_BSP_URL=https://<bsp>/messages
+WHATSAPP_BSP_TOKEN=<token>
+
+# ── Workers ────────────────────────────────────────────
+# Workers run inline with the API by default. Set to "false" only if a
+# separate `pnpm --filter @stackfox/api worker` process is also running.
+WORKERS_INLINE=true
+
 # ── Server ────────────────────────────────────────────
 PORT=4000
 CORS_ORIGIN=http://localhost:5173,http://localhost:3000

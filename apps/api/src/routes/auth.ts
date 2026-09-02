@@ -9,6 +9,7 @@ import { ensurePersonalOrg } from "../lib/scope";
 import { toJson } from "../lib/json";
 import { isInternalRole } from "@stackfox/core";
 import { sendMail, isMailConfigured, passwordResetEmail, verifyEmailMessage, otpEmail } from "../lib/mailer";
+import { sendOtpSms, isSmsConfigured } from "../lib/sms";
 import { authorizeUrl, exchangeCode, isGoogleConfigured } from "../lib/googleOAuth";
 import { getSessionEpoch, bumpSessionEpoch } from "../lib/session";
 import { webAppUrl } from "../lib/urls";
@@ -316,22 +317,31 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(503).send({ error: "One-time codes are temporarily unavailable" });
     }
 
-    // Email delivery via Resend. SMS/WhatsApp for phone-only OTP is not wired
-    // yet — the code is logged outside production so local phone flows still work.
+    // Email via Resend, phone via SMS/WhatsApp. Whichever channel the caller
+    // gave; the code is logged (dev only) when no provider is configured.
+    let channel: "email" | "sms" | "log" = "log";
     if (email && isMailConfigured()) {
+      channel = "email";
       const result = await sendMail(otpEmail(email, otp));
       if (!result.delivered) {
         app.log.error({ email, error: result.error }, "OTP email failed");
         return reply.code(502).send({ error: "We could not send your code. Please try again shortly." });
       }
-    } else if (process.env.NODE_ENV === "production" && email) {
-      app.log.error({ email }, "OTP requested but no email provider is configured");
+    } else if (phone && isSmsConfigured()) {
+      channel = "sms";
+      const result = await sendOtpSms(phone, otp);
+      if (!result.delivered) {
+        app.log.error({ phone, error: result.error }, "OTP SMS failed");
+        return reply.code(502).send({ error: "We could not send your code. Please try again shortly." });
+      }
+    } else if (process.env.NODE_ENV === "production") {
+      app.log.error({ via: email ? "email" : "phone" }, "OTP requested but no delivery provider is configured");
       return reply.code(503).send({ error: "One-time codes are not available on this server" });
     } else {
       app.log.info(`[dev] OTP for ${identifier}: ${otp}`);
     }
 
-    return { success: true, message: "OTP sent" };
+    return { success: true, message: "OTP sent", channel };
   });
 
   // POST /auth/otp/verify

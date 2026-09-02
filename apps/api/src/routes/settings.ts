@@ -37,6 +37,7 @@ export async function settingsRoutes(app: FastifyInstance) {
         stripe: { configured: Boolean(process.env.STRIPE_SECRET_KEY?.trim()) },
         gemini: { configured: Boolean(process.env.GEMINI_API_KEY?.trim()) },
         email: { configured: Boolean(process.env.RESEND_API_KEY ?? process.env.SMTP_HOST) },
+        sms: { configured: Boolean(process.env.MSG91_AUTH_KEY ?? process.env.WHATSAPP_BSP_URL) },
         credentialVault: { configured: isCredentialEncryptionConfigured() },
       },
       featureFlags: flags.map((f) => ({
