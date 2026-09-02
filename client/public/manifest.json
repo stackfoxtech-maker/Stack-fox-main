@@ -4,16 +4,13 @@
   "description": "Premium IT services. Pick, price & quote with the StackFox Build & Price tool.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAFAF8",
+  "background_color": "#FAF8F5",
   "theme_color": "#FF4D00",
   "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "/logo.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "/favicon.png", "sizes": "64x64", "type": "image/png" },
+    { "src": "/logo.png", "sizes": "160x160", "type": "image/png" },
+    { "src": "/logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
   "categories": ["business", "productivity"]
 }

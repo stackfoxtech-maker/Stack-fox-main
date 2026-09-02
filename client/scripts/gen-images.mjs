@@ -6,7 +6,11 @@
  *   node scripts/gen-images.mjs --force    # regenerate everything
  *   node scripts/gen-images.mjs founder-desk portfolio-food   # just these
  *
- * Output: client/public/img/<name>.webp  (falls back to .png)
+ * Output: client/public/img/<name>.webp
+ * Delivery is via Cloudinary (folder "stackfox/") through src/components/
+ * CdnImage.jsx; this local copy is the offline fallback CdnImage drops to if
+ * the CDN is unreachable. After (re)generating, re-upload the changed files
+ * to Cloudinary so the two stay in sync.
  */
 import { readFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

@@ -6,7 +6,9 @@ import {
 } from 'lucide-react';
 import { CURRENCIES } from '@lib/constants';
 import { applyTierMultiplier, computeEstimateRange, TIERS, TIER_LABELS } from '@lib/estimate';
-import { exportQuotePDF } from '@lib/pdfExport';
+// jsPDF (~150 KB gz) is loaded on demand — see pdfExport / PERF_AUDIT P0-3.
+const exportQuotePDF = (...args) =>
+  import('@lib/pdfExport').then((m) => m.exportQuotePDF(...args));
 import { Button, Spinner } from '@components/ui/Primitives';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';

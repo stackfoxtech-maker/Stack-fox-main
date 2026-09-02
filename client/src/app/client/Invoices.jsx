@@ -4,6 +4,7 @@ import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize, getStatusBadge, cn } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
 import api from '@lib/api';
+import { loadRazorpay } from '@lib/razorpay';
 import toast from 'react-hot-toast';
 
 export default function Invoices() {
@@ -48,10 +49,11 @@ export default function Invoices() {
         theme: { color: '#FF4D00' },
       };
 
-      if (window.Razorpay) {
+      try {
+        await loadRazorpay();
         new window.Razorpay(options).open();
-      } else {
-        toast.error('Razorpay SDK not loaded. Add the script to index.html.');
+      } catch {
+        toast.error('Could not load the payment gateway. Check your connection and retry.');
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create payment order.');

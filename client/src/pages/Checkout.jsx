@@ -6,6 +6,7 @@ import { formatINR } from '@lib/utils';
 import { TIER_LABELS } from '@lib/estimate';
 import { Spinner, Button } from '@components/ui/Primitives';
 import api from '@lib/api';
+import { loadRazorpay } from '@lib/razorpay';
 import toast from 'react-hot-toast';
 import InvoicePreview from '@components/checkout/InvoicePreview';
 import ContractSigning from '@components/checkout/ContractSigning';
@@ -124,10 +125,11 @@ export default function Checkout() {
         theme: { color: '#FF4D00' },
       };
 
-      if (window.Razorpay) {
+      try {
+        await loadRazorpay();
         new window.Razorpay(options).open();
-      } else {
-        toast.error('Razorpay SDK not loaded.');
+      } catch {
+        toast.error('Could not load the payment gateway. Check your connection and retry.');
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to start payment.');

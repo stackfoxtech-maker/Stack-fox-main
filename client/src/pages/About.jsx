@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { usePageTitle } from '@lib/hooks';
 import { Section } from '@components/ui/Primitives';
 import { Reveal } from '@components/Reveal';
+import CdnImage from '@components/CdnImage';
 import { Check, ArrowRight, Zap, ExternalLink } from 'lucide-react';
 
 const ProblemItem = ({ title, desc }) => (
@@ -65,7 +66,10 @@ export default function About() {
 
             <Reveal variant="fade" delay={0.1} className="lg:col-span-6">
               <div className="img-frame aspect-[4/3]">
-                <img src="/img/about-workspace.webp" width="1400" height="1050" loading="lazy"
+                <CdnImage
+                  name="about-workspace" w={900} widths={[480, 720, 900, 1200]} eager
+                  sizes="(min-width: 1024px) 45vw, 100vw"
+                  width={1200} height={900}
                   alt="The StackFox studio in the late afternoon" />
               </div>
             </Reveal>
@@ -106,7 +110,10 @@ export default function About() {
 
           <Reveal className="space-y-8 lg:col-span-7">
             <div className="img-frame aspect-[16/10]">
-              <img src="/img/studio-collab.webp" width="1400" height="875" loading="lazy"
+              <CdnImage
+                name="studio-collab" w={1200} widths={[560, 800, 1200, 1600]}
+                sizes="(min-width: 1024px) 58vw, 100vw"
+                width={1400} height={875}
                 alt="The StackFox team working through a project plan" />
             </div>
             <p className="text-body-lg leading-relaxed text-warm-700">

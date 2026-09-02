@@ -1,60 +1,64 @@
-// StackFox — Service Worker (PWA offline shell)
-// Caches the app shell and serves from cache when offline.
-// Dynamic API calls (quotes, login) always go to network.
+// StackFox — service worker (production only; registered from main.jsx).
+//
+// Strategy:
+//   • /assets/*  — content-hashed, immutable → cache-first, cache forever
+//   • navigations — network-first, fall back to the cached shell when offline
+//   • everything else (API, fonts, Cloudinary, Razorpay) — not touched
+//
+// The old v2 worker was network-first for *every* same-origin GET and cached
+// each response into one never-pruned bucket. It gave no repeat-visit speedup
+// and, in dev, mangled Vite's module requests.
 
-const CACHE_NAME = 'stackfox-v2';
-const SHELL_URLS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/logo.png'
-];
+const VERSION = 'v3';
+const SHELL_CACHE = `stackfox-shell-${VERSION}`;
+const ASSET_CACHE = `stackfox-assets-${VERSION}`;
+const SHELL = ['/', '/index.html', '/manifest.json', '/favicon.png'];
 
-// Install — pre-cache shell
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log('[SW] Caching app shell');
-      return cache.addAll(SHELL_URLS);
-    })
-  );
+self.addEventListener('install', (event) => {
+  event.waitUntil(caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL)));
   self.skipWaiting();
 });
 
-// Activate — clean old caches
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
+    caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter(k => k !== CACHE_NAME)
-          .map(k => caches.delete(k))
-      )
-    )
+          .filter((k) => k !== SHELL_CACHE && k !== ASSET_CACHE)
+          .map((k) => caches.delete(k)),
+      ),
+    ),
   );
   self.clients.claim();
 });
 
-// Fetch — network-first for API, cache-first for static
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
   const { request } = event;
+  if (request.method !== 'GET') return;
+
   const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return; // API, fonts, CDNs → network
 
-  // Always go to network for API calls and cross-origin requests
-  if (url.pathname.startsWith('/api/')) return;
-  if (url.origin !== self.location.origin) return;
+  // Immutable build assets: cache-first.
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.open(ASSET_CACHE).then(async (cache) => {
+        const hit = await cache.match(request);
+        if (hit) return hit;
+        const res = await fetch(request);
+        if (res.ok) cache.put(request, res.clone());
+        return res;
+      }),
+    );
+    return;
+  }
 
-  // For navigation and static assets: try network, fall back to cache
-  event.respondWith(
-    fetch(request)
-      .then(response => {
-        // Clone and cache successful responses
-        if (response.ok && request.method === 'GET') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(request).then(cached => cached || new Response('Offline', { status: 503 })))
-  );
+  // Navigations: network-first, offline → cached shell.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() =>
+        caches.match(request).then((c) => c || caches.match('/index.html')),
+      ),
+    );
+  }
 });

@@ -1,0 +1,96 @@
+{
+  "serviceCount": 255,
+  "categories": [
+    {
+      "id": "web-dev",
+      "name": "Web Development",
+      "icon": "globe",
+      "description": "Custom websites, web apps, and platforms built to scale.",
+      "count": 20
+    },
+    {
+      "id": "mobile-dev",
+      "name": "Mobile App Development",
+      "icon": "smartphone",
+      "description": "Native and cross-platform mobile apps for iOS and Android.",
+      "count": 19
+    },
+    {
+      "id": "ai-genai",
+      "name": "AI & GenAI",
+      "icon": "brain",
+      "description": "Artificial intelligence, machine learning, and generative AI solutions.",
+      "count": 20
+    },
+    {
+      "id": "automation",
+      "name": "Automation",
+      "icon": "zap",
+      "description": "Workflow automation, bots, and process optimization.",
+      "count": 20
+    },
+    {
+      "id": "ecommerce",
+      "name": "E-Commerce",
+      "icon": "shopping-cart",
+      "description": "Online stores, marketplaces, and payment integrations.",
+      "count": 20
+    },
+    {
+      "id": "ui-ux",
+      "name": "UI/UX Design",
+      "icon": "palette",
+      "description": "User interface design, prototyping, and user experience research.",
+      "count": 20
+    },
+    {
+      "id": "backend-api",
+      "name": "Backend & APIs",
+      "icon": "server",
+      "description": "Server-side architecture, REST/GraphQL APIs, and microservices.",
+      "count": 20
+    },
+    {
+      "id": "devops",
+      "name": "DevOps & Cloud",
+      "icon": "cloud",
+      "description": "CI/CD pipelines, containerization, cloud infrastructure, and monitoring.",
+      "count": 20
+    },
+    {
+      "id": "cybersecurity",
+      "name": "Cybersecurity",
+      "icon": "shield",
+      "description": "Security audits, penetration testing, compliance, and data protection.",
+      "count": 20
+    },
+    {
+      "id": "seo-marketing",
+      "name": "SEO & Digital Marketing",
+      "icon": "trending-up",
+      "description": "Search engine optimization, analytics, and growth marketing.",
+      "count": 20
+    },
+    {
+      "id": "it-consulting",
+      "name": "IT Consultancy",
+      "icon": "message-circle",
+      "description": "Technology strategy, architecture reviews, and digital transformation.",
+      "count": 19
+    },
+    {
+      "id": "saas",
+      "name": "SaaS Products",
+      "icon": "box",
+      "description": "Custom SaaS product development, multi-tenancy, and subscription billing.",
+      "count": 20
+    },
+    {
+      "id": "maintenance",
+      "name": "Maintenance & Support",
+      "icon": "wrench",
+      "description": "Ongoing support, bug fixes, performance tuning, and managed services.",
+      "count": 17
+    }
+  ]
+}
