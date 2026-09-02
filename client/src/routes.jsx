@@ -1,12 +1,14 @@
- import { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import useAuthStore from '@store/authStore';
 import { Spinner } from '@components/ui/Primitives';
 import Navbar from '@components/layout/Navbar';
 import Footer from '@components/layout/Footer';
+// Home is the LCP page and the most-visited route — ship it in the entry
+// bundle so it paints immediately with no Suspense spinner → content swap (CLS).
+import Home from '@pages/Home';
 
 // ── Lazy page imports ───────────────────────
-const Home = lazy(() => import('@pages/Home'));
 const Builder = lazy(() => import('@pages/Builder'));
 const ScopeAdvisor = lazy(() => import('@pages/ScopeAdvisor'));
 const Catalog = lazy(() => import('@pages/Catalog'));
@@ -149,8 +151,10 @@ const AdminScreening = lazy(() => import('@app/admin/Governance').then((m) => ({
 
 // ── Layout wrappers ─────────────────────────
 
+// Reserve close to a full viewport while a route chunk loads so the Footer
+// doesn't get shoved down when real content replaces the spinner (CLS).
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[60vh]">
+  <div className="flex min-h-[85svh] items-center justify-center">
     <Spinner size="lg" />
   </div>
 );

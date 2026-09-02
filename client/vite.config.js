@@ -44,10 +44,13 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
+        // Only split libraries that are genuinely on the initial critical path.
+        // recharts / jspdf / html2canvas are dashboard-only — let Rollup fold
+        // them into the lazy route chunks that import them so they never get
+        // module-preloaded on the marketing pages.
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           state: ['zustand', 'axios'],
-          charts: ['recharts'],
           motion: ['framer-motion'],
           icons: ['lucide-react'],
         },
