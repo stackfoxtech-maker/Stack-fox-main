@@ -385,25 +385,6 @@ export default function Builder() {
     <Section className="relative">
       <Tour steps={SF_DATA.tourSteps} active={showTour} onComplete={() => { dismissTourHint(); setShowTour(false); }} />
 
-      {!tourHintDismissed && !showTour && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-fox-200 bg-fox-50 px-4 py-3">
-          <p className="text-sm text-warm-700">
-            New here? Pick exactly the services you need and watch your total update live.
-          </p>
-          <div className="flex items-center gap-2">
-            <Button variant="primary" size="sm" onClick={() => setShowTour(true)}>
-              Take a 60-second tour <ArrowRight size={14} />
-            </Button>
-            <button
-              onClick={dismissTourHint}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-warm-500 hover:bg-warm-100 hover:text-warm-800 transition-colors"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
-
       {/*
         Catalogue editing lives in the admin app (/app/admin/catalog), which is
         wired to the real /admin/* endpoints. The old inline editor here spoke
@@ -432,7 +413,10 @@ export default function Builder() {
             Add what you need and watch the total update — GST and all.
           </p>
         </div>
-        {itemCount > 0 && (
+
+        {/* Right slot: the running total once there's a cart, otherwise the
+            first-run tour prompt — never both, never empty churn. */}
+        {itemCount > 0 ? (
           <button
             onClick={toggleCart}
             className="flex shrink-0 items-center gap-3 self-start rounded-md border border-warm-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md md:self-auto"
@@ -444,7 +428,24 @@ export default function Builder() {
             </span>
             <ArrowRight size={15} className="text-warm-400" />
           </button>
-        )}
+        ) : !tourHintDismissed && !showTour ? (
+          <div className="w-full shrink-0 rounded-lg border border-fox-200 bg-fox-50 p-4 md:w-80 md:self-auto">
+            <p className="text-body-sm text-warm-700">
+              New here? Pick exactly the services you need and watch your total update live.
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <Button variant="primary" size="sm" onClick={() => setShowTour(true)}>
+                Take a 60-second tour <ArrowRight size={14} />
+              </Button>
+              <button
+                onClick={dismissTourHint}
+                className="rounded-sm px-3 py-2 text-body-sm font-medium text-warm-500 transition-colors hover:bg-fox-100 hover:text-warm-800"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* Search + currency */}
