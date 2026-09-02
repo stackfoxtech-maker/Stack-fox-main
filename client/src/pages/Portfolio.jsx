@@ -3,15 +3,16 @@ import { usePageTitle } from '@lib/hooks';
 import { ArrowRight } from 'lucide-react';
 import { Section, SectionHeading } from '@components/ui/Primitives';
 import { Reveal } from '@components/Reveal';
+import CdnImage from '@components/CdnImage';
 import LeadInquiryModal from '@components/LeadInquiryModal';
 
 const projects = [
-  { title: 'GreenLeaf Organics', industry: 'E-Commerce', desc: 'Full-stack organic food marketplace with subscription box and delivery tracking.', tech: ['React', 'Node.js', 'MongoDB', 'Razorpay'], image: '/img/portfolio-ecommerce.webp' },
-  { title: 'HealthFirst Portal', industry: 'Healthcare', desc: 'Patient portal with appointment booking, telemedicine, and prescription management.', tech: ['Next.js', 'Express', 'PostgreSQL', 'Socket.io'], image: '/img/portfolio-healthcare.webp' },
-  { title: 'PropertyDekho', industry: 'Real Estate', desc: 'Property listing with map view, virtual tours, and lead management CRM.', tech: ['React', 'Node.js', 'MongoDB', 'Google Maps'], image: '/img/portfolio-realestate.webp' },
-  { title: 'EduBridge LMS', industry: 'EdTech', desc: 'Learning management system supporting 5000+ students with offline mobile app.', tech: ['React Native', 'Node.js', 'MongoDB', 'AWS'], image: '/img/portfolio-education.webp' },
-  { title: 'FoodBox', industry: 'Food & Restaurant', desc: 'Online ordering platform with kitchen management and WhatsApp integration.', tech: ['React', 'Express', 'MongoDB', 'Twilio'], image: '/img/portfolio-food.webp' },
-  { title: 'EventHub', industry: 'Events', desc: 'Event ticketing with seat selection, QR check-in, and attendee analytics.', tech: ['Next.js', 'Node.js', 'PostgreSQL', 'Stripe'], image: '/img/portfolio-events.webp' },
+  { title: 'GreenLeaf Organics', industry: 'E-Commerce', desc: 'Full-stack organic food marketplace with subscription box and delivery tracking.', tech: ['React', 'Node.js', 'MongoDB', 'Razorpay'], img: 'portfolio-ecommerce' },
+  { title: 'HealthFirst Portal', industry: 'Healthcare', desc: 'Patient portal with appointment booking, telemedicine, and prescription management.', tech: ['Next.js', 'Express', 'PostgreSQL', 'Socket.io'], img: 'portfolio-healthcare' },
+  { title: 'PropertyDekho', industry: 'Real Estate', desc: 'Property listing with map view, virtual tours, and lead management CRM.', tech: ['React', 'Node.js', 'MongoDB', 'Google Maps'], img: 'portfolio-realestate' },
+  { title: 'EduBridge LMS', industry: 'EdTech', desc: 'Learning management system supporting 5000+ students with offline mobile app.', tech: ['React Native', 'Node.js', 'MongoDB', 'AWS'], img: 'portfolio-education' },
+  { title: 'FoodBox', industry: 'Food & Restaurant', desc: 'Online ordering platform with kitchen management and WhatsApp integration.', tech: ['React', 'Express', 'MongoDB', 'Twilio'], img: 'portfolio-food' },
+  { title: 'EventHub', industry: 'Events', desc: 'Event ticketing with seat selection, QR check-in, and attendee analytics.', tech: ['Next.js', 'Node.js', 'PostgreSQL', 'Stripe'], img: 'portfolio-events' },
 ];
 
 export default function Portfolio() {
@@ -26,7 +27,11 @@ export default function Portfolio() {
         {projects.map((p) => (
           <Reveal.Item key={p.title} className="card-fx-elevated flex flex-col p-5 group">
             <div className="img-frame img-frame-sm mb-5 aspect-[4/3] transition-transform duration-medium group-hover:-translate-y-0.5">
-              <img src={p.image} width="1400" height="1050" loading="lazy" alt={`${p.title} — ${p.industry}`} />
+              <CdnImage
+                name={p.img} w={720} widths={[400, 560, 720, 1000]}
+                sizes="(min-width: 1024px) 30vw, (min-width: 768px) 45vw, 100vw"
+                width={1000} height={750} alt={`${p.title} — ${p.industry}`}
+              />
             </div>
             <span className="badge-fx badge-fox self-start mb-3">{p.industry}</span>
             <h3 className="text-title text-warm-900 mb-2">{p.title}</h3>

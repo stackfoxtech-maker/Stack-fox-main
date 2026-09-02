@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { Section, SectionHeading, Input, Textarea, Button } from '@components/ui/Primitives';
+import CdnImage from '@components/CdnImage';
 import toast from 'react-hot-toast';
 
 export default function Contact() {
@@ -34,7 +35,10 @@ export default function Contact() {
 
         <div className="md:col-span-2 space-y-6">
           <div className="img-frame img-frame-sm aspect-[4/3]">
-            <img src="/img/contact-call.webp" width="1200" height="900" loading="lazy"
+            <CdnImage
+              name="contact-call" w={720} widths={[400, 560, 720, 960]}
+              sizes="(min-width: 768px) 38vw, 100vw"
+              width={960} height={720}
               alt="A StackFox advisor on a friendly project call" />
           </div>
           <div className="card-fx p-5">

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Search, ShoppingCart, Info, X, Plus, Check,
@@ -78,6 +78,55 @@ function Tour({ steps, active, onComplete }) {
 
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   Service card — memoised so a debounced search keystroke (or any cart change)
+   doesn't re-render every card in the list. Only re-renders when this card's
+   own props change.
+   ───────────────────────────────────────────────────────────────────────────── */
+const PREVIEW_COUNT = 6; // cards shown per category in the "All" overview
+
+/* Compact 3-up tile on phones (name · price · add), the fuller card from
+   sm: up (adds the plain-language blurb, timing, and unit meta). */
+const ServiceCard = memo(function ServiceCard({ svc, price, inCart, onAdd }) {
+  return (
+    <div
+      id={`service-${svc.id}`}
+      className={cn(
+        'flex flex-col rounded-md border bg-white p-2.5 transition-colors duration-short sm:min-h-[150px] sm:p-5',
+        inCart ? 'border-sage-300 bg-sage-50/40' : 'border-warm-200 hover:border-warm-300',
+      )}
+    >
+      <div className="flex-1 sm:mb-3 sm:flex sm:items-start sm:justify-between sm:gap-3">
+        <div className="min-w-0 flex-1">
+          <span className="line-clamp-2 text-[12.5px] font-semibold leading-snug text-warm-900 sm:text-body-md">{svc.name}</span>
+          <span className="mt-1 hidden text-caption font-medium uppercase tracking-wide text-warm-500 sm:block">{svc.estimatedTime || svc.est || '3-5 days'}</span>
+        </div>
+        <div className="hidden text-right sm:block">
+          <span className="price-tag block text-body-lg text-warm-900">{price}</span>
+          <p className="text-caption uppercase tracking-wide text-warm-500">Starting</p>
+        </div>
+      </div>
+
+      <p className="mb-4 hidden flex-1 text-body-sm leading-relaxed text-warm-600 sm:block">{svc.lay || 'A single, individually priced piece of your build.'}</p>
+
+      <div className="mt-2 flex items-center justify-between gap-1.5 sm:mt-0 sm:gap-2 sm:border-t sm:border-warm-100 sm:pt-3">
+        <span className="price-tag text-[12.5px] text-warm-900 sm:hidden">{price}</span>
+        <span className="hidden text-caption font-medium uppercase tracking-wide text-warm-500 sm:inline">{svc.unit || 'Standard'}</span>
+        <button
+          onClick={() => !inCart && onAdd(svc)}
+          aria-label={inCart ? 'Added' : `Add ${svc.name}`}
+          className={cn(
+            'grid h-7 w-7 shrink-0 place-items-center rounded-sm transition-colors sm:h-8 sm:w-8',
+            inCart ? 'bg-sage-100 text-sage-700' : 'bg-fox-50 text-fox-600 hover:bg-fox-500 hover:text-white',
+          )}
+        >
+          {inCart ? <Check size={14} /> : <Plus size={14} />}
+        </button>
+      </div>
+    </div>
+  );
+});
+
+/* ─────────────────────────────────────────────────────────────────────────────
    MAIN PAGE: Builder
    ───────────────────────────────────────────────────────────────────────────── */
 export default function Builder() {
@@ -112,10 +161,10 @@ export default function Builder() {
   const debouncedSearch = useDebounce(search, 200);
   const cur = CURRENCIES[curIdx];
 
-  const fmt = (n) => {
+  const fmt = useCallback((n) => {
     const converted = Math.round(Number(n) * (cur?.rate || 1));
     return (cur?.symbol || '$') + converted.toLocaleString(cur?.locale || 'en-US');
-  };
+  }, [cur]);
 
   // 4. Effects
   // URL Sync
@@ -244,6 +293,24 @@ export default function Builder() {
 
   const cartItemIds = useMemo(() => new Set(items.map((i) => i.itemId)), [items]);
 
+  // Group the (filtered) services by category once per change, instead of
+  // running `filteredServices.filter(catId)` 13× inside the render map.
+  const servicesByCat = useMemo(() => {
+    const m = new Map();
+    for (const s of filteredServices) {
+      const arr = m.get(s.catId);
+      if (arr) arr.push(s); else m.set(s.catId, [s]);
+    }
+    return m;
+  }, [filteredServices]);
+
+  // Total count per category (unfiltered) — for the chip-rail badges.
+  const catCounts = useMemo(() => {
+    const m = new Map();
+    for (const s of catalog.services) m.set(s.catId, (m.get(s.catId) || 0) + 1);
+    return m;
+  }, [catalog.services]);
+
   // Warnings & ROI
   const cartWarnings = useMemo(() => {
     if (items.length === 0 || catalog.services.length === 0) return [];
@@ -300,9 +367,9 @@ export default function Builder() {
   }, [items, catalog, cartItemIds]);
 
   // Handlers
-  const handleAdd = (svc) => {
+  const handleAdd = useCallback((svc) => {
     addItem({ itemId: svc.id, itemType: 'service', name: svc.name, price: svc.price }, isAuthenticated);
-  };
+  }, [addItem, isAuthenticated]);
 
   const handleShare = () => {
     if (items.length === 0) { toast.error('Cart is empty'); return; }
@@ -471,7 +538,7 @@ export default function Builder() {
               activeCat === cat.dataId ? 'bg-fox-500 text-white ring-4 ring-fox-50' : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300'
             )}
           >
-            {cat.name} <span className="opacity-50 ml-1">({catalog.services.filter(s => s.catId === cat.dataId).length})</span>
+            {cat.name} <span className="opacity-50 ml-1">({catCounts.get(cat.dataId) || 0})</span>
           </button>
         ))}
         </div>
@@ -481,8 +548,8 @@ export default function Builder() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-8 space-y-12">
           {isLoading ? (
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               {[1,2,3,4].map(i => <div key={i} className="bg-white rounded-lg p-5 h-40 animate-pulse border border-warm-100" />)}
+             <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4">
+               {[1,2,3,4,5,6].map(i => <div key={i} className="h-24 animate-pulse rounded-md border border-warm-100 bg-white sm:h-40" />)}
              </div>
           ) : filteredServices.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-lg border border-warm-100">
@@ -532,67 +599,61 @@ export default function Builder() {
                 </div>
               )}
 
-              {(activeCat !== 'industry-bundles' && activeCat !== 'service-packages') && 
+              {(activeCat !== 'industry-bundles' && activeCat !== 'service-packages') &&
                (activeCat === 'all' ? catalog.categories : catalog.categories.filter(c => c.dataId === activeCat)).map(cat => {
-                const catServices = filteredServices.filter(s => s.catId === cat.dataId);
+                const catServices = servicesByCat.get(cat.dataId) || [];
                 if (catServices.length === 0) return null;
+
+                // In the "All" overview (no active search) show a preview per
+                // category instead of all ~255 cards — the "View all" chip jumps
+                // straight into that category. A search already narrows things,
+                // so show every match then.
+                const isOverview = activeCat === 'all' && !debouncedSearch;
+                const shown = isOverview ? catServices.slice(0, PREVIEW_COUNT) : catServices;
+                const hidden = catServices.length - shown.length;
 
                 return (
                   <div key={cat.dataId} className="space-y-6">
                     <div className="border-b border-warm-100 pb-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                          <h2 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
                            {cat.name}
-                           <span className="text-[10px] bg-warm-100 text-warm-500 px-2 py-0.5 rounded-full">{catServices.length} items</span>
+                           <span className="text-caption bg-warm-100 text-warm-600 px-2 py-0.5 rounded-full">{catServices.length} items</span>
                          </h2>
+                         {isOverview && hidden > 0 && (
+                           <button
+                             onClick={() => { setActiveCat(cat.dataId); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                             className="text-body-sm font-semibold text-fox-600 hover:text-fox-700 inline-flex items-center gap-1"
+                           >
+                             View all {catServices.length} <ArrowRight size={14} />
+                           </button>
+                         )}
                       </div>
                       {cat.laymanTip && (
-                        <p className="text-warm-500 text-sm mt-1 italic">“{cat.laymanTip}”</p>
+                        <p className="text-warm-600 text-sm mt-1 italic">&ldquo;{cat.laymanTip}&rdquo;</p>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {catServices.map(svc => {
-                        const isInCart = cartItemIds.has(svc.id);
-                        return (
-                          <div
-                            key={svc.id}
-                            id={`service-${svc.id}`}
-                            className={cn(
-                              'flex min-h-[150px] flex-col rounded-md border bg-white p-5 transition-colors duration-short',
-                              isInCart ? 'border-sage-300 bg-sage-50/40' : 'border-warm-200 hover:border-warm-300'
-                            )}
-                          >
-                            <div className="mb-3 flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <span className="block text-body-md font-semibold text-warm-900">{svc.name}</span>
-                                <span className="mt-1 block text-caption font-medium uppercase tracking-wide text-warm-400">{svc.estimatedTime || '3-5 days'}</span>
-                              </div>
-                              <div className="text-right">
-                                <span className="price-tag block text-body-lg text-warm-900">{fmt(svc.price)}</span>
-                                <p className="text-caption uppercase tracking-wide text-warm-400">Starting</p>
-                              </div>
-                            </div>
-
-                            <p className="mb-4 flex-1 text-body-sm leading-relaxed text-warm-500">{svc.lay || 'A single, individually priced piece of your build.'}</p>
-
-                            <div className="flex items-center justify-between gap-2 border-t border-warm-100 pt-3">
-                               <span className="text-caption font-medium uppercase tracking-wide text-warm-400">{svc.unit || 'Standard'}</span>
-                               <button
-                                 onClick={() => !isInCart && handleAdd(svc)}
-                                 aria-label={isInCart ? 'Added' : `Add ${svc.name}`}
-                                 className={cn(
-                                   'grid h-8 w-8 place-items-center rounded-sm transition-colors',
-                                   isInCart ? 'bg-sage-100 text-sage-700' : 'bg-fox-50 text-fox-600 hover:bg-fox-500 hover:text-white'
-                                 )}
-                               >
-                                 {isInCart ? <Check size={15} /> : <Plus size={15} />}
-                               </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4">
+                      {shown.map(svc => (
+                        <ServiceCard
+                          key={svc.id}
+                          svc={svc}
+                          price={fmt(svc.price)}
+                          inCart={cartItemIds.has(svc.id)}
+                          onAdd={handleAdd}
+                        />
+                      ))}
                     </div>
+
+                    {isOverview && hidden > 0 && (
+                      <button
+                        onClick={() => { setActiveCat(cat.dataId); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        className="w-full rounded-md border border-dashed border-warm-300 py-3 text-body-sm font-medium text-warm-600 hover:border-fox-300 hover:text-fox-600 transition-colors"
+                      >
+                        + {hidden} more in {cat.name}
+                      </button>
+                    )}
                   </div>
                 );
               })}

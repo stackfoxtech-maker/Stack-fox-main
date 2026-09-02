@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   ShoppingCart, Menu, X, ChevronDown, User, LogOut, LayoutDashboard,
@@ -12,7 +12,9 @@ import useCartStore from '@store/cartStore';
 import useUiStore from '@store/uiStore';
 import { Button } from '@components/ui/Primitives';
 import { BrandLogo } from '@components/ui/BrandLogo';
-import SearchOverlay from '@components/ui/SearchOverlay';
+// Deferred: the search overlay pulls the storefront catalogue — don't load it
+// (or fire that fetch) until someone actually opens search.
+const SearchOverlay = lazy(() => import('@components/ui/SearchOverlay'));
 import { toast } from 'react-hot-toast';
 
 // ── Primary nav (always visible on desktop) ─────────────────────────────────
@@ -249,6 +251,8 @@ const isLinkActive = (path, current) => {
 // ────────────────────────────────────────────────────────────────────────────
 export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchMounted, setSearchMounted] = useState(false);
+  const openSearch = () => { setSearchMounted(true); setIsSearchOpen(true); };
   const isScrolled = useScrollPosition(20);
   const { isAuthenticated } = useAuthStore();
   const { itemCount, toggleCart } = useCartStore();
@@ -299,7 +303,7 @@ export default function Navbar() {
           <div className="flex items-center gap-2">
             {/* Search Button */}
             <button
-              onClick={() => setIsSearchOpen(true)}
+              onClick={openSearch}
               className="p-3 rounded-xl hover:bg-warm-100 transition-colors text-warm-700"
               aria-label="Search"
             >
@@ -458,11 +462,12 @@ export default function Navbar() {
           </div>
         </div>
       )}
-      {/* Search Overlay */}
-      <SearchOverlay 
-        isOpen={isSearchOpen} 
-        onClose={() => setIsSearchOpen(false)} 
-      />
+      {/* Search Overlay — mounted on first open (PERF_AUDIT P1-2) */}
+      {searchMounted && (
+        <Suspense fallback={null}>
+          <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+        </Suspense>
+      )}
     </nav>
   );
 }

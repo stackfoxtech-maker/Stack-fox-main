@@ -7,11 +7,15 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePageTitle, useCountUp } from '@lib/hooks';
+import { cdnImg } from '@lib/img';
+import CdnImage from '@components/CdnImage';
 import { Reveal } from '@components/Reveal';
 import { fadeUp } from '@components/motion';
 import { BrandLogo } from '@components/ui/BrandLogo';
 import { FoxBot } from '@components/ui/FoxBot';
-import SF_DATA from '@data/stackfox-data.json';
+// ~2 KB summary (names + counts) instead of the full 100 KB catalogue — keeps
+// the landing page off the big JSON. Regenerate: scripts/gen-catalog-summary.mjs
+import CATALOG from '@data/catalog-summary.json';
 
 const EASE = [0.2, 0.7, 0.2, 1];
 /* Hero left column — headline lines and copy rise in sequence. */
@@ -86,8 +90,8 @@ export default function Home() {
   // startDelay lets the first tick land just after the line items cascade in.
   const { ref: totalRef, value: shownTotal } = useCountUp(total, { duration: 700, startDelay: 900 });
 
-  const categories = SF_DATA.categories || [];
-  const serviceCount = (SF_DATA.services || []).length;
+  const categories = CATALOG.categories;
+  const serviceCount = CATALOG.serviceCount;
 
   return (
     <>
@@ -121,9 +125,15 @@ export default function Home() {
               <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-warm-200 pt-6">
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-2.5">
-                    {[11, 12, 13, 14].map((i) => (
-                      <img key={i} src={`https://i.pravatar.cc/72?u=${i}`} alt=""
-                        className="h-8 w-8 rounded-full border-2 border-warm-white object-cover" />
+                    {[
+                      ['MK', 'bg-fox-100 text-fox-700'],
+                      ['AR', 'bg-sage-100 text-sage-700'],
+                      ['SP', 'bg-info-50 text-info-700'],
+                      ['RB', 'bg-warm-200 text-warm-700'],
+                    ].map(([ini, tone]) => (
+                      <span key={ini} className={`grid h-8 w-8 place-items-center rounded-full border-2 border-warm-white text-[11px] font-semibold ${tone}`}>
+                        {ini}
+                      </span>
                     ))}
                     <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-warm-white bg-warm-900 text-[10px] font-bold text-white">120</span>
                   </div>
@@ -233,8 +243,9 @@ export default function Home() {
       {/* ── Assembly band — "building software is easy now" ──── */}
       <section className="relative overflow-hidden bg-warm-50">
         <motion.img
-          src="/img/home-blocks.webp" width="1400" height="788" loading="lazy" alt=""
+          src={cdnImg('home-blocks', 1600)} width="1400" height="788" loading="lazy" alt=""
           aria-hidden
+          onError={(e) => { e.currentTarget.src = '/img/home-blocks.webp'; }}
           className="absolute inset-0 h-full w-full object-cover"
           initial={{ scale: 1.14 }}
           whileInView={{ scale: 1 }}
@@ -270,7 +281,7 @@ export default function Home() {
           <Reveal stagger className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {categories.map((cat) => {
               const Icon = iconMap[cat.icon] || Globe;
-              const count = (SF_DATA.services || []).filter((s) => s.catId === cat.id).length;
+              const count = cat.count;
               return (
                 <Reveal.Item key={cat.id} as={Link}
                   to={`/builder?category=${cat.id}`}
@@ -295,8 +306,10 @@ export default function Home() {
           <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
             <Reveal variant="fade" className="lg:col-span-5">
               <div className="img-frame aspect-[4/3]">
-                <img
-                  src="/img/founder-desk.webp" width="1200" height="900" loading="lazy"
+                <CdnImage
+                  name="founder-desk" w={900} widths={[480, 720, 900, 1200]}
+                  sizes="(min-width: 1024px) 40vw, 100vw"
+                  width={1200} height={900}
                   alt="A StackFox client working through her itemised project plan"
                 />
               </div>

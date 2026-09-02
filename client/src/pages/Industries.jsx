@@ -5,6 +5,7 @@ import { usePageTitle } from '@lib/hooks';
 import { formatINR } from '@lib/utils';
 import { Section, SectionHeading, Button } from '@components/ui/Primitives';
 import { Reveal } from '@components/Reveal';
+import CdnImage from '@components/CdnImage';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
 import data from '@data/stackfox-data.json';
@@ -22,7 +23,10 @@ export default function Industries() {
       <SectionHeading label="Industries" title="Solutions built for your industry" description="Pre-configured bundles with everything your industry needs. Customize further in the Service Builder." />
 
       <Reveal variant="fade" className="img-frame mb-12 aspect-[16/7]">
-        <img src="/img/industries-hero.webp" width="1400" height="612" loading="lazy"
+        <CdnImage
+          name="industries-hero" w={1400} eager
+          sizes="(min-width: 1200px) 1152px, 100vw"
+          width={1400} height={612}
           alt="An independent shop owner in the doorway of her storefront at golden hour" />
       </Reveal>
 

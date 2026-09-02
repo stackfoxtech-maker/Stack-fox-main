@@ -388,3 +388,228 @@ export const exportQuotePDF = async (items, curIdx, cartWarnings = [], cartRoi =
 
   doc.save('StackFox-Quote-' + quoteNumber.replace(/\s+/g, '-') + '.pdf');
 };
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GST TAX INVOICE — single-page A4, matches the Artwall Labs invoice layout.
+   Pass a computed invoice from src/lib/invoice.js buildInvoice().
+   ═══════════════════════════════════════════════════════════════════════════ */
+export async function exportTaxInvoicePDF(inv) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  const W = 210, H = 297, M = 14;
+  const CW = W - M * 2;
+  const BLUE = [31, 79, 160];
+  const INK = [26, 26, 26];
+  const MUT = [110, 110, 110];
+  const RULE = [214, 220, 230];
+  const rs = (n) => 'Rs. ' + new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
+  const rsn = (n) => new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
+
+  const sc = (c) => doc.setTextColor(c[0], c[1], c[2]);
+  const sf = (c) => doc.setFillColor(c[0], c[1], c[2]);
+  const sd = (c) => doc.setDrawColor(c[0], c[1], c[2]);
+  const T = (s, x, y, o = {}) => {
+    doc.setFont('helvetica', o.bold ? 'bold' : o.italic ? 'italic' : 'normal');
+    doc.setFontSize(o.size || 9);
+    sc(o.color || INK);
+    doc.text(String(s), x, y, { align: o.align || 'left', charSpace: o.spread || 0, maxWidth: o.maxWidth });
+  };
+  const rule = (y, w = 0.5, c = RULE) => { sd(c); doc.setLineWidth(w); doc.line(M, y, W - M, y); };
+  const label = (s, x, yy) => T(s, x, yy, { bold: true, size: 7, color: BLUE, spread: 0.3 });
+
+  let y = 18;
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  T(inv.supplier.legalName, M, y, { bold: true, size: 12, spread: 0.5 });
+  T(inv.supplier.tradeName, M, y + 4.5, { size: 7, color: BLUE, bold: true, spread: 0.2 });
+  T(`CIN: ${inv.supplier.cin}`, M, y + 10, { size: 7.5 });
+  T(`GSTIN: ${inv.supplier.gstin}   PAN: ${inv.supplier.pan}`, M, y + 14, { size: 7.5 });
+  T(`State: ${inv.supplier.stateName} (${inv.supplier.stateCode})`, M, y + 18, { size: 7.5 });
+
+  doc.setLineWidth(0.4); sd(BLUE);
+  doc.rect(W - M - 44, y - 5, 44, 6);
+  T('ORIGINAL FOR RECIPIENT', W - M - 22, y - 1, { align: 'center', size: 6, color: BLUE, bold: true, spread: 0.2 });
+  T('TAX INVOICE', W - M, y + 7, { align: 'right', bold: true, size: 15, color: BLUE });
+  T('Reverse Charge: N/A', W - M, y + 13, { align: 'right', size: 7, color: MUT });
+  T('Sec. 31 CGST  |  Rule 46', W - M, y + 17, { align: 'right', size: 7, color: MUT });
+
+  y += 23;
+  rule(y, 1.4, BLUE);
+  y += 8;
+
+  // ── SUPPLIER · RECIPIENT · PARTICULARS ────────────────────────────────────
+  const c1 = M, c2 = M + CW * 0.36, c3 = M + CW * 0.68;
+  const top = y;
+  label('SUPPLIER', c1, y);
+  let sy = y + 5;
+  T(inv.supplier.legalName, c1, sy, { bold: true, size: 8 }); sy += 4;
+  T(inv.supplier.tradeName, c1, sy, { size: 7, color: BLUE }); sy += 4;
+  inv.supplier.addressLines.forEach((l) => { T(l, c1, sy, { size: 7.5, color: MUT }); sy += 3.8; });
+  T(`Ph: ${inv.supplier.phone}`, c1, sy, { size: 7.5, color: MUT }); sy += 3.8;
+  T(inv.supplier.email, c1, sy, { size: 7.5, color: MUT }); sy += 3.8;
+  T(inv.supplier.website, c1, sy, { size: 7.5, color: MUT });
+
+  label('RECIPIENT', c2, top);
+  let ry = top + 5;
+  T(inv.recipient.name, c2, ry, { bold: true, size: 8 }); ry += 4;
+  if (inv.recipient.contact) { T(`Attn: ${inv.recipient.contact}`, c2, ry, { size: 7.5, color: MUT }); ry += 3.8; }
+  if (inv.recipient.address) { T(inv.recipient.address, c2, ry, { size: 7.5, color: MUT, maxWidth: CW * 0.3 }); ry += 3.8; }
+  if (inv.recipient.email) { T(inv.recipient.email, c2, ry, { size: 7.5, color: MUT }); ry += 3.8; }
+  if (inv.recipient.phone) { T(inv.recipient.phone, c2, ry, { size: 7.5, color: MUT }); ry += 3.8; }
+  if (inv.recipient.gstin) { T(`GSTIN: ${inv.recipient.gstin}`, c2, ry, { size: 7.5, color: MUT }); ry += 3.8; }
+  if (inv.recipient.stateName) T(`State: ${inv.recipient.stateName} (${inv.recipient.stateCode})`, c2, ry, { size: 7.5, color: MUT });
+
+  label('PARTICULARS', c3, top);
+  let py = top + 5;
+  const par = (k, v) => {
+    T(k, c3, py, { size: 7, color: BLUE, bold: true });
+    T(v, W - M, py, { size: 7.5, align: 'right' });
+    py += 4.6;
+  };
+  par('Invoice No.', inv.invoiceNo);
+  par('Date', inv.date);
+  par('Due', inv.dueDate);
+  par('Place', `${inv.place} (${inv.supplier.stateCode})`);
+  par('Supply', inv.supplyLabel);
+
+  y = Math.max(sy, ry, py) + 6;
+  rule(y);
+  y += 6;
+
+  // ── Line items ───────────────────────────────────────────────────────────
+  const X = {
+    no: M + 2, desc: M + 10, sac: M + CW * 0.52, qty: M + CW * 0.64,
+    unit: M + CW * 0.71, rate: M + CW * 0.855, disc: M + CW * 0.9, amt: W - M,
+  };
+  sf(BLUE); doc.rect(M, y, CW, 7, 'F');
+  const hc = { color: [255, 255, 255], bold: true, size: 6.5 };
+  T('S.NO', X.no, y + 4.7, hc);
+  T('DESCRIPTION', X.desc, y + 4.7, hc);
+  T('SAC', X.sac, y + 4.7, hc);
+  T('QTY', X.qty, y + 4.7, { ...hc, align: 'right' });
+  T('UNIT', X.unit, y + 4.7, { ...hc, align: 'center' });
+  T('RATE', X.rate, y + 4.7, { ...hc, align: 'right' });
+  T('DISC', X.disc, y + 4.7, { ...hc, align: 'right' });
+  T('AMOUNT', X.amt, y + 4.7, { ...hc, align: 'right' });
+  y += 11;
+
+  inv.lines.forEach((l, i) => {
+    if (y > H - 95) { doc.addPage(); y = 20; }
+    T(String(i + 1), X.no, y, { size: 8 });
+    T(l.name.length > 50 ? l.name.slice(0, 49) + '…' : l.name, X.desc, y, { size: 8, bold: true });
+    T(l.sacDesc, X.desc, y + 3.6, { size: 6.5, color: MUT });
+    T(l.sacCode, X.sac, y, { size: 7.5 });
+    T(String(l.qty), X.qty, y, { size: 7.5, align: 'right' });
+    T(l.unit, X.unit, y, { size: 7.5, align: 'center' });
+    T(rsn(l.rate), X.rate, y, { size: 7.5, align: 'right' });
+    T(l.discount ? rsn(l.discount) : '—', X.disc, y, { size: 7.5, align: 'right', color: MUT });
+    T(rsn(l.amount), X.amt, y, { size: 8, align: 'right', color: BLUE, bold: true });
+    y += 8;
+    rule(y - 2.5, 0.2);
+  });
+
+  y += 3;
+
+  // ── Totals box (right) ───────────────────────────────────────────────────
+  const bx = W - M - 78, bw = 78;
+  const tot = (k, v, opt = {}) => {
+    doc.setLineWidth(0.2); sd(RULE);
+    doc.line(bx, y + 1.5, bx + bw, y + 1.5);
+    T(k, bx + 3, y, { size: 7.5, color: opt.color || MUT });
+    T(rs(v), bx + bw - 3, y, { size: 7.5, align: 'right', bold: true, color: opt.color || INK });
+    y += 6;
+  };
+  y += 2;
+  tot('Subtotal', inv.subtotal);
+  if (inv.cgst) tot(`CGST @ ${inv.halfRate}%`, inv.cgst);
+  if (inv.sgst) tot(`SGST @ ${inv.halfRate}%`, inv.sgst);
+  if (inv.igst) tot(`IGST @ ${inv.gstRate}%`, inv.igst);
+  if (Math.abs(inv.roundOff) >= 0.01) tot('Round Off', inv.roundOff);
+  y += 1;
+  sf(BLUE); doc.rect(bx, y - 4, bw, 9, 'F');
+  T('TOTAL PAYABLE', bx + 3, y + 1.7, { color: [255, 255, 255], bold: true, size: 8 });
+  T(rs(inv.payable), bx + bw - 3, y + 1.7, { color: [255, 255, 255], bold: true, size: 9, align: 'right' });
+  y += 12;
+
+  T('Amount in Words: ', M, y, { bold: true, size: 8 });
+  T(inv.amountInWords, M + 28, y, { italic: true, size: 8, color: MUT, maxWidth: CW - 30 });
+  y += 8;
+  rule(y);
+  y += 6;
+
+  // ── Tax breakup by SAC ───────────────────────────────────────────────────
+  T('TAX BREAKUP BY SAC', M, y, { bold: true, size: 7.5, color: BLUE, spread: 0.2 });
+  y += 5;
+  const S = { sac: M + 2, desc: M + 26, tax: M + CW * 0.44, cg: M + CW * 0.64, sg: M + CW * 0.82, t: W - M };
+  const shead = { size: 6.5, color: MUT, bold: true };
+  T('SAC', S.sac, y, shead);
+  T('Desc', S.desc, y, shead);
+  T('Taxable', S.tax, y, { ...shead, align: 'right' });
+  T(inv.isInterState ? 'IGST' : `CGST@${inv.halfRate}%`, S.cg, y, { ...shead, align: 'right' });
+  if (!inv.isInterState) T(`SGST@${inv.halfRate}%`, S.sg, y, { ...shead, align: 'right' });
+  T('Tax', S.t, y, { ...shead, align: 'right' });
+  y += 2; rule(y, 0.2); y += 4;
+  inv.sacBreakup.forEach((r) => {
+    T(r.sacCode, S.sac, y, { size: 7.5, bold: true });
+    T(r.sacDesc, S.desc, y, { size: 7.5, color: MUT });
+    T(rsn(r.taxable), S.tax, y, { size: 7.5, align: 'right' });
+    T(rsn(inv.isInterState ? r.igst : r.cgst), S.cg, y, { size: 7.5, align: 'right', color: MUT });
+    if (!inv.isInterState) T(rsn(r.sgst), S.sg, y, { size: 7.5, align: 'right', color: MUT });
+    T(rsn(r.tax), S.t, y, { size: 7.5, align: 'right', color: BLUE, bold: true });
+    y += 6;
+  });
+  y += 2;
+  rule(y);
+  y += 7;
+
+  // ── Bank details + signatory ─────────────────────────────────────────────
+  const sigTop = y;
+  T('BANK DETAILS', M, y, { bold: true, size: 7.5, color: BLUE, spread: 0.2 });
+  y += 5;
+  T(`Beneficiary: ${inv.bank.beneficiary}`, M, y, { size: 7.5 }); y += 4;
+  T(`Bank: ${inv.bank.bank}`, M, y, { size: 7.5 }); y += 4;
+  T(`Branch: ${inv.bank.branch}`, M, y, { size: 7.5 }); y += 4;
+  T(`PAN: ${inv.bank.pan}`, M, y, { size: 7.5 });
+
+  let gy = sigTop;
+  T(`FOR ${inv.supplier.legalName}`, W - M, gy, { bold: true, size: 7.5, color: BLUE, align: 'right' });
+  const cx = W - M - 42, cyc = gy + 15;
+  sd(BLUE); doc.setLineWidth(0.4);
+  doc.circle(cx, cyc, 10.5); doc.circle(cx, cyc, 7.5);
+  T('DIGITALLY', cx, cyc - 1.2, { align: 'center', size: 4, color: BLUE, bold: true });
+  T('SIGNED', cx, cyc + 2, { align: 'center', size: 4, color: BLUE, bold: true });
+  gy += 29;
+  T(inv.supplier.signatory.name, W - M, gy, { bold: true, size: 8.5, align: 'right' });
+  T(inv.supplier.signatory.title, W - M, gy + 4, { size: 7, color: BLUE, align: 'right' });
+  T(`Date: ${inv.date}   Place: ${inv.place}`, W - M, gy + 8.5, { size: 6.5, color: MUT, align: 'right' });
+  T('Digitally signed — IT Act 2000, Sec. 5', W - M, gy + 12.5, { size: 6, color: MUT, align: 'right' });
+
+  y = Math.max(y, gy + 14) + 5;
+  T(`Notes: ${inv.notes}`, M, y, { size: 7.5, color: MUT });
+  y += 6;
+  rule(y, 1, BLUE);
+  y += 6;
+
+  // ── Terms ────────────────────────────────────────────────────────────────
+  T('TERMS & CONDITIONS', M, y, { bold: true, size: 6.5, color: MUT, spread: 0.2 });
+  y += 4;
+  const terms =
+    '1. Payment due within 30 days. Interest @ 18% p.a. (MSMED Act, Sec. 16). 2. GST per CGST/SGST Act 2017. ' +
+    'SAC/HSN per GST Tariff. 3. Rule 46 CGST Rules 2017; valid for ITC u/s 16(2)(a). 4. Reverse Charge: N/A. ' +
+    '5. TDS u/s 194J/194C where applicable. 6. Form 16A within 15 days of quarter-end. 7. Retained-amount payment on IP transfer. 8. Disputes: Jaipur jurisdiction. 9. E&OE.';
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(6.2); sc(MUT);
+  const wrapped = doc.splitTextToSize(terms, CW);
+  doc.text(wrapped, M, y);
+  y += wrapped.length * 2.7 + 4;
+
+  // ── Footer ───────────────────────────────────────────────────────────────
+  const fy = H - 14;
+  rule(fy - 4, 0.8, BLUE);
+  T(`${inv.supplier.legalName}  |  ${inv.supplier.tradeName}  |  CIN: ${inv.supplier.cin}  |  GSTIN: ${inv.supplier.gstin}  |  PAN: ${inv.supplier.pan}`,
+    W / 2, fy, { align: 'center', bold: true, size: 6 });
+  T(`${inv.supplier.addressLines.join(', ')}  ·  ${inv.supplier.phone}  ·  ${inv.supplier.email}  ·  ${inv.supplier.website}`,
+    W / 2, fy + 3.5, { align: 'center', size: 5.5, color: MUT });
+
+  doc.save(`${inv.invoiceNo.replace(/[/\s]+/g, '-')}.pdf`);
+}

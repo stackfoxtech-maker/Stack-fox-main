@@ -3,7 +3,9 @@ import { FileText, Download, Clock, CheckCircle2, AlertCircle } from 'lucide-rea
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize, getStatusBadge } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
-import { exportQuotePDF } from '@lib/pdfExport';
+// Lazy — keeps jsPDF out of the dashboard bundle (PERF_AUDIT P0-3).
+const exportQuotePDF = (...args) =>
+  import('@lib/pdfExport').then((m) => m.exportQuotePDF(...args));
 import api from '@lib/api';
 
 export default function Quotes() {
