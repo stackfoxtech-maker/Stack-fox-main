@@ -46,8 +46,21 @@ export const QUEUE = {
 
 export type QueueName = (typeof QUEUE)[keyof typeof QUEUE];
 
+// Every Queue/Worker opens its OWN ioredis connection, separate from the
+// shared `redis` singleton — closing that singleton on shutdown does nothing
+// for these. Tracked here so shutdownQueues() (called from server.ts and
+// workers/index.ts) can close every one of them. Without this, each dev
+// hot-reload (or production redeploy) that doesn't wait for a clean exit
+// leaves the previous process's 19 queues + 19 workers connected and still
+// polling Redis in the background — the actual cause of a fresh Upstash
+// instance being exhausted within minutes of a single long dev session.
+const openQueues: Queue[] = [];
+const openWorkers: Worker[] = [];
+
 export function createQueue(name: QueueName) {
-  return new Queue(name, { connection });
+  const queue = new Queue(name, { connection });
+  openQueues.push(queue);
+  return queue;
 }
 
 export function createWorker<T = any>(
@@ -58,6 +71,13 @@ export function createWorker<T = any>(
   const worker = new Worker<T>(name, processor, {
     connection,
     concurrency: opts?.concurrency ?? 5,
+    // BullMQ's default stalled-job check runs every 30s per worker. With 19
+    // workers always connected, that's ~38 Redis round-trips/minute around the
+    // clock regardless of actual job traffic. Nearly every queue here is
+    // cron-scheduled (see lib/scheduler.ts) at 15-minute-or-longer intervals,
+    // so a stalled job sitting undetected for a few extra minutes is a
+    // non-issue — trade detection latency for a ~10x cut in idle Redis load.
+    stalledInterval: 5 * 60 * 1000,
     ...opts,
   });
 
@@ -65,9 +85,17 @@ export function createWorker<T = any>(
     console.error(`[${name}] Job ${job?.id} failed:`, err.message);
   });
 
+  openWorkers.push(worker);
   return worker;
 }
 
 export const queues = Object.fromEntries(
   Object.entries(QUEUE).map(([key, name]) => [key, createQueue(name)]),
 ) as Record<keyof typeof QUEUE, Queue>;
+
+/** Closes every Queue/Worker connection this process has opened. Idempotent. */
+export async function shutdownQueues(): Promise<void> {
+  const workers = openWorkers.splice(0, openWorkers.length);
+  const qs = openQueues.splice(0, openQueues.length);
+  await Promise.allSettled([...workers.map((w) => w.close()), ...qs.map((q) => q.close())]);
+}

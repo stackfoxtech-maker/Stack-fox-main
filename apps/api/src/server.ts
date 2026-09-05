@@ -198,6 +198,14 @@ async function start() {
   const close = async (signal: string) => {
     app.log.info(`${signal} received, shutting down`);
     await app.close();
+    if (WORKERS_INLINE) {
+      // Each of the 19 BullMQ Queues/Workers holds its own Redis connection,
+      // separate from the shared `redis` singleton below — closing only that
+      // singleton left all 38 connections open on every restart (including a
+      // plain dev hot-reload), still polling Redis in the background.
+      const { shutdownQueues } = await import("./lib/queue");
+      await shutdownQueues().catch(() => {});
+    }
     await prisma.$disconnect().catch(() => {});
     await redis.quit().catch(() => {});
     process.exit(0);
