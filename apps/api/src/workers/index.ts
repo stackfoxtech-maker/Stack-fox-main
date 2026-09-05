@@ -21,8 +21,9 @@ import "./referralProcessor";
 import "./whatsappCommerce";
 import "./salesFollowup";
 
-import { redis } from "../lib/redis";
 import { registerSchedules, pruneStaleSchedulers } from "../lib/scheduler";
+import { shutdownQueues } from "../lib/queue";
+import { redis } from "../lib/redis";
 
 /**
  * Worker entrypoint.
@@ -34,6 +35,14 @@ import { registerSchedules, pruneStaleSchedulers } from "../lib/scheduler";
  * Run it either as its own process (`pnpm --filter @stackfox/api worker`, the
  * production shape) or inline with the API by setting `WORKERS_INLINE=true`,
  * which suits single-container deploys.
+ *
+ * Shutdown: when imported inline by server.ts, ITS SIGTERM/SIGINT handler is
+ * the single source of truth and calls shutdownQueues() itself — a second
+ * handler here used to race it (both calling process.exit independently) and,
+ * critically, neither one closed the 19 Queue + 19 Worker connections this
+ * module opens, so every restart (including a plain dev hot-reload) leaked
+ * them. Only register the handler below when this file is the process
+ * entrypoint (`pnpm worker`), not when some other module imported it.
  */
 console.log("[workers] 19 workers subscribed");
 
@@ -49,15 +58,14 @@ void (async () => {
   }
 })();
 
-async function shutdown(signal: string) {
-  console.log(`[workers] ${signal} received, draining…`);
-  try {
-    await redis.quit();
-  } catch {
-    /* already closed */
-  }
-  process.exit(0);
-}
+if (require.main === module) {
+  const shutdown = async (signal: string) => {
+    console.log(`[workers] ${signal} received, draining…`);
+    await shutdownQueues().catch(() => {});
+    await redis.quit().catch(() => {});
+    process.exit(0);
+  };
 
-process.on("SIGTERM", () => void shutdown("SIGTERM"));
-process.on("SIGINT", () => void shutdown("SIGINT"));
+  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  process.on("SIGINT", () => void shutdown("SIGINT"));
+}
