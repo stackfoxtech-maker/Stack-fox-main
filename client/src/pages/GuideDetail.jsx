@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
+import { sanitizeHtml } from '@lib/utils';
 
 const content = {
   'how-to-choose-a-website-builder': {
@@ -18,7 +19,7 @@ export default function GuideDetail() {
     <div className="max-w-3xl mx-auto px-6 py-16">
       <Link to="/guides" className="text-sm text-orange-600 font-semibold mb-4 inline-block">{'<'} All guides</Link>
       <h1 className="text-3xl font-bold my-6">{g.title}</h1>
-      <div className="prose max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: g.html }} />
+      <div className="prose max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: sanitizeHtml(g.html) }} />
       <div className="mt-12 bg-[#FAFAF8] rounded-2xl p-8 text-center">
         <h2 className="text-xl font-bold mb-2">Ready to build?</h2>
         <p className="text-gray-600 mb-4">Use the estimator or start the Builder now.</p>

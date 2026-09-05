@@ -1,9 +1,18 @@
 import { clsx } from 'clsx';
+import DOMPurify from 'dompurify';
 
 /**
  * Merge classnames (clsx wrapper for Tailwind).
  */
 export const cn = (...inputs) => clsx(inputs);
+
+/**
+ * Sanitize HTML before dangerouslySetInnerHTML. Blog/guide content is stored
+ * unsanitized server-side, so this is the only thing standing between a
+ * malicious <script>/onerror payload and every visitor's browser.
+ */
+export const sanitizeHtml = (html) =>
+  DOMPurify.sanitize(html ?? '', { USE_PROFILES: { html: true } });
 
 /**
  * Format amount in INR (Indian number system).

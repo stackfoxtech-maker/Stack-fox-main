@@ -3,6 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { applyTierMultiplier, computeEstimateRange } from "../lib/estimate";
 import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
+import { paymentModeAmount } from "@stackfox/core";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
 import { paginated, pageParams } from "../lib/http";
@@ -352,14 +353,24 @@ export async function quoteRoutes(app: FastifyInstance) {
     if (!quote || quote.userId !== req.user!.sub) {
       return reply.code(404).send({ message: "Quote not found" });
     }
-    if (quote.status === "paid") {
+
+    const details = (quote.checkoutDetails as any) ?? {};
+    const amountPaidSoFar: number = details.amountPaid ?? 0;
+    const remainingDue = quote.total - amountPaidSoFar;
+    if (quote.status === "paid" || remainingDue <= 0) {
       return reply.code(400).send({ message: "This quote has already been paid." });
     }
 
-    const mode = ["MILESTONE", "UPFRONT", "FULL"].includes(paymentMode ?? "") ? paymentMode! : "FULL";
-    const amount = mode === "UPFRONT" ? Math.round(quote.total * 0.95)
-      : mode === "MILESTONE" ? Math.round(quote.total * 0.3)
-      : quote.total;
+    // The payment-terms split only applies to the first payment on a quote.
+    // Once a milestone/upfront payment has landed, whatever is left is due in
+    // full — there is no further installment schedule to compute against.
+    let mode = ["MILESTONE", "UPFRONT", "FULL"].includes(paymentMode ?? "") ? paymentMode! : "FULL";
+    let amount = remainingDue;
+    if (amountPaidSoFar === 0) {
+      amount = paymentModeAmount(quote.total, mode);
+    } else {
+      mode = "FULL";
+    }
 
     let order;
     try {
@@ -372,7 +383,14 @@ export async function quoteRoutes(app: FastifyInstance) {
       return reply.code(authFailure ? 401 : 500).send({ message: description ?? "Failed to create Razorpay order" });
     }
 
-    await prisma.quote.update({ where: { id }, data: { razorpayOrderId: order.id, status: "checkout" } });
+    await prisma.quote.update({
+      where: { id },
+      data: {
+        razorpayOrderId: order.id,
+        status: "checkout",
+        checkoutDetails: { ...details, pendingOrderAmount: amount },
+      },
+    });
 
     return {
       data: {
@@ -408,15 +426,48 @@ export async function quoteRoutes(app: FastifyInstance) {
       return reply.code(400).send({ message: "Order does not match this quote" });
     }
 
+    const details = (quote.checkoutDetails as any) ?? {};
+    const paidPayments: string[] = details.payments ?? [];
+    if (paidPayments.includes(razorpay_payment_id)) {
+      // Already recorded — a retried client call, not a fresh payment.
+      return { data: serializeQuote(quote) };
+    }
+
     const valid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
     if (!valid) {
       return reply.code(400).send({ message: "Signature verification failed" });
     }
 
-    const updated = await prisma.quote.update({ where: { id }, data: { status: "paid", paidAt: new Date() } });
-    await emitEvent({ code: "QUOTE_PAID", payload: { quoteId: id, razorpayPaymentId: razorpay_payment_id }, actor: req.user!.sub });
+    // The order amount was computed and pinned server-side at /pay time —
+    // never trust a client-supplied amount here.
+    const orderAmount: number = details.pendingOrderAmount ?? 0;
+    const amountPaid = (details.amountPaid ?? 0) + orderAmount;
+    const fullyPaid = amountPaid >= quote.total;
 
-    await provisionQuote(updated, req.user!.sub);
+    const nextDetails = {
+      ...details,
+      amountPaid,
+      payments: [...paidPayments, razorpay_payment_id],
+      pendingOrderAmount: undefined,
+    };
+
+    const updated = await prisma.quote.update({
+      where: { id },
+      data: {
+        status: fullyPaid ? "paid" : "partially_paid",
+        paidAt: fullyPaid ? new Date() : quote.paidAt,
+        checkoutDetails: nextDetails,
+      },
+    });
+    await emitEvent({
+      code: fullyPaid ? "QUOTE_PAID" : "QUOTE_PARTIALLY_PAID",
+      payload: { quoteId: id, razorpayPaymentId: razorpay_payment_id, amountPaid, total: quote.total },
+      actor: req.user!.sub,
+    });
+
+    if (fullyPaid) {
+      await provisionQuote(updated, req.user!.sub);
+    }
 
     return { data: serializeQuote(updated) };
   });

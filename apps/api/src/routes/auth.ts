@@ -7,7 +7,10 @@ import * as ids from "../lib/id";
 import { hashPassword, verifyPassword, needsRehash, generateToken, hashToken } from "../lib/password";
 import { ensurePersonalOrg } from "../lib/scope";
 import { toJson } from "../lib/json";
-import { isInternalRole } from "@stackfox/core";
+import { isInternalRole, CLIENT_ROLES } from "@stackfox/core";
+
+const ORG_MANAGER_ROLES = ["ORG_OWNER", "CLIENT_ADMIN"];
+const ASSIGNABLE_MEMBER_ROLES = CLIENT_ROLES as readonly string[];
 import { sendMail, isMailConfigured, passwordResetEmail, verifyEmailMessage, otpEmail } from "../lib/mailer";
 import { sendPhoneOtp, verifyPhoneOtp, isSmsConfigured } from "../lib/sms";
 import { authorizeUrl, exchangeCode, isGoogleConfigured } from "../lib/googleOAuth";
@@ -238,7 +241,10 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // POST /auth/reset-password
-  app.post("/auth/reset-password", async (req, reply) => {
+  app.post(
+    "/auth/reset-password",
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    async (req, reply) => {
     const { token, password } = req.body as { token: string; password: string };
     if (!token || !password) return reply.code(400).send({ message: "Token and password required" });
     if (password.length < 8) {
@@ -272,7 +278,10 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // POST /auth/verify-email
-  app.post("/auth/verify-email", async (req, reply) => {
+  app.post(
+    "/auth/verify-email",
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    async (req, reply) => {
     const { token } = req.body as { token: string };
     if (!token) return reply.code(400).send({ message: "Token required" });
 
@@ -350,7 +359,11 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // POST /auth/otp/verify
-  app.post("/auth/otp/verify", async (req, reply) => {
+  const OTP_MAX_ATTEMPTS = 5;
+  app.post(
+    "/auth/otp/verify",
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    async (req, reply) => {
     const { email, phone, code } = req.body as {
       email?: string;
       phone?: string;
@@ -360,7 +373,7 @@ export async function authRoutes(app: FastifyInstance) {
     if (!code) return reply.code(400).send({ error: "code required" });
 
     if (phone && !email) {
-      // MSG91 holds the code for phone.
+      // MSG91 holds the code for phone and enforces its own lockout.
       if (!isSmsConfigured()) {
         return reply.code(503).send({ error: "Phone verification is not available on this server" });
       }
@@ -373,13 +386,30 @@ export async function authRoutes(app: FastifyInstance) {
         });
       }
     } else {
-      // Email code lives in Redis.
+      // Email code lives in Redis. A wrong-guess counter (same TTL as the code
+      // itself) caps brute-force attempts against the 6-digit space — once
+      // exhausted, the code is invalidated outright rather than left guessable
+      // for the rest of its 5-minute window.
+      const attemptsKey = `otp-attempts:${email}`;
+      let attempts = 0;
+      try { attempts = Number((await redis.get(attemptsKey)) ?? 0); } catch {}
+      if (attempts >= OTP_MAX_ATTEMPTS) {
+        return reply.code(429).send({ error: "Too many incorrect attempts. Request a new code." });
+      }
+
       let stored: string | null = null;
       try { stored = await redis.get(`otp:${email}`); } catch {}
       if (!stored || stored !== code) {
+        try {
+          const ttl = await redis.ttl(`otp:${email}`);
+          await redis.set(attemptsKey, attempts + 1, "EX", ttl > 0 ? ttl : 300);
+        } catch {}
         return reply.code(401).send({ error: "Invalid or expired OTP" });
       }
-      try { await redis.del(`otp:${email}`); } catch {}
+      try {
+        await redis.del(`otp:${email}`);
+        await redis.del(attemptsKey);
+      } catch {}
     }
 
     let user = await prisma.user.findFirst({
@@ -643,6 +673,13 @@ export async function authRoutes(app: FastifyInstance) {
   app.patch("/orgs/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
+
+    const caller = req.user!;
+    const isOwnOrgManager = caller.orgId === id && ORG_MANAGER_ROLES.includes(caller.role);
+    if (!isInternalRole(caller.role) && !isOwnOrgManager) {
+      return reply.code(403).send({ error: "Insufficient permissions" });
+    }
+
     const body = req.body as Partial<{
       name: string;
       gstin: string;
@@ -668,7 +705,23 @@ export async function authRoutes(app: FastifyInstance) {
   app.post("/orgs/:id/members", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
+
+    const caller = req.user!;
+    const isOwnOrgManager = caller.orgId === id && ORG_MANAGER_ROLES.includes(caller.role);
+    if (!isInternalRole(caller.role) && !isOwnOrgManager) {
+      return reply.code(403).send({ error: "Insufficient permissions" });
+    }
+
     const { email, role } = req.body as { email: string; role: string };
+
+    // A client-side org manager may only assign client-side roles within their
+    // own org — never grant staff/admin access. Staff callers may assign any
+    // known role (including internal ones, e.g. staffing an internal org).
+    const roleIsKnown = ASSIGNABLE_MEMBER_ROLES.includes(role) || isInternalRole(role);
+    const roleIsAllowedForCaller = isInternalRole(caller.role) || ASSIGNABLE_MEMBER_ROLES.includes(role);
+    if (!roleIsKnown || !roleIsAllowedForCaller) {
+      return reply.code(400).send({ error: `Unknown or unassignable role. Valid roles: ${ASSIGNABLE_MEMBER_ROLES.join(", ")}` });
+    }
 
     let user = await prisma.user.findUnique({ where: { email } });
     if (user) {

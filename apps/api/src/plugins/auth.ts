@@ -4,7 +4,19 @@ import jwt from "jsonwebtoken";
 import { redis } from "../lib/redis";
 import { getSessionEpoch } from "../lib/session";
 
-const JWT_SECRET = process.env.JWT_SECRET ?? process.env.NEXTAUTH_SECRET ?? "dev-secret-change-me";
+function resolveJwtSecret(): string {
+  const secret = process.env.JWT_SECRET ?? process.env.NEXTAUTH_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "JWT_SECRET (or NEXTAUTH_SECRET) is required in production — refusing to sign or " +
+        "verify tokens under the public dev-only fallback secret.",
+    );
+  }
+  return "dev-secret-change-me";
+}
+
+const JWT_SECRET = resolveJwtSecret();
 
 export interface JwtPayload {
   sub: string;
