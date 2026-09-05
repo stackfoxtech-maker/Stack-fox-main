@@ -10,6 +10,7 @@ import * as ids from "../lib/id";
 import { redis } from "../lib/redis";
 import { toJson } from "../lib/json";
 import { resolveGstType, splitGst } from "../lib/gst";
+import { paymentModeAmount } from "@stackfox/core";
 
 interface CheckoutSession {
   estimateId: string;
@@ -181,14 +182,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
     if (!totals) return reply.code(500).send({ error: "Cannot read estimate totals" });
 
     const paymentMode = (session.paymentTerms as any)?.mode ?? "MILESTONE";
-    let amount = totals.grand;
-
-    if (paymentMode === "UPFRONT") {
-      amount = Math.round(totals.grand * 0.95); // 5% discount
-    } else if (paymentMode === "MILESTONE") {
-      // First milestone payment (typically 30%)
-      amount = Math.round(totals.grand * 0.3);
-    }
+    const amount = paymentModeAmount(totals.grand, paymentMode);
 
     const order = await createRazorpayOrder(amount, "INR", `ckout_${sid}`);
     session.razorpayOrderId = order.id;
@@ -319,9 +313,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
     });
 
     // Generate first invoice
-    const invoiceAmount = (session.paymentTerms as any)?.mode === "UPFRONT"
-      ? Math.round(totals.grand * 0.95)
-      : Math.round(totals.grand * 0.3);
+    const invoiceAmount = paymentModeAmount(totals.grand, (session.paymentTerms as any)?.mode ?? "MILESTONE");
 
     const billTo = await prisma.org.findUnique({ where: { id: user.orgId } });
     const gstType = resolveGstType(billTo);

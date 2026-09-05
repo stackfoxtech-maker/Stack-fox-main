@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from "../plugins/auth";
 import { isInternalRole } from "@stackfox/core";
 import { generateStructured } from "../lib/gemini";
 import { ok, withId, withIds, paginated, pageParams } from "../lib/http";
+import { sanitizeHtml } from "../lib/sanitizeHtml";
 
 /**
  * Blog and knowledge base.
@@ -141,12 +142,13 @@ export async function blogRoutes(app: FastifyInstance) {
 
     // Persisted as a SUGGESTED post so it shows up in the editorial queue,
     // rather than being echoed back and discarded.
+    const cleanContent = sanitizeHtml(content.trim());
     const post = await prisma.blogPost.create({
       data: {
         title: title.trim(),
         slug: await uniqueSlug(title),
-        excerpt: content.trim().slice(0, 160),
-        content: content.trim(),
+        excerpt: cleanContent.slice(0, 160),
+        content: cleanContent,
         category: category?.trim() || "General",
         status: "SUGGESTED",
         suggestedBy: req.user!.sub,
@@ -173,12 +175,13 @@ export async function blogRoutes(app: FastifyInstance) {
       ? body.status
       : "DRAFT";
 
+    const cleanContent = sanitizeHtml(body.content);
     const post = await prisma.blogPost.create({
       data: {
         title: body.title.trim(),
         slug: await uniqueSlug(body.slug || body.title),
-        excerpt: body.excerpt?.trim() || body.content.trim().slice(0, 160),
-        content: body.content,
+        excerpt: sanitizeHtml(body.excerpt?.trim() || "") || cleanContent.slice(0, 160),
+        content: cleanContent,
         category: body.category?.trim() || "General",
         featured: Boolean(body.featured),
         status,
@@ -211,8 +214,8 @@ export async function blogRoutes(app: FastifyInstance) {
     if (typeof body.slug === "string" && body.slug.trim() && body.slug !== existing.slug) {
       data.slug = await uniqueSlug(body.slug, id);
     }
-    if (typeof body.content === "string") data.content = body.content;
-    if (typeof body.excerpt === "string") data.excerpt = body.excerpt.trim();
+    if (typeof body.content === "string") data.content = sanitizeHtml(body.content);
+    if (typeof body.excerpt === "string") data.excerpt = sanitizeHtml(body.excerpt.trim());
     if (typeof body.category === "string") data.category = body.category.trim();
     if (typeof body.featured === "boolean") data.featured = body.featured;
     if (typeof body.author === "string") data.author = body.author.trim() || null;
@@ -295,7 +298,7 @@ Return JSON with: title, excerpt (under 160 characters), content (800-1200 words
           title: draft.title,
           slug: await uniqueSlug(draft.title),
           excerpt: draft.excerpt?.slice(0, 200) ?? draft.content.slice(0, 160),
-          content: draft.content,
+          content: sanitizeHtml(draft.content),
           category: category?.trim() || "General",
           status: "DRAFT",
           featured: false,

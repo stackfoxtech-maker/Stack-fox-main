@@ -4,6 +4,7 @@ import {
   Linkedin, Twitter, MessageCircle, ChevronLeft, ChevronRight, Loader2
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
+import { sanitizeHtml } from '@lib/utils';
 import { Section, Button, Spinner } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';
 import { useEffect, useState } from 'react';
@@ -127,9 +128,9 @@ export default function BlogPost() {
 
             {/* Content */}
             <article className="lg:col-span-8 max-w-none">
-              <div 
+              <div
                 className="blog-content text-body-lg text-warm-700"
-                dangerouslySetInnerHTML={{ __html: post.content }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
               />
 
               {/* Author Bio Section */}

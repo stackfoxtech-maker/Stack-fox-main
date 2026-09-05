@@ -88,6 +88,9 @@ export default function Checkout() {
 
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
+  // Display only — the server (POST /quotes/:id/pay) independently computes
+  // and pins the actual charge amount; this never feeds a request body.
+  // Keep in sync with PAYMENT_TERMS in packages/core/src/billing/index.ts.
   const effectivePaymentMode = tier === 'STARTER' ? 'FULL' : paymentMode;
   const payAmount = effectivePaymentMode === 'UPFRONT' ? Math.round(quote.total * 0.95)
     : effectivePaymentMode === 'MILESTONE' ? Math.round(quote.total * 0.3)
@@ -113,10 +116,16 @@ export default function Checkout() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-            setQuote(verifyRes.data.data);
-            toast.success('Payment successful!');
-            if (tier === 'PREMIUM') setStep(steps.length - 1);
-            else navigate('/app/client/quotes');
+            const paidQuote = verifyRes.data.data;
+            setQuote(paidQuote);
+            if (paidQuote.status === 'partially_paid') {
+              toast.success('Payment received — the remaining balance is still due.');
+              if (tier === 'PREMIUM') setStep(steps.length - 1);
+            } else {
+              toast.success('Payment successful!');
+              if (tier === 'PREMIUM') setStep(steps.length - 1);
+              else navigate('/app/client/quotes');
+            }
           } catch {
             toast.error('Payment verification failed.');
           }

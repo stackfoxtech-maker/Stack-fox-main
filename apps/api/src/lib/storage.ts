@@ -56,9 +56,14 @@ export async function getPresignedDownload(
   key: string,
   expiresIn = 3600,
 ): Promise<string> {
+  // `download: true` forces Content-Disposition: attachment on the signed
+  // response. Content-Type at upload time is browser-controlled (Supabase
+  // binds it at PUT, not at signing — see getPresignedUpload below), so an
+  // uploaded HTML/SVG file opened directly would otherwise render inline
+  // instead of downloading — a stored-XSS path through file sharing.
   const { data, error } = await supabase()
     .storage.from(BUCKET)
-    .createSignedUrl(key, expiresIn);
+    .createSignedUrl(key, expiresIn, { download: true });
 
   if (error || !data) {
     throw new Error(`Could not sign download for ${key}: ${error?.message ?? "no url returned"}`);
