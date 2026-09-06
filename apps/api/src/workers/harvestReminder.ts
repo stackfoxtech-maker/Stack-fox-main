@@ -1,8 +1,8 @@
-import { createWorker, QUEUE } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
+import { registerCron } from "./cron/registry";
 import { queues } from "../lib/queue";
 
-createWorker(QUEUE.harvestReminder, async (job) => {
+registerCron("harvest-reminder", async () => {
   const pendingTimesheets = await prisma.timesheet.findMany({
     where: { status: "DRAFT" },
     include: { engagement: true },

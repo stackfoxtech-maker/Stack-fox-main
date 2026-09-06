@@ -1,8 +1,8 @@
-import { createWorker, QUEUE } from "../lib/queue";
+import { registerCron } from "./cron/registry";
 import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 
-createWorker(QUEUE.renewalScanner, async (job) => {
+registerCron("renewal-scan", async () => {
   const thirtyDaysFromNow = new Date(Date.now() + 30 * 86400000);
 
   const expiringEngagements = await prisma.engagement.findMany({

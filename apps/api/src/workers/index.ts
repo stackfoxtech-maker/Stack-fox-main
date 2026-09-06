@@ -1,26 +1,31 @@
 // Env must load before any module reads process.env at import time.
 import "../env";
 
+// Direct workers — one Queue + one Worker each, event-driven.
 import "./docGen";
 import "./notifications";
 import "./webhookDispatcher";
 import "./activityTranslator";
-import "./reconciliation";
-import "./dunning";
-import "./slaCron";
-import "./timesheetCompiler";
 import "./revRec";
 import "./wipLedger";
-import "./renewalScanner";
-import "./softex";
 import "./sandboxRebuild";
-import "./harvestReminder";
-import "./archiveRetention";
 import "./previewGen";
 import "./referralProcessor";
 import "./whatsappCommerce";
+
+// Cron-shaped workers — these now only call registerCron(); a single worker on
+// the shared `cron` queue (started below) dispatches to them by job name.
+import "./slaCron";
+import "./reconciliation";
+import "./dunning";
+import "./renewalScanner";
+import "./harvestReminder";
+import "./timesheetCompiler";
+import "./archiveRetention";
+import "./softex";
 import "./salesFollowup";
 
+import { startCronWorker } from "./cron/worker";
 import { registerSchedules, pruneStaleSchedulers } from "../lib/scheduler";
 import { shutdownQueues } from "../lib/queue";
 import { redis } from "../lib/redis";
@@ -39,14 +44,15 @@ import { redis } from "../lib/redis";
  * Shutdown: when imported inline by server.ts, ITS SIGTERM/SIGINT handler is
  * the single source of truth and calls shutdownQueues() itself — a second
  * handler here used to race it (both calling process.exit independently) and,
- * critically, neither one closed the 19 Queue + 19 Worker connections this
- * module opens, so every restart (including a plain dev hot-reload) leaked
- * them. Only register the handler below when this file is the process
- * entrypoint (`pnpm worker`), not when some other module imported it.
+ * critically, neither one closed the Queue + Worker connections this module
+ * opens, so every restart (including a plain dev hot-reload) leaked them. Only
+ * register the handler below when this file is the process entrypoint
+ * (`pnpm worker`), not when some other module imported it.
  */
-console.log("[workers] 19 workers subscribed");
+startCronWorker();
+console.log("[workers] 11 workers subscribed (10 direct + 1 cron dispatcher)");
 
-// Register the cron-shaped jobs the periodic workers depend on. Best-effort:
+// Register the cron-shaped jobs the periodic handlers depend on. Best-effort:
 // a Redis hiccup at boot must not stop the on-demand workers (docgen, notify,
 // webhooks) from coming up.
 void (async () => {

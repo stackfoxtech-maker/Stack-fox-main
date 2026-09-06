@@ -1,8 +1,8 @@
-import { createWorker, QUEUE } from "../lib/queue";
+import { registerCron } from "./cron/registry";
 import { prisma } from "@stackfox/prisma";
 import { deleteFile } from "../lib/storage";
 
-createWorker(QUEUE.archiveRetention, async () => {
+registerCron("archive-retention", async () => {
   const retentionDays = parseInt(process.env.FILE_RETENTION_DAYS ?? "365");
   const cutoff = new Date(Date.now() - retentionDays * 86400000);
 

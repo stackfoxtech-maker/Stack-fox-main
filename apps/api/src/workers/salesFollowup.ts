@@ -1,4 +1,5 @@
-import { createWorker, QUEUE, queues } from "../lib/queue";
+import { registerCron } from "./cron/registry";
+import { queues } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
 
 /**
@@ -8,7 +9,7 @@ import { prisma } from "@stackfox/prisma";
  * due today or overdue and have not been reminded yet, notifies the assignee,
  * and stamps `reminderSentAt` so each follow-up nudges exactly once.
  */
-createWorker(QUEUE.salesFollowup, async () => {
+registerCron("sales-followup", async () => {
   const endOfToday = new Date();
   endOfToday.setHours(23, 59, 59, 999);
 
