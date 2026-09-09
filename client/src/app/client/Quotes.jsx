@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { FileText, Download, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FileText, Download, Clock, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize, getStatusBadge } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
@@ -7,6 +8,23 @@ import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
 const exportQuotePDF = (...args) =>
   import('@lib/pdfExport').then((m) => m.exportQuotePDF(...args));
 import api from '@lib/api';
+
+/**
+ * A quote can be picked back up unless it is already paid, cancelled, or past
+ * its validity date. Checkout itself re-checks the paid case and refuses, so
+ * this is about not offering a door that leads to a dead end.
+ */
+const DONE_STATUSES = ['paid', 'cancelled', 'expired', 'invoiced'];
+
+function resumeState(q) {
+  const status = String(q.status || '').toLowerCase();
+  if (DONE_STATUSES.includes(status)) return { canResume: false, reason: null };
+  const validUntil = q.validUntil ? new Date(q.validUntil) : null;
+  if (validUntil && validUntil.getTime() < Date.now()) {
+    return { canResume: false, reason: 'This quote has expired. Rebuild it to get current pricing.' };
+  }
+  return { canResume: true, reason: null };
+}
 
 export default function Quotes() {
   usePageTitle('My Quotes');
@@ -39,7 +57,9 @@ export default function Quotes() {
         />
       ) : (
         <div className="space-y-4">
-          {quotes.map((q) => (
+          {quotes.map((q) => {
+            const resume = resumeState(q);
+            return (
             <div key={q._id} className="bg-white rounded-[2rem] border border-warm-200 overflow-hidden hover:shadow-lg transition-shadow">
               <div className="p-6 md:p-8">
                 <div className="flex flex-wrap items-start justify-between gap-6 mb-8">
@@ -94,20 +114,31 @@ export default function Quotes() {
                 <div className="flex flex-wrap gap-3 items-center justify-between pt-2">
                   <div className="flex items-center gap-2 text-xs text-warm-400 italic">
                     <AlertCircle size={14} />
-                    Final pricing may vary based on exact requirements.
+                    {resume.reason || 'Final pricing may vary based on exact requirements.'}
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="rounded-xl border-warm-200 gap-2 font-bold"
-                    onClick={() => exportQuotePDF(q.items, 0, [], [], q)}
-                  >
-                    <Download size={16} /> Download PDF
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl border-warm-200 gap-2 font-bold"
+                      onClick={() => exportQuotePDF(q.items, 0, [], [], q)}
+                    >
+                      <Download size={16} /> Download PDF
+                    </Button>
+                    {resume.canResume && (
+                      <Link
+                        to={`/checkout/${q._id || q.id}`}
+                        className="btn-fox inline-flex items-center justify-center gap-2 font-semibold text-sm px-4 py-2 rounded-pill min-h-[2.25rem]"
+                      >
+                        Continue checkout <ArrowRight size={16} />
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

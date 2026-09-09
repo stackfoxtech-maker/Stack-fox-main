@@ -136,6 +136,17 @@ export default function Finance() {
     }
   };
 
+  // Staff see the same document the client does. The API builds it on demand
+  // when the queue never produced one, so this is never a dead button.
+  const downloadInvoice = async (inv) => {
+    try {
+      const { data } = await api.get(`/invoices/${inv.id}/pdf`);
+      window.open(data.url, '_blank', 'noopener');
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Could not open the invoice PDF.');
+    }
+  };
+
   const sendReminder = (inv) => {
     const orgEmail = inv.org?.contactEmail || '';
     const subject = encodeURIComponent(`Payment Reminder: ${inv.invoiceNumber}`);
@@ -227,6 +238,9 @@ export default function Finance() {
                         </Button>
                         <Button variant="ghost" size="sm" className="rounded-lg text-xs" onClick={() => sendReminder(inv)}>
                           <Mail size={12} /> Remind
+                        </Button>
+                        <Button variant="ghost" size="sm" className="rounded-lg text-xs" onClick={() => downloadInvoice(inv)}>
+                          <Download size={12} /> PDF
                         </Button>
                       </div>
                     </td>

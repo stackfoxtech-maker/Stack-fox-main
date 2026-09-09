@@ -17,6 +17,35 @@ const STEP_NAMES = {
   PREMIUM: ['Review Scope', 'Organisation', 'Engagement', 'Payment Terms', 'Invoice', 'Contract', 'Docs & E-Sign', 'Pay', 'Confirm'],
 };
 
+/**
+ * Every checkout input carries a visible label saying whether it is required.
+ * Placeholders alone were doing that job, which meant the answer vanished the
+ * moment someone typed, and nothing distinguished a field we validate from one
+ * we do not. `required` renders the red marker and a screen-reader hint;
+ * everything else is explicitly tagged Optional rather than left ambiguous.
+ */
+function Field({ label, required = false, hint, className = '', children }) {
+  return (
+    <div className={className}>
+      <div className="flex items-baseline justify-between gap-2 mb-1.5">
+        <label className="text-xs font-semibold text-warm-700">
+          {label}
+          {required ? (
+            <span className="text-danger-500 ml-0.5" aria-hidden="true">*</span>
+          ) : (
+            <span className="ml-1.5 text-[10px] font-medium text-warm-400 uppercase tracking-wide">
+              Optional
+            </span>
+          )}
+        </label>
+        {required && <span className="sr-only">required</span>}
+      </div>
+      {children}
+      {hint && <p className="text-[11px] text-warm-400 mt-1">{hint}</p>}
+    </div>
+  );
+}
+
 export default function Checkout() {
   usePageTitle('Checkout');
   const { quoteId } = useParams();
@@ -32,9 +61,34 @@ export default function Checkout() {
   const [engagementModel, setEngagementModel] = useState('FPM');
   const [docsAccepted, setDocsAccepted] = useState(true);
 
+  // Resuming a quote restores what was already answered and drops the client
+  // back on the step they left. Every `next()` persists the wizard state to the
+  // quote, but nothing read it back, so returning from the dashboard meant
+  // retyping the whole form from step one.
   useEffect(() => {
     api.get(`/quotes/${quoteId}`)
-      .then((r) => setQuote(r.data.data))
+      .then((r) => {
+        const q = r.data.data;
+        setQuote(q);
+
+        const saved = q?.checkoutDetails;
+        if (!saved || typeof saved !== 'object') return;
+
+        if (saved.account) setAccount((a) => ({ ...a, ...saved.account }));
+        if (saved.project) setProject((p) => ({ ...p, ...saved.project }));
+        if (saved.paymentMode) setPaymentMode(saved.paymentMode);
+        if (saved.engagementModel) setEngagementModel(saved.engagementModel);
+        if (typeof saved.docsAccepted === 'boolean') setDocsAccepted(saved.docsAccepted);
+
+        // Clamp: the tier (and so the step count) can change between visits,
+        // and payment is always re-confirmed, so never restore onto the final
+        // pay step.
+        const stepCount = (STEP_NAMES[q.tier || 'GROWTH'] || []).length;
+        const savedStep = Number(saved.step);
+        if (Number.isInteger(savedStep) && savedStep > 0 && stepCount > 1) {
+          setStep(Math.min(savedStep, stepCount - 2));
+        }
+      })
       .catch(() => toast.error('Quote not found or expired.'))
       .finally(() => setLoading(false));
   }, [quoteId]);
@@ -64,11 +118,11 @@ export default function Checkout() {
   const range = quote.estimateRange || {};
   const isLastStep = step === steps.length - 1;
 
-  const saveDetails = async () => {
+  const saveDetails = async (nextStep = step) => {
     try {
       await api.patch(`/quotes/${quoteId}`, {
         tier,
-        checkoutDetails: { account, project, paymentMode, engagementModel, docsAccepted },
+        checkoutDetails: { account, project, paymentMode, engagementModel, docsAccepted, step: nextStep },
       });
     } catch {
       // Non-fatal — the wizard can still proceed locally; payment is authoritative.
@@ -76,14 +130,32 @@ export default function Checkout() {
   };
 
   const next = async () => {
+    // Validation mirrors the required markers on the fields exactly. A field
+    // labelled required that the wizard then waves through teaches people to
+    // ignore the marker.
     if (steps[step] === 'Your Details' || steps[step] === 'Account' || steps[step] === 'Organisation') {
       if (!account.name || !account.phone || !account.email) {
         toast.error('Name, phone and email are required.');
         return;
       }
+      // Non-Starter tiers bill an organisation, and its name is printed on the
+      // tax invoice, so it cannot be blank.
+      if (tier !== 'STARTER' && !account.orgName?.trim()) {
+        toast.error('Organisation name is required.');
+        return;
+      }
     }
-    await saveDetails();
-    setStep((s) => Math.min(s + 1, steps.length - 1));
+    if (steps[step] === 'Project Setup' || steps[step] === 'Engagement') {
+      if (!project.projectName?.trim()) {
+        toast.error('Project name is required.');
+        return;
+      }
+    }
+    // Save the step being moved TO, so a resume lands where they left off
+    // rather than one step behind.
+    const target = Math.min(step + 1, steps.length - 1);
+    await saveDetails(target);
+    setStep(target);
   };
 
   const back = () => setStep((s) => Math.max(s - 1, 0));
@@ -196,14 +268,27 @@ export default function Checkout() {
         {(steps[step] === 'Your Details' || steps[step] === 'Account' || steps[step] === 'Organisation') && (
           <div className="space-y-4">
             <h2 className="font-bold text-warm-900">{steps[step]}</h2>
+            <p className="text-xs text-warm-500">
+              Fields marked <span className="text-danger-500">*</span> are required.
+            </p>
             <div className="grid sm:grid-cols-2 gap-4">
-              <input placeholder="Full Name" value={account.name} onChange={(e) => setAccount({ ...account, name: e.target.value })} className="input-fx" />
-              <input placeholder="Phone" value={account.phone} onChange={(e) => setAccount({ ...account, phone: e.target.value })} className="input-fx" />
-              <input placeholder="Email" value={account.email} onChange={(e) => setAccount({ ...account, email: e.target.value })} className="input-fx sm:col-span-2" />
+              <Field label="Full name" required>
+                <input placeholder="Full Name" value={account.name} onChange={(e) => setAccount({ ...account, name: e.target.value })} className="input-fx w-full" />
+              </Field>
+              <Field label="Phone" required>
+                <input placeholder="Phone" value={account.phone} onChange={(e) => setAccount({ ...account, phone: e.target.value })} className="input-fx w-full" />
+              </Field>
+              <Field label="Email" required className="sm:col-span-2">
+                <input placeholder="Email" value={account.email} onChange={(e) => setAccount({ ...account, email: e.target.value })} className="input-fx w-full" />
+              </Field>
               {tier !== 'STARTER' && (
                 <>
-                  <input placeholder="Organisation Name" value={account.orgName} onChange={(e) => setAccount({ ...account, orgName: e.target.value })} className="input-fx" />
-                  <input placeholder="GSTIN (optional)" value={account.gstin} onChange={(e) => setAccount({ ...account, gstin: e.target.value })} className="input-fx" />
+                  <Field label="Organisation name" required hint="Printed on the tax invoice.">
+                    <input placeholder="Organisation Name" value={account.orgName} onChange={(e) => setAccount({ ...account, orgName: e.target.value })} className="input-fx w-full" />
+                  </Field>
+                  <Field label="GSTIN" hint="Add it to claim input tax credit.">
+                    <input placeholder="22AAAAA0000A1Z5" value={account.gstin} onChange={(e) => setAccount({ ...account, gstin: e.target.value })} className="input-fx w-full" />
+                  </Field>
                 </>
               )}
             </div>
@@ -215,22 +300,33 @@ export default function Checkout() {
         {(steps[step] === 'Project Setup' || steps[step] === 'Engagement') && (
           <div className="space-y-4">
             <h2 className="font-bold text-warm-900">{steps[step]}</h2>
+            <p className="text-xs text-warm-500">
+              Fields marked <span className="text-danger-500">*</span> are required.
+            </p>
             <div className="grid sm:grid-cols-2 gap-4">
-              <input placeholder="Project Name" value={project.projectName} onChange={(e) => setProject({ ...project, projectName: e.target.value })} className="input-fx" />
-              <input type="date" value={project.startDate} onChange={(e) => setProject({ ...project, startDate: e.target.value })} className="input-fx" />
-              <select value={project.commsPreference} onChange={(e) => setProject({ ...project, commsPreference: e.target.value })} className="input-fx">
-                <option>Email</option>
-                <option>WhatsApp</option>
-                <option>Slack</option>
-              </select>
-              {tier === 'PREMIUM' && (
-                <select value={engagementModel} onChange={(e) => setEngagementModel(e.target.value)} className="input-fx">
-                  <option value="FPM">Fixed Price Model</option>
-                  <option value="TNM">Time &amp; Materials</option>
-                  <option value="RET">Retainer</option>
-                  <option value="DED">Dedicated Team</option>
-                  <option value="DSC">Discovery</option>
+              <Field label="Project name" required>
+                <input placeholder="Project Name" value={project.projectName} onChange={(e) => setProject({ ...project, projectName: e.target.value })} className="input-fx w-full" />
+              </Field>
+              <Field label="Preferred start date">
+                <input type="date" value={project.startDate} onChange={(e) => setProject({ ...project, startDate: e.target.value })} className="input-fx w-full" />
+              </Field>
+              <Field label="Communication preference" hint="Defaults to email.">
+                <select value={project.commsPreference} onChange={(e) => setProject({ ...project, commsPreference: e.target.value })} className="input-fx w-full">
+                  <option>Email</option>
+                  <option>WhatsApp</option>
+                  <option>Slack</option>
                 </select>
+              </Field>
+              {tier === 'PREMIUM' && (
+                <Field label="Engagement model" required hint="Determines how the work is contracted and billed.">
+                  <select value={engagementModel} onChange={(e) => setEngagementModel(e.target.value)} className="input-fx w-full">
+                    <option value="FPM">Fixed Price Model</option>
+                    <option value="TNM">Time &amp; Materials</option>
+                    <option value="RET">Retainer</option>
+                    <option value="DED">Dedicated Team</option>
+                    <option value="DSC">Discovery</option>
+                  </select>
+                </Field>
               )}
             </div>
           </div>

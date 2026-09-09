@@ -1,21 +1,38 @@
-import { Link } from 'react-router-dom';
-import { MapPin, Clock, Briefcase, ArrowRight, Check } from 'lucide-react';
+import { Mail, Check } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { Section, SectionHeading, Button } from '@components/ui/Primitives';
+import { Section, SectionHeading } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';
 
-const typeColors = { 'full-time': 'badge-success', 'part-time': 'badge-info', contract: 'badge-warning', freelance: 'badge-fox', internship: 'badge-neutral' };
+/**
+ * Careers is CV-only: open positions are closed and the in-app application
+ * flow is gone. Anyone interested emails a CV to the address below, so there
+ * is exactly one route in and nothing to maintain when roles change.
+ *
+ * The jobs API and the admin Hiring screen are left in place — existing
+ * applications stay readable — but nothing on the public site posts to them.
+ */
+const CV_EMAIL = 'stackfox.tech@gmail.com';
 
 export default function Careers() {
   usePageTitle('Careers');
-  const { openPositions, perks } = data.careers;
+  const { perks } = data.careers;
+
+  const subject = encodeURIComponent('Application — CV for StackFox');
+  const body = encodeURIComponent(
+    'Hi StackFox team,\n\n' +
+      'I would like to be considered for a role. My CV is attached.\n\n' +
+      'Name:\nRole of interest:\nYears of experience:\nPortfolio or GitHub:\n\nThank you.',
+  );
 
   return (
     <>
       <Section>
-        <SectionHeading label="Careers" title="Build the future with us" description="Join a team that ships fast, learns constantly, and trusts its people." />
+        <SectionHeading
+          label="Careers"
+          title="Build the future with us"
+          description="Join a team that ships fast, learns constantly, and trusts its people."
+        />
 
-        {/* Perks */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
           {perks.map((perk, i) => (
             <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-white border border-warm-200">
@@ -27,28 +44,34 @@ export default function Careers() {
       </Section>
 
       <Section className="bg-white">
-        <SectionHeading label="Open positions" title={`${openPositions.length} roles open`} />
-        <div className="max-w-3xl mx-auto space-y-4">
-          {openPositions.map((job) => (
-            <Link key={job.id} to={`/hiring-wall?job=${job.id}`} className="card-fx p-5 block group hover:border-fox-300">
-              <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-                <div>
-                  <h3 className="text-base font-semibold text-warm-900 group-hover:text-fox-500 transition-colors">{job.title}</h3>
-                  <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-warm-500">
-                    <span className="flex items-center gap-1"><MapPin size={12} /> {job.location}</span>
-                    <span className="flex items-center gap-1"><Briefcase size={12} /> {job.experience}</span>
-                    <span className="flex items-center gap-1"><Clock size={12} /> {job.type}</span>
-                  </div>
-                </div>
-                <span className={`badge-fx ${typeColors[job.type] || 'badge-neutral'}`}>{job.type}</span>
-              </div>
-              <p className="text-sm text-warm-600 mb-3">{job.description}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {job.skills.map((s) => <span key={s} className="badge-fx badge-neutral text-[10px]">{s}</span>)}
-              </div>
-              {job.salary && <p className="text-sm font-mono text-fox-500 mt-3">{job.salary}</p>}
-            </Link>
-          ))}
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="w-14 h-14 rounded-2xl bg-fox-50 text-fox-500 flex items-center justify-center mx-auto mb-5">
+            <Mail size={24} />
+          </div>
+
+          <h2 className="text-2xl font-bold text-warm-900">Send us your CV</h2>
+          <p className="text-sm text-warm-600 mt-3">
+            We are not advertising specific openings right now. We do still read every CV that
+            reaches us, and we get in touch when something fits.
+          </p>
+
+          <div className="mt-8">
+            {/* A plain anchor, not <Button>: that primitive always renders a
+                <button>, which would swallow the mailto instead of opening it. */}
+            <a
+              href={`mailto:${CV_EMAIL}?subject=${subject}&body=${body}`}
+              className="btn-fox inline-flex items-center justify-center gap-2 font-semibold text-[15px] px-5 py-2.5 rounded-pill"
+            >
+              <Mail size={16} /> Email your CV
+            </a>
+            <p className="text-xs text-warm-500 mt-4">
+              Or write to{' '}
+              <a href={`mailto:${CV_EMAIL}`} className="text-fox-500 font-medium hover:text-fox-600">
+                {CV_EMAIL}
+              </a>{' '}
+              with your CV attached.
+            </p>
+          </div>
         </div>
       </Section>
     </>
