@@ -11,6 +11,7 @@
     "worker": "tsx src/workers/index.ts",
     "worker:dev": "tsx watch src/workers/index.ts",
     "worker:start": "node dist/workers/index.js",
+    "test:cron": "tsx tests/cron-consolidation.mts",
     "test:isolation": "tsx tests/tenant-isolation.mts",
     "test:access": "tsx tests/access-control.mts",
     "test:kit": "tsx tests/reports-handover.mts",

@@ -1,8 +1,8 @@
-import { createWorker, QUEUE } from "../lib/queue";
+import { registerCron } from "./cron/registry";
 import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 
-createWorker(QUEUE.timesheetCompiler, async (job) => {
+registerCron("timesheet-weekly", async () => {
   const activeEngagements = await prisma.engagement.findMany({
     where: { status: "ACTIVE", model: { in: ["TNM", "RET", "DED"] } },
   });

@@ -20,6 +20,7 @@ const require = createRequire(import.meta.url);
 const tsxCli = join(dirname(require.resolve("tsx/package.json")), "dist", "cli.mjs");
 
 const SUITES = [
+  "cron-consolidation.mts",
   "tenant-isolation.mts",
   "access-control.mts",
   "reports-handover.mts",

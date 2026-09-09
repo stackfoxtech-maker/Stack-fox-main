@@ -1,4 +1,4 @@
-import { createWorker, QUEUE } from "../lib/queue";
+import { registerCron } from "./cron/registry";
 import { prisma } from "@stackfox/prisma";
 import { toJson } from "../lib/json";
 
@@ -68,14 +68,13 @@ async function fileForEngagement(engagementId: string, quarter: number, year: nu
   });
 }
 
-createWorker<SoftexJob>(QUEUE.softex, async (job) => {
-  const { engagementId } = job.data;
+registerCron("softex-quarterly", async (job) => {
+  const data = (job.data ?? {}) as SoftexJob;
 
-  if (engagementId) {
-    const { quarter, year } = job.data;
-    const q = quarter ?? lastClosedQuarter().quarter;
-    const y = year ?? lastClosedQuarter().year;
-    await fileForEngagement(engagementId, q, y);
+  if (data.engagementId) {
+    const q = data.quarter ?? lastClosedQuarter().quarter;
+    const y = data.year ?? lastClosedQuarter().year;
+    await fileForEngagement(data.engagementId, q, y);
     return;
   }
 

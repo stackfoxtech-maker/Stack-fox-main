@@ -3,7 +3,7 @@ import { redis } from "./redis";
 
 // BullMQ needs the full connection (password/tls included — Upstash requires both)
 // and maxRetriesPerRequest:null, or Queue/Worker connections hang instead of erroring.
-const connection = {
+export const connection = {
   host: redis.options.host,
   port: redis.options.port,
   username: redis.options.username,
@@ -21,27 +21,27 @@ const connection = {
  * listening on a queue nothing ever published to, and their jobs (invoice PDFs,
  * dunning, SLA breaches, rev-rec, webhooks) silently vanished. Deriving both
  * sides from this map makes that class of bug unrepresentable.
+ *
+ * The nine cron-shaped jobs (SLA sweep, reconciliation, dunning, renewal scan,
+ * harvest reminder, timesheet compile, archive retention, SOFTEX, sales
+ * follow-up) used to have one queue + one worker EACH. Because a job scheduler
+ * keeps a delayed "next run" job pending at all times, BullMQ forced every one
+ * of those nine workers to a 10s blocking poll no matter the `drainDelay`
+ * (~108 Redis cmds/min combined — the dominant idle cost on Upstash). They now
+ * share a single `cron` queue drained by one worker; see workers/cron/.
  */
 export const QUEUE = {
   docGen: "doc-gen",
   notifications: "notifications",
   webhookDispatcher: "webhook-dispatcher",
   activityTranslator: "activity-translator",
-  reconciliation: "reconciliation",
-  dunning: "dunning",
-  slaCron: "sla-cron",
-  timesheetCompiler: "timesheet-compiler",
   revRec: "rev-rec",
   wipLedger: "wip-ledger",
-  renewalScanner: "renewal-scanner",
-  softex: "softex",
   sandboxRebuild: "sandbox-rebuild",
-  harvestReminder: "harvest-reminder",
-  archiveRetention: "archive-retention",
   previewGen: "preview-gen",
   referralProcessor: "referral-processor",
   whatsappCommerce: "whatsapp-commerce",
-  salesFollowup: "sales-followup",
+  cron: "cron",
 } as const;
 
 export type QueueName = (typeof QUEUE)[keyof typeof QUEUE];
@@ -63,6 +63,17 @@ export function createQueue(name: QueueName) {
   return queue;
 }
 
+/**
+ * Queues whose result a caller may be actively waiting on inside the same
+ * request/session — a PDF download spinner, a sandbox-preview screen. These
+ * keep a short blocking poll so pickup stays snappy. Everything else is
+ * fire-and-forget background work where a minute of latency is invisible.
+ */
+const INTERACTIVE_QUEUES: ReadonlySet<string> = new Set<QueueName>([
+  QUEUE.docGen,
+  QUEUE.previewGen,
+]);
+
 export function createWorker<T = any>(
   name: QueueName,
   processor: (job: Job<T>) => Promise<void>,
@@ -78,6 +89,13 @@ export function createWorker<T = any>(
     // so a stalled job sitting undetected for a few extra minutes is a
     // non-issue — trade detection latency for a ~10x cut in idle Redis load.
     stalledInterval: 5 * 60 * 1000,
+    // Idle blocking-poll interval. BullMQ's default is 5s: each idle worker
+    // fires a BZPOPMIN + moveToActive pair every `drainDelay` seconds forever
+    // (~24 Redis cmds/min at the default), which on a metered Redis (Upstash)
+    // is the dominant cost when no jobs are flowing. Background queues tolerate
+    // a full minute of pickup latency; interactive ones (a PDF/preview the user
+    // is waiting on behind a spinner) get 15s — still ~4x cheaper than default.
+    drainDelay: INTERACTIVE_QUEUES.has(name) ? 15 : 60,
     ...opts,
   });
 

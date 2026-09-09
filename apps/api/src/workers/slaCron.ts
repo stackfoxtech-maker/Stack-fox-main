@@ -1,9 +1,9 @@
-import { createWorker, QUEUE } from "../lib/queue";
+import { registerCron } from "./cron/registry";
 import { prisma } from "@stackfox/prisma";
 import { isSlaBreached, SLA_TARGETS } from "@stackfox/core";
 import { emitEvent } from "../lib/events";
 
-createWorker(QUEUE.slaCron, async () => {
+registerCron("sla-sweep", async () => {
   // A ticket that has been acknowledged has already had its first response, so
   // only genuinely unanswered tickets can breach the response target.
   const openTickets = await prisma.ticket.findMany({

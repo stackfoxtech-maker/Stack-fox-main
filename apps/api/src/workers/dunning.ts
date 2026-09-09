@@ -1,8 +1,8 @@
-import { createWorker, QUEUE } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
+import { registerCron } from "./cron/registry";
 import { queues } from "../lib/queue";
 
-createWorker(QUEUE.dunning, async (job) => {
+registerCron("dunning-run", async () => {
   const overdueInvoices = await prisma.invoice.findMany({
     where: { status: "OVERDUE" },
   });
