@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Mail, MessageSquare, ExternalLink, ChevronDown, ChevronUp, User, ScrollText, FileText, ShieldCheck, PenTool, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, Mail, MessageSquare, ExternalLink, ChevronDown, ChevronUp, User, ScrollText, FileText, ShieldCheck, PenTool, Clock, CheckCircle2, AlertTriangle, Download} from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
@@ -204,6 +204,18 @@ export default function Orders() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge variant={CONTRACT_STATUS[c.status] || 'warning'}>{c.status}</Badge>
+                    {/* Always offered: the API builds the PDF on request when the
+                        document worker never produced one. */}
+                    <Button variant="outline" size="sm" className="rounded-xl gap-1.5 text-xs" onClick={async () => {
+                      try {
+                        const { data } = await api.get(`/contracts/${c._id}/pdf`);
+                        window.open(data.url, '_blank', 'noopener');
+                      } catch (err) {
+                        toast.error(err?.response?.data?.error || 'Could not open the contract PDF.');
+                      }
+                    }}>
+                      <Download size={12} /> PDF
+                    </Button>
                     {c.status === 'CLIENT_SIGNED' && (
                       <Button variant="primary" size="sm" className="rounded-xl gap-1.5 text-xs" onClick={async () => {
                         try {

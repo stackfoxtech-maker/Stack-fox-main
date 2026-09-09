@@ -17,6 +17,35 @@ const STEP_NAMES = {
   PREMIUM: ['Review Scope', 'Organisation', 'Engagement', 'Payment Terms', 'Invoice', 'Contract', 'Docs & E-Sign', 'Pay', 'Confirm'],
 };
 
+/**
+ * Every checkout input carries a visible label saying whether it is required.
+ * Placeholders alone were doing that job, which meant the answer vanished the
+ * moment someone typed, and nothing distinguished a field we validate from one
+ * we do not. `required` renders the red marker and a screen-reader hint;
+ * everything else is explicitly tagged Optional rather than left ambiguous.
+ */
+function Field({ label, required = false, hint, className = '', children }) {
+  return (
+    <div className={className}>
+      <div className="flex items-baseline justify-between gap-2 mb-1.5">
+        <label className="text-xs font-semibold text-warm-700">
+          {label}
+          {required ? (
+            <span className="text-danger-500 ml-0.5" aria-hidden="true">*</span>
+          ) : (
+            <span className="ml-1.5 text-[10px] font-medium text-warm-400 uppercase tracking-wide">
+              Optional
+            </span>
+          )}
+        </label>
+        {required && <span className="sr-only">required</span>}
+      </div>
+      {children}
+      {hint && <p className="text-[11px] text-warm-400 mt-1">{hint}</p>}
+    </div>
+  );
+}
+
 export default function Checkout() {
   usePageTitle('Checkout');
   const { quoteId } = useParams();
@@ -76,9 +105,24 @@ export default function Checkout() {
   };
 
   const next = async () => {
+    // Validation mirrors the required markers on the fields exactly. A field
+    // labelled required that the wizard then waves through teaches people to
+    // ignore the marker.
     if (steps[step] === 'Your Details' || steps[step] === 'Account' || steps[step] === 'Organisation') {
       if (!account.name || !account.phone || !account.email) {
         toast.error('Name, phone and email are required.');
+        return;
+      }
+      // Non-Starter tiers bill an organisation, and its name is printed on the
+      // tax invoice, so it cannot be blank.
+      if (tier !== 'STARTER' && !account.orgName?.trim()) {
+        toast.error('Organisation name is required.');
+        return;
+      }
+    }
+    if (steps[step] === 'Project Setup' || steps[step] === 'Engagement') {
+      if (!project.projectName?.trim()) {
+        toast.error('Project name is required.');
         return;
       }
     }
@@ -196,14 +240,27 @@ export default function Checkout() {
         {(steps[step] === 'Your Details' || steps[step] === 'Account' || steps[step] === 'Organisation') && (
           <div className="space-y-4">
             <h2 className="font-bold text-warm-900">{steps[step]}</h2>
+            <p className="text-xs text-warm-500">
+              Fields marked <span className="text-danger-500">*</span> are required.
+            </p>
             <div className="grid sm:grid-cols-2 gap-4">
-              <input placeholder="Full Name" value={account.name} onChange={(e) => setAccount({ ...account, name: e.target.value })} className="input-fx" />
-              <input placeholder="Phone" value={account.phone} onChange={(e) => setAccount({ ...account, phone: e.target.value })} className="input-fx" />
-              <input placeholder="Email" value={account.email} onChange={(e) => setAccount({ ...account, email: e.target.value })} className="input-fx sm:col-span-2" />
+              <Field label="Full name" required>
+                <input placeholder="Full Name" value={account.name} onChange={(e) => setAccount({ ...account, name: e.target.value })} className="input-fx w-full" />
+              </Field>
+              <Field label="Phone" required>
+                <input placeholder="Phone" value={account.phone} onChange={(e) => setAccount({ ...account, phone: e.target.value })} className="input-fx w-full" />
+              </Field>
+              <Field label="Email" required className="sm:col-span-2">
+                <input placeholder="Email" value={account.email} onChange={(e) => setAccount({ ...account, email: e.target.value })} className="input-fx w-full" />
+              </Field>
               {tier !== 'STARTER' && (
                 <>
-                  <input placeholder="Organisation Name" value={account.orgName} onChange={(e) => setAccount({ ...account, orgName: e.target.value })} className="input-fx" />
-                  <input placeholder="GSTIN (optional)" value={account.gstin} onChange={(e) => setAccount({ ...account, gstin: e.target.value })} className="input-fx" />
+                  <Field label="Organisation name" required hint="Printed on the tax invoice.">
+                    <input placeholder="Organisation Name" value={account.orgName} onChange={(e) => setAccount({ ...account, orgName: e.target.value })} className="input-fx w-full" />
+                  </Field>
+                  <Field label="GSTIN" hint="Add it to claim input tax credit.">
+                    <input placeholder="22AAAAA0000A1Z5" value={account.gstin} onChange={(e) => setAccount({ ...account, gstin: e.target.value })} className="input-fx w-full" />
+                  </Field>
                 </>
               )}
             </div>
@@ -215,22 +272,33 @@ export default function Checkout() {
         {(steps[step] === 'Project Setup' || steps[step] === 'Engagement') && (
           <div className="space-y-4">
             <h2 className="font-bold text-warm-900">{steps[step]}</h2>
+            <p className="text-xs text-warm-500">
+              Fields marked <span className="text-danger-500">*</span> are required.
+            </p>
             <div className="grid sm:grid-cols-2 gap-4">
-              <input placeholder="Project Name" value={project.projectName} onChange={(e) => setProject({ ...project, projectName: e.target.value })} className="input-fx" />
-              <input type="date" value={project.startDate} onChange={(e) => setProject({ ...project, startDate: e.target.value })} className="input-fx" />
-              <select value={project.commsPreference} onChange={(e) => setProject({ ...project, commsPreference: e.target.value })} className="input-fx">
-                <option>Email</option>
-                <option>WhatsApp</option>
-                <option>Slack</option>
-              </select>
-              {tier === 'PREMIUM' && (
-                <select value={engagementModel} onChange={(e) => setEngagementModel(e.target.value)} className="input-fx">
-                  <option value="FPM">Fixed Price Model</option>
-                  <option value="TNM">Time &amp; Materials</option>
-                  <option value="RET">Retainer</option>
-                  <option value="DED">Dedicated Team</option>
-                  <option value="DSC">Discovery</option>
+              <Field label="Project name" required>
+                <input placeholder="Project Name" value={project.projectName} onChange={(e) => setProject({ ...project, projectName: e.target.value })} className="input-fx w-full" />
+              </Field>
+              <Field label="Preferred start date">
+                <input type="date" value={project.startDate} onChange={(e) => setProject({ ...project, startDate: e.target.value })} className="input-fx w-full" />
+              </Field>
+              <Field label="Communication preference" hint="Defaults to email.">
+                <select value={project.commsPreference} onChange={(e) => setProject({ ...project, commsPreference: e.target.value })} className="input-fx w-full">
+                  <option>Email</option>
+                  <option>WhatsApp</option>
+                  <option>Slack</option>
                 </select>
+              </Field>
+              {tier === 'PREMIUM' && (
+                <Field label="Engagement model" required hint="Determines how the work is contracted and billed.">
+                  <select value={engagementModel} onChange={(e) => setEngagementModel(e.target.value)} className="input-fx w-full">
+                    <option value="FPM">Fixed Price Model</option>
+                    <option value="TNM">Time &amp; Materials</option>
+                    <option value="RET">Retainer</option>
+                    <option value="DED">Dedicated Team</option>
+                    <option value="DSC">Discovery</option>
+                  </select>
+                </Field>
               )}
             </div>
           </div>

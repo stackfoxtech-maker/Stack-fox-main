@@ -17,7 +17,8 @@
     "test:kit": "tsx tests/reports-handover.mts",
     "test": "tsx tests/run-all.mts",
     "test:staff": "tsx tests/staff-surfaces.mts",
-    "test:cart": "tsx tests/cart.mts"
+    "test:cart": "tsx tests/cart.mts",
+    "seed:master-admin": "tsx scripts/seed-master-admin.mts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
