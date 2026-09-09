@@ -5,6 +5,7 @@ import { usePageTitle } from '@lib/hooks';
 import { formatDate } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
 import api from '@lib/api';
+import toast from 'react-hot-toast';
 
 const CONTRACT_TYPE_LABELS = {
   SOW: 'Statement of Work',
@@ -48,6 +49,7 @@ export default function Contracts() {
   const [contracts, setContracts] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     api.get('/contracts').then(r => {
@@ -94,23 +96,27 @@ export default function Contracts() {
             </div>
             <div className="flex items-center gap-3">
               <ContractStatusBadge status={selected.status} />
-              {selected.fileKey && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={async () => {
-                    try {
-                      const res = await api.get(`/contracts/${id}/pdf`);
-                      window.open(res.data.url, '_blank');
-                    } catch {
-                      // PDF not available
-                    }
-                  }}
-                >
-                  <Download size={14} /> Download PDF
-                </Button>
-              )}
+              {/* Always offered: the API builds the PDF on request when the
+                  document worker has not produced one yet, so hiding the
+                  button on a missing fileKey only stranded the client. */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                isLoading={downloading}
+                onClick={async () => {
+                  setDownloading(true);
+                  try {
+                    const res = await api.get(`/contracts/${id}/pdf`);
+                    window.open(res.data.url, '_blank', 'noopener');
+                  } catch (err) {
+                    toast.error(err.response?.data?.error || 'Could not open the contract PDF.');
+                  }
+                  setDownloading(false);
+                }}
+              >
+                <Download size={14} /> Download PDF
+              </Button>
             </div>
           </div>
 

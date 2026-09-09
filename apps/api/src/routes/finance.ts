@@ -6,6 +6,8 @@ import { verifyRazorpayWebhookSignature, getStripe } from "../lib/payments";
 import { recordInvoicePayment } from "../lib/billing";
 import { clientScope } from "../lib/scope";
 import { pageParams } from "../lib/http";
+import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
+import { buildInvoicePdf } from "../lib/documents";
 import { requireRole } from "../plugins/auth";
 
 const VALID_GST_RATES = [0, 5, 12, 18, 28];
@@ -35,7 +37,10 @@ function serializeInvoice(inv: any) {
   return {
     ...inv,
     _id: inv.id,
-    invoiceNumber: inv.id,
+    // Prefer the number printed on the PDF so the panel, the document and the
+    // client's own records all cite the same reference. Falls back to the row
+    // id for invoices whose PDF has not been built yet.
+    invoiceNumber: inv.invoiceNo ?? inv.id,
     status,
     total: grandTotal,
     paidAmount,
@@ -100,6 +105,37 @@ export async function financeRoutes(app: FastifyInstance) {
     });
     if (!invoice) return reply.code(404).send({ error: "Invoice not found" });
     return { data: serializeInvoice(invoice) };
+  });
+
+  // GET /invoices/:id/pdf — signed download link for the client panel.
+  //
+  // The PDF is built here when the row has no `fileKey` yet: invoices created
+  // at checkout never enqueued one, and a queue job dropped on a redeploy left
+  // the rest unreachable. Generating on demand means the download is never a
+  // dead end.
+  app.get("/invoices/:id/pdf", async (req, reply) => {
+    const scope = await clientScope(req, reply);
+    if (scope === undefined) return;
+
+    const { id } = req.params as { id: string };
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, ...(scope !== null ? { orgId: scope } : {}) },
+      select: { id: true, fileKey: true },
+    });
+    if (!invoice) return reply.code(404).send({ error: "Invoice not found" });
+
+    if (!isStorageConfigured()) {
+      return reply.code(503).send({ error: "Document storage is not configured." });
+    }
+
+    try {
+      const key = invoice.fileKey ?? (await buildInvoicePdf(invoice.id));
+      if (!key) return reply.code(404).send({ error: "Invoice not found" });
+      return { url: await getPresignedDownload(key, 900) };
+    } catch (err) {
+      req.log.error({ err, invoiceId: id }, "invoice pdf download failed");
+      return reply.code(500).send({ error: "Could not prepare the invoice PDF." });
+    }
   });
 
   // Create an invoice.

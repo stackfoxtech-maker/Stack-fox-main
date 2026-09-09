@@ -547,6 +547,9 @@ model Invoice {
   stripePaymentIntentId String? @map("stripe_payment_intent_id")
   paymentLink  String?   @map("payment_link")
   utr          String?
+  // The number PRINTED on the PDF (AWL/INV/<FY>/NNN). Distinct from `id`, which
+  // is an internal handle: statutory numbering is financial-year scoped.
+  invoiceNo    String?   @unique @map("invoice_no")
   fileKey      String?   @map("file_key")
   dueDate      DateTime? @map("due_date") @db.Date
   paidAt       DateTime? @map("paid_at")

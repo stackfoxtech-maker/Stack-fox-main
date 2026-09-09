@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Receipt, CreditCard } from 'lucide-react';
+import { Receipt, CreditCard, Download } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize, getStatusBadge, cn } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
@@ -12,6 +12,7 @@ export default function Invoices() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(null);
+  const [downloading, setDownloading] = useState(null);
 
   useEffect(() => {
     api.get('/invoices').then((r) => setInvoices(r.data.data || [])).catch(() => {}).finally(() => setLoading(false));
@@ -66,6 +67,20 @@ export default function Invoices() {
     setPaying(null);
   };
 
+  // The PDF is fetched as a short-lived signed URL rather than linked to
+  // directly; the API builds the document on first request if the queue has
+  // not produced one yet.
+  const handleDownload = async (invoice) => {
+    setDownloading(invoice._id);
+    try {
+      const { data } = await api.get(`/invoices/${invoice._id}/pdf`);
+      window.open(data.url, '_blank', 'noopener');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not open the invoice PDF.');
+    }
+    setDownloading(null);
+  };
+
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
 
   return (
@@ -116,11 +131,21 @@ export default function Invoices() {
                   </div>
                 )}
 
-                {canPay && (
-                  <Button variant="primary" size="sm" isLoading={paying === inv._id} onClick={() => handlePay(inv)}>
-                    <CreditCard size={16} /> Pay {formatINR(balance)}
+                <div className="flex flex-wrap items-center gap-2">
+                  {canPay && (
+                    <Button variant="primary" size="sm" isLoading={paying === inv._id} onClick={() => handlePay(inv)}>
+                      <CreditCard size={16} /> Pay {formatINR(balance)}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    isLoading={downloading === inv._id}
+                    onClick={() => handleDownload(inv)}
+                  >
+                    <Download size={16} /> {inv.status === 'paid' ? 'Receipt' : 'Invoice'} PDF
                   </Button>
-                )}
+                </div>
               </div>
             );
           })}

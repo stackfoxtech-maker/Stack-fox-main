@@ -1,9 +1,9 @@
-import { createHash } from "crypto";
 import { createWorker, QUEUE } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
-import { uploadFile, copyToWorm } from "../lib/storage";
+import { uploadFile } from "../lib/storage";
 import { emitEvent } from "../lib/events";
 import { renderDocument, inr, type DocLineItem } from "../lib/pdf";
+import { buildInvoicePdf, buildContractPdf } from "../lib/documents";
 import * as ids from "../lib/id";
 import { resolveGstType, splitGst } from "../lib/gst";
 
@@ -73,43 +73,11 @@ createWorker(QUEUE.docGen, async (job) => {
       });
     }
 
-    const items: DocLineItem[] = [
-      {
-        desc: `${milestone.name} — milestone ${milestoneNumber} (${milestone.paymentPct}%)`,
-        amount: inr(invoice ? invoice.subtotal : subtotal),
-      },
-      ...(gstType === "CGST_SGST"
-        ? [
-            { desc: `CGST @ ${GST_RATE * 50}%`, amount: inr(invoice ? invoice.cgst : cgst) },
-            { desc: `SGST @ ${GST_RATE * 50}%`, amount: inr(invoice ? invoice.sgst : sgst) },
-          ]
-        : [{ desc: `IGST @ ${Math.round(GST_RATE * 100)}%`, amount: inr(invoice ? invoice.igst : igst) }]),
-    ];
-
-    const pdf = await renderDocument({
-      title: "Tax Invoice",
-      subtitle: project.engagement.client?.name,
-      reference: invoice?.id ?? `${project.id}/${milestoneRef}`,
-      meta: [
-        { label: "Engagement", value: project.engagementId ?? "—" },
-        { label: "Project", value: project.id },
-        { label: "Milestone", value: `${milestone.name} (#${milestoneNumber})` },
-        { label: "SAC code", value: "998314" },
-        { label: "Date", value: new Date().toISOString().slice(0, 10) },
-      ],
-      lineItems: items,
-      total: { desc: "Amount due", amount: inr(invoice ? invoice.grandTotal : invoiceGross) },
-      footer: "Payable within 7 days. This is a computer-generated invoice.",
-    });
-
     const key = invoice
-      ? `invoices/${project.engagementId}/${invoice.id}.pdf`
-      : `invoices/${project.engagementId}/${projectId}/${milestoneRef}.pdf`;
-    await uploadFile(key, pdf, "application/pdf");
-
-    if (invoice) {
-      await prisma.invoice.update({ where: { id: invoice.id }, data: { fileKey: key } });
-    }
+      ? await buildInvoicePdf(invoice.id, {
+          description: `${milestone.name} — milestone ${milestoneNumber} (${milestone.paymentPct}%)`,
+        })
+      : null;
 
     await emitEvent({
       code: "INVOICE_GENERATED",
@@ -124,56 +92,36 @@ createWorker(QUEUE.docGen, async (job) => {
   // ── Contract ───────────────────────────────────────────────────────────────
   if (type === "contract") {
     const { contractId } = job.data;
-    const contract = await prisma.contract.findUnique({
-      where: { id: contractId },
-      include: { engagement: { include: { client: true } }, order: true },
-    });
+    const contract = await prisma.contract.findUnique({ where: { id: contractId } });
     if (!contract) return;
 
-    const clauses = (contract.clauseConfig ?? {}) as Record<string, unknown>;
-    const clauseLines = Object.entries(clauses).map(
-      ([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`,
-    );
-
-    const pdf = await renderDocument({
-      title: `${contract.type} Agreement`,
-      subtitle: contract.engagement?.client?.name,
-      reference: contract.id,
-      meta: [
-        { label: "Type", value: contract.type },
-        { label: "Engagement", value: contract.engagementId ?? "—" },
-        { label: "Order", value: contract.orderId ?? "—" },
-        { label: "Template version", value: String(contract.templateVer) },
-        { label: "Status", value: contract.status },
-        { label: "Date", value: new Date().toISOString().slice(0, 10) },
-      ],
-      body: [
-        `This ${contract.type} is entered into between StackFox and ${
-          contract.engagement?.client?.name ?? "the Client"
-        } and governs the engagement referenced above. The parties agree to the Statement of Deliverable Practice (SDP) versions pinned to this contract and to the clause configuration recorded below.`,
-        ...(clauseLines.length ? ["Clause configuration:", ...clauseLines] : []),
-        "Execution of this document is recorded via the StackFox e-signature ledger; the signed copy is retained in write-once storage as the contract of record.",
-      ],
-      footer: "Draft pending signature unless marked EXECUTED above.",
-    });
-
-    const key = `contracts/${contract.engagementId}/${contract.id}.pdf`;
-    const wormKey = `contracts/${contract.engagementId}/${contract.id}.worm.pdf`;
-    const docHash = createHash("sha256").update(pdf).digest("hex");
-
-    await uploadFile(key, pdf, "application/pdf");
-    await copyToWorm(wormKey, pdf).catch(() => {});
-
-    await prisma.contract.update({
-      where: { id: contract.id },
-      data: { fileKey: key, wormKey, docHash },
-    });
+    const key = await buildContractPdf(contract.id);
+    if (!key) return;
 
     await emitEvent({
       code: "CONTRACT_GENERATED",
-      payload: { contractId: contract.id, key, docHash },
+      payload: { contractId: contract.id, key },
       actor: "system",
       engagementId: contract.engagementId ?? undefined,
+    });
+    return;
+  }
+
+  // ── Standalone invoice ─────────────────────────────────────────────────────
+  // Every path that creates or settles an Invoice enqueues this, so the row
+  // always has a downloadable PDF behind it — checkout's first invoice had
+  // none at all, and a paid invoice kept showing its original balance.
+  if (type === "invoice") {
+    const { invoiceId } = job.data as { invoiceId: string };
+    const key = await buildInvoicePdf(invoiceId);
+    if (!key) return;
+
+    const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
+    await emitEvent({
+      code: "INVOICE_GENERATED",
+      payload: { invoiceId, key },
+      actor: "system",
+      engagementId: invoice?.engagementId ?? undefined,
     });
     return;
   }

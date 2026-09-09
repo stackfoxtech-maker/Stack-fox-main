@@ -2,7 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
-import { getPresignedDownload } from "../lib/storage";
+import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
+import { buildContractPdf } from "../lib/documents";
 import { clientScope } from "../lib/scope";
 import { ok, withId, withIds } from "../lib/http";
 
@@ -53,10 +54,22 @@ export async function contractRoutes(app: FastifyInstance) {
       where: { id, ...(scope !== null ? { engagement: { clientId: scope } } : {}) },
     });
     if (!contract) return reply.code(404).send({ error: "Contract not found" });
-    if (!contract.fileKey) return reply.code(404).send({ error: "PDF not yet generated" });
 
-    const url = await getPresignedDownload(contract.fileKey);
-    return { url };
+    if (!isStorageConfigured()) {
+      return reply.code(503).send({ error: "Document storage is not configured." });
+    }
+
+    // Build it now when the queue job never landed, rather than telling the
+    // client the PDF does not exist. The contract row is the source of truth;
+    // the file is derived from it.
+    try {
+      const key = contract.fileKey ?? (await buildContractPdf(contract.id));
+      if (!key) return reply.code(404).send({ error: "Contract not found" });
+      return { url: await getPresignedDownload(key, 900) };
+    } catch (err) {
+      req.log.error({ err, contractId: id }, "contract pdf download failed");
+      return reply.code(500).send({ error: "Could not prepare the contract PDF." });
+    }
   });
 
   // POST /contracts/:id/countersign — StackFox side
