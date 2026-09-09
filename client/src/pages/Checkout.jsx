@@ -61,9 +61,34 @@ export default function Checkout() {
   const [engagementModel, setEngagementModel] = useState('FPM');
   const [docsAccepted, setDocsAccepted] = useState(true);
 
+  // Resuming a quote restores what was already answered and drops the client
+  // back on the step they left. Every `next()` persists the wizard state to the
+  // quote, but nothing read it back, so returning from the dashboard meant
+  // retyping the whole form from step one.
   useEffect(() => {
     api.get(`/quotes/${quoteId}`)
-      .then((r) => setQuote(r.data.data))
+      .then((r) => {
+        const q = r.data.data;
+        setQuote(q);
+
+        const saved = q?.checkoutDetails;
+        if (!saved || typeof saved !== 'object') return;
+
+        if (saved.account) setAccount((a) => ({ ...a, ...saved.account }));
+        if (saved.project) setProject((p) => ({ ...p, ...saved.project }));
+        if (saved.paymentMode) setPaymentMode(saved.paymentMode);
+        if (saved.engagementModel) setEngagementModel(saved.engagementModel);
+        if (typeof saved.docsAccepted === 'boolean') setDocsAccepted(saved.docsAccepted);
+
+        // Clamp: the tier (and so the step count) can change between visits,
+        // and payment is always re-confirmed, so never restore onto the final
+        // pay step.
+        const stepCount = (STEP_NAMES[q.tier || 'GROWTH'] || []).length;
+        const savedStep = Number(saved.step);
+        if (Number.isInteger(savedStep) && savedStep > 0 && stepCount > 1) {
+          setStep(Math.min(savedStep, stepCount - 2));
+        }
+      })
       .catch(() => toast.error('Quote not found or expired.'))
       .finally(() => setLoading(false));
   }, [quoteId]);
@@ -93,11 +118,11 @@ export default function Checkout() {
   const range = quote.estimateRange || {};
   const isLastStep = step === steps.length - 1;
 
-  const saveDetails = async () => {
+  const saveDetails = async (nextStep = step) => {
     try {
       await api.patch(`/quotes/${quoteId}`, {
         tier,
-        checkoutDetails: { account, project, paymentMode, engagementModel, docsAccepted },
+        checkoutDetails: { account, project, paymentMode, engagementModel, docsAccepted, step: nextStep },
       });
     } catch {
       // Non-fatal — the wizard can still proceed locally; payment is authoritative.
@@ -126,8 +151,11 @@ export default function Checkout() {
         return;
       }
     }
-    await saveDetails();
-    setStep((s) => Math.min(s + 1, steps.length - 1));
+    // Save the step being moved TO, so a resume lands where they left off
+    // rather than one step behind.
+    const target = Math.min(step + 1, steps.length - 1);
+    await saveDetails(target);
+    setStep(target);
   };
 
   const back = () => setStep((s) => Math.max(s - 1, 0));
