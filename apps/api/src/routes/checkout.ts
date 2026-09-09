@@ -340,6 +340,12 @@ export async function checkoutRoutes(app: FastifyInstance) {
       },
     });
 
+    // The first invoice used to be created with no document behind it, so the
+    // client panel had nothing to download for it.
+    await queues.docGen
+      .add("invoice-pdf", { type: "invoice", invoiceId: invoice.id })
+      .catch(() => {});
+
     // Payment capture. The client posts the Razorpay handshake from the
     // checkout `/pay` step; verify it and settle the first invoice. Without a
     // handshake the invoice stays SENT (pay-later / bank-transfer path).

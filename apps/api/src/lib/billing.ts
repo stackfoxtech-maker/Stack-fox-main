@@ -76,4 +76,13 @@ export async function recordInvoicePayment(invoice: InvoiceLike, facts: PaymentF
         });
     }
   }
+
+  // 3. Re-render the invoice PDF so the copy the client downloads from the
+  // panel reflects the payment (amount received, nil balance) instead of the
+  // original demand.
+  await queues.docGen
+    .add("invoice-pdf", { type: "invoice", invoiceId: invoice.id })
+    .catch((err) => {
+      console.warn(`[billing] invoice pdf enqueue failed for ${invoice.id}:`, err.message);
+    });
 }
