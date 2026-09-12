@@ -416,9 +416,12 @@ export async function adminRoutes(app: FastifyInstance) {
           name: c.serviceId,
           quantity: 1,
         })),
-        subtotal: o.estimate?.totals?.subtotal ?? o.subtotal ?? 0,
-        gst: o.estimate?.totals?.gst ?? o.gst ?? 0,
-        total: o.estimate?.totals?.grand ?? o.grandTotal ?? 0,
+        // Order amounts are paise; quotes (normalizeQuote below) are rupees.
+        // Convert here so every "purchase" row the admin UI renders is in the
+        // same unit — otherwise order-kind rows display 100x too large.
+        subtotal: (o.estimate?.totals?.subtotal ?? o.subtotal ?? 0) / 100,
+        gst: (o.estimate?.totals?.gst ?? o.gst ?? 0) / 100,
+        total: (o.estimate?.totals?.grand ?? o.grandTotal ?? 0) / 100,
         paymentMode: o.paymentMode,
         paidAt: o.paidAt,
         razorpayOrderId: o.razorpayOrderId,

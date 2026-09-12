@@ -280,7 +280,7 @@ export default function Orders() {
                   <div className="flex items-center gap-3">
                     <div className="text-right mr-4">
                       <div className="text-xs text-warm-400 font-bold uppercase tracking-widest">Total Amount</div>
-                      <div className="font-mono text-xl font-black text-warm-900">{formatINR(tab === 'quotes' ? item.total : (item.grandTotal ?? item.total))}</div>
+                      <div className="font-mono text-xl font-black text-warm-900">{formatINR(tab === 'quotes' ? item.total : (item.grandTotal ?? item.total) / 100)}</div>
                     </div>
 
                     <div className="flex gap-2">

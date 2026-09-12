@@ -38,7 +38,7 @@ export async function rfpRoutes(app: FastifyInstance) {
   });
 
   app.patch("/rfps/:id/decision", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SALES", "SENIOR_PM", "SE"])) return;
     const { id } = req.params as { id: string };
     const { decision, reason } = req.body as { decision: string; reason?: string };
     return prisma.rfp.update({
@@ -48,7 +48,7 @@ export async function rfpRoutes(app: FastifyInstance) {
   });
 
   app.post("/rfps/:id/submit", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SALES", "SENIOR_PM", "SE"])) return;
     const { id } = req.params as { id: string };
     const updated = await prisma.rfp.update({
       where: { id },
@@ -63,7 +63,7 @@ export async function rfpRoutes(app: FastifyInstance) {
   });
 
   app.patch("/rfps/:id/outcome", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SALES", "SENIOR_PM", "SE"])) return;
     const { id } = req.params as { id: string };
     const { outcome } = req.body as { outcome: string };
     return prisma.rfp.update({

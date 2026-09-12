@@ -21,8 +21,8 @@ export default function AdminUsers() {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editUser, setEditUser] = useState(null);
-  const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', role: 'TEAM' });
-  const [editForm, setEditForm] = useState({ name: '', email: '', role: 'TEAM' });
+  const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', role: 'CLIENT' });
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: 'CLIENT' });
   const q = useDebounce(search, 200);
 
   const fetchUsers = async () => {
@@ -58,7 +58,7 @@ export default function AdminUsers() {
 
   const openEdit = (user) => {
     setEditUser(user);
-    setEditForm({ name: user.name, email: user.email, role: user.role?.toUpperCase() || 'TEAM' });
+    setEditForm({ name: user.name, email: user.email, role: user.role?.toUpperCase() || 'CLIENT' });
     setShowEdit(true);
   };
 
@@ -81,10 +81,11 @@ export default function AdminUsers() {
     } catch (err) { toast.error(err.response?.data?.message || 'Failed.'); }
   };
 
-  const isTeamMember = (user) => user.role?.toLowerCase() === 'team';
+  const INTERNAL_ROLES = ['ADMIN', 'SUPER_ADMIN', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS', 'FINANCE', 'SALES'];
+  const isTeamMember = (user) => INTERNAL_ROLES.includes(user.role?.toUpperCase());
 
   const toggleTeamMember = async (user) => {
-    const nextRole = isTeamMember(user) ? 'CLIENT' : 'TEAM';
+    const nextRole = isTeamMember(user) ? 'CLIENT' : 'DEVELOPER';
     try {
       await api.put(`/users/${user._id}`, { role: nextRole });
       toast.success(isTeamMember(user) ? 'Removed from team.' : 'Added as team member.');
@@ -114,7 +115,7 @@ export default function AdminUsers() {
           <input type="text" placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="input-fx pl-9 text-sm" />
         </div>
         <div className="flex gap-1">
-          {['all', 'client', 'team', 'admin', 'freelancer'].map((r) => (
+          {['all', 'client', 'developer', 'pm', 'admin'].map((r) => (
             <button key={r} onClick={() => { setRoleFilter(r); setPage(1); }}
               className={cn('px-3 py-1.5 rounded-lg text-xs font-medium', roleFilter === r ? 'bg-fox-500 text-white' : 'bg-warm-100 text-warm-600')}>
               {capitalize(r)}
@@ -173,7 +174,7 @@ export default function AdminUsers() {
           <Input label="Name" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} />
           <Input label="Email" type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} />
           <Input label="Password" type="password" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} />
-          <Select label="Role" value={createForm.role} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })} options={[{ value: 'TEAM', label: 'Team' }, { value: 'CLIENT', label: 'Client' }, { value: 'DEVELOPER', label: 'Developer' }, { value: 'PM', label: 'Project Manager' }, { value: 'ADMIN', label: 'Admin' }]} />
+          <Select label="Role" value={createForm.role} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })} options={[{ value: 'CLIENT', label: 'Client' }, { value: 'DEVELOPER', label: 'Developer' }, { value: 'PM', label: 'Project Manager' }, { value: 'ADMIN', label: 'Admin' }]} />
           <Button variant="primary" onClick={createUser}>Create User</Button>
         </div>
       </Modal>
@@ -182,7 +183,7 @@ export default function AdminUsers() {
         <div className="space-y-4">
           <Input label="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
           <Input label="Email" type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
-          <Select label="Role" value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })} options={[{ value: 'TEAM', label: 'Team' }, { value: 'CLIENT', label: 'Client' }, { value: 'DEVELOPER', label: 'Developer' }, { value: 'PM', label: 'Project Manager' }, { value: 'ADMIN', label: 'Admin' }]} />
+          <Select label="Role" value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })} options={[{ value: 'CLIENT', label: 'Client' }, { value: 'DEVELOPER', label: 'Developer' }, { value: 'PM', label: 'Project Manager' }, { value: 'ADMIN', label: 'Admin' }]} />
           <Button variant="primary" onClick={updateUser}>Save Changes</Button>
         </div>
       </Modal>

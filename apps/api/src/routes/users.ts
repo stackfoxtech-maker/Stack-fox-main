@@ -220,9 +220,25 @@ export async function userRoutes(app: FastifyInstance) {
   app.put("/users/:id", async (req, reply) => {
     if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN"])) return;
     const { id } = req.params as { id: string };
-    const { role, isActive } = req.body as { role?: string; isActive?: boolean };
+    const { name, email, role, isActive } = req.body as {
+      name?: string;
+      email?: string;
+      role?: string;
+      isActive?: boolean;
+    };
 
     const data: any = {};
+    if (name !== undefined) {
+      if (!name.trim()) return reply.code(400).send({ message: "Name cannot be empty" });
+      data.name = name.trim();
+    }
+    if (email !== undefined) {
+      const trimmed = email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        return reply.code(400).send({ message: "That doesn't look like a valid email address" });
+      }
+      data.email = trimmed;
+    }
     if (role !== undefined) {
       if (!ALL_ROLES.includes(role)) {
         return reply.code(400).send({ message: `Unknown role. Valid roles: ${ALL_ROLES.join(", ")}` });
@@ -243,7 +259,15 @@ export async function userRoutes(app: FastifyInstance) {
       return reply.code(400).send({ message: "Nothing to update" });
     }
 
-    const user = await prisma.user.update({ where: { id }, data, select: PUBLIC_SELECT });
+    let user;
+    try {
+      user = await prisma.user.update({ where: { id }, data, select: PUBLIC_SELECT });
+    } catch (err: any) {
+      if (err?.code === "P2002") {
+        return reply.code(409).send({ message: "That email address is already in use." });
+      }
+      throw err;
+    }
 
     // A deactivated or demoted user must not keep an active session. The epoch
     // bump invalidates their outstanding access tokens even if Redis is down;

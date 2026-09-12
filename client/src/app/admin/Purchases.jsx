@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Search, ChevronDown, ChevronUp, User, Building2, FileText, ScrollText, ShieldCheck, PenTool, Clock, CheckCircle2, ExternalLink, Mail, IndianRupee, Package } from 'lucide-react';
+import { ShoppingBag, Search, ChevronDown, ChevronUp, User, Building2, FileText, ScrollText, ShieldCheck, PenTool, Clock, CheckCircle2, ExternalLink, Mail, IndianRupee, Package, Handshake } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize, getStatusBadge } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button, Input } from '@components/ui/Primitives';
