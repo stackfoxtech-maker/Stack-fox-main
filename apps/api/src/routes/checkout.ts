@@ -235,174 +235,189 @@ export async function checkoutRoutes(app: FastifyInstance) {
     const estimate = await prisma.estimate.findUnique({ where: { id: session.estimateId } });
     if (!estimate) return reply.code(404).send({ error: "Estimate not found" });
 
-    // Atomically claim the estimate before creating anything: a resubmitted or
-    // double-clicked /complete call (or a retried payment) must not create a
-    // second order/engagement/invoice set for the same estimate.
-    const claim = await prisma.estimate.updateMany({
-      where: { id: estimate.id, status: { not: "CONVERTED" } },
-      data: { status: "CONVERTED" },
-    });
-    if (claim.count === 0) {
-      return reply.code(409).send({ error: "This estimate has already been converted to an order." });
-    }
-
     const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
     if (!user?.orgId) return reply.code(400).send({ error: "Organization required" });
+
+    // Signature verification is pure computation (no I/O). A missing
+    // handshake leaves the order as an unpaid SENT invoice (pay-later /
+    // bank-transfer path); an invalid one still creates the order (matching
+    // the previous behavior) but the response below reports the failure
+    // instead of the created rows, and skips the events/session-cleanup/
+    // referral side effects, same as before.
+    const pay = req.body as {
+      razorpay_order_id?: string;
+      razorpay_payment_id?: string;
+      razorpay_signature?: string;
+    };
+    const razorpayOrderIdUsed = pay.razorpay_order_id ?? session.razorpayOrderId;
+    const paymentAttempted = !!(pay?.razorpay_payment_id && pay?.razorpay_signature);
+    const paymentValid =
+      paymentAttempted &&
+      !!razorpayOrderIdUsed &&
+      verifyRazorpaySignature(razorpayOrderIdUsed, pay.razorpay_payment_id!, pay.razorpay_signature!);
 
     const engId = ids.engagementId();
     const ordId = ids.orderId();
     const snapshot = estimate.snapshot as any;
     const totals = estimate.totals as any;
-
-    // Create engagement
-    const engagement = await prisma.engagement.create({
-      data: {
-        id: engId,
-        clientId: user.orgId,
-        model: (session.engagementDetails as any)?.model ?? "FPM",
-        commercial: totals,
-        status: "ACTIVE",
-        executedAt: new Date(),
-      },
-    });
-
-    // Create order
-    const order = await prisma.order.create({
-      data: {
-        id: ordId,
-        orgId: user.orgId,
-        estimateId: estimate.id,
-        engagementId: engId,
-        projectName: (session.engagementDetails as any)?.projectName ?? "New Project",
-        primaryContact: {
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-        },
-        paymentMode: (session.paymentTerms as any)?.mode ?? "MILESTONE",
-        clauseConfig: toJson(session.clauseSelections ?? {}),
-        tier: session.tier,
-        referralCode: (req.body as any)?.referralCode,
-        status: "ACCEPTED",
-      },
-    });
-
-    // Create projects for each service in canvas
     const canvas = snapshot.canvas as any[];
-    const projects = [];
-    for (const item of canvas) {
-      const service = await prisma.serviceUnit.findUnique({ where: { id: item.serviceId } });
-      if (!service) continue;
 
-      const prefix = service.id.split("-").slice(0, 2).join("-");
-      const project = await prisma.project.create({
+    const invoiceAmount = paymentModeAmount(totals.grand, (session.paymentTerms as any)?.mode ?? "MILESTONE");
+    const billTo = await prisma.org.findUnique({ where: { id: user.orgId } });
+    const gstType = resolveGstType(billTo);
+    const gstRate = 0.18;
+    const invoiceSubtotal = Math.round(invoiceAmount / (1 + gstRate));
+    const { cgst, sgst, igst } = splitGst(invoiceAmount - invoiceSubtotal, gstType);
+
+    // Everything below commits together or not at all — including the
+    // estimate claim. A failure partway (e.g. the invoice create throwing)
+    // used to leave the estimate permanently stuck CONVERTED with orphaned
+    // engagement/order rows and no way to retry; rolling the claim back with
+    // everything else means a genuine retry of /complete just works.
+    let claimConflict = false;
+    const result = await prisma.$transaction(async (tx) => {
+      const claim = await tx.estimate.updateMany({
+        where: { id: estimate.id, status: { not: "CONVERTED" } },
+        data: { status: "CONVERTED" },
+      });
+      if (claim.count === 0) {
+        claimConflict = true;
+        return null;
+      }
+
+      const engagement = await tx.engagement.create({
         data: {
-          id: ids.projectId(prefix),
-          engagementId: engId,
-          orderId: ordId,
-          serviceId: item.serviceId,
+          id: engId,
+          clientId: user.orgId!,
+          model: (session.engagementDetails as any)?.model ?? "FPM",
+          commercial: totals,
           status: "ACTIVE",
-          configSnapshot: item,
-          pmUserId: null, // Assigned later by PM
+          executedAt: new Date(),
         },
       });
 
-      // Create default milestones
-      const milestoneTemplates = getMilestoneTemplates(session.tier);
-      for (let i = 0; i < milestoneTemplates.length; i++) {
-        await prisma.milestone.create({
+      const order = await tx.order.create({
+        data: {
+          id: ordId,
+          orgId: user.orgId!,
+          estimateId: estimate.id,
+          engagementId: engId,
+          projectName: (session.engagementDetails as any)?.projectName ?? "New Project",
+          primaryContact: { name: user.name, email: user.email, phone: user.phone },
+          paymentMode: (session.paymentTerms as any)?.mode ?? "MILESTONE",
+          clauseConfig: toJson(session.clauseSelections ?? {}),
+          tier: session.tier,
+          referralCode: (req.body as any)?.referralCode,
+          razorpayOrderId: razorpayOrderIdUsed,
+          status: "ACCEPTED",
+        },
+      });
+
+      const projects = [];
+      for (const item of canvas) {
+        const service = await tx.serviceUnit.findUnique({ where: { id: item.serviceId } });
+        if (!service) continue;
+
+        const prefix = service.id.split("-").slice(0, 2).join("-");
+        const project = await tx.project.create({
           data: {
-            projectId: project.id,
-            number: i + 1,
-            name: milestoneTemplates[i].name,
-            paymentPct: milestoneTemplates[i].pct,
-            deliverables: milestoneTemplates[i].deliverables,
+            id: ids.projectId(prefix),
+            engagementId: engId,
+            orderId: ordId,
+            serviceId: item.serviceId,
+            status: "ACTIVE",
+            configSnapshot: item,
+            pmUserId: null, // Assigned later by PM
+          },
+        });
+
+        const milestoneTemplates = getMilestoneTemplates(session.tier);
+        for (let i = 0; i < milestoneTemplates.length; i++) {
+          await tx.milestone.create({
+            data: {
+              projectId: project.id,
+              number: i + 1,
+              name: milestoneTemplates[i].name,
+              paymentPct: milestoneTemplates[i].pct,
+              deliverables: milestoneTemplates[i].deliverables,
+            },
+          });
+        }
+
+        projects.push(project);
+      }
+
+      const contractTypes = getContractTypes(session.tier);
+      for (const type of contractTypes) {
+        await tx.contract.create({
+          data: {
+            orderId: ordId,
+            engagementId: engId,
+            type,
+            clauseConfig: toJson(session.clauseSelections ?? {}),
+            status: session.signed ? "CLIENT_SIGNED" : "DRAFT",
           },
         });
       }
 
-      projects.push(project);
-    }
-
-    // Create contracts
-    const contractTypes = getContractTypes(session.tier);
-    for (const type of contractTypes) {
-      const contract = await prisma.contract.create({
+      const invoice = await tx.invoice.create({
         data: {
+          id: ids.invoiceId(),
           orderId: ordId,
           engagementId: engId,
-          type,
-          clauseConfig: toJson(session.clauseSelections ?? {}),
-          status: session.signed ? "CLIENT_SIGNED" : "DRAFT",
+          orgId: user.orgId!,
+          milestoneRef: "M1",
+          sacCode: "998314",
+          gstType,
+          subtotal: invoiceSubtotal,
+          cgst,
+          sgst,
+          igst,
+          grandTotal: invoiceAmount,
+          status: paymentValid ? "PAID" : "SENT",
+          paidAt: paymentValid ? new Date() : null,
+          utr: paymentValid ? pay.razorpay_payment_id : null,
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
       });
 
-      // Queue doc generation
-      await queues.docGen.add("contract-pdf", {
-        type: "contract",
-        contractId: contract.id,
-        contractType: type,
-      });
-    }
-
-    // Generate first invoice
-    const invoiceAmount = paymentModeAmount(totals.grand, (session.paymentTerms as any)?.mode ?? "MILESTONE");
-
-    const billTo = await prisma.org.findUnique({ where: { id: user.orgId } });
-    const gstType = resolveGstType(billTo);
-    const gstRate = 0.18;
-    const subtotal = Math.round(invoiceAmount / (1 + gstRate));
-    const { cgst, sgst, igst } = splitGst(invoiceAmount - subtotal, gstType);
-
-    const invoice = await prisma.invoice.create({
-      data: {
-        id: ids.invoiceId(),
-        orderId: ordId,
-        engagementId: engId,
-        orgId: user.orgId,
-        milestoneRef: "M1",
-        sacCode: "998314",
-        gstType,
-        subtotal,
-        cgst,
-        sgst,
-        igst,
-        grandTotal: invoiceAmount,
-        status: "SENT",
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
+      return { engagement, order, projects, invoice };
     });
 
+    if (claimConflict || !result) {
+      return reply.code(409).send({ error: "This estimate has already been converted to an order." });
+    }
+    const { engagement, order, projects, invoice } = result;
+
+    // Everything committed — safe to run the side effects (queues, payment
+    // ledger, events, session cleanup) that don't need to be atomic with the
+    // DB rows themselves. Doc-gen is queued unconditionally, same as before
+    // this order/invoice existed regardless of payment outcome.
+    const contracts = await prisma.contract.findMany({ where: { orderId: ordId }, select: { id: true, type: true } });
+    for (const contract of contracts) {
+      await queues.docGen.add("contract-pdf", { type: "contract", contractId: contract.id, contractType: contract.type });
+    }
     // The first invoice used to be created with no document behind it, so the
     // client panel had nothing to download for it.
     await queues.docGen
       .add("invoice-pdf", { type: "invoice", invoiceId: invoice.id })
       .catch(() => {});
 
-    // Payment capture. The client posts the Razorpay handshake from the
-    // checkout `/pay` step; verify it and settle the first invoice. Without a
-    // handshake the invoice stays SENT (pay-later / bank-transfer path).
-    const pay = req.body as {
-      razorpay_order_id?: string;
-      razorpay_payment_id?: string;
-      razorpay_signature?: string;
-    };
-    if (pay?.razorpay_payment_id && pay?.razorpay_signature) {
-      const orderId = pay.razorpay_order_id ?? session.razorpayOrderId;
-      const valid =
-        !!orderId &&
-        verifyRazorpaySignature(orderId, pay.razorpay_payment_id, pay.razorpay_signature);
-      if (!valid) {
-        return reply.code(400).send({ error: "Payment signature verification failed" });
-      }
-      const paidInvoice = await prisma.invoice.update({
-        where: { id: invoice.id },
-        data: { status: "PAID", paidAt: new Date(), utr: pay.razorpay_payment_id },
-      });
-      await recordInvoicePayment(paidInvoice, {
+    // A payment handshake that was attempted but failed signature
+    // verification reports the error here, matching the previous behavior:
+    // the order/invoice already committed above stay as an unpaid SENT
+    // invoice, but the events/session-cleanup/referral side effects below
+    // are skipped — the client sees a failure and can retry payment
+    // separately later without re-running the whole checkout.
+    if (paymentAttempted && !paymentValid) {
+      return reply.code(400).send({ error: "Payment signature verification failed" });
+    }
+
+    if (paymentValid) {
+      await recordInvoicePayment(invoice, {
         gateway: "RAZORPAY",
-        gatewayPaymentId: pay.razorpay_payment_id,
-        gatewayOrderId: orderId,
+        gatewayPaymentId: pay.razorpay_payment_id!,
+        gatewayOrderId: razorpayOrderIdUsed,
       });
       await emitEvent({
         code: "INVOICE_PAID",
