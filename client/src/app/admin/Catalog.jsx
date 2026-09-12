@@ -20,10 +20,14 @@ const EMPTY_FORMS = {
   bundles: { id: '', name: '', discountPct: '', matchThreshold: '90', status: 'ACTIVE' },
 };
 
+const PAGE_SIZE = 20;
+
 export default function Catalog() {
   usePageTitle('Admin Catalog');
   const [tab, setTab] = useState('services');
   const [items, setItems] = useState([]);
+  const [pagination, setPagination] = useState({ total: 0, pages: 1 });
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -35,22 +39,27 @@ export default function Catalog() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const r = await api.get(`/admin/${tab}`, { params: { limit: 500 } });
+      // services/features are paginated server-side (page + limit + search) so
+      // the browser never pulls the whole table; dependencies/bundles are small
+      // enough that the API still returns them as a single bare array.
+      const r = await api.get(`/admin/${tab}`, { params: { page, limit: PAGE_SIZE, search: q || undefined } });
       const data = r.data;
-      // Some admin endpoints return a bare array, others the `{ data }` envelope
-      // (services/bundles are paginated; features/dependencies are plain lists).
       const rows = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : (data?.items || []);
       setItems(rows);
+      const meta = data?.meta?.pagination;
+      setPagination(meta ? { total: meta.total, pages: meta.pages } : { total: rows.length, pages: 1 });
     } catch (err) {
       console.error('Fetch error:', err);
       setItems([]);
+      setPagination({ total: 0, pages: 1 });
       toast.error(`Failed to load ${tab}`);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, [tab]);
+  useEffect(() => { setPage(1); }, [tab, q]);
+  useEffect(() => { fetchData(); }, [tab, page, q]);
 
   const filtered = q
     ? items.filter((i) => (i.name || i.id || '').toLowerCase().includes(q.toLowerCase()))
@@ -240,8 +249,44 @@ export default function Catalog() {
         </div>
       )}
 
-      <div className="text-xs px-2 text-warm-400 font-medium">
-        Showing {filtered.length} of {items.length} {tab}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2">
+        <div className="text-xs text-warm-400 font-medium">
+          Showing {filtered.length} of {pagination.total} {tab}
+        </div>
+        {pagination.pages > 1 && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-warm-200 text-warm-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-warm-50"
+            >
+              Prev
+            </button>
+            {Array.from({ length: pagination.pages }, (_, i) => i + 1)
+              .filter((n) => n === 1 || n === pagination.pages || Math.abs(n - page) <= 1)
+              .map((n, idx, arr) => (
+                <span key={n} className="flex items-center">
+                  {idx > 0 && arr[idx - 1] !== n - 1 && <span className="px-1 text-warm-300">…</span>}
+                  <button
+                    onClick={() => setPage(n)}
+                    className={cn(
+                      'w-8 h-8 rounded-lg text-xs font-bold transition-all',
+                      n === page ? 'bg-fox-500 text-white' : 'text-warm-600 hover:bg-warm-100'
+                    )}
+                  >
+                    {n}
+                  </button>
+                </span>
+              ))}
+            <button
+              onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
+              disabled={page >= pagination.pages}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-warm-200 text-warm-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-warm-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={`${editingId ? 'Edit' : 'Add'} ${tab.slice(0, -1)}`} size="md">

@@ -20,10 +20,14 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // Service CRUD
   app.get("/admin/services", async (req) => {
-    const { page, limit, skip } = pageParams(req.query as Record<string, string>, 50, 200);
+    const q = req.query as Record<string, string>;
+    const { page, limit, skip } = pageParams(q, 50, 200);
+    const where: any = q.search
+      ? { name: { contains: q.search, mode: "insensitive" } }
+      : {};
     const [items, total] = await Promise.all([
-      prisma.serviceUnit.findMany({ skip, take: limit, orderBy: { id: "asc" } }),
-      prisma.serviceUnit.count(),
+      prisma.serviceUnit.findMany({ where, skip, take: limit, orderBy: { id: "asc" } }),
+      prisma.serviceUnit.count({ where }),
     ]);
     return paginated(items, total, page, limit);
   });
@@ -67,11 +71,16 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // Feature CRUD
   app.get("/admin/features", async (req) => {
-    const { serviceId } = req.query as { serviceId?: string };
-    return prisma.featureUnit.findMany({
-      where: serviceId ? { serviceId } : {},
-      orderBy: { sortOrder: "asc" },
-    });
+    const q = req.query as Record<string, string>;
+    const { page, limit, skip } = pageParams(q, 50, 200);
+    const where: any = {};
+    if (q.serviceId) where.serviceId = q.serviceId;
+    if (q.search) where.name = { contains: q.search, mode: "insensitive" };
+    const [items, total] = await Promise.all([
+      prisma.featureUnit.findMany({ where, skip, take: limit, orderBy: { sortOrder: "asc" } }),
+      prisma.featureUnit.count({ where }),
+    ]);
+    return paginated(items, total, page, limit);
   });
 
   app.post("/admin/features", async (req) => {
