@@ -7,7 +7,7 @@ import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
 import { recordInvoicePayment } from "../lib/billing";
 import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
-import { redis } from "../lib/redis";
+import { redis, cache } from "../lib/redis";
 import { toJson } from "../lib/json";
 import { resolveGstType, splitGst } from "../lib/gst";
 import { paymentModeAmount } from "@stackfox/core";
@@ -530,160 +530,189 @@ export async function checkoutRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: "razorpay_order_id, razorpay_payment_id and razorpay_signature are all required" });
     }
 
-    // Claim the pending record before anything else: a duplicate/retried
-    // verify call for the same order must not provision a second time.
     const key = `express:${razorpay_order_id}`;
-    const raw = await redis.get(key);
-    if (!raw) {
-      const existing = await prisma.order.findFirst({ where: { razorpayOrderId: razorpay_order_id } });
-      if (existing) return { orderId: existing.id };
-      return reply.code(404).send({ error: "Checkout session not found or expired" });
+
+    // Serialize concurrent/duplicate verify calls for the same order. The
+    // session is only deleted once every write below has committed, so a
+    // retry after a transient failure can still complete the same order
+    // instead of a charged customer ending up with no order and a 404 on
+    // every subsequent attempt.
+    const locked = await cache.lock(key, 30000);
+    if (!locked) {
+      return reply.code(409).send({ error: "This payment is already being processed. Please wait a moment and refresh." });
     }
-    await redis.del(key);
 
-    const valid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
-    if (!valid) return reply.code(400).send({ error: "Payment signature verification failed" });
+    try {
+      const raw = await redis.get(key);
+      if (!raw) {
+        const existing = await prisma.order.findFirst({ where: { razorpayOrderId: razorpay_order_id } });
+        if (existing) return { orderId: existing.id };
+        return reply.code(404).send({ error: "Checkout session not found or expired" });
+      }
 
-    const pending = JSON.parse(raw) as {
-      userId: string;
-      packageId: string;
-      packageName: string;
-      packagePrice: number;
-      addOns: { id: string; name: string; price: number }[];
-      subtotal: number;
-      gst: number;
-      total: number;
-      name: string;
-      email: string;
-      phone: string;
-    };
+      const valid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+      if (!valid) return reply.code(400).send({ error: "Payment signature verification failed" });
 
-    const user = await prisma.user.findUnique({ where: { id: pending.userId } });
-    if (!user) return reply.code(404).send({ error: "Customer record not found" });
-    const orgId = await ensurePersonalOrg(user.id);
+      const pending = JSON.parse(raw) as {
+        userId: string;
+        packageId: string;
+        packageName: string;
+        packagePrice: number;
+        addOns: { id: string; name: string; price: number }[];
+        subtotal: number;
+        gst: number;
+        total: number;
+        name: string;
+        email: string;
+        phone: string;
+      };
 
-    const engId = ids.engagementId();
-    await prisma.engagement.create({
-      data: {
-        id: engId,
-        clientId: orgId,
-        model: "FPM",
-        commercial: { subtotal: pending.subtotal, gst: pending.gst, total: pending.total },
-        methodology: "MILESTONE",
-        status: "ACTIVE",
-        executedAt: new Date(),
-      },
-    });
+      const user = await prisma.user.findUnique({ where: { id: pending.userId } });
+      if (!user) return reply.code(404).send({ error: "Customer record not found" });
+      const orgId = await ensurePersonalOrg(user.id);
 
-    // pending.* are rupees (the catalogue's unit); Order/Invoice/Payment are paise.
-    const subtotalPaise = pending.subtotal * 100;
-    const gstPaise = pending.gst * 100;
-    const totalPaise = pending.total * 100;
+      // pending.* are rupees (the catalogue's unit); Order/Invoice/Payment are paise.
+      const subtotalPaise = pending.subtotal * 100;
+      const gstPaise = pending.gst * 100;
+      const totalPaise = pending.total * 100;
 
-    const order = await prisma.order.create({
-      data: {
-        id: ids.orderId(),
-        orgId,
-        engagementId: engId,
-        services: [pending.packageId, ...pending.addOns.map((a) => a.id)],
-        subtotal: subtotalPaise,
-        gst: gstPaise,
-        grandTotal: totalPaise,
-        razorpayOrderId: razorpay_order_id,
-        tier: "STARTER",
-        paymentMode: "FULL",
-        primaryContact: { name: pending.name, email: pending.email, phone: pending.phone },
-        status: "PAID",
-        paidAt: new Date(),
-      },
-    });
+      const billTo = await prisma.org.findUnique({ where: { id: orgId } });
+      const gstType = resolveGstType(billTo);
+      const { cgst, sgst, igst } = splitGst(gstPaise, gstType);
 
-    // Project.serviceId is a required FK to ServiceUnit, but express-checkout
-    // packages live in the JSON catalogue, not that table — ensure a
-    // placeholder row exists, same as the quotes flow does for the same reason.
-    let service = await prisma.serviceUnit.findUnique({ where: { id: pending.packageId } });
-    if (!service) {
-      service = await prisma.serviceUnit.create({
-        data: {
-          id: pending.packageId,
-          name: pending.packageName,
-          categoryTier1: "SF-EXP",
-          slug: pending.packageId.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-          baseWeight: 1,
-          sacCode: "998314",
-          status: "PUBLISHED",
-        },
+      // All writes below commit together or not at all — a partial failure
+      // (e.g. the invoice create throwing after the order was created) must
+      // never leave an orphaned engagement/order behind with nothing to show
+      // for the customer's payment, nor duplicate rows on the next retry.
+      const { engId, order, project, invoice } = await prisma.$transaction(async (tx) => {
+        const engId = ids.engagementId();
+        await tx.engagement.create({
+          data: {
+            id: engId,
+            clientId: orgId,
+            model: "FPM",
+            commercial: { subtotal: pending.subtotal, gst: pending.gst, total: pending.total },
+            methodology: "MILESTONE",
+            status: "ACTIVE",
+            executedAt: new Date(),
+          },
+        });
+
+        const order = await tx.order.create({
+          data: {
+            id: ids.orderId(),
+            orgId,
+            engagementId: engId,
+            services: [pending.packageId, ...pending.addOns.map((a) => a.id)],
+            subtotal: subtotalPaise,
+            gst: gstPaise,
+            grandTotal: totalPaise,
+            razorpayOrderId: razorpay_order_id,
+            tier: "STARTER",
+            paymentMode: "FULL",
+            primaryContact: { name: pending.name, email: pending.email, phone: pending.phone },
+            status: "PAID",
+            paidAt: new Date(),
+          },
+        });
+
+        // Project.serviceId is a required FK to ServiceUnit, but express-checkout
+        // packages live in the JSON catalogue, not that table — ensure a
+        // placeholder row exists, same as the quotes flow does for the same reason.
+        let service = await tx.serviceUnit.findUnique({ where: { id: pending.packageId } });
+        if (!service) {
+          service = await tx.serviceUnit.create({
+            data: {
+              id: pending.packageId,
+              name: pending.packageName,
+              categoryTier1: "SF-EXP",
+              slug: pending.packageId.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+              baseWeight: 1,
+              sacCode: "998314",
+              status: "PUBLISHED",
+            },
+          });
+        }
+
+        const prefix = (pending.packageId.split("-").slice(0, 2).join("-") || "SF-EXP").toUpperCase();
+        const project = await tx.project.create({
+          data: {
+            id: ids.projectId(prefix),
+            engagementId: engId,
+            orderId: order.id,
+            serviceId: service.id,
+            name: pending.packageName,
+            status: "ACTIVE",
+            configSnapshot: { packageId: pending.packageId, addOns: pending.addOns },
+          },
+        });
+        for (const m of getMilestoneTemplates("STARTER")) {
+          await tx.milestone.create({
+            data: { projectId: project.id, number: 1, name: m.name, paymentPct: m.pct, deliverables: m.deliverables },
+          });
+        }
+
+        for (const type of getContractTypes("STARTER")) {
+          await tx.contract.create({
+            data: { orderId: order.id, engagementId: engId, type, status: "DRAFT" },
+          });
+        }
+
+        const invoice = await tx.invoice.create({
+          data: {
+            id: ids.invoiceId(),
+            orderId: order.id,
+            engagementId: engId,
+            orgId,
+            milestoneRef: "M1",
+            sacCode: "998314",
+            gstType,
+            subtotal: subtotalPaise,
+            cgst,
+            sgst,
+            igst,
+            grandTotal: totalPaise,
+            status: "PAID",
+            paidAt: new Date(),
+            dueDate: new Date(),
+          },
+        });
+
+        return { engId, order, project, invoice };
       });
-    }
 
-    const prefix = (pending.packageId.split("-").slice(0, 2).join("-") || "SF-EXP").toUpperCase();
-    const project = await prisma.project.create({
-      data: {
-        id: ids.projectId(prefix),
-        engagementId: engId,
-        orderId: order.id,
-        serviceId: service.id,
-        name: pending.packageName,
-        status: "ACTIVE",
-        configSnapshot: { packageId: pending.packageId, addOns: pending.addOns },
-      },
-    });
-    for (const m of getMilestoneTemplates("STARTER")) {
-      await prisma.milestone.create({
-        data: { projectId: project.id, number: 1, name: m.name, paymentPct: m.pct, deliverables: m.deliverables },
+      // Everything committed — safe to release the session and fire the
+      // side effects (queues, payment ledger, events) that don't need to be
+      // atomic with the DB rows themselves.
+      await redis.del(key);
+
+      const contracts = await prisma.contract.findMany({ where: { orderId: order.id }, select: { id: true, type: true } });
+      for (const contract of contracts) {
+        await queues.docGen.add("contract-pdf", { type: "contract", contractId: contract.id, contractType: contract.type });
+      }
+      await queues.docGen.add("invoice-pdf", { type: "invoice", invoiceId: invoice.id }).catch(() => {});
+
+      await recordInvoicePayment(invoice, {
+        gateway: "RAZORPAY",
+        gatewayPaymentId: razorpay_payment_id,
+        gatewayOrderId: razorpay_order_id,
+        amount: totalPaise,
       });
-    }
 
-    for (const type of getContractTypes("STARTER")) {
-      const contract = await prisma.contract.create({
-        data: { orderId: order.id, engagementId: engId, type, status: "DRAFT" },
-      });
-      await queues.docGen.add("contract-pdf", { type: "contract", contractId: contract.id, contractType: type });
-    }
-
-    const billTo = await prisma.org.findUnique({ where: { id: orgId } });
-    const gstType = resolveGstType(billTo);
-    const { cgst, sgst, igst } = splitGst(gstPaise, gstType);
-
-    const invoice = await prisma.invoice.create({
-      data: {
-        id: ids.invoiceId(),
-        orderId: order.id,
+      await emitEvent({ code: "ORDER_PLACED", payload: { orderId: order.id, tier: "STARTER" }, actor: user.id });
+      await emitEvent({ code: "ENGAGEMENT_CREATED", payload: { engagementId: engId }, actor: user.id, engagementId: engId });
+      await emitEvent({ code: "PROJECT_CREATED", payload: { projectId: project.id }, actor: user.id, projectId: project.id, engagementId: engId });
+      await emitEvent({
+        code: "INVOICE_PAID",
+        payload: { invoiceId: invoice.id, gateway: "razorpay", razorpayPaymentId: razorpay_payment_id },
+        actor: user.id,
         engagementId: engId,
-        orgId,
-        milestoneRef: "M1",
-        sacCode: "998314",
-        gstType,
-        subtotal: subtotalPaise,
-        cgst,
-        sgst,
-        igst,
-        grandTotal: totalPaise,
-        status: "PAID",
-        paidAt: new Date(),
-        dueDate: new Date(),
-      },
-    });
-    await queues.docGen.add("invoice-pdf", { type: "invoice", invoiceId: invoice.id }).catch(() => {});
+      });
 
-    await recordInvoicePayment(invoice, {
-      gateway: "RAZORPAY",
-      gatewayPaymentId: razorpay_payment_id,
-      gatewayOrderId: razorpay_order_id,
-      amount: totalPaise,
-    });
-
-    await emitEvent({ code: "ORDER_PLACED", payload: { orderId: order.id, tier: "STARTER" }, actor: user.id });
-    await emitEvent({ code: "ENGAGEMENT_CREATED", payload: { engagementId: engId }, actor: user.id, engagementId: engId });
-    await emitEvent({ code: "PROJECT_CREATED", payload: { projectId: project.id }, actor: user.id, projectId: project.id, engagementId: engId });
-    await emitEvent({
-      code: "INVOICE_PAID",
-      payload: { invoiceId: invoice.id, gateway: "razorpay", razorpayPaymentId: razorpay_payment_id },
-      actor: user.id,
-      engagementId: engId,
-    });
-
-    return { orderId: order.id };
+      return { orderId: order.id };
+    } finally {
+      await cache.unlock(key);
+    }
   });
 
   // GET /checkout/express/confirmation/:orderId — unauthenticated receipt lookup.
