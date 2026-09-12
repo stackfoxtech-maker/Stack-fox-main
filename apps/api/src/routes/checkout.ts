@@ -11,6 +11,8 @@ import { redis } from "../lib/redis";
 import { toJson } from "../lib/json";
 import { resolveGstType, splitGst } from "../lib/gst";
 import { paymentModeAmount } from "@stackfox/core";
+import { findCatalogueItem } from "../lib/catalogue";
+import { ensurePersonalOrg } from "../lib/scope";
 
 interface CheckoutSession {
   estimateId: string;
@@ -436,22 +438,32 @@ export async function checkoutRoutes(app: FastifyInstance) {
   // POST /checkout/express — Starter tier 3-field checkout
   app.post("/checkout/express", async (req, reply) => {
     const { name, phone, email, packageId, addOns } = req.body as {
-      name: string;
-      phone: string;
-      email: string;
-      packageId: string;
+      name?: string;
+      phone?: string;
+      email?: string;
+      packageId?: string;
       addOns?: string[];
     };
+    if (!name?.trim() || !phone?.trim() || !email?.trim() || !packageId) {
+      return reply.code(400).send({ error: "name, phone, email and packageId are required" });
+    }
 
-    const pkg = await prisma.package.findUnique({
-      where: { id: packageId },
-      include: { service: true },
-    });
-    if (!pkg) return reply.code(404).send({ error: "Package not found" });
+    // The public storefront (and this page) is built against the JSON
+    // catalogue, not the ServiceUnit/Package DB tables — a lookup against
+    // prisma.package here would 404 on every real packageId a customer could
+    // actually send.
+    const pkg = findCatalogueItem(packageId);
+    if (!pkg || pkg.type !== "package") return reply.code(404).send({ error: "Package not found" });
 
-    // Calculate total with add-ons
-    let total = pkg.flatPrice;
-    // Add-on pricing would be looked up from a config table
+    const addOnItems: { id: string; name: string; price: number }[] = [];
+    for (const addOnId of addOns ?? []) {
+      const item = findCatalogueItem(addOnId);
+      if (item && item.type === "addon") addOnItems.push({ id: item.id, name: item.name, price: item.price });
+    }
+
+    const subtotal = pkg.price + addOnItems.reduce((s, a) => s + a.price, 0); // rupees
+    const gst = Math.round(subtotal * 0.18);
+    const total = subtotal + gst; // rupees
 
     // Create or find user
     let user = await prisma.user.findFirst({
@@ -463,8 +475,32 @@ export async function checkoutRoutes(app: FastifyInstance) {
       });
     }
 
-    // Create Razorpay order
-    const rzpOrder = await createRazorpayOrder(total, "INR", `express_${packageId}`);
+    const rzpOrder = await createRazorpayOrder(total * 100, "INR", `express_${packageId}`, {
+      packageId,
+      userId: user.id,
+    });
+
+    // Stash the server-priced details keyed by the Razorpay order id; /verify
+    // reads these back instead of trusting anything the client sends at
+    // confirmation time.
+    await redis.set(
+      `express:${rzpOrder.id}`,
+      JSON.stringify({
+        userId: user.id,
+        packageId,
+        packageName: pkg.name,
+        packagePrice: pkg.price,
+        addOns: addOnItems,
+        subtotal,
+        gst,
+        total,
+        name,
+        email,
+        phone,
+      }),
+      "EX",
+      3600,
+    );
 
     await emitEvent({
       code: "EXPRESS_CHECKOUT_STARTED",
@@ -474,10 +510,205 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
     return {
       razorpayOrderId: rzpOrder.id,
-      amount: total,
+      amount: total * 100,
       currency: "INR",
       keyId: process.env.RAZORPAY_KEY_ID,
       userId: user.id,
+    };
+  });
+
+  // POST /checkout/express/verify — verify signature, then provision order +
+  // engagement + project + milestones + contract + invoice, same shape as the
+  // full wizard's /complete but for the Starter tier's 3-field flow.
+  app.post("/checkout/express/verify", async (req, reply) => {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body as {
+      razorpay_order_id?: string;
+      razorpay_payment_id?: string;
+      razorpay_signature?: string;
+    };
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return reply.code(400).send({ error: "razorpay_order_id, razorpay_payment_id and razorpay_signature are all required" });
+    }
+
+    // Claim the pending record before anything else: a duplicate/retried
+    // verify call for the same order must not provision a second time.
+    const key = `express:${razorpay_order_id}`;
+    const raw = await redis.get(key);
+    if (!raw) {
+      const existing = await prisma.order.findFirst({ where: { razorpayOrderId: razorpay_order_id } });
+      if (existing) return { orderId: existing.id };
+      return reply.code(404).send({ error: "Checkout session not found or expired" });
+    }
+    await redis.del(key);
+
+    const valid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+    if (!valid) return reply.code(400).send({ error: "Payment signature verification failed" });
+
+    const pending = JSON.parse(raw) as {
+      userId: string;
+      packageId: string;
+      packageName: string;
+      packagePrice: number;
+      addOns: { id: string; name: string; price: number }[];
+      subtotal: number;
+      gst: number;
+      total: number;
+      name: string;
+      email: string;
+      phone: string;
+    };
+
+    const user = await prisma.user.findUnique({ where: { id: pending.userId } });
+    if (!user) return reply.code(404).send({ error: "Customer record not found" });
+    const orgId = await ensurePersonalOrg(user.id);
+
+    const engId = ids.engagementId();
+    await prisma.engagement.create({
+      data: {
+        id: engId,
+        clientId: orgId,
+        model: "FPM",
+        commercial: { subtotal: pending.subtotal, gst: pending.gst, total: pending.total },
+        methodology: "MILESTONE",
+        status: "ACTIVE",
+        executedAt: new Date(),
+      },
+    });
+
+    // pending.* are rupees (the catalogue's unit); Order/Invoice/Payment are paise.
+    const subtotalPaise = pending.subtotal * 100;
+    const gstPaise = pending.gst * 100;
+    const totalPaise = pending.total * 100;
+
+    const order = await prisma.order.create({
+      data: {
+        id: ids.orderId(),
+        orgId,
+        engagementId: engId,
+        services: [pending.packageId, ...pending.addOns.map((a) => a.id)],
+        subtotal: subtotalPaise,
+        gst: gstPaise,
+        grandTotal: totalPaise,
+        razorpayOrderId: razorpay_order_id,
+        tier: "STARTER",
+        paymentMode: "FULL",
+        primaryContact: { name: pending.name, email: pending.email, phone: pending.phone },
+        status: "PAID",
+        paidAt: new Date(),
+      },
+    });
+
+    // Project.serviceId is a required FK to ServiceUnit, but express-checkout
+    // packages live in the JSON catalogue, not that table — ensure a
+    // placeholder row exists, same as the quotes flow does for the same reason.
+    let service = await prisma.serviceUnit.findUnique({ where: { id: pending.packageId } });
+    if (!service) {
+      service = await prisma.serviceUnit.create({
+        data: {
+          id: pending.packageId,
+          name: pending.packageName,
+          categoryTier1: "SF-EXP",
+          slug: pending.packageId.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          baseWeight: 1,
+          sacCode: "998314",
+          status: "PUBLISHED",
+        },
+      });
+    }
+
+    const prefix = (pending.packageId.split("-").slice(0, 2).join("-") || "SF-EXP").toUpperCase();
+    const project = await prisma.project.create({
+      data: {
+        id: ids.projectId(prefix),
+        engagementId: engId,
+        orderId: order.id,
+        serviceId: service.id,
+        name: pending.packageName,
+        status: "ACTIVE",
+        configSnapshot: { packageId: pending.packageId, addOns: pending.addOns },
+      },
+    });
+    for (const m of getMilestoneTemplates("STARTER")) {
+      await prisma.milestone.create({
+        data: { projectId: project.id, number: 1, name: m.name, paymentPct: m.pct, deliverables: m.deliverables },
+      });
+    }
+
+    for (const type of getContractTypes("STARTER")) {
+      const contract = await prisma.contract.create({
+        data: { orderId: order.id, engagementId: engId, type, status: "DRAFT" },
+      });
+      await queues.docGen.add("contract-pdf", { type: "contract", contractId: contract.id, contractType: type });
+    }
+
+    const billTo = await prisma.org.findUnique({ where: { id: orgId } });
+    const gstType = resolveGstType(billTo);
+    const { cgst, sgst, igst } = splitGst(gstPaise, gstType);
+
+    const invoice = await prisma.invoice.create({
+      data: {
+        id: ids.invoiceId(),
+        orderId: order.id,
+        engagementId: engId,
+        orgId,
+        milestoneRef: "M1",
+        sacCode: "998314",
+        gstType,
+        subtotal: subtotalPaise,
+        cgst,
+        sgst,
+        igst,
+        grandTotal: totalPaise,
+        status: "PAID",
+        paidAt: new Date(),
+        dueDate: new Date(),
+      },
+    });
+    await queues.docGen.add("invoice-pdf", { type: "invoice", invoiceId: invoice.id }).catch(() => {});
+
+    await recordInvoicePayment(invoice, {
+      gateway: "RAZORPAY",
+      gatewayPaymentId: razorpay_payment_id,
+      gatewayOrderId: razorpay_order_id,
+      amount: totalPaise,
+    });
+
+    await emitEvent({ code: "ORDER_PLACED", payload: { orderId: order.id, tier: "STARTER" }, actor: user.id });
+    await emitEvent({ code: "ENGAGEMENT_CREATED", payload: { engagementId: engId }, actor: user.id, engagementId: engId });
+    await emitEvent({ code: "PROJECT_CREATED", payload: { projectId: project.id }, actor: user.id, projectId: project.id, engagementId: engId });
+    await emitEvent({
+      code: "INVOICE_PAID",
+      payload: { invoiceId: invoice.id, gateway: "razorpay", razorpayPaymentId: razorpay_payment_id },
+      actor: user.id,
+      engagementId: engId,
+    });
+
+    return { orderId: order.id };
+  });
+
+  // GET /checkout/express/confirmation/:orderId — unauthenticated receipt lookup.
+  // Express checkout customers have no login session, so this can't require
+  // auth; it only ever returns non-sensitive receipt fields, never the full
+  // order/contact record.
+  app.get("/checkout/express/confirmation/:orderId", async (req, reply) => {
+    const { orderId } = req.params as { orderId: string };
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { projects: true },
+    });
+    if (!order || order.tier !== "STARTER") return reply.code(404).send({ error: "Order not found" });
+
+    const contact = (order.primaryContact as any) ?? {};
+    return {
+      confirmation: {
+        orderNumber: order.id,
+        customerName: contact.name ?? null,
+        items: order.projects.map((p) => ({ name: p.name })),
+        subtotal: (order.subtotal ?? 0) / 100,
+        gst: (order.gst ?? 0) / 100,
+        total: (order.grandTotal ?? 0) / 100,
+        paidAt: order.paidAt,
+      },
     };
   });
 }

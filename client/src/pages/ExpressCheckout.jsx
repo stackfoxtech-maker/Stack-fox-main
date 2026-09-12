@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { apiPost } from '@lib/api';
+import { loadRazorpay } from '@lib/razorpay';
+import toast from 'react-hot-toast';
 import data from '@data/stackfox-data.json';
 
 const { services, packages, addons } = data;
 
 export default function ExpressCheckout() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const serviceId = params.get('service');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -14,7 +17,6 @@ export default function ExpressCheckout() {
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [paymentLink, setPaymentLink] = useState('');
 
   const service = services.find((s) => s.id === serviceId || (s.slug || s.id) === serviceId) || services[0];
   const basePrice = service?.price ?? 0;
@@ -41,10 +43,46 @@ export default function ExpressCheckout() {
         packageId: serviceId,
         addOns: selectedAddons,
       });
-      setPaymentLink(res.data.razorpayOrderId ? `/payment-confirmation?order=${res.data.razorpayOrderId}` : '/payment-confirmation');
+      const { razorpayOrderId, amount, currency, keyId } = res.data;
+
+      await loadRazorpay();
+      const rzp = new window.Razorpay({
+        key: keyId,
+        order_id: razorpayOrderId,
+        amount,
+        currency,
+        name: 'StackFox',
+        description: service?.name,
+        prefill: { name, email, contact: phone },
+        theme: { color: '#f97316' },
+        handler: async (response) => {
+          try {
+            const verifyRes = await apiPost('/checkout/express/verify', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            navigate(`/payment-confirmation?order=${verifyRes.data.orderId}`);
+          } catch (err) {
+            setError(err.response?.data?.error || 'Payment verification failed. Please contact support.');
+          } finally {
+            setLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            toast('Payment cancelled — nothing was charged.');
+          },
+        },
+      });
+      rzp.on('payment.failed', (resp) => {
+        setLoading(false);
+        setError(resp.error?.description || 'Payment failed. Please try another method.');
+      });
+      rzp.open();
     } catch (err) {
       setError(err.response?.data?.error || 'Checkout failed. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
