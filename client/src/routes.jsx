@@ -357,7 +357,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Admin dashboard */}
-      <Route path="app/admin" element={<ProtectedRoute roles={['admin', 'ADMIN']} />}>
+      <Route path="app/admin" element={<ProtectedRoute roles={['admin', 'ADMIN', 'SUPER_ADMIN']} />}>
         <Route element={<AdminLayout />}>
           <Route index element={<AdminOverview />} />
           <Route path="catalog" element={<AdminCatalog />} />

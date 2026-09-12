@@ -61,7 +61,7 @@ export async function jobRoutes(app: FastifyInstance) {
 
   // Admin — applications for a job
   app.get("/jobs/:id/applications", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN"])) return;
+    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN"])) return;
     const { id } = req.params as { id: string };
     const applications = await prisma.jobApplication.findMany({
       where: { jobId: id },
@@ -72,7 +72,7 @@ export async function jobRoutes(app: FastifyInstance) {
 
   // Admin — update application status
   app.put("/jobs/applications/:appId", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN"])) return;
+    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN"])) return;
     const { appId } = req.params as { appId: string };
     const { status } = req.body as { status: string };
     const updated = await prisma.jobApplication.update({

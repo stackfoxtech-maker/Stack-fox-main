@@ -261,7 +261,7 @@ export async function financeRoutes(app: FastifyInstance) {
 
   // PATCH /invoices/:id/status — admin-only workflow transition.
   app.patch("/invoices/:id/status", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN"])) return;
+    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN"])) return;
     const { id } = req.params as { id: string };
     const { status } = req.body as { status?: string };
 
