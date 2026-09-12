@@ -74,7 +74,7 @@ function calcTotals(items: CartItem[]) {
  * Returns null when the id is in neither, so unknown items are refused rather
  * than trusting a price from the request body.
  */
-async function catalogPrice(
+export async function catalogPrice(
   itemId: string,
   itemType: string,
   tier?: string,

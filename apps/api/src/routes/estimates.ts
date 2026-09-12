@@ -123,8 +123,18 @@ export async function estimateRoutes(app: FastifyInstance) {
   // GET /estimates/:id
   app.get("/estimates/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const est = await prisma.estimate.findUnique({ where: { id } });
+    const est = await prisma.estimate.findUnique({
+      where: { id },
+      include: { workspace: { select: { userId: true } } },
+    });
     if (!est) return reply.code(404).send({ error: "Estimate not found" });
+    // An anonymous (not-yet-logged-in) workspace's estimate stays readable by
+    // anyone holding the id — otherwise the anonymous "estimate, then sign up
+    // to check out" flow breaks. Once a workspace has an owner, only that
+    // owner (or a signed-in caller who happens to be them) may read it.
+    if (est.workspace.userId && est.workspace.userId !== req.user?.sub) {
+      return reply.code(404).send({ error: "Estimate not found" });
+    }
     return est;
   });
 

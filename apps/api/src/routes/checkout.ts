@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
@@ -14,6 +14,7 @@ import { paymentModeAmount } from "@stackfox/core";
 
 interface CheckoutSession {
   estimateId: string;
+  userId: string;
   tier: string;
   step: number;
   accountDetails?: Record<string, unknown>;
@@ -24,15 +25,42 @@ interface CheckoutSession {
   razorpayOrderId?: string;
 }
 
+/**
+ * Loads a checkout session by sid, requiring it belong to the authenticated
+ * caller — otherwise any logged-in user could read, step through, or convert
+ * any other user's active checkout by guessing an sid.
+ */
+async function loadOwnedSession(
+  req: FastifyRequest,
+  reply: FastifyReply,
+  sid: string,
+): Promise<CheckoutSession | undefined> {
+  const raw = await redis.get(`checkout:${sid}`);
+  if (!raw) {
+    reply.code(404).send({ error: "Session not found or expired" });
+    return undefined;
+  }
+  const session: CheckoutSession = JSON.parse(raw);
+  if (session.userId !== req.user!.sub) {
+    reply.code(404).send({ error: "Session not found or expired" });
+    return undefined;
+  }
+  return session;
+}
+
 export async function checkoutRoutes(app: FastifyInstance) {
   // POST /checkout/start — hash guard G-039
   app.post("/checkout/start", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const { estimateId } = req.body as { estimateId: string };
     const estimate = await prisma.estimate.findUnique({
       where: { id: estimateId },
       include: { workspace: true },
     });
     if (!estimate) return reply.code(404).send({ error: "Estimate not found" });
+    if (estimate.workspace.userId && estimate.workspace.userId !== req.user!.sub) {
+      return reply.code(404).send({ error: "Estimate not found" });
+    }
 
     if (estimate.status !== "ACTIVE") {
       return reply.code(409).send({ error: "Estimate is no longer active" });
@@ -57,6 +85,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
     const sid = `ckout_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const session: CheckoutSession = {
       estimateId,
+      userId: req.user!.sub,
       tier: (req.body as any).tier ?? "GROWTH",
       step: 1,
     };
@@ -74,19 +103,20 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
   // GET /checkout/:sid/status
   app.get("/checkout/:sid/status", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const { sid } = req.params as { sid: string };
-    const data = await redis.get(`checkout:${sid}`);
-    if (!data) return reply.code(404).send({ error: "Session not found or expired" });
-    return JSON.parse(data);
+    const session = await loadOwnedSession(req, reply, sid);
+    if (!session) return;
+    return session;
   });
 
   // PATCH /checkout/:sid/step2 — account details
   app.patch("/checkout/:sid/step2", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const { sid } = req.params as { sid: string };
-    const raw = await redis.get(`checkout:${sid}`);
-    if (!raw) return reply.code(404).send({ error: "Session expired" });
+    const session = await loadOwnedSession(req, reply, sid);
+    if (!session) return;
 
-    const session: CheckoutSession = JSON.parse(raw);
     session.accountDetails = req.body as Record<string, unknown>;
     session.step = 2;
 
@@ -107,11 +137,11 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
   // PATCH /checkout/:sid/step3 — engagement details
   app.patch("/checkout/:sid/step3", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const { sid } = req.params as { sid: string };
-    const raw = await redis.get(`checkout:${sid}`);
-    if (!raw) return reply.code(404).send({ error: "Session expired" });
+    const session = await loadOwnedSession(req, reply, sid);
+    if (!session) return;
 
-    const session: CheckoutSession = JSON.parse(raw);
     session.engagementDetails = req.body as Record<string, unknown>;
     session.step = 3;
     await redis.set(`checkout:${sid}`, JSON.stringify(session), "EX", 3600);
@@ -120,11 +150,11 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
   // PATCH /checkout/:sid/step4 — payment terms
   app.patch("/checkout/:sid/step4", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const { sid } = req.params as { sid: string };
-    const raw = await redis.get(`checkout:${sid}`);
-    if (!raw) return reply.code(404).send({ error: "Session expired" });
+    const session = await loadOwnedSession(req, reply, sid);
+    if (!session) return;
 
-    const session: CheckoutSession = JSON.parse(raw);
     session.paymentTerms = req.body as Record<string, unknown>;
     session.step = 4;
     await redis.set(`checkout:${sid}`, JSON.stringify(session), "EX", 3600);
@@ -133,11 +163,11 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
   // PATCH /checkout/:sid/step5 — clause selections
   app.patch("/checkout/:sid/step5", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const { sid } = req.params as { sid: string };
-    const raw = await redis.get(`checkout:${sid}`);
-    if (!raw) return reply.code(404).send({ error: "Session expired" });
+    const session = await loadOwnedSession(req, reply, sid);
+    if (!session) return;
 
-    const session: CheckoutSession = JSON.parse(raw);
     session.clauseSelections = req.body as Record<string, unknown>;
     session.step = 5;
     await redis.set(`checkout:${sid}`, JSON.stringify(session), "EX", 3600);
@@ -160,10 +190,8 @@ export async function checkoutRoutes(app: FastifyInstance) {
     const { sid } = req.params as { sid: string };
     const { rail, evidence } = req.body as { rail: string; evidence: Record<string, unknown> };
 
-    const raw = await redis.get(`checkout:${sid}`);
-    if (!raw) return reply.code(404).send({ error: "Session expired" });
-
-    const session: CheckoutSession = JSON.parse(raw);
+    const session = await loadOwnedSession(req, reply, sid);
+    if (!session) return;
     session.signed = true;
     session.step = 6;
     await redis.set(`checkout:${sid}`, JSON.stringify(session), "EX", 3600);
@@ -173,11 +201,10 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
   // POST /checkout/:sid/pay — create Razorpay order
   app.post("/checkout/:sid/pay", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const { sid } = req.params as { sid: string };
-    const raw = await redis.get(`checkout:${sid}`);
-    if (!raw) return reply.code(404).send({ error: "Session expired" });
-
-    const session: CheckoutSession = JSON.parse(raw);
+    const session = await loadOwnedSession(req, reply, sid);
+    if (!session) return;
     const totals = await getEstimateTotals(session.estimateId);
     if (!totals) return reply.code(500).send({ error: "Cannot read estimate totals" });
 
@@ -200,12 +227,21 @@ export async function checkoutRoutes(app: FastifyInstance) {
   app.post("/checkout/:sid/complete", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { sid } = req.params as { sid: string };
-    const raw = await redis.get(`checkout:${sid}`);
-    if (!raw) return reply.code(404).send({ error: "Session expired" });
-
-    const session: CheckoutSession = JSON.parse(raw);
+    const session = await loadOwnedSession(req, reply, sid);
+    if (!session) return;
     const estimate = await prisma.estimate.findUnique({ where: { id: session.estimateId } });
     if (!estimate) return reply.code(404).send({ error: "Estimate not found" });
+
+    // Atomically claim the estimate before creating anything: a resubmitted or
+    // double-clicked /complete call (or a retried payment) must not create a
+    // second order/engagement/invoice set for the same estimate.
+    const claim = await prisma.estimate.updateMany({
+      where: { id: estimate.id, status: { not: "CONVERTED" } },
+      data: { status: "CONVERTED" },
+    });
+    if (claim.count === 0) {
+      return reply.code(409).send({ error: "This estimate has already been converted to an order." });
+    }
 
     const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
     if (!user?.orgId) return reply.code(400).send({ error: "Organization required" });
@@ -305,12 +341,6 @@ export async function checkoutRoutes(app: FastifyInstance) {
         contractType: type,
       });
     }
-
-    // Mark estimate as converted
-    await prisma.estimate.update({
-      where: { id: estimate.id },
-      data: { status: "CONVERTED" },
-    });
 
     // Generate first invoice
     const invoiceAmount = paymentModeAmount(totals.grand, (session.paymentTerms as any)?.mode ?? "MILESTONE");

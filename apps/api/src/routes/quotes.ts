@@ -9,6 +9,11 @@ import { toJson } from "../lib/json";
 import { paginated, pageParams } from "../lib/http";
 import { ensurePersonalOrg } from "../lib/scope";
 import * as ids from "../lib/id";
+import { catalogPrice } from "./cart";
+import { resolveGstType, splitGst } from "../lib/gst";
+import { recordInvoicePayment } from "../lib/billing";
+
+const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"];
 
 interface QuoteItem {
   name: string;
@@ -126,21 +131,55 @@ async function provisionQuote(quote: any, userId: string) {
     contracts.push(contract);
   }
 
+  // Quote amounts are stored in rupees; Order/Invoice/Payment are all paise-denominated.
+  const subtotalPaise = quote.subtotal * 100;
+  const gstPaise = quote.gstAmount * 100;
+  const totalPaise = quote.total * 100;
+
+  const order = await prisma.order.create({
+    data: {
+      id: ids.orderId(),
+      orgId,
+      engagementId: engId,
+      subtotal: subtotalPaise,
+      gst: gstPaise,
+      grandTotal: totalPaise,
+      razorpayOrderId: quote.razorpayOrderId ?? undefined,
+      status: "PAID",
+      paidAt: quote.paidAt ?? new Date(),
+    },
+  });
+
+  const billTo = await prisma.org.findUnique({ where: { id: orgId } });
+  const gstType = resolveGstType(billTo);
+  const { cgst, sgst, igst } = splitGst(gstPaise, gstType);
+
   const invoice = await prisma.invoice.create({
     data: {
       id: ids.invoiceId(),
+      orderId: order.id,
       engagementId: engId,
       orgId,
       milestoneRef: "M1",
       sacCode: "998314",
-      gstType: "IGST",
-      subtotal: quote.subtotal,
-      igst: quote.gstAmount,
-      grandTotal: quote.total,
+      gstType,
+      subtotal: subtotalPaise,
+      cgst,
+      sgst,
+      igst,
+      grandTotal: totalPaise,
       status: "PAID",
       paidAt: quote.paidAt ?? new Date(),
       dueDate: quote.paidAt ?? new Date(),
     },
+  });
+
+  const payments: string[] = checkoutDetails.payments ?? [];
+  await recordInvoicePayment(invoice, {
+    gateway: "RAZORPAY",
+    gatewayPaymentId: payments[payments.length - 1],
+    gatewayOrderId: quote.razorpayOrderId ?? undefined,
+    amount: totalPaise,
   });
 
   await emitEvent({ code: "ENGAGEMENT_CREATED", payload: { engagementId: engId }, actor: userId, engagementId: engId });
@@ -216,7 +255,7 @@ export async function quoteRoutes(app: FastifyInstance) {
     const { page: p, limit: l, skip } = pageParams(q);
 
     // Admins manage every quote; regular users only see their own.
-    const isAdmin = req.user!.role === "ADMIN";
+    const isAdmin = ADMIN_ROLES.includes(req.user!.role);
     const where = isAdmin ? {} : { userId: req.user!.sub };
 
     const [quotes, total] = await Promise.all([
@@ -265,11 +304,28 @@ export async function quoteRoutes(app: FastifyInstance) {
     const userId = req.user!.sub;
     const body = req.body as { items?: QuoteItem[]; tier?: string } | undefined;
 
-    const items: QuoteItem[] = body?.items ?? [];
-    if (items.length === 0) {
+    const rawItems: QuoteItem[] = body?.items ?? [];
+    if (rawItems.length === 0) {
       return reply.code(400).send({ message: "Cart is empty — add items before requesting a quote." });
     }
     const tier = ["STARTER", "GROWTH", "PREMIUM"].includes(body?.tier ?? "") ? body!.tier! : "GROWTH";
+
+    // Re-price every line against the catalogue — never trust a client-supplied
+    // price, or a customer can check out at whatever total they choose.
+    const items: QuoteItem[] = [];
+    for (const raw of rawItems) {
+      const quantity = Math.max(1, Math.min(99, Math.floor(Number(raw.quantity) || 1)));
+      if (!raw.itemId) {
+        return reply.code(400).send({ message: "Each item must reference a valid catalogue itemId." });
+      }
+      const priced = await catalogPrice(raw.itemId, raw.itemType ?? "service", tier);
+      if (!priced) {
+        return reply.code(404).send({
+          message: `"${raw.name ?? raw.itemId}" is no longer available. Please refresh your cart and try again.`,
+        });
+      }
+      items.push({ ...raw, quantity, name: priced.name, price: priced.price });
+    }
 
     const rawSubtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
     const subtotal = applyTierMultiplier(rawSubtotal, tier);
@@ -326,7 +382,7 @@ export async function quoteRoutes(app: FastifyInstance) {
     const { status } = req.body as { status: string };
 
     // Only admins drive the sales workflow; owners may just cancel their own quote.
-    const isAdmin = req.user!.role === "ADMIN";
+    const isAdmin = ADMIN_ROLES.includes(req.user!.role);
     const ALLOWED = ["draft", "reviewing", "approved", "invoiced", "cancelled"];
     if (!isAdmin && !(status === "cancelled")) {
       return reply.code(403).send({ error: "Only admins can update quote workflow status" });

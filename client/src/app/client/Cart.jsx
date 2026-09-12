@@ -20,7 +20,7 @@ export default function Cart() {
     if (!isAuthenticated) { navigate('/login'); return; }
     setCreating(true);
     try {
-      const res = await api.post('/quotes');
+      const res = await api.post('/quotes', { items, tier: 'GROWTH' });
       toast.success(`Quote ${res.data.data.quote.quoteNumber} created!`);
       clearCart(isAuthenticated);
       navigate('/app/client/quotes');
