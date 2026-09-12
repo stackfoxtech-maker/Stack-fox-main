@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, ChevronDown, ChevronUp, Copy, MessageCircle, FileText, Lightbulb, Target, Zap, Shield, BarChart3, CheckCircle, TrendingUp, Sparkles, Users, Printer, Mail, Phone as PhoneIcon, Wand2, ChevronRight, ChevronLeft, X } from 'lucide-react';
 import { Button, Input, Textarea, Select, Badge } from '@components/ui/Primitives';
+import { cn } from '@lib/utils';
 import { businessCategories, currentSituations, mainGoals, pitchLibrary, getPitch } from '@data/salesPitchLibrary';
 import { toast } from 'react-hot-toast';
 

@@ -9,6 +9,7 @@ import { Section, Button, Spinner } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';
 import { useEffect, useState } from 'react';
 import api from '@lib/api';
+import toast from 'react-hot-toast';
 
 export default function BlogPost() {
   const { id } = useParams(); // This is the slug

@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { MessageSquare, Search, Copy, RotateCcw, ChevronRight } from 'lucide-react';
 import { Button, Input, Badge } from '@components/ui/Primitives';
 import { objectionKeys, genericObjections, businessCategories, pitchLibrary } from '@data/salesPitchLibrary';
+import { copyToClipboard as copyText } from '@lib/utils';
 import { toast } from 'react-hot-toast';
+
+const copyToClipboard = async (text) => {
+  const ok = await copyText(text);
+  if (ok) toast.success('Copied to clipboard!');
+  else toast.error('Could not copy — please copy it manually.');
+};
 
 const topObjectionsByCategory = {
   'gym': ['expensive', 'noNeed', 'hasInstagram'],

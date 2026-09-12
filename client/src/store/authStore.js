@@ -247,7 +247,8 @@ const useAuthStore = create((set, get) => ({
 
   // Helper getters
   isAdmin: () => ['admin', 'ADMIN', 'SUPER_ADMIN'].includes(get().user?.role),
-  isTeam: () => ['team', 'TEAM', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS'].includes(get().user?.role),
+  isTeam: () => ['team', 'TEAM', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS', 'FINANCE'].includes(get().user?.role),
+  isSales: () => get().user?.role === 'SALES',
   isClient: () => ['client', 'CLIENT', 'CLIENT_ADMIN', 'CLIENT_PM', 'CLIENT_VIEWER', 'INDIVIDUAL_CLIENT', 'ORG_OWNER'].includes(get().user?.role),
 
   // Single source of truth for "which dashboard does this role land on" —
@@ -257,6 +258,7 @@ const useAuthStore = create((set, get) => ({
   // whose role is "ADMIN", to the client dashboard instead).
   getDashboardPath: () => {
     if (get().isAdmin()) return '/app/admin';
+    if (get().isSales()) return '/app/team/sales';
     if (get().isTeam()) return '/app/team';
     return '/app/client';
   },
