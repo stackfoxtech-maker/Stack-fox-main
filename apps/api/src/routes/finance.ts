@@ -4,6 +4,7 @@ import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
 import { verifyRazorpayWebhookSignature, getStripe } from "../lib/payments";
 import { recordInvoicePayment } from "../lib/billing";
+import { provisionExpressCheckoutOrder } from "../lib/expressCheckout";
 import { clientScope } from "../lib/scope";
 import { pageParams } from "../lib/http";
 import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
@@ -414,6 +415,17 @@ export async function financeRoutes(app: FastifyInstance) {
             actor: "SYSTEM",
           });
         }
+      } else if (!invoice) {
+        // Neither an Invoice nor an Order references this Razorpay order —
+        // this is the only durable path for an express-checkout order whose
+        // customer's browser died right after paying, before the client-side
+        // /checkout/express/verify call could fire. Without this, that
+        // captured payment would sit with no order ever provisioned and no
+        // way to reconcile it. A no-op (returns null) if this order id isn't
+        // an express-checkout session at all — e.g. some other payment path.
+        await provisionExpressCheckoutOrder(rzpOrderId, entity.id).catch((err) => {
+          req.log.error({ err, rzpOrderId }, "Express-checkout webhook reconciliation failed");
+        });
       }
     }
 

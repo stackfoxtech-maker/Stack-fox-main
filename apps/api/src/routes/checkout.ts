@@ -7,12 +7,13 @@ import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
 import { recordInvoicePayment } from "../lib/billing";
 import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
-import { redis, cache } from "../lib/redis";
+import { redis } from "../lib/redis";
 import { toJson } from "../lib/json";
 import { resolveGstType, splitGst } from "../lib/gst";
 import { paymentModeAmount } from "@stackfox/core";
 import { findCatalogueItem } from "../lib/catalogue";
-import { ensurePersonalOrg } from "../lib/scope";
+import { getMilestoneTemplates, getContractTypes } from "../lib/tierTemplates";
+import { provisionExpressCheckoutOrder } from "../lib/expressCheckout";
 
 interface CheckoutSession {
   estimateId: string;
@@ -530,189 +531,19 @@ export async function checkoutRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: "razorpay_order_id, razorpay_payment_id and razorpay_signature are all required" });
     }
 
-    const key = `express:${razorpay_order_id}`;
+    // Signature must be checked before we trust this order/payment id pair —
+    // provisionExpressCheckoutOrder itself has no notion of the checkout
+    // (as opposed to webhook) signature scheme, so this call is the only
+    // thing standing between an attacker and a fabricated payment claim.
+    const valid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+    if (!valid) return reply.code(400).send({ error: "Payment signature verification failed" });
 
-    // Serialize concurrent/duplicate verify calls for the same order. The
-    // session is only deleted once every write below has committed, so a
-    // retry after a transient failure can still complete the same order
-    // instead of a charged customer ending up with no order and a 404 on
-    // every subsequent attempt.
-    const locked = await cache.lock(key, 30000);
-    if (!locked) {
-      return reply.code(409).send({ error: "This payment is already being processed. Please wait a moment and refresh." });
-    }
-
-    try {
-      const raw = await redis.get(key);
-      if (!raw) {
-        const existing = await prisma.order.findFirst({ where: { razorpayOrderId: razorpay_order_id } });
-        if (existing) return { orderId: existing.id };
-        return reply.code(404).send({ error: "Checkout session not found or expired" });
-      }
-
-      const valid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
-      if (!valid) return reply.code(400).send({ error: "Payment signature verification failed" });
-
-      const pending = JSON.parse(raw) as {
-        userId: string;
-        packageId: string;
-        packageName: string;
-        packagePrice: number;
-        addOns: { id: string; name: string; price: number }[];
-        subtotal: number;
-        gst: number;
-        total: number;
-        name: string;
-        email: string;
-        phone: string;
-      };
-
-      const user = await prisma.user.findUnique({ where: { id: pending.userId } });
-      if (!user) return reply.code(404).send({ error: "Customer record not found" });
-      const orgId = await ensurePersonalOrg(user.id);
-
-      // pending.* are rupees (the catalogue's unit); Order/Invoice/Payment are paise.
-      const subtotalPaise = pending.subtotal * 100;
-      const gstPaise = pending.gst * 100;
-      const totalPaise = pending.total * 100;
-
-      const billTo = await prisma.org.findUnique({ where: { id: orgId } });
-      const gstType = resolveGstType(billTo);
-      const { cgst, sgst, igst } = splitGst(gstPaise, gstType);
-
-      // All writes below commit together or not at all — a partial failure
-      // (e.g. the invoice create throwing after the order was created) must
-      // never leave an orphaned engagement/order behind with nothing to show
-      // for the customer's payment, nor duplicate rows on the next retry.
-      const { engId, order, project, invoice } = await prisma.$transaction(async (tx) => {
-        const engId = ids.engagementId();
-        await tx.engagement.create({
-          data: {
-            id: engId,
-            clientId: orgId,
-            model: "FPM",
-            commercial: { subtotal: pending.subtotal, gst: pending.gst, total: pending.total },
-            methodology: "MILESTONE",
-            status: "ACTIVE",
-            executedAt: new Date(),
-          },
-        });
-
-        const order = await tx.order.create({
-          data: {
-            id: ids.orderId(),
-            orgId,
-            engagementId: engId,
-            services: [pending.packageId, ...pending.addOns.map((a) => a.id)],
-            subtotal: subtotalPaise,
-            gst: gstPaise,
-            grandTotal: totalPaise,
-            razorpayOrderId: razorpay_order_id,
-            tier: "STARTER",
-            paymentMode: "FULL",
-            primaryContact: { name: pending.name, email: pending.email, phone: pending.phone },
-            status: "PAID",
-            paidAt: new Date(),
-          },
-        });
-
-        // Project.serviceId is a required FK to ServiceUnit, but express-checkout
-        // packages live in the JSON catalogue, not that table — ensure a
-        // placeholder row exists, same as the quotes flow does for the same reason.
-        let service = await tx.serviceUnit.findUnique({ where: { id: pending.packageId } });
-        if (!service) {
-          service = await tx.serviceUnit.create({
-            data: {
-              id: pending.packageId,
-              name: pending.packageName,
-              categoryTier1: "SF-EXP",
-              slug: pending.packageId.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-              baseWeight: 1,
-              sacCode: "998314",
-              status: "PUBLISHED",
-            },
-          });
-        }
-
-        const prefix = (pending.packageId.split("-").slice(0, 2).join("-") || "SF-EXP").toUpperCase();
-        const project = await tx.project.create({
-          data: {
-            id: ids.projectId(prefix),
-            engagementId: engId,
-            orderId: order.id,
-            serviceId: service.id,
-            name: pending.packageName,
-            status: "ACTIVE",
-            configSnapshot: { packageId: pending.packageId, addOns: pending.addOns },
-          },
-        });
-        for (const m of getMilestoneTemplates("STARTER")) {
-          await tx.milestone.create({
-            data: { projectId: project.id, number: 1, name: m.name, paymentPct: m.pct, deliverables: m.deliverables },
-          });
-        }
-
-        for (const type of getContractTypes("STARTER")) {
-          await tx.contract.create({
-            data: { orderId: order.id, engagementId: engId, type, status: "DRAFT" },
-          });
-        }
-
-        const invoice = await tx.invoice.create({
-          data: {
-            id: ids.invoiceId(),
-            orderId: order.id,
-            engagementId: engId,
-            orgId,
-            milestoneRef: "M1",
-            sacCode: "998314",
-            gstType,
-            subtotal: subtotalPaise,
-            cgst,
-            sgst,
-            igst,
-            grandTotal: totalPaise,
-            status: "PAID",
-            paidAt: new Date(),
-            dueDate: new Date(),
-          },
-        });
-
-        return { engId, order, project, invoice };
-      });
-
-      // Everything committed — safe to release the session and fire the
-      // side effects (queues, payment ledger, events) that don't need to be
-      // atomic with the DB rows themselves.
-      await redis.del(key);
-
-      const contracts = await prisma.contract.findMany({ where: { orderId: order.id }, select: { id: true, type: true } });
-      for (const contract of contracts) {
-        await queues.docGen.add("contract-pdf", { type: "contract", contractId: contract.id, contractType: contract.type });
-      }
-      await queues.docGen.add("invoice-pdf", { type: "invoice", invoiceId: invoice.id }).catch(() => {});
-
-      await recordInvoicePayment(invoice, {
-        gateway: "RAZORPAY",
-        gatewayPaymentId: razorpay_payment_id,
-        gatewayOrderId: razorpay_order_id,
-        amount: totalPaise,
-      });
-
-      await emitEvent({ code: "ORDER_PLACED", payload: { orderId: order.id, tier: "STARTER" }, actor: user.id });
-      await emitEvent({ code: "ENGAGEMENT_CREATED", payload: { engagementId: engId }, actor: user.id, engagementId: engId });
-      await emitEvent({ code: "PROJECT_CREATED", payload: { projectId: project.id }, actor: user.id, projectId: project.id, engagementId: engId });
-      await emitEvent({
-        code: "INVOICE_PAID",
-        payload: { invoiceId: invoice.id, gateway: "razorpay", razorpayPaymentId: razorpay_payment_id },
-        actor: user.id,
-        engagementId: engId,
-      });
-
-      return { orderId: order.id };
-    } finally {
-      await cache.unlock(key);
-    }
+    // The Razorpay webhook can win this race and provision the order first
+    // (e.g. the customer's browser died right after paying) — that's fine,
+    // this just returns the same orderId it already created.
+    const result = await provisionExpressCheckoutOrder(razorpay_order_id, razorpay_payment_id);
+    if (!result) return reply.code(404).send({ error: "Checkout session not found or expired" });
+    return result;
   });
 
   // GET /checkout/express/confirmation/:orderId — unauthenticated receipt lookup.
@@ -740,35 +571,6 @@ export async function checkoutRoutes(app: FastifyInstance) {
       },
     };
   });
-}
-
-function getMilestoneTemplates(tier: string) {
-  if (tier === "STARTER") {
-    return [
-      { name: "Delivery", pct: 100, deliverables: ["Deployed site", "Source code"] },
-    ];
-  }
-  if (tier === "GROWTH") {
-    return [
-      { name: "Design & Planning", pct: 30, deliverables: ["Wireframes", "Project plan"] },
-      { name: "Development", pct: 40, deliverables: ["Staging deployment", "Core features"] },
-      { name: "Review & Delivery", pct: 30, deliverables: ["Final deployment", "Documentation"] },
-    ];
-  }
-  // PREMIUM
-  return [
-    { name: "Strategy & Discovery", pct: 20, deliverables: ["Strategy document", "Architecture review"] },
-    { name: "Design", pct: 20, deliverables: ["Full design system", "Prototype"] },
-    { name: "Development Phase 1", pct: 25, deliverables: ["Core features", "Staging"] },
-    { name: "Development Phase 2", pct: 20, deliverables: ["All features", "Integration testing"] },
-    { name: "QA, Delivery & Handover", pct: 15, deliverables: ["Production deployment", "Full documentation", "Training"] },
-  ];
-}
-
-function getContractTypes(tier: string): string[] {
-  if (tier === "STARTER") return ["MICRO_SOW"];
-  if (tier === "GROWTH") return ["SOW", "MSA"];
-  return ["SOW", "MSA", "NDA", "IP_WFH", "DPA"];
 }
 
 async function getEstimateTotals(estimateId: string) {
