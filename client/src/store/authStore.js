@@ -246,7 +246,7 @@ const useAuthStore = create((set, get) => ({
   },
 
   // Helper getters
-  isAdmin: () => ['admin', 'ADMIN'].includes(get().user?.role),
+  isAdmin: () => ['admin', 'ADMIN', 'SUPER_ADMIN'].includes(get().user?.role),
   isTeam: () => ['team', 'TEAM', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS'].includes(get().user?.role),
   isClient: () => ['client', 'CLIENT', 'CLIENT_ADMIN', 'CLIENT_PM', 'CLIENT_VIEWER', 'INDIVIDUAL_CLIENT', 'ORG_OWNER'].includes(get().user?.role),
 

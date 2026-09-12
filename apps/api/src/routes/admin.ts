@@ -15,7 +15,7 @@ const ALL_ROLES = [...INTERNAL_ROLES, ...CLIENT_ROLES] as readonly string[];
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook("preHandler", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SE", "SENIOR_PM"])) return;
+    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SE", "SENIOR_PM"])) return;
   });
 
   // Service CRUD

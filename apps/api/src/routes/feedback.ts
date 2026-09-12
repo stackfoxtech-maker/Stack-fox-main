@@ -32,7 +32,7 @@ export async function feedbackRoutes(app: FastifyInstance) {
   });
 
   app.get("/feedback/admin", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SE", "SENIOR_PM"])) return;
+    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SE", "SENIOR_PM"])) return;
     const items = await prisma.feedback.findMany({
       orderBy: { createdAt: "desc" },
     });
