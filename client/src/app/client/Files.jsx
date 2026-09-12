@@ -3,7 +3,8 @@ import { Files as FilesIcon, Upload, Download, Trash2, FileText, Image } from 'l
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, cn } from '@lib/utils';
 import { Spinner, EmptyState, Button } from '@components/ui/Primitives';
-import api, { apiUpload } from '@lib/api';
+import axios from 'axios';
+import api from '@lib/api';
 import toast from 'react-hot-toast';
 
 export default function Files() {
@@ -23,9 +24,13 @@ export default function Files() {
     if (!file) return;
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      await apiUpload('/files/upload', fd);
+      const { data } = await api.post('/files/upload', {
+        filename: file.name,
+        contentType: file.type || 'application/octet-stream',
+        size: file.size,
+      });
+      const { url } = data.meta.upload;
+      await axios.put(url, file, { headers: { 'Content-Type': file.type || 'application/octet-stream' } });
       toast.success('File uploaded!');
       fetchFiles();
     } catch {

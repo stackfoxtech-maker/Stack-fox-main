@@ -164,9 +164,10 @@ const CR_STATUS_STYLE = {
 
 export function Changes() {
   const [items, setItems] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', urgency: 'MEDIUM' });
+  const [form, setForm] = useState({ projectId: '', title: '', description: '', urgency: 'MEDIUM' });
   const [submitting, setSubmitting] = useState(false);
   const [acting, setActing] = useState(null);
 
@@ -179,18 +180,34 @@ export function Changes() {
   }, []);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => {
+    api.get('/projects').then((r) => setProjects(r.data.data || [])).catch(() => {});
+  }, []);
+
+  const openNew = () => {
+    setForm({ projectId: projects[0]?.id || '', title: '', description: '', urgency: 'MEDIUM' });
+    setShowNew(true);
+  };
 
   const create = async () => {
+    if (!form.projectId) {
+      toast.error('Select which project this change request is for.');
+      return;
+    }
     if (!form.title.trim() || !form.description.trim()) {
       toast.error('Add a title and a description.');
       return;
     }
     setSubmitting(true);
     try {
-      await api.post('/change-requests', form);
+      await api.post(`/projects/${form.projectId}/change-requests`, {
+        title: form.title,
+        description: form.description,
+        urgency: form.urgency,
+      });
       toast.success('Change request submitted.');
       setShowNew(false);
-      setForm({ title: '', description: '', urgency: 'MEDIUM' });
+      setForm({ projectId: '', title: '', description: '', urgency: 'MEDIUM' });
       fetchItems();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not submit that request.');
@@ -225,7 +242,7 @@ export function Changes() {
       />
 
       <div className="mb-5">
-        <Button variant="primary" onClick={() => setShowNew(true)}>+ New change request</Button>
+        <Button variant="primary" onClick={openNew}>+ New change request</Button>
       </div>
 
       {loading ? (
@@ -302,6 +319,12 @@ export function Changes() {
 
       <Modal isOpen={showNew} onClose={() => setShowNew(false)} title="New change request" size="md">
         <div className="space-y-4">
+          <Select
+            label="Project"
+            value={form.projectId}
+            onChange={(e) => setForm({ ...form, projectId: e.target.value })}
+            options={projects.map((p) => ({ value: p.id, label: p.name }))}
+          />
           <Input
             label="Title"
             value={form.title}

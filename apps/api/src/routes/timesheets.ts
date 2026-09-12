@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
-import { clientScope } from "../lib/scope";
+import { clientScope, clientWriteScope } from "../lib/scope";
 import { ok, withId, withIds } from "../lib/http";
 
 export async function timesheetRoutes(app: FastifyInstance) {
@@ -51,8 +51,15 @@ export async function timesheetRoutes(app: FastifyInstance) {
   });
 
   app.post("/timesheets/:id/approve-all", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    const scope = await clientWriteScope(req, reply);
+    if (scope === undefined) return;
     const { id } = req.params as { id: string };
+
+    const owned = await prisma.timesheet.findFirst({
+      where: { id, ...(scope !== null ? { engagement: { clientId: scope } } : {}) },
+      select: { id: true },
+    });
+    if (!owned) return reply.code(404).send({ error: "Timesheet not found" });
 
     await prisma.timesheetLine.updateMany({
       where: { timesheetId: id, status: "PENDING" },
@@ -76,9 +83,19 @@ export async function timesheetRoutes(app: FastifyInstance) {
   });
 
   app.post("/timesheets/:id/query-line", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    const scope = await clientWriteScope(req, reply);
+    if (scope === undefined) return;
     const { id } = req.params as { id: string };
     const { lineId, note } = req.body as { lineId: string; note: string };
+
+    const owned = await prisma.timesheet.findFirst({
+      where: { id, ...(scope !== null ? { engagement: { clientId: scope } } : {}) },
+      select: { id: true },
+    });
+    if (!owned) return reply.code(404).send({ error: "Timesheet not found" });
+
+    const line = await prisma.timesheetLine.findFirst({ where: { id: lineId, timesheetId: id } });
+    if (!line) return reply.code(404).send({ error: "Timesheet line not found" });
 
     await prisma.timesheetLine.update({
       where: { id: lineId },
@@ -94,8 +111,19 @@ export async function timesheetRoutes(app: FastifyInstance) {
   });
 
   app.post("/timesheets/:id/resolve-line", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    const scope = await clientWriteScope(req, reply);
+    if (scope === undefined) return;
+    const { id } = req.params as { id: string };
     const { lineId } = req.body as { lineId: string };
+
+    const owned = await prisma.timesheet.findFirst({
+      where: { id, ...(scope !== null ? { engagement: { clientId: scope } } : {}) },
+      select: { id: true },
+    });
+    if (!owned) return reply.code(404).send({ error: "Timesheet not found" });
+
+    const line = await prisma.timesheetLine.findFirst({ where: { id: lineId, timesheetId: id } });
+    if (!line) return reply.code(404).send({ error: "Timesheet line not found" });
 
     await prisma.timesheetLine.update({
       where: { id: lineId },
