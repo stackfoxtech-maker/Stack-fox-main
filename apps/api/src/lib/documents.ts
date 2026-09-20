@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { prisma } from "@stackfox/prisma";
 import { uploadFile, copyToWorm } from "./storage";
+import { recordDocument } from "./documentIntegrity";
 import { renderDocument } from "./pdf";
 import {
   renderCompanyInvoicePdf,
@@ -136,7 +137,29 @@ export async function buildInvoicePdf(
   });
 
   const key = invoiceKey(invoice);
+  const invoiceArchiveKey = `invoices/${invoice.id}.worm.pdf`;
   await uploadFile(key, pdf, "application/pdf");
+
+  // Invoices previously got neither a content hash nor an archive copy — only
+  // contracts did. An invoice is a document of record too.
+  let invoiceArchived: string | undefined;
+  try {
+    await copyToWorm(invoiceArchiveKey, pdf);
+    invoiceArchived = `worm/${invoiceArchiveKey}`;
+  } catch (err) {
+    console.error(`[documents] archive copy failed for invoice ${invoice.id}:`, err);
+  }
+
+  // The hash lives in the ledger, not on the invoice row — Invoice has no
+  // docHash column and does not need one, since document_ledger is the record.
+  await recordDocument({
+    documentType: "INVOICE",
+    documentId: invoice.id,
+    bytes: pdf,
+    storageKey: key,
+    archiveKey: invoiceArchived,
+  });
+
   await prisma.invoice.update({ where: { id: invoice.id }, data: { fileKey: key } });
   return key;
 }
@@ -185,7 +208,25 @@ export async function buildContractPdf(contractId: string): Promise<string | nul
   const docHash = createHash("sha256").update(pdf).digest("hex");
 
   await uploadFile(key, pdf, "application/pdf");
-  await copyToWorm(wormKey, pdf).catch(() => {});
+
+  // This was `.catch(() => {})`. If the archive copy never landed, nothing said
+  // so — while the contract text asserts the signed copy is retained in
+  // write-once storage. Surface it instead.
+  let contractArchived: string | undefined;
+  try {
+    await copyToWorm(wormKey, pdf);
+    contractArchived = `worm/${wormKey}`;
+  } catch (err) {
+    console.error(`[documents] archive copy failed for contract ${contract.id}:`, err);
+  }
+
+  await recordDocument({
+    documentType: "CONTRACT",
+    documentId: contract.id,
+    bytes: pdf,
+    storageKey: key,
+    archiveKey: contractArchived,
+  });
   await prisma.contract.update({
     where: { id: contract.id },
     data: { fileKey: key, wormKey, docHash },

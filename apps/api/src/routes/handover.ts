@@ -7,6 +7,7 @@ import { decryptSecret } from "../lib/crypto";
 import { toJson } from "../lib/json";
 import { emitEvent } from "../lib/events";
 import { createHash } from "crypto";
+import { issueDownload } from "../lib/documentIntegrity";
 
 /**
  * Post-delivery handover.
@@ -200,7 +201,14 @@ export async function handoverRoutes(app: FastifyInstance) {
     const file = await prisma.file.findFirst({ where: { id: fileId, projectId } });
     if (!file) return reply.code(404).send({ error: "Deliverable not found" });
 
-    return ok({ url: await getPresignedDownload(file.storageKey, 900), name: file.name });
+    return ok({
+      url: await issueDownload(req, {
+        documentType: "HANDOVER",
+        documentId: file.id,
+        storageKey: file.storageKey,
+      }),
+      name: file.name,
+    });
   });
 
   /**

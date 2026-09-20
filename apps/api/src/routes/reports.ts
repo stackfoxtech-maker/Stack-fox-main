@@ -4,6 +4,7 @@ import { clientScope } from "../lib/scope";
 import { LIST_CAP, ok } from "../lib/http";
 import { uploadFile, getPresignedDownload, isStorageConfigured } from "../lib/storage";
 import { SLA_TARGETS } from "@stackfox/core";
+import { issueDownload } from "../lib/documentIntegrity";
 
 /**
  * Client reporting.
@@ -373,7 +374,11 @@ export async function reportRoutes(app: FastifyInstance) {
 
     const key = `reports/${scope ?? "internal"}/${type}-${generatedAt.getTime()}.json`;
     await uploadFile(key, Buffer.from(JSON.stringify(document, null, 2)), "application/json");
-    const downloadUrl = await getPresignedDownload(key, 3600);
+    const downloadUrl = await issueDownload(req, {
+      documentType: "REPORT",
+      documentId: key,
+      storageKey: key,
+    });
 
     return ok({ ...document, key, downloadUrl });
   });

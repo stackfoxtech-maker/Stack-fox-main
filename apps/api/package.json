@@ -20,6 +20,7 @@
     "test:cart": "tsx tests/cart.mts",
     "test:phase0": "tsx tests/phase0-security.mts",
     "test:checkout": "tsx tests/checkout-integrity.mts",
+    "test:documents": "tsx tests/document-integrity.mts",
     "seed:master-admin": "tsx scripts/seed-master-admin.mts",
     "backfill:quotes": "tsx scripts/backfill-paid-quotes.mts"
   },

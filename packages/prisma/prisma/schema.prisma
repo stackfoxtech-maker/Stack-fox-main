@@ -1355,3 +1355,57 @@ model CheckoutSession {
   @@index([expiresAt])
   @@map("checkout_sessions")
 }
+
+/// Tamper-evidence for documents of record.
+///
+/// Only contracts computed a hash, and only contracts got an archive copy —
+/// invoices and accepted quotes got neither. The contract PDF meanwhile states
+/// that "the signed copy is retained in write-once storage as the contract of
+/// record", which was not true of anything the system actually did.
+///
+/// One append-only row per generated document. Nothing in the application
+/// updates or deletes these: the value of a ledger is that its history cannot
+/// be rewritten, so a later document with different bytes is a NEW row and the
+/// disagreement is the evidence.
+model DocumentLedger {
+  id           String   @id @default(uuid())
+  /// INVOICE | CONTRACT | QUOTE | REPORT
+  documentType String   @map("document_type")
+  documentId   String   @map("document_id")
+  /// SHA-256 of the exact bytes written to storage.
+  sha256       String
+  storageKey   String   @map("storage_key")
+  /// Write-once copy, when one was made.
+  archiveKey   String?  @map("archive_key")
+  sizeBytes    Int      @map("size_bytes")
+  generatedAt  DateTime @default(now()) @map("generated_at")
+
+  @@index([documentType, documentId])
+  @@index([sha256])
+  @@map("document_ledger")
+}
+
+/// Who obtained a document, and when.
+///
+/// The only audited access anywhere in the system was credential reveal
+/// (routes/handover.ts). Every invoice and contract download returned a signed
+/// URL and recorded nothing, so "who accessed this contract?" — question one in
+/// any enterprise security review — had no answer.
+///
+/// Recorded when the signed URL is ISSUED, not when the bytes are fetched: the
+/// fetch goes straight to object storage and never reaches this process.
+model DocumentAccess {
+  id           String   @id @default(uuid())
+  userId       String?  @map("user_id")
+  /// INVOICE | CONTRACT | FILE | REPORT | ESTIMATE | HANDOVER
+  documentType String   @map("document_type")
+  documentId   String   @map("document_id")
+  storageKey   String   @map("storage_key")
+  ip           String?
+  userAgent    String?  @map("user_agent")
+  issuedAt     DateTime @default(now()) @map("issued_at")
+
+  @@index([documentType, documentId, issuedAt])
+  @@index([userId, issuedAt])
+  @@map("document_access")
+}

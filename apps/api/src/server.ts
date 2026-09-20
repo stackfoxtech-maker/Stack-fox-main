@@ -57,6 +57,7 @@ import { projectInquiryRoutes } from "./routes/projectInquiries";
 import { reportRoutes } from "./routes/reports";
 import { handoverRoutes } from "./routes/handover";
 import { adminReportRoutes } from "./routes/adminReports";
+import { documentRoutes } from "./routes/documents";
 
 const app = Fastify({
   // Railway terminates TLS and forwards, so without this every request is keyed
@@ -199,6 +200,7 @@ async function start() {
   await app.register(reportRoutes, { prefix: "/" });
   await app.register(handoverRoutes, { prefix: "/" });
   await app.register(adminReportRoutes, { prefix: "/" });
+  await app.register(documentRoutes, { prefix: "/" });
 
   const port = Number(process.env.PORT) || 4000;
   const host = process.env.HOST ?? "0.0.0.0";

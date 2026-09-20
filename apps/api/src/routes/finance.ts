@@ -10,6 +10,7 @@ import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
 import { buildInvoicePdf } from "../lib/documents";
 import { requireRole } from "../plugins/auth";
 import { ADMIN_ROLES, FINANCE_ROLES, FINANCE_VIEW_ROLES } from "@stackfox/core";
+import { issueDownload } from "../lib/documentIntegrity";
 
 const VALID_GST_RATES = [0, 5, 12, 18, 28];
 const INVOICE_STATUSES = [
@@ -132,7 +133,13 @@ export async function financeRoutes(app: FastifyInstance) {
     try {
       const key = invoice.fileKey ?? (await buildInvoicePdf(invoice.id));
       if (!key) return reply.code(404).send({ error: "Invoice not found" });
-      return { url: await getPresignedDownload(key, 900) };
+      return {
+        url: await issueDownload(req, {
+          documentType: "INVOICE",
+          documentId: invoice.id,
+          storageKey: key,
+        }),
+      };
     } catch (err) {
       req.log.error({ err, invoiceId: id }, "invoice pdf download failed");
       return reply.code(500).send({ error: "Could not prepare the invoice PDF." });

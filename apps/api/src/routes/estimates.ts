@@ -6,6 +6,7 @@ import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { isInternalRole } from "@stackfox/core";
+import { issueDownload } from "../lib/documentIntegrity";
 
 /**
  * Estimates were fully open: GET /estimates/:id returned the client's service
@@ -171,8 +172,11 @@ export async function estimateRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
     if (!(await estimateInScope(id, req, reply))) return;
 
-    const { getPresignedDownload } = await import("../lib/storage");
-    const url = await getPresignedDownload(`estimates/${id}.pdf`);
+    const url = await issueDownload(req, {
+      documentType: "ESTIMATE",
+      documentId: id,
+      storageKey: `estimates/${id}.pdf`,
+    });
     return { url };
   });
 

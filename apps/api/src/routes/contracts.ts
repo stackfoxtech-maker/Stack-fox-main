@@ -7,6 +7,7 @@ import { buildContractPdf } from "../lib/documents";
 import { clientScope } from "../lib/scope";
 import { LIST_CAP, ok, withId, withIds } from "../lib/http";
 import { DELIVERY_ROLES } from "@stackfox/core";
+import { issueDownload } from "../lib/documentIntegrity";
 
 export async function contractRoutes(app: FastifyInstance) {
   // GET /contracts
@@ -67,7 +68,13 @@ export async function contractRoutes(app: FastifyInstance) {
     try {
       const key = contract.fileKey ?? (await buildContractPdf(contract.id));
       if (!key) return reply.code(404).send({ error: "Contract not found" });
-      return { url: await getPresignedDownload(key, 900) };
+      return {
+        url: await issueDownload(req, {
+          documentType: "CONTRACT",
+          documentId: contract.id,
+          storageKey: key,
+        }),
+      };
     } catch (err) {
       req.log.error({ err, contractId: id }, "contract pdf download failed");
       return reply.code(500).send({ error: "Could not prepare the contract PDF." });

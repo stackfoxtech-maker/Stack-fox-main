@@ -8,6 +8,7 @@ import { toJson } from "../lib/json";
 import { isStorageConfigured, deleteFile } from "../lib/storage";
 import { encryptSecret, isCredentialEncryptionConfigured } from "../lib/crypto";
 import { VAULT_ROLES } from "@stackfox/core";
+import { issueDownload } from "../lib/documentIntegrity";
 
 /**
  * Resolves a file only if it sits inside the caller's tenant. Files hang off a
@@ -121,7 +122,11 @@ export async function fileRoutes(app: FastifyInstance) {
     const file = await findFileInScope((req.params as { id: string }).id, scope);
     if (!file) return reply.code(404).send({ error: "File not found" });
 
-    const url = await getPresignedDownload(file.storageKey);
+    const url = await issueDownload(req, {
+      documentType: "FILE",
+      documentId: file.id,
+      storageKey: file.storageKey,
+    });
     return ok({ url });
   });
 
