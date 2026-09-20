@@ -5,7 +5,7 @@ import { emitEvent } from "../lib/events";
 import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
 import { buildContractPdf } from "../lib/documents";
 import { clientScope } from "../lib/scope";
-import { ok, withId, withIds } from "../lib/http";
+import { LIST_CAP, ok, withId, withIds } from "../lib/http";
 import { DELIVERY_ROLES } from "@stackfox/core";
 
 export async function contractRoutes(app: FastifyInstance) {
@@ -21,6 +21,7 @@ export async function contractRoutes(app: FastifyInstance) {
     if (engId) where.engagementId = engId;
 
     const contracts = await prisma.contract.findMany({
+      take: LIST_CAP,
       where,
       include: { signatures: true, engagement: { select: { id: true, model: true } } },
       orderBy: { createdAt: "desc" },

@@ -1,11 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
+import { LIST_CAP } from "../lib/http";
 
 export async function reviewRoutes(app: FastifyInstance) {
   app.get("/reviews/my", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const items = await prisma.review.findMany({
+      take: LIST_CAP,
       where: { revieweeId: req.user!.sub },
       orderBy: { createdAt: "desc" },
     });
@@ -16,6 +18,7 @@ export async function reviewRoutes(app: FastifyInstance) {
     if (!requireAuth(req, reply)) return;
 
     const completed = await prisma.review.findMany({
+      take: LIST_CAP,
       where: { reviewerId: req.user!.sub },
       select: { revieweeId: true, period: true },
     });
@@ -50,6 +53,7 @@ export async function reviewRoutes(app: FastifyInstance) {
     const assigneeIds = [...new Set(assignments.map((a) => a.assigneeId))];
 
     const people = await prisma.user.findMany({
+      take: LIST_CAP,
       where: { id: { in: assigneeIds }, isActive: true },
       select: { id: true, name: true, role: true, designation: true },
     });
@@ -125,6 +129,7 @@ export async function reviewRoutes(app: FastifyInstance) {
   app.get("/reviews/completed", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const items = await prisma.review.findMany({
+      take: LIST_CAP,
       where: { reviewerId: req.user!.sub },
       orderBy: { createdAt: "desc" },
     });

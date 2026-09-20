@@ -3,6 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
+import { LIST_CAP } from "../lib/http";
 
 // Client-facing change requests, not tied to a specific project — mirrors
 // the project-scoped /projects/:id/change-requests used by PM-side flows,
@@ -39,6 +40,7 @@ export async function changeRequestRoutes(app: FastifyInstance) {
   app.get("/change-requests", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const items = await prisma.changeRequest.findMany({
+      take: LIST_CAP,
       where: { raisedBy: req.user!.sub },
       orderBy: { createdAt: "desc" },
     });

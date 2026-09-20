@@ -4,7 +4,7 @@ import { requireAuth, requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { SALES_ROLES, canTransition } from "@stackfox/core";
 import { clientScope, clientWriteScope, assertEngagementInScope } from "../lib/scope";
-import { ok, withId, withIds } from "../lib/http";
+import { LIST_CAP, ok, withId, withIds } from "../lib/http";
 
 const ENGAGEMENT_TRANSITIONS = [
   { from: "DRAFT", to: "ACTIVE" },
@@ -59,6 +59,7 @@ export async function engagementRoutes(app: FastifyInstance) {
     if (model) where.model = model;
 
     const items = await prisma.engagement.findMany({
+      take: LIST_CAP,
       where,
       include: { projects: { select: { id: true, name: true, status: true } } },
       orderBy: { createdAt: "desc" },

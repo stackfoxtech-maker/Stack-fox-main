@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { ADMIN_ROLES } from "@stackfox/core";
+import { LIST_CAP } from "../lib/http";
 
 function serializeJob(j: any) {
   return { ...j, _id: j.id, applicationCount: j._count?.applications ?? undefined };
@@ -15,6 +16,7 @@ export async function jobRoutes(app: FastifyInstance) {
   // Public — list open roles
   app.get("/jobs", async () => {
     const jobs = await prisma.job.findMany({
+      take: LIST_CAP,
       where: { status: "OPEN" },
       include: { _count: { select: { applications: true } } },
       orderBy: { createdAt: "desc" },
@@ -65,6 +67,7 @@ export async function jobRoutes(app: FastifyInstance) {
     if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const { id } = req.params as { id: string };
     const applications = await prisma.jobApplication.findMany({
+      take: LIST_CAP,
       where: { jobId: id },
       orderBy: { createdAt: "desc" },
     });

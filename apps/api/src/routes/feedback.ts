@@ -3,6 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { CATALOGUE_ROLES } from "@stackfox/core";
+import { LIST_CAP } from "../lib/http";
 
 export async function feedbackRoutes(app: FastifyInstance) {
   app.post("/feedback", async (req, reply) => {
@@ -35,6 +36,7 @@ export async function feedbackRoutes(app: FastifyInstance) {
   app.get("/feedback/admin", async (req, reply) => {
     if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
     const items = await prisma.feedback.findMany({
+      take: LIST_CAP,
       orderBy: { createdAt: "desc" },
     });
     return { data: items };
@@ -43,6 +45,7 @@ export async function feedbackRoutes(app: FastifyInstance) {
   app.get("/feedback", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const items = await prisma.feedback.findMany({
+      take: LIST_CAP,
       where: { raisedBy: req.user!.sub },
       orderBy: { createdAt: "desc" },
     });

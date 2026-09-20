@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
 import { getPresignedDownload, getPresignedUpload } from "../lib/storage";
 import { clientScope, clientWriteScope, projectIdsInScope, assertProjectInScope } from "../lib/scope";
-import { ok, withId, withIds } from "../lib/http";
+import { LIST_CAP, ok, withId, withIds } from "../lib/http";
 import { toJson } from "../lib/json";
 import { isStorageConfigured, deleteFile } from "../lib/storage";
 import { encryptSecret, isCredentialEncryptionConfigured } from "../lib/crypto";
@@ -106,6 +106,7 @@ export async function fileRoutes(app: FastifyInstance) {
     }
 
     const files = await prisma.file.findMany({
+      take: LIST_CAP,
       where,
       orderBy: { createdAt: "desc" },
       include: { project: { select: { id: true, name: true } } },
@@ -221,6 +222,7 @@ export async function fileRoutes(app: FastifyInstance) {
 
     // Metadata only — the encrypted blob never leaves the server here.
     const entries = await prisma.credentialVault.findMany({
+      take: LIST_CAP,
       where: { projectId },
       select: { id: true, systemName: true, recoveryMethod: true, accessedAt: true },
     });

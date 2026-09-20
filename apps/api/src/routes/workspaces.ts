@@ -8,6 +8,7 @@ import { CATALOGUE_ROLES, resolveDependencies, type DependencyEdge } from "@stac
 import { requireRole } from "../plugins/auth";
 import { isInternalRole } from "@stackfox/core";
 import type { FastifyRequest, FastifyReply } from "fastify";
+import { LIST_CAP } from "../lib/http";
 
 /**
  * Workspace access.
@@ -111,7 +112,8 @@ export async function workspaceRoutes(app: FastifyInstance) {
     }
 
     // Resolve dependencies
-    const deps = await prisma.dependency.findMany({ where: { fromId: serviceId } });
+    const deps = await prisma.dependency.findMany({
+      take: LIST_CAP, where: { fromId: serviceId } });
     const edges: DependencyEdge[] = deps.map((d) => ({
       fromId: d.fromId,
       toId: d.toId,
@@ -169,6 +171,7 @@ export async function workspaceRoutes(app: FastifyInstance) {
 
     // Check if any remaining services require the removed one
     const dependants = await prisma.dependency.findMany({
+      take: LIST_CAP,
       where: { toId: serviceId, type: "REQUIRES" },
     });
     const warnings = dependants
@@ -399,6 +402,7 @@ export async function workspaceRoutes(app: FastifyInstance) {
     const { answers } = req.body as { answers: Record<string, string> };
 
     const services = await prisma.serviceUnit.findMany({
+      take: LIST_CAP,
       where: { status: "PUBLISHED" },
       include: { featureUnits: true, packages: true },
     });

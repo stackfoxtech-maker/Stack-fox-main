@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
 import { DELIVERY_ROLES, isInternalRole } from "@stackfox/core";
-import { ok, withId, paginated, pageParams } from "../lib/http";
+import { LIST_CAP, ok, pageParams, paginated, withId } from "../lib/http";
 import { emitEvent } from "../lib/events";
 
 /**
@@ -32,6 +32,7 @@ export async function taskRoutes(app: FastifyInstance) {
   app.get("/tasks/my", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const tasks = await prisma.task.findMany({
+      take: LIST_CAP,
       where: { assigneeId: req.user!.sub },
       include: { project: true },
       orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],

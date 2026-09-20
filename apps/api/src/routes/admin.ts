@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { bumpSessionEpoch } from "../lib/session";
-import { paginated, pageParams } from "../lib/http";
+import { LIST_CAP, pageParams, paginated } from "../lib/http";
 import { CATALOGUE_ROLES, CLIENT_ROLES, INTERNAL_ROLES, isAdminRole, isInternalRole } from "@stackfox/core";
 import { ok, withId } from "../lib/http";
 import {
@@ -366,6 +366,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
     const orderEngIds = orders.map((o) => o.engagementId).filter((id): id is string => Boolean(id));
     const engagements = await prisma.engagement.findMany({
+      take: LIST_CAP,
       where: { id: { in: orderEngIds } },
       include: {
         client: {

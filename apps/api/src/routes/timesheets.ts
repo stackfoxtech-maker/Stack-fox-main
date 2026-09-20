@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { clientScope } from "../lib/scope";
-import { ok, withId, withIds } from "../lib/http";
+import { LIST_CAP, ok, withId, withIds } from "../lib/http";
 
 export async function timesheetRoutes(app: FastifyInstance) {
   app.get("/timesheets", async (req, reply) => {
@@ -12,6 +12,7 @@ export async function timesheetRoutes(app: FastifyInstance) {
 
     const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
     const userEngagements = await prisma.engagement.findMany({
+      take: LIST_CAP,
       where: { clientId: user?.orgId || undefined },
       select: { id: true },
     });
@@ -30,6 +31,7 @@ export async function timesheetRoutes(app: FastifyInstance) {
     }
 
     const items = await prisma.timesheet.findMany({
+      take: LIST_CAP,
       where,
       include: { lines: true },
       orderBy: { weekStart: "desc" },

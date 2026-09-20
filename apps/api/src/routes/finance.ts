@@ -5,7 +5,7 @@ import * as ids from "../lib/id";
 import { verifyRazorpayWebhookSignature, getStripe } from "../lib/payments";
 import { recordInvoicePayment } from "../lib/billing";
 import { clientScope } from "../lib/scope";
-import { pageParams } from "../lib/http";
+import { LIST_CAP, pageParams } from "../lib/http";
 import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
 import { buildInvoicePdf } from "../lib/documents";
 import { requireRole } from "../plugins/auth";
@@ -542,6 +542,7 @@ export async function financeRoutes(app: FastifyInstance) {
     const endDate = new Date(Date.UTC(y, m, 1)); // exclusive
 
     const invoices = await prisma.invoice.findMany({
+      take: LIST_CAP,
       where: {
         createdAt: { gte: startDate, lt: endDate },
         status: { in: ["SENT", "VIEWED", "PARTIALLY_PAID", "PAID", "OVERDUE", "DISPUTED"] },

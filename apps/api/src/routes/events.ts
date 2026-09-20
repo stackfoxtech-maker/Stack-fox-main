@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { clientScope } from "../lib/scope";
-import { paginated, pageParams } from "../lib/http";
+import { LIST_CAP, pageParams, paginated } from "../lib/http";
 
 export async function eventRoutes(app: FastifyInstance) {
   app.get("/events", async (req, reply) => {
@@ -16,6 +16,7 @@ export async function eventRoutes(app: FastifyInstance) {
     // projects, and drop rows that belong to neither.
     if (scope !== null) {
       const engagements = await prisma.engagement.findMany({
+        take: LIST_CAP,
         where: { clientId: scope },
         select: { id: true, projects: { select: { id: true } } },
       });

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
-import { ok } from "../lib/http";
+import { LIST_CAP, ok } from "../lib/http";
 import { FINANCE_VIEW_ROLES } from "@stackfox/core";
 
 /**
@@ -114,6 +114,7 @@ async function revenueReport(from: Date, to: Date) {
 
 async function projectsReport(from: Date, to: Date) {
   const projects = await prisma.project.findMany({
+    take: LIST_CAP,
     where: { createdAt: { gte: from, lte: to } },
     include: {
       milestones: true,

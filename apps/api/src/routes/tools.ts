@@ -6,6 +6,7 @@ import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
+import { LIST_CAP } from "../lib/http";
 import {
   computeInvoice,
   renderGstInvoicePdf,
@@ -65,6 +66,7 @@ Return as JSON with sections: performance, seo, accessibility, security, mobile,
     });
 
     const serviceUnits = await prisma.serviceUnit.findMany({
+      take: LIST_CAP,
       where: { OR: [{ id: { in: services } }, { slug: { in: services } }] },
       include: { featureUnits: true },
     });

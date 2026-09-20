@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
-import { paginated, pageParams } from "../lib/http";
+import { LIST_CAP, pageParams, paginated } from "../lib/http";
 import { clientScope, projectIdsInScope } from "../lib/scope";
 
 function serializeTicket(t: any) {
@@ -56,6 +56,7 @@ export async function ticketRoutes(app: FastifyInstance) {
   app.get("/support", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const tickets = await prisma.ticket.findMany({
+      take: LIST_CAP,
       where: { raisedBy: req.user!.sub },
       include: { replies: { orderBy: { createdAt: "asc" } } },
       orderBy: { createdAt: "desc" },

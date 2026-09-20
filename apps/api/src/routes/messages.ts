@@ -5,6 +5,7 @@ import { emitEvent } from "../lib/events";
 import { isInternalRole } from "@stackfox/core";
 import { toJson } from "../lib/json";
 import { resolveOrgId } from "../lib/scope";
+import { LIST_CAP } from "../lib/http";
 
 /**
  * Client <-> StackFox messaging.
@@ -21,6 +22,7 @@ import { resolveOrgId } from "../lib/scope";
 
 async function participantsFor(ids: string[]) {
   const users = await prisma.user.findMany({
+    take: LIST_CAP,
     where: { id: { in: ids } },
     select: { id: true, name: true, role: true },
   });
@@ -132,6 +134,7 @@ export async function messageRoutes(app: FastifyInstance) {
     }
 
     const messages = await prisma.message.findMany({
+      take: LIST_CAP,
       where: { conversationId: id },
       orderBy: { createdAt: "asc" },
     });

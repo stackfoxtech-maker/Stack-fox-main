@@ -4,7 +4,7 @@ import { requireAuth, requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { hashPassword, verifyPassword } from "../lib/password";
 import { toJson } from "../lib/json";
-import { ok, withId, paginated, pageParams } from "../lib/http";
+import { LIST_CAP, ok, pageParams, paginated, withId } from "../lib/http";
 import { ADMIN_ROLES, CLIENT_ROLES, INTERNAL_ROLES, isInternalRole } from "@stackfox/core";
 import { ensurePersonalOrg } from "../lib/scope";
 import { bumpSessionEpoch } from "../lib/session";
@@ -205,6 +205,7 @@ export async function userRoutes(app: FastifyInstance) {
     }
 
     const staff = await prisma.user.findMany({
+      take: LIST_CAP,
       where: { isActive: true, role: { in: [...INTERNAL_ROLES] } },
       orderBy: { name: "asc" },
       select: {

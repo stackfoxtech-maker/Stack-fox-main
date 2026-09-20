@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { clientScope, clientWriteScope, assertProjectInScope } from "../lib/scope";
-import { ok, withIds } from "../lib/http";
+import { LIST_CAP, ok, withIds } from "../lib/http";
 import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
 import { decryptSecret } from "../lib/crypto";
 import { toJson } from "../lib/json";
@@ -92,6 +92,7 @@ export async function handoverRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
 
     const projects = await prisma.project.findMany({
+      take: LIST_CAP,
       where: {
         ...(scope !== null ? { engagement: { clientId: scope } } : {}),
         OR: [{ status: { in: ["COMPLETED", "ACTIVE"] } }, { handover: { isNot: null } }],

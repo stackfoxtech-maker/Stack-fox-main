@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { isInternalRole } from "@stackfox/core";
-import { ok, withIds } from "../lib/http";
+import { LIST_CAP, ok, withIds } from "../lib/http";
 import * as ids from "../lib/id";
 import { queues } from "../lib/queue";
 
@@ -21,6 +21,7 @@ export async function referralRoutes(app: FastifyInstance) {
     const where = isInternalRole(req.user!.role) ? {} : { referrerId: req.user!.sub };
 
     const items = await prisma.referral.findMany({
+      take: LIST_CAP,
       where,
       include: { referrer: { select: { id: true, name: true, email: true } } },
       orderBy: { createdAt: "desc" },

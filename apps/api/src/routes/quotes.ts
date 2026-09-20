@@ -6,7 +6,7 @@ import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
 import { isAdminRole, paymentModeAmount } from "@stackfox/core";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
-import { paginated, pageParams } from "../lib/http";
+import { LIST_CAP, pageParams, paginated } from "../lib/http";
 import { ensurePersonalOrg } from "../lib/scope";
 import * as ids from "../lib/id";
 
@@ -291,6 +291,7 @@ export async function quoteRoutes(app: FastifyInstance) {
     if (isAdmin) {
       const userIds = [...new Set(quotes.map((q) => q.userId))];
       const users = await prisma.user.findMany({
+        take: LIST_CAP,
         where: { id: { in: userIds } },
         select: { id: true, name: true, email: true, phone: true },
       });

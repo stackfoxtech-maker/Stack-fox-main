@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { clientScope } from "../lib/scope";
-import { ok } from "../lib/http";
+import { LIST_CAP, ok } from "../lib/http";
 import { uploadFile, getPresignedDownload, isStorageConfigured } from "../lib/storage";
 import { SLA_TARGETS } from "@stackfox/core";
 
@@ -48,6 +48,7 @@ function recentMonths(n: number): string[] {
 async function engagementIdsFor(scope: string | null): Promise<string[] | null> {
   if (scope === null) return null;
   const rows = await prisma.engagement.findMany({
+    take: LIST_CAP,
     where: { clientId: scope },
     select: { id: true },
   });
@@ -110,6 +111,7 @@ async function timelineReport(scope: string | null) {
   const engIds = await engagementIdsFor(scope);
 
   const projects = await prisma.project.findMany({
+    take: LIST_CAP,
     where: engIds ? { engagementId: { in: engIds } } : {},
     include: { milestones: { orderBy: { number: "asc" } } },
   });
@@ -164,6 +166,7 @@ async function revisionsReport(scope: string | null) {
   const engIds = await engagementIdsFor(scope);
 
   const projects = await prisma.project.findMany({
+    take: LIST_CAP,
     where: engIds ? { engagementId: { in: engIds } } : {},
     include: {
       milestones: true,

@@ -6,7 +6,7 @@ import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import { canTransition, PROJECT_TRANSITIONS } from "@stackfox/core";
 import { clientScope, clientWriteScope, assertProjectInScope } from "../lib/scope";
-import { paginated, pageParams } from "../lib/http";
+import { LIST_CAP, pageParams, paginated } from "../lib/http";
 
 export async function projectRoutes(app: FastifyInstance) {
   // GET /projects
@@ -94,7 +94,8 @@ export async function projectRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
     if (!(await assertProjectInScope(id, scope, reply))) return;
 
-    const milestones = await prisma.milestone.findMany({ where: { projectId: id }, orderBy: { number: "asc" } });
+    const milestones = await prisma.milestone.findMany({
+      take: LIST_CAP, where: { projectId: id }, orderBy: { number: "asc" } });
     return { data: milestones };
   });
 
