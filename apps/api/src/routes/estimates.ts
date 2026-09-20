@@ -4,6 +4,39 @@ import { canonicalHash, sha256 } from "../lib/hash";
 import { emitEvent } from "../lib/events";
 import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
+import type { FastifyRequest, FastifyReply } from "fastify";
+import { isInternalRole } from "@stackfox/core";
+
+/**
+ * Estimates were fully open: GET /estimates/:id returned the client's service
+ * canvas, custom lines, discount and grand total to anyone, and the ids are
+ * only 4 decimal digits wide (lib/id.ts), so the whole book was enumerable in
+ * ~10,000 requests per month-prefix.
+ *
+ * Same rule workspaces.ts already applies: an estimate whose workspace has no
+ * owner is a guest draft, reachable by its unguessable id so the pre-signup
+ * builder keeps working. Once it belongs to a user, only that user or internal
+ * staff may read it.
+ */
+async function estimateInScope(id: string, req: FastifyRequest, reply: FastifyReply) {
+  const est = await prisma.estimate.findUnique({
+    where: { id },
+    include: { workspace: { select: { userId: true } } },
+  });
+  if (!est) {
+    reply.code(404).send({ error: "Estimate not found" });
+    return null;
+  }
+
+  const ownerId = est.workspace?.userId ?? null;
+  if (!ownerId) return est;                                  // guest draft
+  if (isInternalRole(req.user?.role)) return est;
+  if (req.user?.sub === ownerId) return est;
+
+  // 404 not 403 — a 403 would confirm the id exists.
+  reply.code(404).send({ error: "Estimate not found" });
+  return null;
+}
 
 export async function estimateRoutes(app: FastifyInstance) {
   // POST /estimates — generate from workspace
@@ -122,35 +155,19 @@ export async function estimateRoutes(app: FastifyInstance) {
 
   // GET /estimates/:id
   app.get("/estimates/:id", async (req, reply) => {
-    const { id } = req.params as { id: string };
-    const est = await prisma.estimate.findUnique({ where: { id } });
-    if (!est) return reply.code(404).send({ error: "Estimate not found" });
+    const est = await estimateInScope((req.params as { id: string }).id, req, reply);
+    if (!est) return;
     return est;
   });
 
   // GET /estimates/:id/pdf
   app.get("/estimates/:id/pdf", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const est = await prisma.estimate.findUnique({ where: { id } });
-    if (!est) return reply.code(404).send({ error: "Estimate not found" });
+    if (!(await estimateInScope(id, req, reply))) return;
 
     const { getPresignedDownload } = await import("../lib/storage");
     const url = await getPresignedDownload(`estimates/${id}.pdf`);
     return { url };
   });
 
-  // POST /estimates/:id/refresh
-  app.post("/estimates/:id/refresh", async (req, reply) => {
-    const { id } = req.params as { id: string };
-    const est = await prisma.estimate.findUnique({ where: { id } });
-    if (!est) return reply.code(404).send({ error: "Estimate not found" });
-
-    // Re-generate with current rates by creating workspace-like body
-    const snapshot = est.snapshot as any;
-    const ws = await prisma.workspace.findUnique({ where: { id: est.workspaceId } });
-    if (!ws) return reply.code(404).send({ error: "Workspace not found" });
-
-    // Trigger new estimate generation
-    return reply.redirect(307, "/estimates");
-  });
 }

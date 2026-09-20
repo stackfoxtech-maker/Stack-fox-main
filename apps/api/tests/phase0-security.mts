@@ -119,6 +119,31 @@ for (const url of blocked) {
 const allowed = await assertPublicHttpUrl("https://example.com/hook");
 check(`webhook destination allowed: https://example.com/hook`, allowed.ok === true, allowed.reason ?? "");
 
+// ── SF-H3: estimates must not be readable by strangers ──────────────────────
+const estOwner = await register("est-owner");
+const estStranger = await register("est-stranger");
+
+const ws = await call("POST", "/workspaces", estOwner.token, { canvas: [] });
+const wsId = ws.b?.id ?? ws.b?._id;
+const est = await call("POST", "/estimates", estOwner.token, { workspaceId: wsId });
+const estId = est.b?.id ?? est.b?._id;
+
+if (!estId) {
+  check("estimate fixture created", false, `could not create an estimate: ${JSON.stringify(est.b)?.slice(0, 120)}`);
+} else {
+  const anon = await call("GET", `/estimates/${estId}`);
+  check(`anonymous GET /estimates/:id -> ${anon.s}`, anon.s === 404, "expect 404, never 403");
+
+  const stranger = await call("GET", `/estimates/${estId}`, estStranger.token);
+  check(`another user GET /estimates/:id -> ${stranger.s}`, stranger.s === 404, "expect 404");
+
+  const owner = await call("GET", `/estimates/${estId}`, estOwner.token);
+  check(`owner GET /estimates/:id -> ${owner.s}`, owner.s === 200, "expect 200");
+
+  const anonPdf = await call("GET", `/estimates/${estId}/pdf`);
+  check(`anonymous GET /estimates/:id/pdf -> ${anonPdf.s}`, anonPdf.s === 404, "expect 404");
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 console.log("\n--- PHASE 0 SECURITY ---");
 let failed = 0;

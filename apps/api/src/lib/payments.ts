@@ -78,10 +78,28 @@ export function verifyRazorpayWebhookSignature(rawBody: string, signature: strin
 // Stripe integration
 let stripe: any = null;
 
+/**
+ * The `stripe` package is NOT a dependency of this app — only Razorpay is
+ * wired up. Setting STRIPE_SECRET_KEY used to throw MODULE_NOT_FOUND on the
+ * first line of the Stripe webhook handler, so every delivery 500'd and no
+ * payment was ever recorded. Fail with something a human can act on instead.
+ *
+ * Decide one way or the other: add `stripe` to dependencies, or delete this
+ * helper, routes/finance.ts#/webhooks/stripe and the STRIPE_* env vars.
+ */
 export function getStripe() {
-  if (!stripe && process.env.STRIPE_SECRET_KEY) {
+  if (stripe || !process.env.STRIPE_SECRET_KEY) return stripe;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Stripe = require("stripe");
     stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  } catch {
+    console.error(
+      "[payments] STRIPE_SECRET_KEY is set but the `stripe` package is not " +
+        "installed. Stripe webhooks will be rejected. Run `pnpm --filter " +
+        "@stackfox/api add stripe`, or unset STRIPE_SECRET_KEY.",
+    );
+    stripe = null;
   }
   return stripe;
 }
