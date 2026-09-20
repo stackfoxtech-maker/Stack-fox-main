@@ -5,8 +5,8 @@ import { ok } from "../lib/http";
 import { isStorageConfigured } from "../lib/storage";
 import { isCredentialEncryptionConfigured } from "../lib/crypto";
 import { redis } from "../lib/redis";
+import { CATALOGUE_ROLES } from "@stackfox/core";
 
-const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "SE", "SENIOR_PM"];
 
 /**
  * Environment and feature-flag settings for the admin dashboard.
@@ -18,7 +18,7 @@ const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "SE", "SENIOR_PM"];
  */
 export async function settingsRoutes(app: FastifyInstance) {
   app.get("/settings", async (req, reply) => {
-    if (!requireRole(req, reply, ADMIN_ROLES)) return;
+    if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
 
     const [flags, redisUp] = await Promise.all([
       prisma.flag.findMany({ orderBy: { id: "asc" } }).catch(() => []),

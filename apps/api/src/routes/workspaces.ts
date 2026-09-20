@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { canonicalHash } from "../lib/hash";
 import { emitEvent } from "../lib/events";
 import { generateStructured } from "../lib/gemini";
-import { resolveDependencies, type DependencyEdge } from "@stackfox/core";
+import { CATALOGUE_ROLES, resolveDependencies, type DependencyEdge } from "@stackfox/core";
 
 import { requireRole } from "../plugins/auth";
 import { isInternalRole } from "@stackfox/core";
@@ -314,7 +314,7 @@ export async function workspaceRoutes(app: FastifyInstance) {
   app.post("/workspaces/:id/se-approve", async (req, reply) => {
     // Solution-engineer sign-off. Checking only that *someone* was logged in
     // let a client approve their own workspace and skip review entirely.
-    if (!requireRole(req, reply, ["SE", "SENIOR_PM", "ADMIN", "SUPER_ADMIN"])) return;
+    if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
     const { id } = req.params as { id: string };
 
     const updated = await prisma.workspace.update({
@@ -335,7 +335,7 @@ export async function workspaceRoutes(app: FastifyInstance) {
   app.post("/workspaces/:id/se-return", async (req, reply) => {
     // Solution-engineer sign-off. Checking only that *someone* was logged in
     // let a client approve their own workspace and skip review entirely.
-    if (!requireRole(req, reply, ["SE", "SENIOR_PM", "ADMIN", "SUPER_ADMIN"])) return;
+    if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
     const { id } = req.params as { id: string };
     const { notes } = req.body as { notes: string };
 

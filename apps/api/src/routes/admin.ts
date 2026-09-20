@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { bumpSessionEpoch } from "../lib/session";
 import { paginated, pageParams } from "../lib/http";
-import { INTERNAL_ROLES, CLIENT_ROLES } from "@stackfox/core";
+import { CATALOGUE_ROLES, CLIENT_ROLES, INTERNAL_ROLES, isAdminRole, isInternalRole } from "@stackfox/core";
 import { ok, withId } from "../lib/http";
 import {
   updateServiceNameInCatalogue,
@@ -15,7 +15,7 @@ const ALL_ROLES = [...INTERNAL_ROLES, ...CLIENT_ROLES] as readonly string[];
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook("preHandler", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SE", "SENIOR_PM"])) return;
+    if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
   });
 
   // Service CRUD
@@ -194,6 +194,24 @@ export async function adminRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
     const body = (req.body ?? {}) as Record<string, unknown>;
 
+    // The tree-level guard also admits SE and SENIOR_PM. Role changes were
+    // already restricted below, but isActive and orgId were not — so a
+    // mid-level staff account could deactivate every administrator, and the
+    // bumpSessionEpoch at the end made that lockout immediate.
+    const callerIsAdmin = isAdminRole(req.user!.role);
+    const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+    if (!target) return reply.code(404).send({ error: "User not found" });
+
+    if ((body.isActive !== undefined || body.orgId !== undefined) && !callerIsAdmin) {
+      return reply.code(403).send({
+        error: "Only an administrator can change a user's status or organisation.",
+      });
+    }
+    // Nobody may act on an account that outranks them, whatever the field.
+    if (!callerIsAdmin && isInternalRole(target.role)) {
+      return reply.code(403).send({ error: "Insufficient permissions for this account." });
+    }
+
     const data: Record<string, unknown> = {};
     if (typeof body.name === "string") data.name = body.name;
     if (typeof body.phone === "string") data.phone = body.phone;
@@ -201,7 +219,7 @@ export async function adminRoutes(app: FastifyInstance) {
     if (typeof body.orgId === "string" || body.orgId === null) data.orgId = body.orgId;
 
     if (body.role !== undefined) {
-      if (!["ADMIN", "SUPER_ADMIN"].includes(req.user!.role)) {
+      if (!callerIsAdmin) {
         return reply.code(403).send({ error: "Only an administrator can change a user's role." });
       }
       if (typeof body.role !== "string" || !ALL_ROLES.includes(body.role)) {

@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
+import { CATALOGUE_ROLES } from "@stackfox/core";
 
 export async function feedbackRoutes(app: FastifyInstance) {
   app.post("/feedback", async (req, reply) => {
@@ -32,7 +33,7 @@ export async function feedbackRoutes(app: FastifyInstance) {
   });
 
   app.get("/feedback/admin", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SE", "SENIOR_PM"])) return;
+    if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
     const items = await prisma.feedback.findMany({
       orderBy: { createdAt: "desc" },
     });

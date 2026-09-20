@@ -5,7 +5,7 @@ import { emitEvent } from "../lib/events";
 import { hashPassword, verifyPassword } from "../lib/password";
 import { toJson } from "../lib/json";
 import { ok, withId, paginated, pageParams } from "../lib/http";
-import { INTERNAL_ROLES, CLIENT_ROLES, isInternalRole } from "@stackfox/core";
+import { ADMIN_ROLES, CLIENT_ROLES, INTERNAL_ROLES, isInternalRole } from "@stackfox/core";
 import { ensurePersonalOrg } from "../lib/scope";
 import { bumpSessionEpoch } from "../lib/session";
 
@@ -29,7 +29,7 @@ const PUBLIC_SELECT = {
 
 export async function userRoutes(app: FastifyInstance) {
   app.get("/users", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN"])) return;
+    if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const q = req.query as Record<string, string>;
     const { page, limit, skip } = pageParams(q);
 
@@ -56,7 +56,7 @@ export async function userRoutes(app: FastifyInstance) {
   });
 
   app.post("/users", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN"])) return;
+    if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const { name, email, password, role, designation } = req.body as {
       name?: string;
       email?: string;
@@ -218,7 +218,7 @@ export async function userRoutes(app: FastifyInstance) {
   // ── Admin ──────────────────────────────────────────────────────────────────
 
   app.put("/users/:id", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN"])) return;
+    if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const { id } = req.params as { id: string };
     const { role, isActive } = req.body as { role?: string; isActive?: boolean };
 

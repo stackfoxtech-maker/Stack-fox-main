@@ -4,11 +4,12 @@ import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
 import { requireRole } from "../plugins/auth";
+import { SALES_ROLES } from "@stackfox/core";
 
 export async function rfpRoutes(app: FastifyInstance) {
   app.get("/rfps", async (req, reply) => {
     // RFPs are StackFox's own bid pipeline, not client-facing.
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SALES", "SENIOR_PM", "SE"])) return;
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const { status, orgId } = req.query as Record<string, string>;
     const where: any = {};
     if (status) where.status = status;
@@ -87,7 +88,7 @@ export async function rfpRoutes(app: FastifyInstance) {
   });
 
   app.get("/rfps/:id/sdns", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SALES", "SENIOR_PM", "SE"])) return;
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const { id } = req.params as { id: string };
     return prisma.sdnNote.findMany({
       where: { rfpId: id },

@@ -5,6 +5,7 @@ import { emitEvent } from "../lib/events";
 import { queues } from "../lib/queue";
 import { toJson } from "../lib/json";
 import { ok, withId, withIds, paginated, pageParams } from "../lib/http";
+import { SALES_ROLES } from "@stackfox/core";
 
 /**
  * Sales CRM — leads, pipeline, follow-ups and proposals.
@@ -15,7 +16,6 @@ import { ok, withId, withIds, paginated, pageParams } from "../lib/http";
  * plain intake rows, and the `stage` column (not `status`) drives the pipeline.
  */
 
-const SALES_ROLES = ["ADMIN", "SUPER_ADMIN", "SALES", "SENIOR_PM", "SE", "PM"];
 
 const STAGES = [
   "new", "contacted", "interested", "meeting", "demo", "proposal",

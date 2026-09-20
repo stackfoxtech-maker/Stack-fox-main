@@ -9,6 +9,7 @@ import { pageParams } from "../lib/http";
 import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
 import { buildInvoicePdf } from "../lib/documents";
 import { requireRole } from "../plugins/auth";
+import { ADMIN_ROLES, FINANCE_ROLES, FINANCE_VIEW_ROLES } from "@stackfox/core";
 
 const VALID_GST_RATES = [0, 5, 12, 18, 28];
 const INVOICE_STATUSES = [
@@ -144,7 +145,7 @@ export async function financeRoutes(app: FastifyInstance) {
   // vs IGST inter-State) and a validated `gstRate`, not a hardcoded 18% IGST —
   // an intra-State invoice created here used to book all its tax as IGST.
   app.post("/invoices", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE"])) return;
+    if (!requireRole(req, reply, FINANCE_ROLES)) return;
     const body = (req.body ?? {}) as Record<string, any>;
 
     if (!body.orgId) return reply.code(400).send({ error: "orgId is required" });
@@ -204,7 +205,7 @@ export async function financeRoutes(app: FastifyInstance) {
   // client token. Supports partial settlement via `amount` (paise); without it
   // the remaining balance is assumed paid.
   app.patch("/invoices/:id/utr", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE"])) return;
+    if (!requireRole(req, reply, FINANCE_ROLES)) return;
     const { id } = req.params as { id: string };
     const { utr, paidAt, amount } = req.body as {
       utr?: string;
@@ -261,7 +262,7 @@ export async function financeRoutes(app: FastifyInstance) {
 
   // PATCH /invoices/:id/status — admin-only workflow transition.
   app.patch("/invoices/:id/status", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN"])) return;
+    if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const { id } = req.params as { id: string };
     const { status } = req.body as { status?: string };
 
@@ -486,7 +487,7 @@ export async function financeRoutes(app: FastifyInstance) {
   // day after it was issued. Amounts are the outstanding balance, and every
   // open-receivable status is counted (partial and disputed included).
   app.get("/finance/ar-aging", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM"])) return;
+    if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
     const invoices = await prisma.invoice.findMany({
       where: { status: { in: OPEN_RECEIVABLE } },
       orderBy: { createdAt: "asc" },
@@ -511,13 +512,13 @@ export async function financeRoutes(app: FastifyInstance) {
 
   // WIP summary
   app.get("/finance/wip", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM"])) return;
+    if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
     return prisma.wipLedger.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
   });
 
   // Rev-rec summary
   app.get("/finance/rev-rec", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM"])) return;
+    if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
     return prisma.revrecLedger.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
   });
 
@@ -529,7 +530,7 @@ export async function financeRoutes(app: FastifyInstance) {
   // UTC-hosted server does not shift invoices between months. Rows are split
   // into B2B (recipient has a GSTIN) and B2CS.
   app.get("/finance/gstr1", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM"])) return;
+    if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
     const { month, year } = req.query as { month?: string; year?: string };
     const m = parseInt(String(month ?? ""), 10);
     const y = parseInt(String(year ?? ""), 10);

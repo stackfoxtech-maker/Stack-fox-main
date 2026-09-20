@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
+import { ADMIN_ROLES } from "@stackfox/core";
 
 function serializeJob(j: any) {
   return { ...j, _id: j.id, applicationCount: j._count?.applications ?? undefined };
@@ -61,7 +62,7 @@ export async function jobRoutes(app: FastifyInstance) {
 
   // Admin — applications for a job
   app.get("/jobs/:id/applications", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN"])) return;
+    if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const { id } = req.params as { id: string };
     const applications = await prisma.jobApplication.findMany({
       where: { jobId: id },
@@ -72,7 +73,7 @@ export async function jobRoutes(app: FastifyInstance) {
 
   // Admin — update application status
   app.put("/jobs/applications/:appId", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN"])) return;
+    if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const { appId } = req.params as { appId: string };
     const { status } = req.body as { status: string };
     const updated = await prisma.jobApplication.update({

@@ -245,18 +245,31 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
-  // Helper getters
-  isAdmin: () => ['admin', 'ADMIN'].includes(get().user?.role),
-  isTeam: () => ['team', 'TEAM', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS'].includes(get().user?.role),
-  isClient: () => ['client', 'CLIENT', 'CLIENT_ADMIN', 'CLIENT_PM', 'CLIENT_VIEWER', 'INDIVIDUAL_CLIENT', 'ORG_OWNER'].includes(get().user?.role),
+  // ── Role helpers ──────────────────────────────────────────────────────────
+  // MUST stay in step with packages/core/src/roles/index.ts. The client is not
+  // in the pnpm workspace so it cannot import that module — until it is, these
+  // lists are a hand-maintained mirror, and drift here is a real lockout.
+  //
+  // What drifted before: SUPER_ADMIN (the role the master-admin seeder assigns)
+  // was in none of these, so the account with the most access was classed as a
+  // client and sent to /app/client. SALES and FINANCE were in none either, and
+  // getDashboardPath() returned a route whose own guard rejected them — an
+  // infinite redirect.
+  isAdmin: () => ['admin', 'ADMIN', 'SUPER_ADMIN'].includes(get().user?.role),
+  isSales: () => ['SALES'].includes(get().user?.role),
+  isTeam: () =>
+    ['team', 'TEAM', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS', 'FINANCE', 'SALES']
+      .includes(get().user?.role),
+  isClient: () =>
+    ['client', 'CLIENT', 'CLIENT_ADMIN', 'CLIENT_PM', 'CLIENT_VIEWER', 'INDIVIDUAL_CLIENT', 'ORG_OWNER', 'REFERRER']
+      .includes(get().user?.role),
 
-  // Single source of truth for "which dashboard does this role land on" —
-  // role strings are inconsistently cased across the app (ADMIN vs team),
-  // so this must go through the role-family checks above, never a bare
-  // `role === 'admin'` comparison (that silently sends every real admin,
-  // whose role is "ADMIN", to the client dashboard instead).
+  // Single source of truth for "which dashboard does this role land on".
+  // Every path returned here must be admitted by that route's own guard in
+  // routes.jsx, or the redirect loops.
   getDashboardPath: () => {
     if (get().isAdmin()) return '/app/admin';
+    if (get().isSales()) return '/app/team/sales';
     if (get().isTeam()) return '/app/team';
     return '/app/client';
   },

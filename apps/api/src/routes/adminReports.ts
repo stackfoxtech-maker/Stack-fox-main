@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { ok } from "../lib/http";
+import { FINANCE_VIEW_ROLES } from "@stackfox/core";
 
 /**
  * Business reporting for the admin dashboard.
@@ -14,7 +15,6 @@ import { ok } from "../lib/http";
  * Amounts are stored in paise and returned in rupees.
  */
 
-const INTERNAL = ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM"];
 const TYPES = ["revenue", "projects", "users", "services"] as const;
 type ReportType = (typeof TYPES)[number];
 
@@ -370,7 +370,7 @@ function toCsv(rows: string[][]): string {
 
 export async function adminReportRoutes(app: FastifyInstance) {
   app.get("/admin/reports/:type", async (req, reply) => {
-    if (!requireRole(req, reply, INTERNAL)) return;
+    if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
 
     const { type } = req.params as { type: string };
     if (!TYPES.includes(type as ReportType)) {
@@ -394,7 +394,7 @@ export async function adminReportRoutes(app: FastifyInstance) {
    * being assembled client-side, so the file matches the report exactly.
    */
   app.get("/admin/reports/:type/export", async (req, reply) => {
-    if (!requireRole(req, reply, INTERNAL)) return;
+    if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
 
     const { type } = req.params as { type: string };
     if (!TYPES.includes(type as ReportType)) {

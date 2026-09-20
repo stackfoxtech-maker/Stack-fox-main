@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
-import { canTransition } from "@stackfox/core";
+import { SALES_ROLES, canTransition } from "@stackfox/core";
 import { clientScope, clientWriteScope, assertEngagementInScope } from "../lib/scope";
 import { ok, withId, withIds } from "../lib/http";
 
@@ -18,7 +18,7 @@ export async function engagementRoutes(app: FastifyInstance) {
   app.post("/engagements", async (req, reply) => {
     // Engagements are created by StackFox as part of order fulfilment, never
     // self-served by a client.
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "PM", "SENIOR_PM", "SALES"])) return;
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const body = req.body as any;
     const { engagementId } = await import("../lib/id");
     return prisma.engagement.create({

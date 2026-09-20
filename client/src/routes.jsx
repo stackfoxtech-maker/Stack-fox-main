@@ -284,7 +284,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Client dashboard */}
-      <Route path="app/client" element={<ProtectedRoute roles={['client', 'admin', 'CLIENT', 'CLIENT_ADMIN', 'CLIENT_PM', 'CLIENT_VIEWER', 'INDIVIDUAL_CLIENT', 'ORG_OWNER', 'ADMIN']} />}>
+      <Route path="app/client" element={<ProtectedRoute roles={['client', 'admin', 'CLIENT', 'CLIENT_ADMIN', 'CLIENT_PM', 'CLIENT_VIEWER', 'INDIVIDUAL_CLIENT', 'ORG_OWNER', 'REFERRER', 'ADMIN', 'SUPER_ADMIN']} />}>
         <Route element={<ClientLayout />}>
           <Route index element={<ClientOverview />} />
           <Route path="projects" element={<ClientProjects />} />
@@ -317,7 +317,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Team dashboard */}
-      <Route path="app/team" element={<ProtectedRoute roles={['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS', 'ADMIN']} />}>
+      <Route path="app/team" element={<ProtectedRoute roles={['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS', 'FINANCE', 'SALES', 'ADMIN', 'SUPER_ADMIN']} />}>
         <Route element={<TeamLayout />}>
           <Route index element={<TeamDashboard />} />
           <Route path="tasks" element={<TeamTasks />} />
@@ -341,7 +341,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Salesperson Dashboard */}
-      <Route path="app/team/sales" element={<ProtectedRoute roles={['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'ADMIN']} />}>
+      <Route path="app/team/sales" element={<ProtectedRoute roles={['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'SALES', 'ADMIN', 'SUPER_ADMIN']} />}>
         <Route element={<SalesLayout />}>
           <Route index element={<SalesDashboard />} />
           <Route path="leads" element={<SalesLeads />} />
@@ -357,7 +357,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Admin dashboard */}
-      <Route path="app/admin" element={<ProtectedRoute roles={['admin', 'ADMIN']} />}>
+      <Route path="app/admin" element={<ProtectedRoute roles={['admin', 'ADMIN', 'SUPER_ADMIN']} />}>
         <Route element={<AdminLayout />}>
           <Route index element={<AdminOverview />} />
           <Route path="catalog" element={<AdminCatalog />} />

@@ -143,7 +143,7 @@ export function requireAuth(req: FastifyRequest, reply: FastifyReply) {
   return true;
 }
 
-export function requireRole(req: FastifyRequest, reply: FastifyReply, roles: string[]) {
+export function requireRole(req: FastifyRequest, reply: FastifyReply, roles: readonly string[]) {
   if (!requireAuth(req, reply)) return false;
   if (!roles.includes(req.user!.role)) {
     reply.code(403).send({ error: "Insufficient permissions" });

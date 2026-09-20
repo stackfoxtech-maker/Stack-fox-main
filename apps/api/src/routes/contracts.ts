@@ -6,6 +6,7 @@ import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
 import { buildContractPdf } from "../lib/documents";
 import { clientScope } from "../lib/scope";
 import { ok, withId, withIds } from "../lib/http";
+import { DELIVERY_ROLES } from "@stackfox/core";
 
 export async function contractRoutes(app: FastifyInstance) {
   // GET /contracts
@@ -74,7 +75,7 @@ export async function contractRoutes(app: FastifyInstance) {
 
   // POST /contracts/:id/countersign — StackFox side
   app.post("/contracts/:id/countersign", async (req, reply) => {
-    if (!requireRole(req, reply, ["PM", "SENIOR_PM", "ADMIN", "CEO"])) return;
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
     const { id } = req.params as { id: string };
 
     const contract = await prisma.contract.findUnique({ where: { id } });

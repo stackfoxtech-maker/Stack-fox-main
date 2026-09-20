@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { applyTierMultiplier, computeEstimateRange } from "../lib/estimate";
 import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
-import { paymentModeAmount } from "@stackfox/core";
+import { isAdminRole, paymentModeAmount } from "@stackfox/core";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
 import { paginated, pageParams } from "../lib/http";
@@ -272,7 +272,9 @@ export async function quoteRoutes(app: FastifyInstance) {
     const { page: p, limit: l, skip } = pageParams(q);
 
     // Admins manage every quote; regular users only see their own.
-    const isAdmin = req.user!.role === "ADMIN";
+    // SUPER_ADMIN is an administrator too — a bare === "ADMIN" comparison
+    // silently scoped the master admin to their own rows.
+    const isAdmin = isAdminRole(req.user!.role);
     const where = isAdmin ? {} : { userId: req.user!.sub };
 
     const [quotes, total] = await Promise.all([
@@ -382,7 +384,9 @@ export async function quoteRoutes(app: FastifyInstance) {
     const { status } = req.body as { status: string };
 
     // Only admins drive the sales workflow; owners may just cancel their own quote.
-    const isAdmin = req.user!.role === "ADMIN";
+    // SUPER_ADMIN is an administrator too — a bare === "ADMIN" comparison
+    // silently scoped the master admin to their own rows.
+    const isAdmin = isAdminRole(req.user!.role);
     const ALLOWED = ["draft", "reviewing", "approved", "invoiced", "cancelled"];
     if (!isAdmin && !(status === "cancelled")) {
       return reply.code(403).send({ error: "Only admins can update quote workflow status" });

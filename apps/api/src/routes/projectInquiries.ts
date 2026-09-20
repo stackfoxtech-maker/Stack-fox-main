@@ -1,10 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
+import { CATALOGUE_ROLES } from "@stackfox/core";
 
 export async function projectInquiryRoutes(app: FastifyInstance) {
   app.get("/project-inquiries", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SE", "SENIOR_PM"])) return;
+    if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
     const { status, page = "1", limit = "20" } = req.query as Record<string, string>;
     const where: any = {};
     if (status && status !== "all") where.status = status;

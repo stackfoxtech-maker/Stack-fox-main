@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
-import { computeHealthState } from "@stackfox/core";
+import { DELIVERY_ROLES, computeHealthState } from "@stackfox/core";
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { requireRole } from "../plugins/auth";
 import { clientScope } from "../lib/scope";
@@ -59,7 +59,7 @@ export async function programRoutes(app: FastifyInstance) {
 
   app.patch("/programs/:id", async (req, reply) => {
     // Programme structure is managed by StackFox, not the client.
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SENIOR_PM", "PM"])) return;
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
     const { id } = req.params as { id: string };
     const body = (req.body ?? {}) as Record<string, unknown>;
 

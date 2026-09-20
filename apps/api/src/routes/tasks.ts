@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
-import { isInternalRole } from "@stackfox/core";
+import { DELIVERY_ROLES, isInternalRole } from "@stackfox/core";
 import { ok, withId, paginated, pageParams } from "../lib/http";
 import { emitEvent } from "../lib/events";
 
@@ -18,7 +18,6 @@ import { emitEvent } from "../lib/events";
  * that single number across every team member, so every figure was wrong.
  */
 
-const STAFF_WRITE = ["ADMIN", "SUPER_ADMIN", "SENIOR_PM", "PM", "SE"];
 const OPEN_STATUSES = ["backlog", "todo", "in-progress", "review"];
 
 function serializeTask(t: any) {
@@ -130,7 +129,7 @@ export async function taskRoutes(app: FastifyInstance) {
   });
 
   app.post("/tasks", async (req, reply) => {
-    if (!requireRole(req, reply, STAFF_WRITE)) return;
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
     const { title, description, assigneeId, projectId, priority, status, dueDate } =
       req.body as Record<string, string | undefined>;
 
@@ -192,7 +191,7 @@ export async function taskRoutes(app: FastifyInstance) {
 
     // The assignee can move their own work; leads can edit anyone's. A client
     // has no business here at all.
-    const isLead = STAFF_WRITE.includes(req.user!.role);
+    const isLead = (DELIVERY_ROLES as readonly string[]).includes(req.user!.role);
     if (!isLead && task.assigneeId !== req.user!.sub) {
       return reply.code(404).send({ message: "Task not found" });
     }
@@ -230,7 +229,7 @@ export async function taskRoutes(app: FastifyInstance) {
   });
 
   app.delete("/tasks/:id", async (req, reply) => {
-    if (!requireRole(req, reply, STAFF_WRITE)) return;
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
     const { id } = req.params as { id: string };
     const task = await prisma.task.findUnique({ where: { id } });
     if (!task) return reply.code(404).send({ message: "Task not found" });
