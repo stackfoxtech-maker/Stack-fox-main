@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { createHash, createHmac } from "crypto";
 
 export function sha256(data: string | Buffer): string {
   return createHash("sha256").update(data).digest("hex");
@@ -12,6 +12,5 @@ export function canonicalHash(canvas: unknown[]): string {
 }
 
 export function hmacSign(payload: string, secret: string): string {
-  const { createHmac } = require("crypto");
   return createHmac("sha256", secret).update(payload).digest("hex");
 }

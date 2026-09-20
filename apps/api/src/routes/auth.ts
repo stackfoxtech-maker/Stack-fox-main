@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { redis } from "../lib/redis";
-import { signToken, signRefreshToken, requireAuth, verifyToken } from "../plugins/auth";
+import { signToken, signRefreshToken, requireAuth, verifyToken, verifyTokenOfType } from "../plugins/auth";
 import { randomInt } from "crypto";
 import * as ids from "../lib/id";
 import { hashPassword, verifyPassword, needsRehash, generateToken, hashToken } from "../lib/password";
@@ -177,7 +177,9 @@ export async function authRoutes(app: FastifyInstance) {
 
     let decoded: { sub: string };
     try {
-      decoded = verifyToken(presented) as unknown as { sub: string };
+      // Refresh tokens only — an access token presented here must not renew a
+      // session even though it verifies under the same secret.
+      decoded = verifyTokenOfType(presented, "refresh") as unknown as { sub: string };
     } catch {
       return reply.code(401).send({ message: "Invalid token" });
     }
@@ -559,16 +561,47 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // POST /auth/whatsapp/callback
-  app.post("/auth/whatsapp/callback", async (req, reply) => {
+  //
+  // This was the only auth endpoint with no per-route rate limit and no
+  // wrong-guess counter, so a 6-digit code was brute-forceable at the global
+  // 100/min with no lockout — and on success it logged in (or silently created)
+  // whoever held that phone number, internal roles included.
+  app.post(
+    "/auth/whatsapp/callback",
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    async (req, reply) => {
     const { phone, code } = req.body as { phone: string; code: string };
+    if (!phone || !code) return reply.code(400).send({ error: "phone and code are required" });
+
+    const attemptsKey = `otp-attempts:${phone}`;
+    let attempts = 0;
+    try { attempts = Number((await redis.get(attemptsKey)) ?? 0); } catch {}
+    if (attempts >= OTP_MAX_ATTEMPTS) {
+      return reply.code(429).send({ error: "Too many incorrect attempts. Request a new code." });
+    }
+
     let stored: string | null = null;
     try { stored = await redis.get(`otp:${phone}`); } catch {}
     if (!stored || stored !== code) {
+      // Same counter shape as the email path: capped against the 6-digit space
+      // and expiring with the code rather than lingering.
+      try {
+        const ttl = await redis.ttl(`otp:${phone}`);
+        await redis.set(attemptsKey, attempts + 1, "EX", ttl > 0 ? ttl : 300);
+      } catch {}
       return reply.code(401).send({ error: "Invalid OTP" });
     }
-    try { await redis.del(`otp:${phone}`); } catch {}
+    try {
+      await redis.del(`otp:${phone}`);
+      await redis.del(attemptsKey);
+    } catch {}
 
     let user = await prisma.user.findFirst({ where: { phone } });
+    if (user && isInternalRole(user.role)) {
+      // A staff account must not be reachable through an unauthenticated phone
+      // callback. Staff sign in with a password.
+      return reply.code(403).send({ error: "This account cannot sign in this way." });
+    }
     if (!user) {
       user = await prisma.user.create({
         data: {

@@ -59,6 +59,10 @@ import { handoverRoutes } from "./routes/handover";
 import { adminReportRoutes } from "./routes/adminReports";
 
 const app = Fastify({
+  // Railway terminates TLS and forwards, so without this every request is keyed
+  // by the proxy's address: the rate limiter below would throttle all users as
+  // one, and req.ip would never be the real client.
+  trustProxy: true,
   logger: {
     transport:
       process.env.NODE_ENV === "development"
@@ -86,7 +90,18 @@ async function start() {
     credentials: true,
   });
   await app.register(helmet);
-  await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
+  // Backed by Redis, not the default in-process LRU. Counters in memory reset
+  // on every deploy and do not aggregate across replicas, so horizontal scaling
+  // silently multiplied every limit — including the ones guarding OTP and the
+  // unauthenticated assistant endpoint.
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
+    redis,
+    // Redis being unreachable must not lock everyone out; fall back to
+    // in-process counting rather than rejecting.
+    skipOnError: true,
+  });
 
   // The web client sets `Content-Type: application/json` on every request, so a
   // POST with no body (an action route like .../accept or .../reveal) arrives

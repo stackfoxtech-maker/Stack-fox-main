@@ -1,4 +1,5 @@
 import Razorpay from "razorpay";
+import { createHmac, timingSafeEqual } from "crypto";
 
 let _razorpay: InstanceType<typeof Razorpay> | null = null;
 
@@ -30,12 +31,18 @@ export async function createRazorpayOrder(
   });
 }
 
+/** Constant-time hex comparison. Length is not secret; the digest is. */
+function hmacMatches(expected: string, presented: string): boolean {
+  const a = Buffer.from(expected);
+  const b = Buffer.from(presented);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export function verifyRazorpaySignature(
   bodyOrOrderId: string,
   signatureOrPaymentId: string,
   maybeSignature?: string,
 ): boolean {
-  const { createHmac } = require("crypto");
   const secret = process.env.RAZORPAY_KEY_SECRET ?? "";
   let body: string;
   let signature: string;
@@ -48,8 +55,11 @@ export function verifyRazorpaySignature(
     signature = signatureOrPaymentId;
   }
 
+  // Was `expected === signature`, which short-circuits on the first differing
+  // character and leaks the digest a byte at a time. The webhook verifier below
+  // already did this correctly.
   const expected = createHmac("sha256", secret).update(body).digest("hex");
-  return expected === signature;
+  return hmacMatches(expected, signature);
 }
 
 /**
@@ -59,13 +69,10 @@ export function verifyRazorpaySignature(
  * raw request bytes, so pass `req.rawBody`, never a re-serialised object.
  */
 export function verifyRazorpayWebhookSignature(rawBody: string, signature: string): boolean {
-  const { createHmac, timingSafeEqual } = require("crypto");
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET ?? "";
   if (!secret || !signature || !rawBody) return false;
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-  const a = Buffer.from(expected);
-  const b = Buffer.from(signature);
-  return a.length === b.length && timingSafeEqual(a, b);
+  return hmacMatches(expected, signature);
 }
 
 // Stripe integration
