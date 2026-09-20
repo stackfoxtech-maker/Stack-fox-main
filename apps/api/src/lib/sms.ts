@@ -55,17 +55,6 @@ export async function sendPhoneOtp(phone: string): Promise<OtpResult> {
   }
 }
 
-/** Resend the current OTP (voice or text). */
-export async function retryPhoneOtp(phone: string, channel: "text" | "voice" = "text"): Promise<OtpResult> {
-  const params = new URLSearchParams({ mobile: normalisePhone(phone), retrytype: channel });
-  try {
-    const res = await fetch(`${BASE}/retry?${params}`, { method: "POST", headers: authHeaders(), signal: AbortSignal.timeout(TIMEOUT.messaging) });
-    const body = (await res.json().catch(() => ({}))) as { type?: string; message?: string };
-    return body.type === "success" ? { ok: true } : { ok: false, error: body.message ?? `HTTP ${res.status}` };
-  } catch (err) {
-    return { ok: false, error: (err as Error).message };
-  }
-}
 
 /** Verify a code against MSG91's record for `phone`. */
 export async function verifyPhoneOtp(phone: string, code: string): Promise<OtpResult> {

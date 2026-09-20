@@ -13,8 +13,6 @@ function getRazorpay() {
   return _razorpay;
 }
 
-export const razorpay = { get instance() { return getRazorpay(); } };
-
 export async function createRazorpayOrder(
   amountPaise: number,
   currency = "INR",
@@ -102,18 +100,4 @@ export function getStripe() {
     stripe = null;
   }
   return stripe;
-}
-
-export async function createStripePaymentIntent(
-  amountPaise: number,
-  currency = "inr",
-  metadata?: Record<string, string>,
-) {
-  const s = getStripe();
-  if (!s) throw new Error("Stripe not configured");
-  return s.paymentIntents.create({
-    amount: amountPaise,
-    currency,
-    metadata: metadata ?? {},
-  });
 }

@@ -94,9 +94,3 @@ export function decryptSecret(blob: Buffer | Uint8Array): string {
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
 }
-
-/** True when the blob predates encryption and should be rewritten. */
-export function isLegacyPlaintext(blob: Buffer | Uint8Array): boolean {
-  const buf = Buffer.from(blob);
-  return buf.length > 0 && buf[0] !== VERSION;
-}

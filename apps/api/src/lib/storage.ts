@@ -102,12 +102,3 @@ export async function copyToWorm(key: string, body: Buffer): Promise<string> {
   await uploadFile(wormKey, body, "application/pdf", true);
   return wormKey;
 }
-
-/** Streams an object back into the API process (PDF regeneration, WORM copies). */
-export async function downloadFile(key: string): Promise<Buffer> {
-  const { data, error } = await supabase().storage.from(BUCKET).download(key);
-  if (error || !data) {
-    throw new Error(`Storage download failed for ${key}: ${error?.message ?? "no data"}`);
-  }
-  return Buffer.from(await data.arrayBuffer());
-}
