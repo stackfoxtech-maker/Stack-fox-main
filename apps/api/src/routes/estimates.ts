@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { canonicalHash, sha256 } from "../lib/hash";
+import { estimateInputHash } from "../lib/hash";
 import { emitEvent } from "../lib/events";
 import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
@@ -114,7 +114,13 @@ export async function estimateRoutes(app: FastifyInstance) {
       timelineMult,
     };
 
-    const hash = sha256(JSON.stringify(snapshot));
+    // Must match what routes/checkout.ts recomputes, or the G-039 drift
+    // guard rejects every checkout.
+    const hash = estimateInputHash({
+      canvas,
+      customLines: ws.customLineItems,
+      timelineMult,
+    });
 
     const estimate = await prisma.estimate.create({
       data: {

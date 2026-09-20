@@ -27,6 +27,7 @@ const SUITES = [
   "staff-surfaces.mts",
   "cart.mts",
   "phase0-security.mts",
+  "checkout-integrity.mts",
 ];
 
 function run(file: string): Promise<number> {

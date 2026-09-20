@@ -1324,3 +1324,34 @@ model BlogPost {
 
   @@map("blog_posts")
 }
+
+/// An in-progress purchase.
+///
+/// This lived only under `checkout:<sid>` in Redis, so a restart, failover or
+/// eviction mid-checkout returned "Session expired" and the customer started
+/// over — potentially after the gateway had already charged them. The local
+/// compose file runs Redis with allkeys-lru, so eviction is explicit there.
+///
+/// Postgres is now the source of truth and Redis is a read cache in front of
+/// it. `consumedAt` and `resultOrderId` also give /complete somewhere durable
+/// to record that it already ran, which is what makes it idempotent.
+model CheckoutSession {
+  id              String    @id // ckout_<ts>_<rand>
+  estimateId      String    @map("estimate_id")
+  userId          String?   @map("user_id")
+  tier            String    @default("GROWTH")
+  step            Int       @default(1)
+  /// accountDetails, engagementDetails, paymentTerms, clauseSelections, signed
+  data            Json      @default("{}")
+  razorpayOrderId String?   @map("razorpay_order_id")
+  /// Set inside the same transaction that provisions, so a retry is a no-op.
+  consumedAt      DateTime? @map("consumed_at")
+  resultOrderId   String?   @map("result_order_id")
+  expiresAt       DateTime  @map("expires_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([estimateId])
+  @@index([expiresAt])
+  @@map("checkout_sessions")
+}

@@ -75,6 +75,8 @@ export async function paymentRoutes(app: FastifyInstance) {
     // The HMAC over order_id|payment_id (signed with the key secret) is the real
     // gate here, but this still mutates an invoice — require a session too.
     if (!requireAuth(req, reply)) return;
+    const scope = await clientScope(req, reply);
+    if (scope === undefined) return;
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId } = req.body as {
       razorpay_order_id?: string;
       razorpay_payment_id?: string;
@@ -91,9 +93,22 @@ export async function paymentRoutes(app: FastifyInstance) {
       return reply.code(400).send({ message: "Signature verification failed" });
     }
 
-    const invoice = await prisma.invoice.findUnique({ where: { id: paymentId } });
+    // Scoped like /create-order directly above. A valid signature is still the
+    // real gate, but an unscoped findUnique broke the tenancy invariant the
+    // rest of the codebase maintains.
+    const invoice = await prisma.invoice.findFirst({
+      where: { id: paymentId, ...(scope !== null ? { orgId: scope } : {}) },
+    });
     if (!invoice || invoice.razorpayOrderId !== razorpay_order_id) {
       return reply.code(400).send({ message: "Order does not match this invoice" });
+    }
+
+    // Replaying a valid handshake used to re-run everything below.
+    // recordInvoicePayment is internally idempotent on gatewayPaymentId, but
+    // the invoice update and the INVOICE_PAID event were not — so a replay fanned
+    // a duplicate event out to notifications and every subscribed webhook.
+    if (invoice.status === "PAID" && invoice.utr === razorpay_payment_id) {
+      return { data: { success: true, invoiceId: invoice.id, status: "paid", replayed: true } };
     }
 
     // This flow always creates an order for the full outstanding balance (see
