@@ -42,12 +42,11 @@ import { messageRoutes } from "./routes/messages";
 import { fileRoutes } from "./routes/files";
 import { ticketRoutes } from "./routes/tickets";
 import { notificationRoutes } from "./routes/notifications";
-import { publicApiRoutes } from "./routes/publicApi";
 import { adminRoutes } from "./routes/admin";
 import { toolRoutes } from "./routes/tools";
 import { blogRoutes } from "./routes/blog";
 import { cartRoutes } from "./routes/cart";
-import { quoteRoutes, backfillPaidQuotes } from "./routes/quotes";
+import { quoteRoutes } from "./routes/quotes";
 import { analyticsRoutes } from "./routes/analytics";
 import { referralRoutes } from "./routes/referrals";
 import { leadRoutes } from "./routes/leads";
@@ -158,7 +157,18 @@ async function start() {
   await app.register(fileRoutes, { prefix: "/" });
   await app.register(ticketRoutes, { prefix: "/" });
   await app.register(notificationRoutes, { prefix: "/" });
-  await app.register(publicApiRoutes, { prefix: "/" });
+  // publicApiRoutes (/v1/*) is DELIBERATELY NOT REGISTERED.
+  //
+  // Its only guard was `requireApiKey`, which checked that the `x-api-key`
+  // header was non-empty and returned true — it never validated the value. That
+  // left 13 unauthenticated, untenanted endpoints serving every org's
+  // engagements, invoices, projects, tickets and events, plus a webhook
+  // registration endpoint that accepted an arbitrary URL for an arbitrary org.
+  //
+  // Re-enable ONLY once requireApiKey resolves the presented key against
+  // ApiKey.keyHash (the model already exists, see schema.prisma), rejects
+  // revoked keys, and every /v1 query is scoped by the key's orgId.
+  // No first-party client calls /v1/*, so nothing depends on this today.
   await app.register(adminRoutes, { prefix: "/" });
   await app.register(toolRoutes, { prefix: "/" });
   await app.register(blogRoutes, { prefix: "/" });
@@ -193,7 +203,13 @@ async function start() {
   await app.listen({ port, host });
   app.log.info(`API listening on ${host}:${port}`);
 
-  backfillPaidQuotes().catch((err) => app.log.error(err, "Quote backfill failed"));
+  // backfillPaidQuotes() used to run here on every boot. It is a one-off data
+  // migration, and for any org whose engagements happened to have no projects
+  // attached it DELETED that org's invoices, contracts and engagements before
+  // re-provisioning from a quote — scoped to the whole org, not to the quote.
+  // Run it deliberately instead:
+  //   pnpm --filter @stackfox/api backfill:quotes -- --dry-run
+  // See apps/api/scripts/backfill-paid-quotes.mts.
 
   const close = async (signal: string) => {
     app.log.info(`${signal} received, shutting down`);

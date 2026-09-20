@@ -155,7 +155,33 @@ async function provisionQuote(quote: any, userId: string) {
   return { engId, projects, contracts, invoice };
 }
 
-export async function backfillPaidQuotes() {
+export interface BackfillOptions {
+  /** Report what would change and write nothing. Default true — this is destructive. */
+  dryRun?: boolean;
+  /**
+   * Permit the branch that DELETES an org's invoices, contracts and engagements
+   * before re-provisioning. Off by default: the deletion is scoped to the whole
+   * org rather than to the quote, so an unrelated engagement for the same client
+   * is in range. Only enable after reviewing a dry run.
+   */
+  allowDestructive?: boolean;
+}
+
+/**
+ * One-off migration for quotes that were paid before provisioning existed.
+ *
+ * This used to run on every API boot from server.ts. It must not: the branch
+ * below deletes commercial records, and its trigger condition — an org whose
+ * engagements have no projects attached — is reachable in normal operation,
+ * because /checkout/:sid/complete skips services it cannot resolve.
+ *
+ * Run it deliberately via apps/api/scripts/backfill-paid-quotes.mts.
+ */
+export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
+  const dryRun = opts.dryRun ?? true;
+  const allowDestructive = opts.allowDestructive ?? false;
+  if (dryRun) console.log("[backfill] DRY RUN — no writes will be made");
+
   const paidQuotes = await prisma.quote.findMany({ where: { status: "paid" } });
   for (const quote of paidQuotes) {
     const orgId = await ensurePersonalOrg(quote.userId);
@@ -176,6 +202,12 @@ export async function backfillPaidQuotes() {
           const tier = quote.tier || "GROWTH";
           const contractTypes = getContractTypes(tier);
           const checkoutDetails = (quote.checkoutDetails as any) ?? {};
+          if (dryRun) {
+            console.log(
+              `[backfill] would add ${contractTypes.length} contracts to engagement ${eng.id} (quote ${quote.quoteNumber})`,
+            );
+            continue;
+          }
           for (const type of contractTypes) {
             await prisma.contract.create({
               data: {
@@ -194,7 +226,31 @@ export async function backfillPaidQuotes() {
 
     // If there are engagements but none have projects, the previous backfill created
     // empty engagements. Delete them so we can create a proper one.
+    if (existingEngs.length && !allowDestructive) {
+      console.warn(
+        `[backfill] quote ${quote.quoteNumber}: org ${orgId} has ${existingEngs.length} ` +
+          `engagement(s) with no projects. Re-provisioning would DELETE their invoices and ` +
+          `contracts. Skipped — pass --allow-destructive after reviewing.`,
+      );
+      continue;
+    }
+
+    if (dryRun) {
+      console.log(
+        `[backfill] would delete ${existingEngs.length} engagement(s) for org ${orgId} ` +
+          `and re-provision from quote ${quote.quoteNumber}`,
+      );
+      continue;
+    }
+
     for (const eng of existingEngs) {
+      const [invoices, contracts] = await Promise.all([
+        prisma.invoice.count({ where: { engagementId: eng.id } }),
+        prisma.contract.count({ where: { engagementId: eng.id } }),
+      ]);
+      console.warn(
+        `[backfill] DELETING engagement ${eng.id} with ${invoices} invoice(s) and ${contracts} contract(s)`,
+      );
       await prisma.invoice.deleteMany({ where: { engagementId: eng.id } });
       await prisma.contract.deleteMany({ where: { engagementId: eng.id } });
       await prisma.engagement.delete({ where: { id: eng.id } });

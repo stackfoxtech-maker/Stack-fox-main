@@ -131,6 +131,9 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.43
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       prisma:
         specifier: ^5.20.0
         version: 5.22.0

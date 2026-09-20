@@ -649,22 +649,50 @@ export async function authRoutes(app: FastifyInstance) {
       billingAddress: Record<string, unknown>;
     };
 
+    if (!body?.name?.trim()) {
+      return reply.code(400).send({ error: "An organisation name is required" });
+    }
+
+    // This endpoint writes the caller's role, so it has to care who the caller
+    // already is. It used to elevate anyone to ORG_OWNER unconditionally, which
+    // let a deliberately read-only CLIENT_VIEWER escape its restriction, let any
+    // client self-assign the role that POST /orgs/:id/members trusts, and
+    // silently moved the caller out of whatever org they already belonged to.
+    //
+    // Provisioning an org for yourself is only meaningful when you have none.
+    // Moving between orgs is a staff action, not a self-service one.
+    const caller = await prisma.user.findUnique({
+      where: { id: req.user!.sub },
+      select: { orgId: true, role: true },
+    });
+    if (!caller) return reply.code(401).send({ error: "Authentication required" });
+
+    const isStaff = isInternalRole(caller.role);
+    if (caller.orgId && !isStaff) {
+      return reply.code(409).send({
+        error: "This account already belongs to an organisation.",
+      });
+    }
+
     // TODO: validate GSTIN via GSTN API
     const org = await prisma.org.create({
       data: {
         id: ids.orgId(),
-        name: body.name,
+        name: body.name.trim(),
         type: body.type,
         gstin: body.gstin,
         pan: body.pan,
-        billingAddress: toJson(body.billingAddress),
+        billingAddress: toJson(body.billingAddress ?? {}),
       },
     });
 
-    await prisma.user.update({
-      where: { id: req.user!.sub },
-      data: { orgId: org.id, role: "ORG_OWNER" },
-    });
+    // Staff create orgs on behalf of clients — they keep their own role and org.
+    if (!isStaff) {
+      await prisma.user.update({
+        where: { id: req.user!.sub },
+        data: { orgId: org.id, role: "ORG_OWNER" },
+      });
+    }
 
     return org;
   });
@@ -713,6 +741,9 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const { email, role } = req.body as { email: string; role: string };
+    if (!email?.includes("@")) {
+      return reply.code(400).send({ error: "A valid email address is required" });
+    }
 
     // A client-side org manager may only assign client-side roles within their
     // own org — never grant staff/admin access. Staff callers may assign any
@@ -725,6 +756,38 @@ export async function authRoutes(app: FastifyInstance) {
 
     let user = await prisma.user.findUnique({ where: { email } });
     if (user) {
+      // The role check above stops a client manager granting staff access. It
+      // did NOT stop them pointing this at an account that already belongs to
+      // somebody else: the row was simply moved into the caller's org and
+      // re-roled. Posting admin@stackfox.tech with role CLIENT_VIEWER demoted
+      // the platform administrator into the attacker's tenant.
+      //
+      // An account is claimable only when it is unclaimed: no other org, no
+      // internal role, and no credential of its own.
+      const callerIsStaff = isInternalRole(caller.role);
+      const authData = (user.authData as Record<string, unknown> | null) ?? {};
+      const hasOwnCredential =
+        Boolean(authData.passwordHash) || Boolean(authData.googleId);
+
+      if (!callerIsStaff) {
+        if (user.orgId && user.orgId !== id) {
+          return reply.code(409).send({
+            error: "That email already belongs to another organisation.",
+          });
+        }
+        if (isInternalRole(user.role)) {
+          return reply.code(403).send({
+            error: "That email belongs to a StackFox staff account.",
+          });
+        }
+        if (hasOwnCredential && user.orgId !== id) {
+          return reply.code(409).send({
+            error:
+              "That email already has a StackFox account. Ask them to accept an invitation instead.",
+          });
+        }
+      }
+
       user = await prisma.user.update({
         where: { id: user.id },
         data: { orgId: id, role },

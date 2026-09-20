@@ -26,6 +26,7 @@ const SUITES = [
   "reports-handover.mts",
   "staff-surfaces.mts",
   "cart.mts",
+  "phase0-security.mts",
 ];
 
 function run(file: string): Promise<number> {
