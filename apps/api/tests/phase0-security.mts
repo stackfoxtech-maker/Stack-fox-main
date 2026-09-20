@@ -38,13 +38,30 @@ async function call(method: string, path: string, token?: string, body?: unknown
   return { s: res.status, b: parsed };
 }
 
+/**
+ * Registration is rate-limited to 10/min per IP, and that limit is now backed
+ * by Redis so it genuinely holds across the whole run rather than resetting.
+ * This suite needs more accounts than that, so back off on 429 rather than
+ * weakening the control just to make a test pass.
+ */
 async function register(tag: string) {
   const email = `p0-${tag}-${stamp}@example.com`;
-  const r = await call("POST", "/auth/register", undefined, {
-    name: `P0 ${tag}`, email, password: "testpass1234",
-  });
-  if (!r.b?.data?.accessToken) throw new Error(`register ${tag} failed: ${JSON.stringify(r.b)}`);
-  return { email, token: r.b.data.accessToken as string, userId: r.b.data.user.id as string, orgId: r.b.data.user.orgId as string };
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const r = await call("POST", "/auth/register", undefined, {
+      name: `P0 ${tag}`, email, password: "testpass1234",
+    });
+    if (r.b?.data?.accessToken) {
+      return {
+        email,
+        token: r.b.data.accessToken as string,
+        userId: r.b.data.user.id as string,
+        orgId: r.b.data.user.orgId as string,
+      };
+    }
+    if (r.s !== 429) throw new Error(`register ${tag} failed: ${JSON.stringify(r.b)}`);
+    await new Promise((res) => setTimeout(res, 10_000));
+  }
+  throw new Error(`register ${tag} still rate-limited after 8 attempts`);
 }
 
 const checks: Array<[string, boolean, string]> = [];
