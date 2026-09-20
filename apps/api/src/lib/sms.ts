@@ -1,3 +1,4 @@
+import { TIMEOUT } from "./timeouts";
 /**
  * Phone OTP via MSG91's managed OTP flow (v5).
  *
@@ -45,7 +46,7 @@ export async function sendPhoneOtp(phone: string): Promise<OtpResult> {
   if (process.env.MSG91_SENDER_ID) params.set("sender", process.env.MSG91_SENDER_ID);
 
   try {
-    const res = await fetch(`${BASE}?${params}`, { method: "POST", headers: authHeaders(), body: "{}" });
+    const res = await fetch(`${BASE}?${params}`, { method: "POST", headers: authHeaders(), body: "{}", signal: AbortSignal.timeout(TIMEOUT.messaging) });
     const body = (await res.json().catch(() => ({}))) as { type?: string; message?: string; request_id?: string };
     if (body.type === "success") return { ok: true };
     return { ok: false, error: body.message ?? `HTTP ${res.status}` };
@@ -58,7 +59,7 @@ export async function sendPhoneOtp(phone: string): Promise<OtpResult> {
 export async function retryPhoneOtp(phone: string, channel: "text" | "voice" = "text"): Promise<OtpResult> {
   const params = new URLSearchParams({ mobile: normalisePhone(phone), retrytype: channel });
   try {
-    const res = await fetch(`${BASE}/retry?${params}`, { method: "POST", headers: authHeaders() });
+    const res = await fetch(`${BASE}/retry?${params}`, { method: "POST", headers: authHeaders(), signal: AbortSignal.timeout(TIMEOUT.messaging) });
     const body = (await res.json().catch(() => ({}))) as { type?: string; message?: string };
     return body.type === "success" ? { ok: true } : { ok: false, error: body.message ?? `HTTP ${res.status}` };
   } catch (err) {
@@ -70,7 +71,7 @@ export async function retryPhoneOtp(phone: string, channel: "text" | "voice" = "
 export async function verifyPhoneOtp(phone: string, code: string): Promise<OtpResult> {
   const params = new URLSearchParams({ mobile: normalisePhone(phone), otp: code });
   try {
-    const res = await fetch(`${BASE}/verify?${params}`, { method: "POST", headers: authHeaders() });
+    const res = await fetch(`${BASE}/verify?${params}`, { method: "POST", headers: authHeaders(), signal: AbortSignal.timeout(TIMEOUT.messaging) });
     const body = (await res.json().catch(() => ({}))) as { type?: string; message?: string };
     if (body.type === "success") return { ok: true };
     // "OTP not match", "OTP expired", "IP is not whitelisted", …

@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { cache } from "../lib/redis";
 import { readRawCatalogue } from "../lib/catalogue";
+import { TIMEOUT } from "../lib/timeouts";
 
 export async function catalogueRoutes(app: FastifyInstance) {
   // GET /catalogue/services
@@ -98,8 +99,14 @@ export async function catalogueRoutes(app: FastifyInstance) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${meiliKey}`,
         },
+        // MEILI_URL defaults to localhost, which is nothing in production, so
+        // this path has been relying on a prompt connection refusal. Bound it.
+        signal: AbortSignal.timeout(TIMEOUT.search),
         body: JSON.stringify({ q, limit: 20 }),
       });
+      // A non-OK response used to be returned to the client verbatim, leaking
+      // the upstream error body. Fall through to the Prisma query instead.
+      if (!res.ok) throw new Error(`Meilisearch responded ${res.status}`);
       return res.json();
     } catch {
       // Fallback to Prisma full-text

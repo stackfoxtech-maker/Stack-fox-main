@@ -1,3 +1,4 @@
+import { TIMEOUT } from "../lib/timeouts";
 import type { FastifyInstance } from "fastify";
 
 const GEMINI_MODEL = "gemini-3.6-flash";
@@ -57,6 +58,7 @@ export async function assistantRoutes(app: FastifyInstance) {
         `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
         {
           method: "POST",
+          signal: AbortSignal.timeout(TIMEOUT.llm),
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
@@ -138,6 +140,7 @@ Pick STARTER only if the scope is genuinely simple and low-budget. itemIds must 
         `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
         {
           method: "POST",
+          signal: AbortSignal.timeout(TIMEOUT.llm),
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: prompt }] }],

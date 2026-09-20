@@ -2,6 +2,7 @@ import { createWorker, QUEUE } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
 import { generateContent } from "../lib/gemini";
 import { queues } from "../lib/queue";
+import { TIMEOUT } from "../lib/timeouts";
 
 createWorker(QUEUE.whatsappCommerce, async (job) => {
   const { from, message, type, timestamp } = job.data;
@@ -38,6 +39,7 @@ Return as JSON: { intent, entities: { services: [], projectRef: null, ticketRef:
       try {
         await fetch(process.env.WHATSAPP_BSP_URL, {
           method: "POST",
+          signal: AbortSignal.timeout(TIMEOUT.messaging),
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${process.env.WHATSAPP_BSP_TOKEN}`,

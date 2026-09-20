@@ -7,6 +7,7 @@
  * what makes password reset usable on a local checkout.
  */
 import { webAppUrl } from "./urls";
+import { TIMEOUT } from "./timeouts";
 
 export interface MailMessage {
   to: string;
@@ -37,6 +38,7 @@ export async function sendMail(msg: MailMessage): Promise<MailResult> {
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
+      signal: AbortSignal.timeout(TIMEOUT.messaging),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",

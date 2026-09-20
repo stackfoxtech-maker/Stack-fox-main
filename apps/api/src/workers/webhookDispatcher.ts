@@ -3,6 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { hmacSign } from "../lib/hash";
 import { toJson } from "../lib/json";
 import { assertPublicHttpUrl } from "../lib/safeUrl";
+import { TIMEOUT } from "../lib/timeouts";
 
 createWorker(QUEUE.webhookDispatcher, async (job) => {
   const { code, payload, engagementId } = job.data;
@@ -58,7 +59,7 @@ createWorker(QUEUE.webhookDispatcher, async (job) => {
         // A 3xx to an internal host would otherwise walk straight past the
         // check above, so redirects are never followed.
         redirect: "manual",
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(TIMEOUT.webhook),
       });
 
       await prisma.webhookDelivery.update({

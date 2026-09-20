@@ -7,6 +7,7 @@
  * needs no Google SDK and no build-time client id.
  */
 import { apiPublicUrl } from "./urls";
+import { TIMEOUT } from "./timeouts";
 
 const AUTHORIZE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -54,6 +55,7 @@ export async function exchangeCode(code: string): Promise<GoogleProfile> {
   const res = await fetch(TOKEN_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    signal: AbortSignal.timeout(TIMEOUT.oauth),
     body: new URLSearchParams({
       code,
       client_id: process.env.GOOGLE_CLIENT_ID!,
