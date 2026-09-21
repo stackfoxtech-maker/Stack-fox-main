@@ -12,6 +12,7 @@ import { Prisma } from "@stackfox/prisma";
 import { registerErrorHandler } from "../src/lib/errorHandler";
 import { currentReqId, newReqId, normaliseReqId, runWithReqId } from "../src/lib/logger";
 import { REQ_ID_FIELD, stampReqId } from "../src/lib/queue";
+import { shouldAlert } from "../src/workers/healthAlert";
 
 const checks: Array<[string, boolean, string]> = [];
 const check = (label: string, pass: boolean, note = "") => checks.push([label, pass, note]);
@@ -169,6 +170,31 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
   );
 
   await app.close();
+}
+
+// ── Health alerting fires on change, not on level ────────────────────────────
+//
+// Alerting every five minutes for as long as something is broken trains
+// everyone to ignore it, and an ignored alert is worse than no alert because
+// it is believed to be working.
+{
+  check("the first bad state alerts", shouldAlert(null, "redis"));
+  check(
+    "the same bad state does not alert again",
+    !shouldAlert("redis", "redis"),
+    "this is what stops an outage becoming an alert every 5 minutes",
+  );
+  check(
+    "a bad state getting worse alerts again",
+    shouldAlert("redis", "database,redis"),
+    "losing a second dependency is new information",
+  );
+  check(
+    "recovery alerts",
+    shouldAlert("redis", "healthy"),
+    "without it nobody knows whether the thing they were paged about is fixed",
+  );
+  check("staying healthy is silent", !shouldAlert("healthy", "healthy"));
 }
 
 // ── Report ───────────────────────────────────────────────────────────────────

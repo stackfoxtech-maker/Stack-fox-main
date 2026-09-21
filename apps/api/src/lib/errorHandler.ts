@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { Prisma } from "@stackfox/prisma";
 import { ZodError } from "zod";
+import { captureException } from "./sentry";
 
 /**
  * The single place an unhandled error becomes a response.
@@ -95,6 +96,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
 
     // A 500 is an incident. Log everything, return nothing.
     req.log.error({ err }, "unhandled error");
+    captureException(err, { reqId, route: req.routeOptions?.url ?? req.url, method: req.method });
 
     return reply.code(500).send({
       error: "Something went wrong on our side.",

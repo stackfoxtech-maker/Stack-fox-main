@@ -51,6 +51,12 @@ const schema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
 
+  // Unset means error reporting is off and a 500 is visible only in the logs.
+  // Deliberately not required in production: the app must still boot without
+  // it, and /health reports whether it is actually on.
+  SENTRY_DSN: z.string().url().optional(),
+  LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).optional(),
+
   NODE_ENV: z.string().optional(),
   PORT: z.string().optional(),
   HOST: z.string().optional(),

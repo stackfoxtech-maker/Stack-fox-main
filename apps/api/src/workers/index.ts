@@ -24,6 +24,7 @@ import "./timesheetCompiler";
 import "./archiveRetention";
 import "./softex";
 import "./salesFollowup";
+import "./healthAlert";
 
 import { startCronWorker } from "./cron/worker";
 import { registerSchedules, pruneStaleSchedulers } from "../lib/scheduler";

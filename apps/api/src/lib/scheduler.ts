@@ -33,6 +33,12 @@ interface Schedule {
 }
 
 const SCHEDULES: Schedule[] = [
+  // Dependency check. Five minutes is a compromise: tight enough that a Redis
+  // outage is noticed before a working day's worth of OTPs have failed, loose
+  // enough that it is not itself a meaningful load. It only alerts on a change
+  // of state, so the interval does not set the notification rate.
+  { id: "health-alert", pattern: "*/5 * * * *" },
+
   // SLA response-target breaches — needs to be tight or the first-response
   // clock is meaningless.
   { id: "sla-sweep", pattern: "*/15 * * * *" },

@@ -1,6 +1,7 @@
 import { Queue, Worker, type Job, type WorkerOptions } from "bullmq";
 import { redis } from "./redis";
 import { currentReqId, log, newReqId, runWithReqId } from "./logger";
+import { captureException } from "./sentry";
 
 // BullMQ needs the full connection (password/tls included — Upstash requires both)
 // and maxRetriesPerRequest:null, or Queue/Worker connections hang instead of erroring.
@@ -149,6 +150,17 @@ export function createWorker<T = any>(
       jobName: job?.name,
       ...(typeof carried === "string" ? { reqId: carried } : {}),
     }).error({ err }, "job failed");
+
+    // Only once the job has exhausted its retries — a transient failure that
+    // BullMQ successfully retries is not an incident.
+    if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
+      captureException(err, {
+        queue: name,
+        jobId: job.id,
+        jobName: job.name,
+        ...(typeof carried === "string" ? { reqId: carried } : {}),
+      });
+    }
   });
 
   openWorkers.push(worker);

@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { captureException } from '../lib/sentry';
 
 /**
  * App-wide safety net. Before this existed, a render error on any single page
@@ -15,6 +16,9 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('Unhandled UI error:', error, info?.componentStack);
+    // The boundary is the only place a render error is observable — without
+    // this it is visible to the user and to nobody else.
+    captureException(error, { componentStack: info?.componentStack?.slice(0, 500) });
   }
 
   render() {

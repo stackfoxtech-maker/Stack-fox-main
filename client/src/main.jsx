@@ -5,6 +5,10 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
+import { initSentry } from './lib/sentry';
+
+// Before render, so an error thrown during the first paint is reported too.
+initSentry();
 
 // PWA shell — production only. In dev a SW just sits in front of Vite's module
 // graph and causes "failed to fetch script" noise. Existing dev registrations

@@ -38,6 +38,7 @@ import "../src/workers/timesheetCompiler";
 import "../src/workers/archiveRetention";
 import "../src/workers/softex";
 import "../src/workers/salesFollowup";
+import "../src/workers/healthAlert";
 
 const checks: Array<[string, boolean]> = [];
 const check = (label: string, ok: boolean) => checks.push([label, ok]);
@@ -54,7 +55,7 @@ for (const id of registered) {
 }
 check(
   `exactly ${scheduled.length} schedules, ${registered.length} handlers`,
-  scheduled.length === registered.length && scheduled.length === 9,
+  scheduled.length === registered.length && scheduled.length === 10,
 );
 
 // ── 2. dispatch routes by job name ──────────────────────────────────────────
@@ -110,7 +111,7 @@ check(
 const here = dirname(fileURLToPath(import.meta.url));
 const schedulerSrc = readFileSync(resolve(here, "../src/lib/scheduler.ts"), "utf8");
 const patternMatches = [...schedulerSrc.matchAll(/pattern:\s*"([^"]+)"/g)].map((m) => m[1]);
-check(`found ${scheduled.length} cron patterns in scheduler.ts`, patternMatches.length === 9);
+check(`found ${scheduled.length} cron patterns in scheduler.ts`, patternMatches.length === 10);
 for (const p of patternMatches) {
   const fields = p.trim().split(/\s+/);
   check(`pattern "${p}" has 5 fields`, fields.length === 5);

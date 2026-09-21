@@ -11,6 +11,7 @@ import { isStorageConfigured } from "./lib/storage";
 import { authPlugin } from "./plugins/auth";
 import { log, newReqId, normaliseReqId, runWithReqId } from "./lib/logger";
 import { registerErrorHandler } from "./lib/errorHandler";
+import { captureException, flushSentry, initSentry, sentryEnabled } from "./lib/sentry";
 
 /**
  * Background workers run inline with the HTTP server by default — the deploy is
@@ -88,6 +89,9 @@ const app = Fastify({
     },
   },
 });
+
+// Before anything else, so an error during start-up is reported too.
+initSentry();
 
 async function start() {
   const BUILT_IN_ORIGINS = [
@@ -170,7 +174,12 @@ async function start() {
     return {
       status,
       ts: Date.now(),
-      checks: { database: db, redis: cache, storage: isStorageConfigured() },
+      checks: {
+        database: db,
+        redis: cache,
+        storage: isStorageConfigured(),
+        errorReporting: sentryEnabled(),
+      },
       workersInline: WORKERS_INLINE,
     };
   });
@@ -274,7 +283,11 @@ async function start() {
   process.on("SIGINT", () => void close("SIGINT"));
 }
 
-start().catch((err) => {
+start().catch(async (err) => {
   log().fatal({ err }, "server failed to start");
+  captureException(err, { phase: "startup" });
+  // Without this the process exits before the event leaves the buffer, so the
+  // failures you most want reported are the ones that never arrive.
+  await flushSentry();
   process.exit(1);
 });
