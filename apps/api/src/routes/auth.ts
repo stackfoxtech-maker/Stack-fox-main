@@ -1,6 +1,21 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { redis, tryRedis } from "../lib/redis";
+import { parseBody } from "../lib/validate";
+import {
+  AddOrgMemberSchema,
+  CreateOrgSchema,
+  ForgotPasswordSchema,
+  LoginSchema,
+  RefreshTokenSchema,
+  RegisterSchema,
+  ResetPasswordSchema,
+  SendOtpSchema,
+  UpdateOrgSchema,
+  VerifyEmailSchema,
+  VerifyOtpSchema,
+  VerifyPhoneOtpSchema,
+} from "./authSchemas";
 import { signToken, signRefreshToken, requireAuth, verifyToken, verifyTokenOfType } from "../plugins/auth";
 import { randomInt } from "crypto";
 import * as ids from "../lib/id";
@@ -86,8 +101,9 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/register",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const { name, email, password } = req.body as { name: string; email: string; password: string };
-    if (!email || !password) return reply.code(400).send({ message: "Email and password required" });
+    const body = parseBody(req, reply, RegisterSchema);
+    if (!body) return;
+    const { name, email, password } = body;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return reply.code(409).send({ message: "Email already registered" });
@@ -131,7 +147,9 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/login",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const { email, password } = req.body as { email: string; password: string };
+    const body = parseBody(req, reply, LoginSchema);
+    if (!body) return;
+    const { email, password } = body;
     if (!email || !password) return reply.code(400).send({ message: "Email and password required" });
 
     const user = await prisma.user.findUnique({ where: { email } });
@@ -171,7 +189,9 @@ export async function authRoutes(app: FastifyInstance) {
   // POST /auth/refresh-token
   app.post("/auth/refresh-token", async (req, reply) => {
     const header = req.headers.authorization;
-    const bodyToken = (req.body as { refreshToken?: string } | undefined)?.refreshToken;
+    const refreshBody = parseBody(req, reply, RefreshTokenSchema);
+    if (!refreshBody) return;
+    const bodyToken = refreshBody.refreshToken;
     const presented = bodyToken ?? (header?.startsWith("Bearer ") ? header.slice(7) : null);
     if (!presented) return reply.code(401).send({ message: "No token" });
 
@@ -216,7 +236,9 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/forgot-password",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const { email } = req.body as { email: string };
+    const body = parseBody(req, reply, ForgotPasswordSchema);
+    if (!body) return;
+    const { email } = body;
     if (!email) return reply.code(400).send({ message: "Email is required" });
     const user = await prisma.user.findUnique({ where: { email } });
     if (user) {
@@ -247,7 +269,9 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/reset-password",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const { token, password } = req.body as { token: string; password: string };
+    const body = parseBody(req, reply, ResetPasswordSchema);
+    if (!body) return;
+    const { token, password } = body;
     if (!token || !password) return reply.code(400).send({ message: "Token and password required" });
     if (password.length < 8) {
       return reply.code(400).send({ message: "Password must be at least 8 characters" });
@@ -282,7 +306,9 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/verify-email",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const { token } = req.body as { token: string };
+    const body = parseBody(req, reply, VerifyEmailSchema);
+    if (!body) return;
+    const { token } = body;
     if (!token) return reply.code(400).send({ message: "Token required" });
 
     const key = `verify:${hashToken(token)}`;
@@ -310,8 +336,9 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/otp/send",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const { email, phone } = req.body as { email?: string; phone?: string };
-    if (!email && !phone) return reply.code(400).send({ error: "email or phone required" });
+    const body = parseBody(req, reply, SendOtpSchema);
+    if (!body) return;
+    const { email, phone } = body;
 
     // ── Phone: MSG91 generates, stores and rate-limits the code ────────────────
     if (phone && !email) {
@@ -364,13 +391,9 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/otp/verify",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const { email, phone, code } = req.body as {
-      email?: string;
-      phone?: string;
-      code: string;
-    };
-    if (!email && !phone) return reply.code(400).send({ error: "email or phone required" });
-    if (!code) return reply.code(400).send({ error: "code required" });
+    const body = parseBody(req, reply, VerifyOtpSchema);
+    if (!body) return;
+    const { email, phone, code } = body;
 
     if (phone && !email) {
       // MSG91 holds the code for phone and enforces its own lockout.
@@ -572,8 +595,9 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/whatsapp/callback",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const { phone, code } = req.body as { phone: string; code: string };
-    if (!phone || !code) return reply.code(400).send({ error: "phone and code are required" });
+    const verifyBody = parseBody(req, reply, VerifyPhoneOtpSchema);
+    if (!verifyBody) return;
+    const { phone, code } = verifyBody;
 
     const attemptsKey = `otp-attempts:${phone}`;
     // Fails closed, as on the email path above.
@@ -679,17 +703,8 @@ export async function authRoutes(app: FastifyInstance) {
   // POST /orgs
   app.post("/orgs", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const body = req.body as {
-      name: string;
-      type: string;
-      gstin?: string;
-      pan?: string;
-      billingAddress: Record<string, unknown>;
-    };
-
-    if (!body?.name?.trim()) {
-      return reply.code(400).send({ error: "An organisation name is required" });
-    }
+    const body = parseBody(req, reply, CreateOrgSchema);
+    if (!body) return;
 
     // This endpoint writes the caller's role, so it has to care who the caller
     // already is. It used to elevate anyone to ORG_OWNER unconditionally, which
@@ -746,12 +761,8 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(403).send({ error: "Insufficient permissions" });
     }
 
-    const body = req.body as Partial<{
-      name: string;
-      gstin: string;
-      pan: string;
-      billingAddress: Record<string, unknown>;
-    }>;
+    const body = parseBody(req, reply, UpdateOrgSchema);
+    if (!body) return;
 
     const org = await prisma.org.update({
       where: { id },
@@ -778,10 +789,9 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(403).send({ error: "Insufficient permissions" });
     }
 
-    const { email, role } = req.body as { email: string; role: string };
-    if (!email?.includes("@")) {
-      return reply.code(400).send({ error: "A valid email address is required" });
-    }
+    const body = parseBody(req, reply, AddOrgMemberSchema);
+    if (!body) return;
+    const { email, role } = body;
 
     // A client-side org manager may only assign client-side roles within their
     // own org — never grant staff/admin access. Staff callers may assign any

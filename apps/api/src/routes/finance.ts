@@ -11,6 +11,8 @@ import { buildInvoicePdf } from "../lib/documents";
 import { requireRole } from "../plugins/auth";
 import { ADMIN_ROLES, FINANCE_ROLES, FINANCE_VIEW_ROLES } from "@stackfox/core";
 import { issueDownload } from "../lib/documentIntegrity";
+import { parseBody } from "../lib/validate";
+import { RecordUtrSchema, UpdateInvoiceStatusSchema } from "./financeSchemas";
 
 const VALID_GST_RATES = [0, 5, 12, 18, 28];
 const INVOICE_STATUSES = [
@@ -214,14 +216,9 @@ export async function financeRoutes(app: FastifyInstance) {
   app.patch("/invoices/:id/utr", async (req, reply) => {
     if (!requireRole(req, reply, FINANCE_ROLES)) return;
     const { id } = req.params as { id: string };
-    const { utr, paidAt, amount } = req.body as {
-      utr?: string;
-      paidAt?: string;
-      amount?: number;
-    };
-    if (!utr || !String(utr).trim()) {
-      return reply.code(400).send({ error: "utr is required" });
-    }
+    const body = parseBody(req, reply, RecordUtrSchema);
+    if (!body) return;
+    const { utr, paidAt, amount } = body;
 
     const existing = await prisma.invoice.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: "Invoice not found" });
@@ -271,7 +268,9 @@ export async function financeRoutes(app: FastifyInstance) {
   app.patch("/invoices/:id/status", async (req, reply) => {
     if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const { id } = req.params as { id: string };
-    const { status } = req.body as { status?: string };
+    const body = parseBody(req, reply, UpdateInvoiceStatusSchema);
+    if (!body) return;
+    const { status } = body;
 
     // Accept the lowercase display form ("partially-paid") or the stored form
     // ("PARTIALLY_PAID") — the admin UI renders the lowercased variant.

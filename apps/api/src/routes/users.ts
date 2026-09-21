@@ -8,6 +8,14 @@ import { LIST_CAP, ok, pageParams, paginated, withId } from "../lib/http";
 import { ADMIN_ROLES, CLIENT_ROLES, INTERNAL_ROLES, isInternalRole } from "@stackfox/core";
 import { ensurePersonalOrg } from "../lib/scope";
 import { bumpSessionEpoch } from "../lib/session";
+import { parseBody, parseQuery } from "../lib/validate";
+import {
+  ChangePasswordSchema,
+  CreateUserSchema,
+  ListUsersQuerySchema,
+  UpdateMeSchema,
+  UpdateUserSchema,
+} from "./userSchemas";
 
 
 const ALL_ROLES = [...INTERNAL_ROLES, ...CLIENT_ROLES] as readonly string[];
@@ -30,7 +38,8 @@ const PUBLIC_SELECT = {
 export async function userRoutes(app: FastifyInstance) {
   app.get("/users", async (req, reply) => {
     if (!requireRole(req, reply, ADMIN_ROLES)) return;
-    const q = req.query as Record<string, string>;
+    const q = parseQuery(req, reply, ListUsersQuerySchema);
+    if (!q) return;
     const { page, limit, skip } = pageParams(q);
 
     const where: any = {};
@@ -57,19 +66,9 @@ export async function userRoutes(app: FastifyInstance) {
 
   app.post("/users", async (req, reply) => {
     if (!requireRole(req, reply, ADMIN_ROLES)) return;
-    const { name, email, password, role, designation } = req.body as {
-      name?: string;
-      email?: string;
-      password?: string;
-      role?: string;
-      designation?: string;
-    };
-    if (!name || !email || !password) {
-      return reply.code(400).send({ message: "name, email and password are required" });
-    }
-    if (password.length < 8) {
-      return reply.code(400).send({ message: "Password must be at least 8 characters" });
-    }
+    const body = parseBody(req, reply, CreateUserSchema);
+    if (!body) return;
+    const { name, email, password, role, designation } = body;
     if (role && !ALL_ROLES.includes(role)) {
       return reply.code(400).send({ message: `Unknown role. Valid roles: ${ALL_ROLES.join(", ")}` });
     }
@@ -123,26 +122,18 @@ export async function userRoutes(app: FastifyInstance) {
 
   app.put("/users/me", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const body = (req.body ?? {}) as Record<string, unknown>;
+    // The allowlist is now the schema's shape: a user may edit their own
+    // presentation, never their role, org membership, email or active flag.
+    // An unknown field is rejected rather than silently dropped.
+    const body = parseBody(req, reply, UpdateMeSchema);
+    if (!body) return;
 
-    // Allowlisted: a user may edit their own presentation, never their role,
-    // org membership, email or active flag.
     const data: Record<string, unknown> = {};
-    if (typeof body.name === "string" && body.name.trim()) data.name = body.name.trim();
-    if (typeof body.phone === "string") data.phone = body.phone.trim() || null;
-    if (typeof body.designation === "string") data.designation = body.designation.trim() || null;
-    if (typeof body.avatarUrl === "string") data.avatarUrl = body.avatarUrl.trim() || null;
-    if (Array.isArray(body.skills)) {
-      data.skills = body.skills
-        .filter((s): s is string => typeof s === "string")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .slice(0, 40);
-    }
-
-    if (Object.keys(data).length === 0) {
-      return reply.code(400).send({ message: "No updatable fields were supplied." });
-    }
+    if (body.name !== undefined) data.name = body.name;
+    if (body.phone !== undefined) data.phone = body.phone || null;
+    if (body.designation !== undefined) data.designation = body.designation || null;
+    if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl || null;
+    if (body.skills !== undefined) data.skills = body.skills;
 
     const user = await prisma.user.update({
       where: { id: req.user!.sub },
@@ -155,16 +146,9 @@ export async function userRoutes(app: FastifyInstance) {
 
   app.put("/users/me/password", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { currentPassword, newPassword } = req.body as {
-      currentPassword?: string;
-      newPassword?: string;
-    };
-    if (!currentPassword || !newPassword) {
-      return reply.code(400).send({ message: "Current and new password are required" });
-    }
-    if (newPassword.length < 8) {
-      return reply.code(400).send({ message: "New password must be at least 8 characters" });
-    }
+    const body = parseBody(req, reply, ChangePasswordSchema);
+    if (!body) return;
+    const { currentPassword, newPassword } = body;
 
     const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
     const authData = ((user?.authData ?? {}) as Record<string, unknown>);
@@ -221,7 +205,9 @@ export async function userRoutes(app: FastifyInstance) {
   app.put("/users/:id", async (req, reply) => {
     if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const { id } = req.params as { id: string };
-    const { role, isActive } = req.body as { role?: string; isActive?: boolean };
+    const body = parseBody(req, reply, UpdateUserSchema);
+    if (!body) return;
+    const { role, isActive } = body;
 
     const data: any = {};
     if (role !== undefined) {

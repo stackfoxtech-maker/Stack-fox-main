@@ -32,6 +32,7 @@ const SUITES = [
   "provisioning-parity.mts",
   "money-and-ids.mts",
   "observability.mts",
+  "validation.mts",
 ];
 
 function run(file: string): Promise<number> {
