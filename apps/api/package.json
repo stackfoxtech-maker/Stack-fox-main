@@ -30,7 +30,8 @@
     "test:apikeys": "tsx tests/api-keys.mts",
     "test:v1": "tsx tests/public-api-tenancy.mts",
     "test:regressions": "tsx tests/critical-regressions.mts",
-    "test:catalogue": "tsx tests/catalogue-cache.mts"
+    "test:catalogue": "tsx tests/catalogue-cache.mts",
+    "test:transactions": "tsx tests/transactions.mts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
@@ -59,6 +60,7 @@
   "devDependencies": {
     "@stackfox/tsconfig": "workspace:*",
     "@types/jsonwebtoken": "^9.0.0",
+    "@types/node": "^22",
     "@types/sanitize-html": "^2.13.0",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0"

@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
 import { verifyRazorpayWebhookSignature, getStripe } from "../lib/payments";
-import { recordInvoicePayment } from "../lib/billing";
+import { enqueuePaymentSideEffects, recordInvoicePaymentRows } from "../lib/billing";
 import { clientScope } from "../lib/scope";
 import { LIST_CAP, pageParams } from "../lib/http";
 import { isStorageConfigured } from "../lib/storage";
@@ -246,26 +246,37 @@ export async function financeRoutes(app: FastifyInstance) {
     const newPaid = Math.min(existingTotal, existingPaid + applied);
     const fullyPaid = newPaid >= existingTotal;
 
-    const updated = await prisma.invoice.update({
-      where: { id },
-      data: {
-        utr: String(utr).trim(),
-        amountPaid: newPaid,
-        status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
-        paidAt: fullyPaid
-          ? (existing.paidAt ?? (paidAt ? new Date(paidAt) : new Date()))
-          : null,
-      },
+    // The invoice flip and the Payment row are one fact. Recorded separately,
+    // a failure between them left an invoice marked PAID with no payment
+    // behind it — the books disagreeing with themselves.
+    const { updated, fx } = await prisma.$transaction(async (tx) => {
+      const updated = await tx.invoice.update({
+        where: { id },
+        data: {
+          utr: String(utr).trim(),
+          amountPaid: newPaid,
+          status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
+          paidAt: fullyPaid
+            ? (existing.paidAt ?? (paidAt ? new Date(paidAt) : new Date()))
+            : null,
+        },
+      });
+
+      // Idempotent on `gatewayPaymentId`, so re-recording the same UTR is a
+      // no-op rather than a duplicate Payment row.
+      const fx = await recordInvoicePaymentRows(tx, updated, {
+        gateway: "BANK_TRANSFER",
+        gatewayPaymentId: `utr:${String(utr).trim()}`,
+        method: "bank_transfer",
+        amount: applied,
+      });
+
+      return { updated, fx };
     });
 
-    // Idempotent on `gatewayPaymentId`, so re-recording the same UTR is a no-op
-    // rather than a duplicate Payment row.
-    await recordInvoicePayment(updated, {
-      gateway: "BANK_TRANSFER",
-      gatewayPaymentId: `utr:${String(utr).trim()}`,
-      method: "bank_transfer",
-      amount: applied,
-    });
+    // After commit, never inside: a rolled-back transaction that had already
+    // enqueued would leave a worker acting on an invoice that is not paid.
+    await enqueuePaymentSideEffects(fx);
 
     await emitEvent({
       code: fullyPaid ? "INVOICE_PAID" : "INVOICE_PARTIALLY_PAID",
@@ -300,22 +311,33 @@ export async function financeRoutes(app: FastifyInstance) {
     const existing = await prisma.invoice.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: "Invoice not found" });
 
-    const updated = await prisma.invoice.update({
-      where: { id },
-      data: {
-        status: normalized,
-        ...(normalized === "PAID"
-          ? {
-              paidAt: existing.paidAt ?? new Date(),
-              amountPaid: existing.grandTotal,
-            }
-          : {}),
-      },
+    const becomingPaid = normalized === "PAID" && existing.status !== "PAID";
+
+    const { updated, fx } = await prisma.$transaction(async (tx) => {
+      const updated = await tx.invoice.update({
+        where: { id },
+        data: {
+          status: normalized,
+          ...(normalized === "PAID"
+            ? {
+                paidAt: existing.paidAt ?? new Date(),
+                amountPaid: existing.grandTotal,
+              }
+            : {}),
+        },
+      });
+
+      const fx = becomingPaid
+        ? await recordInvoicePaymentRows(tx, updated, {
+            gateway: "BANK_TRANSFER",
+            method: "manual",
+          })
+        : null;
+
+      return { updated, fx };
     });
 
-    if (normalized === "PAID" && existing.status !== "PAID") {
-      await recordInvoicePayment(updated, { gateway: "BANK_TRANSFER", method: "manual" });
-    }
+    if (fx) await enqueuePaymentSideEffects(fx);
 
     await emitEvent({
       code: "INVOICE_STATUS_CHANGED",
@@ -334,7 +356,7 @@ export async function financeRoutes(app: FastifyInstance) {
   async function applyGatewayPayment(
     invoiceId: string,
     capturedPaise: number,
-    facts: Parameters<typeof recordInvoicePayment>[1],
+    facts: Parameters<typeof recordInvoicePaymentRows>[2],
   ) {
     const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
     if (!invoice || invoice.status === "PAID" || invoice.status === "CANCELLED") return;
@@ -344,16 +366,25 @@ export async function financeRoutes(app: FastifyInstance) {
     const newPaid = Math.min(grandTotal, Number(invoice.amountPaid ?? 0) + captured);
     const fullyPaid = newPaid >= grandTotal;
 
-    const updated = await prisma.invoice.update({
-      where: { id: invoice.id },
-      data: {
-        amountPaid: newPaid,
-        status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
-        paidAt: fullyPaid ? new Date() : null,
-      },
+    const { updated, fx } = await prisma.$transaction(async (tx) => {
+      const updated = await tx.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          amountPaid: newPaid,
+          status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
+          paidAt: fullyPaid ? new Date() : null,
+        },
+      });
+
+      const fx = await recordInvoicePaymentRows(tx, updated, {
+        ...facts,
+        amount: captured || undefined,
+      });
+
+      return { updated, fx };
     });
 
-    await recordInvoicePayment(updated, { ...facts, amount: captured || undefined });
+    await enqueuePaymentSideEffects(fx);
 
     await emitEvent({
       code: fullyPaid ? "INVOICE_PAID" : "INVOICE_PARTIALLY_PAID",
@@ -409,18 +440,25 @@ export async function financeRoutes(app: FastifyInstance) {
         where: { razorpayOrderId: rzpOrderId },
       });
       if (order) {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { status: "PAID", paidAt: new Date() },
-        });
+        // The order flip and the Payment row go together: an order marked PAID
+        // with no payment behind it is the same books-disagree problem as the
+        // invoice paths above.
+        const recorded = await prisma.$transaction(async (tx) => {
+          await tx.order.update({
+            where: { id: order.id },
+            data: { status: "PAID", paidAt: new Date() },
+          });
 
-        // Retried webhooks are common — guard the manual Payment insert so a
-        // second delivery does not create a duplicate row.
-        const already = await prisma.payment.findFirst({
-          where: { gatewayPaymentId: entity.id },
-        });
-        if (!already) {
-          await prisma.payment.create({
+          // Retried webhooks are common — guard the insert so a second
+          // delivery does not create a duplicate row. Inside the transaction
+          // the check and the insert cannot interleave with a concurrent
+          // delivery of the same event.
+          const already = await tx.payment.findFirst({
+            where: { gatewayPaymentId: entity.id },
+          });
+          if (already) return false;
+
+          await tx.payment.create({
             data: {
               orderId: order.id,
               gateway: "RAZORPAY",
@@ -433,7 +471,12 @@ export async function financeRoutes(app: FastifyInstance) {
               metadata: entity,
             },
           });
+          return true;
+        });
 
+        // After commit. Emitted inside, a rolled-back transaction would still
+        // have announced a payment that no longer exists.
+        if (recorded) {
           await emitEvent({
             code: "PAYMENT_CAPTURED",
             payload: { orderId: order.id, paymentId: entity.id, amount: entity.amount },

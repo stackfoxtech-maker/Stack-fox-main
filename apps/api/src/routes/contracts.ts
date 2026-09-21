@@ -81,6 +81,9 @@ export async function contractRoutes(app: FastifyInstance) {
     }
   });
 
+  /** Signals a lost race inside the countersign transaction, so it rolls back. */
+  class AlreadyCountersigned extends Error {}
+
   // POST /contracts/:id/countersign — StackFox side
   app.post("/contracts/:id/countersign", async (req, reply) => {
     if (!requireRole(req, reply, DELIVERY_ROLES)) return;
@@ -92,21 +95,44 @@ export async function contractRoutes(app: FastifyInstance) {
       return reply.code(409).send({ error: "Contract must be client-signed first" });
     }
 
-    // Create StackFox signature
-    await prisma.signature.create({
-      data: {
-        contractId: id,
-        signerUserId: req.user!.sub,
-        side: "STACKFOX",
-        rail: "CLICK",
-        evidence: { method: "internal", timestamp: new Date().toISOString() },
-      },
-    });
+    // The signature and the status change are one fact. Written separately, a
+    // failure between them left a StackFox signature attached to a contract
+    // that was never executed — a signed record of an unsigned agreement.
+    const updated = await prisma
+      .$transaction(async (tx) => {
+        // The status is re-checked inside the write rather than trusted from the
+        // read above. Two countersigns arriving together both passed that read
+        // and both wrote a signature; updateMany with the expected status in the
+        // WHERE makes the second one match zero rows.
+        const { count } = await tx.contract.updateMany({
+          where: { id, status: "CLIENT_SIGNED" },
+          data: { status: "EXECUTED", executedAt: new Date() },
+        });
+        if (count === 0) {
+          // Someone else countersigned between the read and here.
+          throw new AlreadyCountersigned();
+        }
 
-    const updated = await prisma.contract.update({
-      where: { id },
-      data: { status: "EXECUTED", executedAt: new Date() },
-    });
+        await tx.signature.create({
+          data: {
+            contractId: id,
+            signerUserId: req.user!.sub,
+            side: "STACKFOX",
+            rail: "CLICK",
+            evidence: { method: "internal", timestamp: new Date().toISOString() },
+          },
+        });
+
+        return tx.contract.findUniqueOrThrow({ where: { id } });
+      })
+      .catch((err: unknown) => {
+        if (err instanceof AlreadyCountersigned) return null;
+        throw err;
+      });
+
+    if (!updated) {
+      return reply.code(409).send({ error: "Contract has already been countersigned" });
+    }
 
     await emitEvent({
       code: "CONTRACT_EXECUTED",
