@@ -1,10 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { redis } from "../lib/redis";
 import { randomBytes } from "crypto";
-import { findCatalogueItem } from "../lib/catalogue";
 import { parseBody } from "../lib/validate";
+import { catalogPrice } from "../lib/pricing";
 import {
   AddToCartSchema,
   RemoveFromCartSchema,
@@ -80,38 +79,6 @@ function calcTotals(items: CartItem[]) {
  * Returns null when the id is in neither, so unknown items are refused rather
  * than trusting a price from the request body.
  */
-async function catalogPrice(
-  itemId: string,
-  itemType: string,
-  tier?: string,
-): Promise<{ name: string; price: number; source: string } | null> {
-  const listed = findCatalogueItem(itemId);
-  if (listed) {
-    return { name: listed.name, price: listed.price, source: "catalogue" };
-  }
-
-  // Database-backed ids (SF-CAT-NNN) and slugs, priced in paise.
-  if (itemType === "package") {
-    const pkg = await prisma.package.findUnique({ where: { id: itemId } });
-    if (pkg) return { name: pkg.name, price: Number(pkg.flatPrice) / 100, source: "db" };
-  }
-
-  const service = await prisma.serviceUnit.findFirst({
-    where: { OR: [{ id: itemId }, { slug: itemId }], status: "PUBLISHED" },
-  });
-  if (!service) return null;
-
-  const starter = Number(service.starterPrice ?? 0);
-  const premiumMinimum = Number(service.premiumMinimum ?? 0);
-  const multiplier = tier === "PREMIUM" ? 1.4 : tier === "GROWTH" ? 1.5 : 1;
-  const paise =
-    tier === "PREMIUM" && premiumMinimum
-      ? Math.max(premiumMinimum, Math.round(starter * multiplier))
-      : Math.round(starter * multiplier);
-
-  return { name: service.name, price: paise / 100, source: "db" };
-}
-
 export async function cartRoutes(app: FastifyInstance) {
   app.get("/cart", async (req, reply) => {
     if (!requireAuth(req, reply)) return;

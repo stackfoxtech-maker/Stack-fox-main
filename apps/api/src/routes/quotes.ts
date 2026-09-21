@@ -16,6 +16,15 @@ import { ensurePersonalOrg } from "../lib/scope";
 import * as ids from "../lib/id";
 import { resolveGstType, splitGst } from "../lib/gst";
 import { log } from "../lib/logger";
+import { parseBody } from "../lib/validate";
+import { catalogPrice } from "../lib/pricing";
+import {
+  QuoteFromCartSchema,
+  QuotePaySchema,
+  QuoteVerifyPaymentSchema,
+  UpdateQuoteSchema,
+  UpdateQuoteStatusSchema,
+} from "./quoteSchemas";
 
 interface QuoteItem {
   name: string;
@@ -414,17 +423,31 @@ export async function quoteRoutes(app: FastifyInstance) {
   app.post("/quotes", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const userId = req.user!.sub;
-    const body = req.body as { items?: QuoteItem[]; tier?: string } | undefined;
+    const body = parseBody(req, reply, QuoteFromCartSchema);
+    if (!body) return;
+    const tier = body.tier ?? "GROWTH";
 
-    const items: QuoteItem[] = body?.items ?? [];
-    if (items.length === 0) {
-      return reply
-        .code(400)
-        .send({ message: "Cart is empty — add items before requesting a quote." });
+    // Re-priced from the catalogue, never from the request. This previously
+    // summed `i.price * i.quantity` using the price the client sent, and a
+    // quote's total becomes the grandTotal of a real Invoice via
+    // provisionQuote — so a self-declared price became a self-declared bill.
+    // The cart has always discarded the client price; this now matches it.
+    const items: QuoteItem[] = [];
+    for (const raw of body.items) {
+      const priced = await catalogPrice(raw.itemId, raw.itemType ?? "service", tier);
+      if (!priced) {
+        return reply.code(400).send({
+          message: `We could not price "${raw.itemId}". Remove it and try again.`,
+        });
+      }
+      items.push({
+        name: priced.name,
+        price: priced.price,
+        quantity: raw.quantity ?? 1,
+        itemId: raw.itemId,
+        itemType: raw.itemType,
+      });
     }
-    const tier = ["STARTER", "GROWTH", "PREMIUM"].includes(body?.tier ?? "")
-      ? body!.tier!
-      : "GROWTH";
 
     const rawSubtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
     const subtotal = applyTierMultiplier(rawSubtotal, tier);
@@ -457,10 +480,9 @@ export async function quoteRoutes(app: FastifyInstance) {
   app.patch("/quotes/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { checkoutDetails, tier } = req.body as {
-      checkoutDetails?: Record<string, unknown>;
-      tier?: string;
-    };
+    const updBody = parseBody(req, reply, UpdateQuoteSchema);
+    if (!updBody) return;
+    const { checkoutDetails, tier } = updBody;
 
     const existing = await prisma.quote.findUnique({ where: { id } });
     if (!existing || existing.userId !== req.user!.sub) {
@@ -483,7 +505,9 @@ export async function quoteRoutes(app: FastifyInstance) {
   app.patch("/quotes/:id/status", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { status } = req.body as { status: string };
+    const statusBody = parseBody(req, reply, UpdateQuoteStatusSchema);
+    if (!statusBody) return;
+    const { status } = statusBody;
 
     // Only admins drive the sales workflow; owners may just cancel their own quote.
     // SUPER_ADMIN is an administrator too — a bare === "ADMIN" comparison
@@ -518,7 +542,9 @@ export async function quoteRoutes(app: FastifyInstance) {
   app.post("/quotes/:id/pay", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { paymentMode } = req.body as { paymentMode?: string };
+    const payBody = parseBody(req, reply, QuotePaySchema);
+    if (!payBody) return;
+    const { paymentMode } = payBody;
     const quote = await prisma.quote.findUnique({ where: { id } });
     if (!quote || quote.userId !== req.user!.sub) {
       return reply.code(404).send({ message: "Quote not found" });
@@ -590,11 +616,9 @@ export async function quoteRoutes(app: FastifyInstance) {
   app.post("/quotes/:id/verify", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body as {
-      razorpay_order_id?: string;
-      razorpay_payment_id?: string;
-      razorpay_signature?: string;
-    };
+    const verifyBody = parseBody(req, reply, QuoteVerifyPaymentSchema);
+    if (!verifyBody) return;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = verifyBody;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return reply.code(400).send({

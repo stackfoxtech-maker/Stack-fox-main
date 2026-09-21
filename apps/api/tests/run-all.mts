@@ -38,6 +38,7 @@ const SUITES = [
   "critical-regressions.mts",
   "catalogue-cache.mts",
   "transactions.mts",
+  "quote-pricing.mts",
 ];
 
 function run(file: string): Promise<number> {
