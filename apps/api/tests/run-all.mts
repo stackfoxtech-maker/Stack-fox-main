@@ -35,6 +35,7 @@ const SUITES = [
   "validation.mts",
   "api-keys.mts",
   "public-api-tenancy.mts",
+  "critical-regressions.mts",
 ];
 
 function run(file: string): Promise<number> {
