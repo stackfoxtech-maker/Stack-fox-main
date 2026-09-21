@@ -4,6 +4,7 @@ import { hmacSign } from "../lib/hash";
 import { toJson } from "../lib/json";
 import { assertPublicHttpUrl } from "../lib/safeUrl";
 import { TIMEOUT } from "../lib/timeouts";
+import { log } from "../lib/logger";
 
 createWorker(QUEUE.webhookDispatcher, async (job) => {
   const { code, payload, engagementId } = job.data;
@@ -41,8 +42,9 @@ createWorker(QUEUE.webhookDispatcher, async (job) => {
         where: { id: endpoint.id },
         data: { active: false },
       });
-      console.error(
-        `[webhookDispatcher] disabled endpoint ${endpoint.id} — ${check.reason}`,
+      log().error(
+        { endpointId: endpoint.id, reason: check.reason },
+        "webhook endpoint disabled",
       );
       continue;
     }

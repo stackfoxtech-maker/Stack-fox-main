@@ -9,6 +9,8 @@ import { prisma } from "@stackfox/prisma";
 import { redis } from "./lib/redis";
 import { isStorageConfigured } from "./lib/storage";
 import { authPlugin } from "./plugins/auth";
+import { log, newReqId, normaliseReqId, runWithReqId } from "./lib/logger";
+import { registerErrorHandler } from "./lib/errorHandler";
 
 /**
  * Background workers run inline with the HTTP server by default — the deploy is
@@ -64,11 +66,26 @@ const app = Fastify({
   // by the proxy's address: the rate limiter below would throttle all users as
   // one, and req.ip would never be the real client.
   trustProxy: true,
+  // Fastify's default id is a per-process counter ("req-1"), which restarts
+  // at 1 on every deploy and collides across replicas. Accept a caller's
+  // x-request-id when it is well-formed so a trace spans client and API,
+  // otherwise mint a UUID.
+  genReqId: (req) => normaliseReqId(req.headers["x-request-id"]) ?? newReqId(),
   logger: {
     transport:
       process.env.NODE_ENV === "development"
         ? { target: "pino-pretty" }
         : undefined,
+    redact: {
+      // A log aggregator is a second place a bearer token can leak from, and
+      // it is the place nobody audits.
+      paths: [
+        "req.headers.authorization",
+        "req.headers.cookie",
+        "req.headers['x-api-key']",
+      ],
+      censor: "[redacted]",
+    },
   },
 });
 
@@ -124,6 +141,16 @@ async function start() {
       }
     },
   );
+
+  // Everything downstream of here — including queued jobs and outbound calls —
+  // runs inside a context carrying this request's id. onRequest is the first
+  // hook in the lifecycle, so the whole handler chain is covered.
+  app.addHook("onRequest", (req, reply, done) => {
+    reply.header("x-request-id", req.id);
+    runWithReqId(String(req.id), { route: req.routeOptions?.url }, done);
+  });
+
+  registerErrorHandler(app);
 
   // Auth plugin (decorators + hooks)
   await app.register(authPlugin);
@@ -248,6 +275,6 @@ async function start() {
 }
 
 start().catch((err) => {
-  console.error(err);
+  log().fatal({ err }, "server failed to start");
   process.exit(1);
 });

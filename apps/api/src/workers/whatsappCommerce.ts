@@ -2,6 +2,7 @@ import { createWorker, QUEUE } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
 import { generateContent } from "../lib/gemini";
 import { TIMEOUT } from "../lib/timeouts";
+import { log } from "../lib/logger";
 
 createWorker(QUEUE.whatsappCommerce, async (job) => {
   const { from, message, type, timestamp } = job.data;
@@ -51,7 +52,7 @@ Return as JSON: { intent, entities: { services: [], projectRef: null, ticketRef:
           }),
         });
       } catch (err) {
-        console.error("[whatsappCommerce] Failed to send reply:", err);
+        log().error({ err }, "failed to send WhatsApp reply");
       }
     }
   }

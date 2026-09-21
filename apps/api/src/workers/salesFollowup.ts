@@ -1,6 +1,7 @@
 import { registerCron } from "./cron/registry";
 import { queues } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
+import { log } from "../lib/logger";
 
 /**
  * Sales follow-up reminders.
@@ -38,10 +39,10 @@ registerCron("sales-followup", async () => {
           },
           userIds: [f.assignedTo],
         })
-        .catch((err) => console.error("[salesFollowup] notify failed:", err.message));
+        .catch((err) => log().error({ err }, "sales follow-up notify failed"));
     }
     await prisma.followUp.update({ where: { id: f.id }, data: { reminderSentAt: new Date() } });
   }
 
-  if (due.length) console.log(`[salesFollowup] reminded ${due.length} follow-up(s)`);
+  if (due.length) log().info({ count: due.length }, "sales follow-ups reminded");
 });

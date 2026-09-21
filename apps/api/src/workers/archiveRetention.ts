@@ -2,6 +2,7 @@ import { registerCron } from "./cron/registry";
 import { prisma } from "@stackfox/prisma";
 import { deleteFile } from "../lib/storage";
 import { isRetainedDocument } from "../lib/documentIntegrity";
+import { log } from "../lib/logger";
 
 registerCron("archive-retention", async () => {
   const retentionDays = parseInt(process.env.FILE_RETENTION_DAYS ?? "365");
@@ -32,12 +33,12 @@ registerCron("archive-retention", async () => {
       });
       archived++;
     } catch (err) {
-      console.error(`[archiveRetention] Failed to archive ${file.id}:`, err);
+      log().error({ err, fileId: file.id }, "archive failed");
     }
   }
 
-  console.log(
-    `[archiveRetention] Archived ${archived}/${expiredFiles.length} files` +
-      (protectedCount ? `, skipped ${protectedCount} document(s) of record` : ""),
+  log().info(
+    { archived, total: expiredFiles.length, skippedRecords: protectedCount },
+    "archive retention sweep complete",
   );
 });

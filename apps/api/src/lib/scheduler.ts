@@ -1,5 +1,6 @@
 import { queues } from "./queue";
 import { redis } from "./redis";
+import { log } from "./logger";
 
 /**
  * Periodic-job registration.
@@ -76,9 +77,9 @@ export async function registerSchedules(): Promise<void> {
       { name: s.id, data: s.data ?? {} },
     );
   }
-  console.log(
-    `[scheduler] ${SCHEDULES.length} periodic jobs on 'cron' queue (tz=${TZ}): ` +
-      SCHEDULES.map((s) => s.id).join(", "),
+  log().info(
+    { count: SCHEDULES.length, tz: TZ, schedules: SCHEDULES.map((s) => s.id) },
+    "periodic jobs registered on the cron queue",
   );
 }
 
@@ -113,7 +114,7 @@ export async function pruneStaleSchedulers(): Promise<void> {
   for (const sched of existing) {
     if (sched?.key && !wanted.has(sched.key)) {
       await cron.removeJobScheduler(sched.key).catch(() => {});
-      console.log(`[scheduler] removed stale schedule ${sched.key}`);
+      log().info({ key: sched.key }, "removed stale schedule");
     }
   }
 
@@ -141,7 +142,11 @@ async function cleanupRetiredQueues(): Promise<void> {
       }
     } while (cursor !== "0");
   }
-  if (removed) console.log(`[scheduler] cleared ${removed} keys from ${RETIRED_QUEUES.length} retired queues`);
+  if (removed)
+    log().info(
+      { removed, queues: RETIRED_QUEUES.length },
+      "cleared keys from retired queues",
+    );
 
   await redis.set(MARKER, new Date().toISOString()).catch(() => {});
 }

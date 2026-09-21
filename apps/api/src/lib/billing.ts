@@ -1,6 +1,7 @@
 import { prisma } from "@stackfox/prisma";
 import { queues } from "./queue";
 import { toJson } from "./json";
+import { log } from "./logger";
 
 interface PaymentFacts {
   gateway: "RAZORPAY" | "STRIPE" | "BANK_TRANSFER";
@@ -72,7 +73,7 @@ export async function recordInvoicePayment(invoice: InvoiceLike, facts: PaymentF
           milestoneRef: invoice.milestoneRef ?? undefined,
         })
         .catch((err) => {
-          console.warn(`[billing] revRec enqueue failed for ${invoice.id}:`, err.message);
+          log().warn({ err, invoiceId: invoice.id }, "revRec enqueue failed");
         });
     }
   }
@@ -83,6 +84,6 @@ export async function recordInvoicePayment(invoice: InvoiceLike, facts: PaymentF
   await queues.docGen
     .add("invoice-pdf", { type: "invoice", invoiceId: invoice.id })
     .catch((err) => {
-      console.warn(`[billing] invoice pdf enqueue failed for ${invoice.id}:`, err.message);
+      log().warn({ err, invoiceId: invoice.id }, "invoice pdf enqueue failed");
     });
 }

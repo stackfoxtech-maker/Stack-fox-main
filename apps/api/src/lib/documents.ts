@@ -4,6 +4,7 @@ import { uploadFile, copyToWorm } from "./storage";
 import { recordDocument } from "./documentIntegrity";
 import { renderDocument } from "./pdf";
 import { asString } from "./json";
+import { log } from "./logger";
 import {
   renderCompanyInvoicePdf,
   awlInvoiceNumber,
@@ -148,7 +149,7 @@ export async function buildInvoicePdf(
     await copyToWorm(invoiceArchiveKey, pdf);
     invoiceArchived = `worm/${invoiceArchiveKey}`;
   } catch (err) {
-    console.error(`[documents] archive copy failed for invoice ${invoice.id}:`, err);
+    log().error({ err, invoiceId: invoice.id }, "archive copy failed");
   }
 
   // The hash lives in the ledger, not on the invoice row — Invoice has no
@@ -218,7 +219,7 @@ export async function buildContractPdf(contractId: string): Promise<string | nul
     await copyToWorm(wormKey, pdf);
     contractArchived = `worm/${wormKey}`;
   } catch (err) {
-    console.error(`[documents] archive copy failed for contract ${contract.id}:`, err);
+    log().error({ err, contractId: contract.id }, "archive copy failed");
   }
 
   await recordDocument({

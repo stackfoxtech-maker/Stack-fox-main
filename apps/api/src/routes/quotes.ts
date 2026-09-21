@@ -10,6 +10,7 @@ import { LIST_CAP, pageParams, paginated } from "../lib/http";
 import { ensurePersonalOrg } from "../lib/scope";
 import * as ids from "../lib/id";
 import { resolveGstType, splitGst } from "../lib/gst";
+import { log } from "../lib/logger";
 
 interface QuoteItem {
   name: string;
@@ -219,7 +220,7 @@ export interface BackfillOptions {
 export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
   const dryRun = opts.dryRun ?? true;
   const allowDestructive = opts.allowDestructive ?? false;
-  if (dryRun) console.log("[backfill] DRY RUN — no writes will be made");
+  if (dryRun) log().info("backfill dry run — no writes will be made");
 
   const paidQuotes = await prisma.quote.findMany({ where: { status: "paid" } });
   for (const quote of paidQuotes) {
@@ -242,8 +243,9 @@ export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
           const contractTypes = getContractTypes(tier);
           const checkoutDetails = (quote.checkoutDetails as any) ?? {};
           if (dryRun) {
-            console.log(
-              `[backfill] would add ${contractTypes.length} contracts to engagement ${eng.id} (quote ${quote.quoteNumber})`,
+            log().info(
+              { contracts: contractTypes.length, engagementId: eng.id, quote: quote.quoteNumber },
+              "backfill would add contracts",
             );
             continue;
           }
@@ -257,7 +259,10 @@ export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
               },
             });
           }
-          console.log(`Backfilled contracts for engagement ${eng.id} (quote ${quote.quoteNumber})`);
+          log().info(
+            { engagementId: eng.id, quote: quote.quoteNumber },
+            "backfilled contracts",
+          );
         }
       }
       continue;
@@ -266,18 +271,18 @@ export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
     // If there are engagements but none have projects, the previous backfill created
     // empty engagements. Delete them so we can create a proper one.
     if (existingEngs.length && !allowDestructive) {
-      console.warn(
-        `[backfill] quote ${quote.quoteNumber}: org ${orgId} has ${existingEngs.length} ` +
-          `engagement(s) with no projects. Re-provisioning would DELETE their invoices and ` +
-          `contracts. Skipped — pass --allow-destructive after reviewing.`,
+      log().warn(
+        { quote: quote.quoteNumber, orgId, engagements: existingEngs.length },
+        "skipped: re-provisioning would delete existing invoices and contracts; " +
+          "pass --allow-destructive after reviewing",
       );
       continue;
     }
 
     if (dryRun) {
-      console.log(
-        `[backfill] would delete ${existingEngs.length} engagement(s) for org ${orgId} ` +
-          `and re-provision from quote ${quote.quoteNumber}`,
+      log().info(
+        { engagements: existingEngs.length, orgId, quote: quote.quoteNumber },
+        "backfill would delete engagements and re-provision",
       );
       continue;
     }
@@ -287,8 +292,11 @@ export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
         prisma.invoice.count({ where: { engagementId: eng.id } }),
         prisma.contract.count({ where: { engagementId: eng.id } }),
       ]);
-      console.warn(
-        `[backfill] DELETING engagement ${eng.id} with ${invoices} invoice(s) and ${contracts} contract(s)`,
+      // Destructive and irreversible: this line is the only record that it
+      // happened, so it belongs in the log stream rather than on a terminal.
+      log().warn(
+        { engagementId: eng.id, invoices, contracts },
+        "DELETING engagement and its invoices and contracts",
       );
       await prisma.invoice.deleteMany({ where: { engagementId: eng.id } });
       await prisma.contract.deleteMany({ where: { engagementId: eng.id } });
@@ -297,9 +305,12 @@ export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
 
     try {
       await provisionQuote(quote, quote.userId);
-      console.log(`Backfilled quote ${quote.quoteNumber}: created engagement + projects + contracts`);
+      log().info(
+        { quote: quote.quoteNumber },
+        "backfilled quote: engagement, projects and contracts created",
+      );
     } catch (err) {
-      console.error(`Failed to backfill quote ${quote.quoteNumber}:`, err);
+      log().error({ err, quote: quote.quoteNumber }, "failed to backfill quote");
     }
   }
 }

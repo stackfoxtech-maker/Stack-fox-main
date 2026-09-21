@@ -1,5 +1,6 @@
 import { Queue, Worker, type Job, type WorkerOptions } from "bullmq";
 import { redis } from "./redis";
+import { currentReqId, log, newReqId, runWithReqId } from "./logger";
 
 // BullMQ needs the full connection (password/tls included — Upstash requires both)
 // and maxRetriesPerRequest:null, or Queue/Worker connections hang instead of erroring.
@@ -57,8 +58,35 @@ export type QueueName = (typeof QUEUE)[keyof typeof QUEUE];
 const openQueues: Queue[] = [];
 const openWorkers: Worker[] = [];
 
+/**
+ * The key a correlation id travels under inside a job payload. Underscored so
+ * it cannot collide with a real field, and stripped from nothing — workers
+ * read it, processors ignore it.
+ */
+export const REQ_ID_FIELD = "__reqId";
+
+/**
+ * Adds the in-flight request id to a job payload. A non-object payload (or no
+ * active request, as when a cron schedule fires) is returned untouched —
+ * the worker mints a fresh id in that case rather than failing.
+ */
+export function stampReqId(data: unknown): unknown {
+  const reqId = currentReqId();
+  if (!reqId || !data || typeof data !== "object" || Array.isArray(data)) return data;
+  return { ...(data as Record<string, unknown>), [REQ_ID_FIELD]: reqId };
+}
+
 export function createQueue(name: QueueName) {
   const queue = new Queue(name, { connection });
+
+  // Stamp the enqueuing request's id onto every job, by overriding `add` here
+  // rather than at each call site. There are twelve call sites today; the
+  // point of doing it in one place is the thirteenth, which would otherwise
+  // silently drop the id and break the trace exactly when someone needs it.
+  const originalAdd = queue.add.bind(queue);
+  queue.add = ((jobName: string, data: unknown, opts?: unknown) =>
+    originalAdd(jobName, stampReqId(data), opts as never)) as typeof queue.add;
+
   openQueues.push(queue);
   return queue;
 }
@@ -79,7 +107,19 @@ export function createWorker<T = any>(
   processor: (job: Job<T>) => Promise<void>,
   opts?: Partial<WorkerOptions>,
 ) {
-  const worker = new Worker<T>(name, processor, {
+  // Every job runs inside the correlation context of the request that queued
+  // it, with a logger already bound to the queue, job and request ids. This is
+  // what makes "the invoice never arrived" followable: one id spans the API
+  // log line, the job payload and the worker log line.
+  const traced = (job: Job<T>) => {
+    const carried = (job.data as Record<string, unknown> | null)?.[REQ_ID_FIELD];
+    const reqId = typeof carried === "string" ? carried : newReqId();
+    return runWithReqId(reqId, { queue: name, jobId: job.id, jobName: job.name }, () =>
+      processor(job),
+    );
+  };
+
+  const worker = new Worker<T>(name, traced, {
     connection,
     concurrency: opts?.concurrency ?? 5,
     // BullMQ's default stalled-job check runs every 30s per worker. With 19
@@ -100,7 +140,15 @@ export function createWorker<T = any>(
   });
 
   worker.on("failed", (job, err) => {
-    console.error(`[${name}] Job ${job?.id} failed:`, err.message);
+    const carried = (job?.data as Record<string, unknown> | null)?.[REQ_ID_FIELD];
+    // The listener fires outside the job's async context, so bind the id from
+    // the payload rather than reading the store.
+    log().child({
+      queue: name,
+      jobId: job?.id,
+      jobName: job?.name,
+      ...(typeof carried === "string" ? { reqId: carried } : {}),
+    }).error({ err }, "job failed");
   });
 
   openWorkers.push(worker);

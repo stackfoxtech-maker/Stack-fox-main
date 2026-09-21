@@ -1,6 +1,7 @@
 import { prisma } from "@stackfox/prisma";
 import { queues } from "./queue";
 import { toJson } from "./json";
+import { log } from "./logger";
 
 export interface EmitOptions {
   code: string;
@@ -42,7 +43,10 @@ export async function emitEvent(opts: EmitOptions) {
       engagementId: opts.engagementId,
     }),
   ]).catch((err) => {
-    console.warn(`[emitEvent] queue dispatch failed for ${opts.code} (event persisted, will not retry):`, err.message);
+    log().warn(
+      { err, code: opts.code },
+      "event queue dispatch failed; the event is persisted and will not be retried",
+    );
   });
   void dispatch;
 

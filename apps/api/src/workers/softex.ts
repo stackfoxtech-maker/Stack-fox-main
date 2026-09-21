@@ -1,6 +1,7 @@
 import { registerCron } from "./cron/registry";
 import { prisma } from "@stackfox/prisma";
 import { toJson } from "../lib/json";
+import { log } from "../lib/logger";
 
 interface SoftexJob {
   /** Omitted by the quarterly scheduler — then every eligible engagement is filed. */
@@ -99,7 +100,7 @@ registerCron("softex-quarterly", async (job) => {
     try {
       await fileForEngagement(row.engagementId, quarter, year);
     } catch (err) {
-      console.error(`[softex] Q${quarter}-${year} failed for ${row.engagementId}:`, err);
+      log().error({ err, quarter, year, engagementId: row.engagementId }, "softex row failed");
     }
   }
 });

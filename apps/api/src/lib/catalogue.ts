@@ -1,5 +1,6 @@
 import { readFileSync, existsSync, writeFileSync } from "fs";
 import { resolve } from "path";
+import { log } from "./logger";
 
 /**
  * The storefront catalogue.
@@ -101,7 +102,7 @@ function load(): Map<string, CatalogueItem> {
 
   cache = map;
   loadedFrom = path;
-  console.log(`[catalogue] Loaded ${map.size} purchasable items from ${path}`);
+  log().info({ items: map.size, path }, "catalogue loaded");
   return cache;
 }
 

@@ -1,4 +1,5 @@
 import Redis from "ioredis";
+import { rootLogger } from "./logger";
 
 export const redis = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", {
   maxRetriesPerRequest: null,
@@ -33,9 +34,10 @@ redis.connect().catch((err) => {
     url.startsWith("redis://") && !url.includes("localhost") && !url.includes("127.0.0.1")
       ? " Hosted Redis usually requires TLS — try the rediss:// scheme."
       : "";
-  console.error(
-    `[redis] Connection failed: ${err.message}.${hint} ` +
-      "OTP, password reset, token revocation and all background workers are degraded.",
+  rootLogger.error(
+    { err, hint },
+    "Redis connection failed. OTP, password reset, token revocation and all " +
+      "background workers are degraded.",
   );
 });
 
@@ -82,7 +84,7 @@ export async function tryRedis<T>(
   try {
     return await fn();
   } catch (err) {
-    console.warn(`[redis] ${op} failed: ${(err as Error).message}`);
+    rootLogger.warn({ err, op }, "redis operation failed; using fallback");
     return fallback;
   }
 }

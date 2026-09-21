@@ -1,4 +1,5 @@
 import type { Job } from "bullmq";
+import { log } from "../../lib/logger";
 
 /**
  * Handler registry for the consolidated `cron` queue.
@@ -45,7 +46,7 @@ export function registerCron(id: string, handler: CronHandler): void {
 export async function dispatchCron(job: Job): Promise<void> {
   const handler = handlers.get(job.name);
   if (!handler) {
-    console.error(`[cron] no handler registered for "${job.name}" — skipped`);
+    log().error({ jobName: job.name }, "no cron handler registered; job skipped");
     return;
   }
   await handler(job);

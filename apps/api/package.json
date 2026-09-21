@@ -24,7 +24,8 @@
     "test:parity": "tsx tests/provisioning-parity.mts",
     "test:money": "tsx tests/money-and-ids.mts",
     "seed:master-admin": "tsx scripts/seed-master-admin.mts",
-    "backfill:quotes": "tsx scripts/backfill-paid-quotes.mts"
+    "backfill:quotes": "tsx scripts/backfill-paid-quotes.mts",
+    "test:observability": "tsx tests/observability.mts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",

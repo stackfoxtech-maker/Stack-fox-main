@@ -1,5 +1,6 @@
 import Razorpay from "razorpay";
 import { createHmac, timingSafeEqual } from "crypto";
+import { log } from "./logger";
 
 let _razorpay: InstanceType<typeof Razorpay> | null = null;
 
@@ -91,11 +92,12 @@ export function getStripe() {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Stripe = require("stripe");
     stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  } catch {
-    console.error(
-      "[payments] STRIPE_SECRET_KEY is set but the `stripe` package is not " +
-        "installed. Stripe webhooks will be rejected. Run `pnpm --filter " +
-        "@stackfox/api add stripe`, or unset STRIPE_SECRET_KEY.",
+  } catch (err) {
+    log().error(
+      { err },
+      "STRIPE_SECRET_KEY is set but the `stripe` package is not installed. " +
+        "Stripe webhooks will be rejected. Run `pnpm --filter @stackfox/api " +
+        "add stripe`, or unset STRIPE_SECRET_KEY.",
     );
     stripe = null;
   }
