@@ -161,6 +161,47 @@ if (!estId) {
   check(`anonymous GET /estimates/:id/pdf -> ${anonPdf.s}`, anonPdf.s === 404, "expect 404");
 }
 
+// ── SF-H4: request validation on the money and admin paths ──────────────────
+{
+  // A malformed body must be a 400 with field detail, not a 500 or a silent write.
+  const badOrder = await call("POST", "/payments/create-order", attacker.token, { invoiceId: 123 });
+  check(`non-string invoiceId -> ${badOrder.s}`, badOrder.s === 400, "expect 400");
+  check(`400 carries field detail`, Array.isArray(badOrder.b?.details), "expect details[]");
+
+  const missing = await call("POST", "/payments/create-order", attacker.token, {});
+  check(`missing invoiceId -> ${missing.s}`, missing.s === 400, "expect 400");
+
+  // A half-supplied gateway handshake must be refused, not silently treated as
+  // "unpaid" — that would hide a real payment.
+  const halfHandshake = await call("POST", "/checkout/nonexistent/complete", attacker.token, {
+    razorpay_payment_id: "pay_abc",
+  });
+  check(`half handshake -> ${halfHandshake.s}`, halfHandshake.s === 400, "expect 400 before any lookup");
+
+  // Mass assignment: an unexpected field is rejected, not written.
+  const staffLogin = await call("POST", "/auth/login", undefined, {
+    email: staffEmail, password: "testpass1234",
+  });
+  const staffToken = staffLogin.b?.data?.accessToken;
+  if (staffToken) {
+    const massAssign = await call("POST", "/admin/flags", staffToken, {
+      id: `p0-flag-${stamp}`,
+      defaultValue: false,
+      updatedAt: "1999-01-01T00:00:00.000Z",
+    });
+    check(`unexpected field rejected -> ${massAssign.s}`, massAssign.s === 400, "expect 400, strict schema");
+
+    const goodFlag = await call("POST", "/admin/flags", staffToken, {
+      id: `p0-flag-ok-${stamp}`,
+      description: "created by the phase 0 suite",
+      defaultValue: true,
+    });
+    check(`valid admin create still works -> ${goodFlag.s}`, goodFlag.s === 200, "expect 200");
+  } else {
+    check("staff login for admin checks", false, "could not log in as the seeded staff account");
+  }
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 console.log("\n--- PHASE 0 SECURITY ---");
 let failed = 0;

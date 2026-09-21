@@ -5,6 +5,8 @@ import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
 import { recordInvoicePayment } from "../lib/billing";
 import { requireAuth } from "../plugins/auth";
 import { clientScope } from "../lib/scope";
+import { parseBody } from "../lib/validate";
+import { CreateOrderSchema, VerifyPaymentSchema } from "./moneySchemas";
 
 const MIN_AMOUNT_PAISE = 100;
 
@@ -18,8 +20,9 @@ export async function paymentRoutes(app: FastifyInstance) {
     const scope = await clientScope(req, reply);
     if (scope === undefined) return;
 
-    const { invoiceId } = req.body as { invoiceId?: string };
-    if (!invoiceId) return reply.code(400).send({ message: "invoiceId is required" });
+    const parsed = parseBody(req, reply, CreateOrderSchema);
+    if (!parsed) return;
+    const { invoiceId } = parsed;
 
     const invoice = await prisma.invoice.findFirst({
       where: { id: invoiceId, ...(scope !== null ? { orgId: scope } : {}) },
@@ -77,16 +80,9 @@ export async function paymentRoutes(app: FastifyInstance) {
     if (!requireAuth(req, reply)) return;
     const scope = await clientScope(req, reply);
     if (scope === undefined) return;
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId } = req.body as {
-      razorpay_order_id?: string;
-      razorpay_payment_id?: string;
-      razorpay_signature?: string;
-      paymentId?: string;
-    };
-
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !paymentId) {
-      return reply.code(400).send({ message: "razorpay_order_id, razorpay_payment_id, razorpay_signature and paymentId are all required" });
-    }
+    const verified = parseBody(req, reply, VerifyPaymentSchema);
+    if (!verified) return;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId } = verified;
 
     const valid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
     if (!valid) {

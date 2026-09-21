@@ -18,11 +18,15 @@ import {
 import { toJson } from "../lib/json";
 import { resolveGstType, splitGst } from "../lib/gst";
 import { paymentModeAmount } from "@stackfox/core";
+import { parseBody } from "../lib/validate";
+import { StartCheckoutSchema, CompleteCheckoutSchema } from "./moneySchemas";
 
 export async function checkoutRoutes(app: FastifyInstance) {
   // POST /checkout/start — hash guard G-039
   app.post("/checkout/start", async (req, reply) => {
-    const { estimateId } = req.body as { estimateId: string };
+    const started = parseBody(req, reply, StartCheckoutSchema);
+    if (!started) return;
+    const { estimateId } = started;
     const estimate = await prisma.estimate.findUnique({
       where: { id: estimateId },
       include: { workspace: { include: { customLineItems: true } } },
@@ -56,7 +60,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
     const sid = `ckout_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const session: CheckoutSession = {
       estimateId,
-      tier: (req.body as any).tier ?? "GROWTH",
+      tier: started.tier ?? "GROWTH",
       step: 1,
     };
 
@@ -205,6 +209,8 @@ export async function checkoutRoutes(app: FastifyInstance) {
   app.post("/checkout/:sid/complete", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { sid } = req.params as { sid: string };
+    const payload = parseBody(req, reply, CompleteCheckoutSchema);
+    if (!payload) return;
     const lockKey = `checkout-complete:${sid}`;
 
     // Guards concurrent submits. The consumedAt check below guards sequential
@@ -256,11 +262,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
       // Verify the handshake BEFORE writing anything — a bad signature must not
       // leave a provisioned engagement behind.
-      const pay = (req.body ?? {}) as {
-        razorpay_order_id?: string;
-        razorpay_payment_id?: string;
-        razorpay_signature?: string;
-      };
+      const pay = payload;
       const hasHandshake = Boolean(pay.razorpay_payment_id && pay.razorpay_signature);
       const rzpOrderId = pay.razorpay_order_id ?? session.razorpayOrderId;
       if (hasHandshake) {
@@ -296,7 +298,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
               paymentMode: (session.paymentTerms as any)?.mode ?? "MILESTONE",
               clauseConfig: toJson(session.clauseSelections ?? {}),
               tier: session.tier,
-              referralCode: (req.body as any)?.referralCode,
+              referralCode: payload.referralCode,
               status: "ACCEPTED",
             },
           });
@@ -431,9 +433,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
         await emitEvent({ code: "PROJECT_CREATED", payload: { projectId: p.id }, actor: req.user!.sub, projectId: p.id, engagementId: engId });
       }
 
-      if ((req.body as any)?.referralCode) {
+      if (payload.referralCode) {
         await queues.referralProcessor
-          .add("convert", { referralCode: (req.body as any).referralCode, orderId: ordId })
+          .add("convert", { referralCode: payload.referralCode, orderId: ordId })
           .catch(() => {});
       }
 
