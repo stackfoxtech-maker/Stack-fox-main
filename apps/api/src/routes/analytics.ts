@@ -5,8 +5,8 @@ import { requireRole } from "../plugins/auth";
 /** Company-wide aggregates — internal staff only. */
 const ANALYTICS_ROLES = ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM", "SALES", "SE"];
 
-function toRupees(paise: number) {
-  return paise / 100;
+function toRupees(paise: number | bigint) {
+  return Number(paise) / 100;
 }
 
 export async function analyticsRoutes(app: FastifyInstance) {

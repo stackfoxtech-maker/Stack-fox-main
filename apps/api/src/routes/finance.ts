@@ -227,11 +227,13 @@ export async function financeRoutes(app: FastifyInstance) {
       return reply.code(409).send({ error: "Invoice is cancelled" });
     }
 
-    const balance = Math.max(0, existing.grandTotal - (existing.amountPaid ?? 0));
+    const existingTotal = Number(existing.grandTotal);
+    const existingPaid = Number(existing.amountPaid ?? 0);
+    const balance = Math.max(0, existingTotal - existingPaid);
     const applied =
       amount != null ? Math.min(balance, Math.max(0, Math.round(Number(amount)))) : balance;
-    const newPaid = Math.min(existing.grandTotal, (existing.amountPaid ?? 0) + applied);
-    const fullyPaid = newPaid >= existing.grandTotal;
+    const newPaid = Math.min(existingTotal, existingPaid + applied);
+    const fullyPaid = newPaid >= existingTotal;
 
     const updated = await prisma.invoice.update({
       where: { id },
@@ -324,8 +326,9 @@ export async function financeRoutes(app: FastifyInstance) {
     if (!invoice || invoice.status === "PAID" || invoice.status === "CANCELLED") return;
 
     const captured = Math.max(0, Math.round(capturedPaise) || 0);
-    const newPaid = Math.min(invoice.grandTotal, (invoice.amountPaid ?? 0) + captured);
-    const fullyPaid = newPaid >= invoice.grandTotal;
+    const grandTotal = Number(invoice.grandTotal);
+    const newPaid = Math.min(grandTotal, Number(invoice.amountPaid ?? 0) + captured);
+    const fullyPaid = newPaid >= grandTotal;
 
     const updated = await prisma.invoice.update({
       where: { id: invoice.id },
@@ -502,7 +505,7 @@ export async function financeRoutes(app: FastifyInstance) {
     const now = Date.now();
     const buckets = { current: 0, d30: 0, d60: 0, d90: 0, d90plus: 0, totalOutstanding: 0 };
     for (const inv of invoices) {
-      const outstanding = Math.max(0, (inv.grandTotal ?? 0) - (inv.amountPaid ?? 0));
+      const outstanding = Math.max(0, Number(inv.grandTotal ?? 0) - Number(inv.amountPaid ?? 0));
       if (outstanding === 0) continue;
       buckets.totalOutstanding += outstanding;
       const anchor = (inv.dueDate ?? inv.createdAt).getTime();

@@ -54,7 +54,7 @@ export async function estimateRoutes(app: FastifyInstance) {
       where: { type: "POINT", key: "point" },
       orderBy: { effectiveFrom: "desc" },
     });
-    const pointRate = rateCard?.rate ?? 280000;
+    const pointRate = Number(rateCard?.rate ?? 280000);
 
     // Calculate totals
     let basePoints = 0;

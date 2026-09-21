@@ -70,18 +70,19 @@ async function spendReport(scope: string | null) {
   const byMonth = new Map(months.map((m) => [m, { invoiced: 0, paid: 0 }]));
 
   for (const inv of invoices) {
+    const grandTotal = Number(inv.grandTotal);
     const bucket = byMonth.get(monthKey(inv.createdAt));
-    if (bucket) bucket.invoiced += inv.grandTotal;
+    if (bucket) bucket.invoiced += grandTotal;
     if (inv.paidAt) {
       const paidBucket = byMonth.get(monthKey(inv.paidAt));
-      if (paidBucket) paidBucket.paid += inv.grandTotal;
+      if (paidBucket) paidBucket.paid += grandTotal;
     }
   }
 
-  const totalInvoiced = invoices.reduce((s, i) => s + i.grandTotal, 0);
+  const totalInvoiced = invoices.reduce((s, i) => s + Number(i.grandTotal), 0);
   const totalPaid = invoices
     .filter((i) => i.status === "PAID")
-    .reduce((s, i) => s + i.grandTotal, 0);
+    .reduce((s, i) => s + Number(i.grandTotal), 0);
 
   const now = new Date();
   const overdue = invoices.filter(
@@ -101,7 +102,7 @@ async function spendReport(scope: string | null) {
       paid: paise(totalPaid),
       outstanding: paise(totalInvoiced - totalPaid),
       overdueCount: overdue.length,
-      overdueAmount: paise(overdue.reduce((s, i) => s + i.grandTotal, 0)),
+      overdueAmount: paise(overdue.reduce((s, i) => s + Number(i.grandTotal), 0)),
       invoiceCount: invoices.length,
     },
   };
@@ -200,7 +201,7 @@ async function revisionsReport(scope: string | null) {
       changeRequestValue: paise(
         p.changeRequests
           .filter((c) => c.status === "APPROVED")
-          .reduce((s, c) => s + (c.costDelta ?? 0), 0),
+          .reduce((s, c) => s + Number(c.costDelta ?? 0), 0),
       ),
     };
   });

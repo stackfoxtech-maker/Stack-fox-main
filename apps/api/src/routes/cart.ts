@@ -87,7 +87,7 @@ async function catalogPrice(
   // Database-backed ids (SF-CAT-NNN) and slugs, priced in paise.
   if (itemType === "package") {
     const pkg = await prisma.package.findUnique({ where: { id: itemId } });
-    if (pkg) return { name: pkg.name, price: pkg.flatPrice / 100, source: "db" };
+    if (pkg) return { name: pkg.name, price: Number(pkg.flatPrice) / 100, source: "db" };
   }
 
   const service = await prisma.serviceUnit.findFirst({
@@ -95,11 +95,12 @@ async function catalogPrice(
   });
   if (!service) return null;
 
-  const starter = service.starterPrice ?? 0;
+  const starter = Number(service.starterPrice ?? 0);
+  const premiumMinimum = Number(service.premiumMinimum ?? 0);
   const multiplier = tier === "PREMIUM" ? 1.4 : tier === "GROWTH" ? 1.5 : 1;
   const paise =
-    tier === "PREMIUM" && service.premiumMinimum
-      ? Math.max(service.premiumMinimum, Math.round(starter * multiplier))
+    tier === "PREMIUM" && premiumMinimum
+      ? Math.max(premiumMinimum, Math.round(starter * multiplier))
       : Math.round(starter * multiplier);
 
   return { name: service.name, price: paise / 100, source: "db" };

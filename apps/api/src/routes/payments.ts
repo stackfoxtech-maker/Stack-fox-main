@@ -35,7 +35,7 @@ export async function paymentRoutes(app: FastifyInstance) {
     const balance =
       invoice.status === "PAID" || invoice.status === "CANCELLED"
         ? 0
-        : Math.max(0, invoice.grandTotal - (invoice.amountPaid ?? 0));
+        : Math.max(0, Number(invoice.grandTotal) - Number(invoice.amountPaid ?? 0));
     if (balance < MIN_AMOUNT_PAISE) {
       return reply.code(400).send({ message: `Nothing to pay, or amount below minimum (${MIN_AMOUNT_PAISE} paise)` });
     }
@@ -112,7 +112,7 @@ export async function paymentRoutes(app: FastifyInstance) {
     // rev-rec entry must reflect what was actually charged in this transaction,
     // not the grand total, or an invoice part-paid by bank transfer first is
     // double-counted in the ledger.
-    const charged = Math.max(0, invoice.grandTotal - (invoice.amountPaid ?? 0));
+    const charged = Math.max(0, Number(invoice.grandTotal) - Number(invoice.amountPaid ?? 0));
 
     const updated = await prisma.invoice.update({
       where: { id: invoice.id },

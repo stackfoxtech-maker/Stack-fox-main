@@ -119,7 +119,7 @@ export async function programRoutes(app: FastifyInstance) {
       totalEngagements: engagements.length,
       totalProjects: engagements.reduce((s, e) => s + e.projects.length, 0),
       totalInvoiced: engagements.reduce(
-        (s, e) => s + e.invoices.reduce((si, inv) => si + (inv.grandTotal ?? 0), 0),
+        (s, e) => s + e.invoices.reduce((si, inv) => si + Number(inv.grandTotal ?? 0), 0),
         0
       ),
       generatedAt: new Date().toISOString(),
@@ -144,7 +144,7 @@ export async function programRoutes(app: FastifyInstance) {
 
     const activeProjects = engagements.flatMap((e) => e.projects).filter((p) => p.status === "ACTIVE");
     const totalInvoiced = engagements.reduce(
-      (s, e) => s + e.invoices.reduce((si, inv) => si + (inv.grandTotal ?? 0), 0),
+      (s, e) => s + e.invoices.reduce((si, inv) => si + Number(inv.grandTotal ?? 0), 0),
       0
     );
 

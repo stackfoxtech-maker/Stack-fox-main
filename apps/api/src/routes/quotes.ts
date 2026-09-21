@@ -422,7 +422,7 @@ export async function quoteRoutes(app: FastifyInstance) {
     }
     if (tier && ["STARTER", "GROWTH", "PREMIUM"].includes(tier)) {
       data.tier = tier;
-      data.estimateRange = computeEstimateRange(existing.subtotal, tier) as any;
+      data.estimateRange = computeEstimateRange(Number(existing.subtotal), tier) as any;
     }
 
     const quote = await prisma.quote.update({ where: { id }, data });
@@ -467,7 +467,8 @@ export async function quoteRoutes(app: FastifyInstance) {
 
     const details = (quote.checkoutDetails as any) ?? {};
     const amountPaidSoFar: number = details.amountPaid ?? 0;
-    const remainingDue = quote.total - amountPaidSoFar;
+    const quoteTotal = Number(quote.total);
+    const remainingDue = quoteTotal - amountPaidSoFar;
     if (quote.status === "paid" || remainingDue <= 0) {
       return reply.code(400).send({ message: "This quote has already been paid." });
     }
@@ -478,7 +479,7 @@ export async function quoteRoutes(app: FastifyInstance) {
     let mode = ["MILESTONE", "UPFRONT", "FULL"].includes(paymentMode ?? "") ? paymentMode! : "FULL";
     let amount = remainingDue;
     if (amountPaidSoFar === 0) {
-      amount = paymentModeAmount(quote.total, mode);
+      amount = paymentModeAmount(quoteTotal, mode);
     } else {
       mode = "FULL";
     }

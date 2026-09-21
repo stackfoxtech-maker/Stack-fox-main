@@ -100,10 +100,10 @@ model ServiceUnit {
   status              String   @default("DRAFT") // DRAFT|PUBLISHED|ARCHIVED
   currentVersion      Int      @default(1) @map("current_version")
   // v3 additions
-  starterPrice        Int?     @map("starter_price") // paise
+  starterPrice        BigInt?     @map("starter_price") // paise
   starterTimelineDays Int?     @map("starter_timeline_days")
   growthPreset        Json?    @map("growth_preset")
-  premiumMinimum      Int?     @map("premium_minimum") // paise
+  premiumMinimum      BigInt?     @map("premium_minimum") // paise
   premiumIncludes     Json?    @map("premium_includes")
   createdAt           DateTime @default(now()) @map("created_at")
 
@@ -178,7 +178,7 @@ model RateCard {
   id            String   @id @default(uuid())
   type          String // POINT|ROLE
   key           String // "point" or role slug
-  rate          Int // paise
+  rate          BigInt // paise
   effectiveFrom DateTime @map("effective_from")
 
   @@unique([type, key, effectiveFrom])
@@ -215,9 +215,9 @@ model Quote {
   quoteNumber     String    @unique @map("quote_number")
   userId          String    @map("user_id")
   items           Json      @default("[]")
-  subtotal        Int
-  gstAmount       Int       @map("gst_amount")
-  total           Int
+  subtotal        BigInt
+  gstAmount       BigInt       @map("gst_amount")
+  total           BigInt
   tier            String    @default("GROWTH") // STARTER|GROWTH|PREMIUM
   estimateRange   Json      @default("{}") // {format, low, mid, high} — frozen at quote creation
   status          String    @default("draft") // draft|checkout|paid
@@ -284,9 +284,9 @@ model Order {
   tier            String? // STARTER|GROWTH|PREMIUM
   referralCode    String?   @map("referral_code")
   services        Json? // [serviceId, ...] for express checkout
-  subtotal        Int? // paise
-  gst             Int? // paise
-  grandTotal      Int?      @map("grand_total") // paise
+  subtotal        BigInt? // paise
+  gst             BigInt? // paise
+  grandTotal      BigInt?      @map("grand_total") // paise
   razorpayOrderId String?   @map("razorpay_order_id")
   status          String    @default("PENDING")
   paidAt          DateTime? @map("paid_at")
@@ -469,7 +469,7 @@ model ChangeRequest {
   description        String
   urgency            String   @default("MEDIUM")
   scopeImpact        String?  @map("scope_impact")
-  costDelta          Int?     @map("cost_delta") // paise
+  costDelta          BigInt?     @map("cost_delta") // paise
   timelineDelta      Int?     @map("timeline_delta") // days
   affectedMilestones Int[]    @map("affected_milestones")
   invoiceId          String?  @map("invoice_id")
@@ -557,12 +557,12 @@ model Invoice {
   milestoneRef          String?   @map("milestone_ref")
   sacCode               String    @map("sac_code")
   gstType               String    @map("gst_type") // CGST_SGST|IGST
-  subtotal              Int // paise
-  cgst                  Int       @default(0)
-  sgst                  Int       @default(0)
-  igst                  Int       @default(0)
-  grandTotal            Int       @map("grand_total")
-  amountPaid            Int       @default(0) @map("amount_paid") // paise; maintained by recordInvoicePayment / webhooks
+  subtotal              BigInt // paise
+  cgst                  BigInt       @default(0)
+  sgst                  BigInt       @default(0)
+  igst                  BigInt       @default(0)
+  grandTotal            BigInt       @map("grand_total")
+  amountPaid            BigInt       @default(0) @map("amount_paid") // paise; maintained by recordInvoicePayment / webhooks
   gstRate               Int       @default(18) @map("gst_rate") // percent
   status                String    @default("DRAFT") // DRAFT|SENT|VIEWED|PAID|PARTIALLY_PAID|OVERDUE|CANCELLED|DISPUTED
   dunningStage          Int       @default(0) @map("dunning_stage")
@@ -590,7 +590,7 @@ model Credit {
   id          String   @id @default(uuid())
   clientId    String   @map("client_id")
   sourceEngId String   @map("source_eng_id")
-  amount      Int // paise
+  amount      BigInt // paise
   expiresAt   DateTime @map("expires_at")
   consumedBy  String?  @map("consumed_by")
   status      String   @default("ISSUED") // ISSUED|RESERVED|CONSUMED|EXPIRED
@@ -608,9 +608,9 @@ model RevrecLedger {
   id           String   @id @default(uuid())
   engagementId String   @map("engagement_id")
   date         DateTime @default(now()) @db.Date
-  recognised   Int // paise
+  recognised   BigInt // paise
   invoiceId    String?  @map("invoice_id")
-  amount       Int      @default(0) // paise; mirrors `recognised` for ledger reads
+  amount       BigInt      @default(0) // paise; mirrors `recognised` for ledger reads
   period       String   @default("") // YYYY-MM
   type         String   @default("RECOGNIZED")
   description  String?
@@ -631,7 +631,7 @@ model WipLedger {
   wip          Int
   projectId    String?  @map("project_id")
   hours        Float    @default(0)
-  amount       Int      @default(0) // paise
+  amount       BigInt      @default(0) // paise
   period       String   @default("") // YYYY-MM
   description  String?
   createdAt    DateTime @default(now()) @map("created_at")
@@ -669,7 +669,7 @@ model TimesheetLine {
   role        String
   taskSummary String  @map("task_summary")
   hours       Decimal @db.Decimal(5, 2)
-  rate        Int // paise/hr, pinned
+  rate        BigInt // paise/hr, pinned
   status      String  @default("PENDING") // PENDING|APPROVED|QUERIED|DEEMED
   queryNote   String? @map("query_note")
   locked      Boolean @default(false)
@@ -685,7 +685,7 @@ model Bench {
   personId   String    @map("person_id")
   role       String
   skills     String[]
-  costPerDay Int       @map("cost_per_day")
+  costPerDay BigInt       @map("cost_per_day")
   enteredAt  DateTime  @default(now()) @map("entered_at")
   exitedAt   DateTime? @map("exited_at")
   deployedTo String?   @map("deployed_to")
@@ -705,7 +705,7 @@ model Program {
   clientId       String   @map("client_id")
   name           String
   leadUserId     String?  @map("lead_user_id")
-  budgetEnvelope Int?     @map("budget_envelope")
+  budgetEnvelope BigInt?     @map("budget_envelope")
   raid           Json     @default("[]")
   createdAt      DateTime @default(now()) @map("created_at")
 
@@ -935,7 +935,7 @@ model Package {
   serviceId     String   @map("service_id")
   name          String
   nameHi        String?  @map("name_hi")
-  flatPrice     Int      @map("flat_price") // paise
+  flatPrice     BigInt      @map("flat_price") // paise
   timelineDays  Int      @map("timeline_days")
   featurePreset Json     @map("feature_preset")
   createdAt     DateTime @default(now()) @map("created_at")
@@ -976,7 +976,7 @@ model Referral {
   referredOrderId  String?   @map("referred_order_id")
   status           String    @default("PENDING") // PENDING|SENT|DUPLICATE|CONVERTED|PAID|EXPIRED
   commissionPct    Int?      @map("commission_pct")
-  commissionAmount Int?      @map("commission_amount") // paise
+  commissionAmount BigInt?      @map("commission_amount") // paise
   sentAt           DateTime? @map("sent_at")
   createdAt        DateTime  @default(now()) @map("created_at")
 
@@ -1191,7 +1191,7 @@ model Payment {
   gateway          String // RAZORPAY|STRIPE|BANK_TRANSFER
   gatewayPaymentId String?  @map("gateway_payment_id")
   gatewayOrderId   String?  @map("gateway_order_id")
-  amount           Int // paise
+  amount           BigInt // paise
   currency         String   @default("INR")
   status           String   @default("PENDING") // PENDING|CAPTURED|FAILED|REFUNDED
   method           String? // upi|card|netbanking|wallet

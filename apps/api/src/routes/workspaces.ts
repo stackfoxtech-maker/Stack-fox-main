@@ -217,7 +217,7 @@ export async function workspaceRoutes(app: FastifyInstance) {
       where: { type: "POINT", key: "point" },
       orderBy: { effectiveFrom: "desc" },
     });
-    const pointRate = rateCard?.rate ?? 280000;
+    const pointRate = Number(rateCard?.rate ?? 280000);
     const delta = feature ? (enabled ? 1 : -1) * feature.weight * pointRate : 0;
 
     const updated = await prisma.workspace.update({

@@ -55,7 +55,7 @@ export async function adminRoutes(app: FastifyInstance) {
         id: created.id,
         name: created.name,
         categoryTier1: created.categoryTier1,
-        starterPrice: created.starterPrice,
+        starterPrice: Number(created.starterPrice ?? 0),
         starterTimelineDays: created.starterTimelineDays,
       });
     } catch (err) {

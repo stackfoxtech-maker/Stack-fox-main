@@ -464,7 +464,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
     if (!pkg) return reply.code(404).send({ error: "Package not found" });
 
     // Calculate total with add-ons
-    const total = pkg.flatPrice;
+    const total = Number(pkg.flatPrice);
     // Add-on pricing would be looked up from a config table
 
     // Create or find user

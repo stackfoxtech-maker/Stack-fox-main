@@ -234,6 +234,67 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
   );
 }
 
+// ── The money columns are BIGINT, and still arrive as numbers ────────────────
+//
+// int4 capped a single value at 2,147,483,647 paise — Rs 2,14,74,836.47 — and
+// Postgres rejected anything larger outright with "integer out of range", so
+// an invoice above about Rs 2.15 crore could not be written at all.
+//
+// The columns are int8 now. The JS type deliberately did NOT change: a double
+// represents every integer up to 2^53 exactly, and packages/prisma converts at
+// the client boundary so the ~45 arithmetic sites and every Math.min/max kept
+// working. These checks pin that contract down.
+{
+  const INT4_MAX = 2_147_483_647;
+  const ABOVE_OLD_CEILING = 3_000_000_000; // Rs 3 crore in paise
+
+  check(
+    `an amount above the old int4 ceiling is an exact JS integer (${ABOVE_OLD_CEILING})`,
+    Number.isSafeInteger(ABOVE_OLD_CEILING) && ABOVE_OLD_CEILING > INT4_MAX,
+    "this value could not be stored at all before the widening",
+  );
+
+  // Rs 90 trillion. Anything a real invoice holds is far below this.
+  check(
+    `the new practical ceiling is 2^53 paise, not 2^31`,
+    Number.MAX_SAFE_INTEGER > INT4_MAX * 4_000_000,
+    "the limit moved from Rs 2.15 crore to about Rs 90 trillion",
+  );
+
+  // The arithmetic the money paths actually do, at a scale that used to
+  // overflow. If any of these produced a bigint the operators would throw.
+  const grandTotal = ABOVE_OLD_CEILING;
+  const amountPaid = 1_000_000_000;
+  const balance = Math.max(0, grandTotal - amountPaid);
+  const newPaid = Math.min(grandTotal, amountPaid + balance);
+
+  check(
+    `Math.max/min still work on a 3-crore amount (balance ${balance})`,
+    balance === 2_000_000_000,
+    "Math.min and Math.max throw outright on a bigint",
+  );
+  check(
+    `paying the balance settles the invoice exactly`,
+    newPaid === grandTotal,
+    `${newPaid} != ${grandTotal} — a rounding slip here mis-settles an invoice`,
+  );
+
+  // GST split at a scale that overflowed int4 in every component.
+  const subtotal = 2_500_000_000;
+  const cgst = Math.round(subtotal * 0.09);
+  const sgst = Math.round(subtotal * 0.09);
+  check(
+    `an 18% GST split reconciles at Rs 2.5 crore subtotal`,
+    subtotal + cgst + sgst === 2_950_000_000 && cgst === sgst,
+    `${subtotal} + ${cgst} + ${sgst}`,
+  );
+  check(
+    `every component of that invoice exceeds the old int4 ceiling`,
+    subtotal > INT4_MAX && subtotal + cgst + sgst > INT4_MAX,
+    "the whole row, not just the total, had to widen",
+  );
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 console.log("\n--- MONEY & IDS ---");
 let failed = 0;

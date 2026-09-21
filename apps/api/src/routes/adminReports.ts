@@ -60,10 +60,11 @@ async function revenueReport(from: Date, to: Date) {
   const byMonth = new Map(months.map((m) => [m, { invoiced: 0, collected: 0 }]));
   for (const inv of invoices) {
     const b = byMonth.get(monthKey(inv.createdAt));
-    if (b) b.invoiced += inv.grandTotal;
+    const grandTotal = Number(inv.grandTotal);
+    if (b) b.invoiced += grandTotal;
     if (inv.paidAt) {
       const p = byMonth.get(monthKey(inv.paidAt));
-      if (p) p.collected += inv.grandTotal;
+      if (p) p.collected += grandTotal;
     }
   }
 
@@ -71,14 +72,19 @@ async function revenueReport(from: Date, to: Date) {
   const byClient = new Map<string, { name: string; total: number; invoices: number }>();
   for (const inv of invoices) {
     const row = byClient.get(inv.orgId) ?? { name: inv.org.name, total: 0, invoices: 0 };
-    row.total += inv.grandTotal;
+    row.total += Number(inv.grandTotal);
     row.invoices += 1;
     byClient.set(inv.orgId, row);
   }
 
-  const invoiced = invoices.reduce((s, i) => s + i.grandTotal, 0);
-  const collected = invoices.filter((i) => i.status === "PAID").reduce((s, i) => s + i.grandTotal, 0);
-  const gst = invoices.reduce((s, i) => s + i.cgst + i.sgst + i.igst, 0);
+  const invoiced = invoices.reduce((s, i) => s + Number(i.grandTotal), 0);
+  const collected = invoices
+    .filter((i) => i.status === "PAID")
+    .reduce((s, i) => s + Number(i.grandTotal), 0);
+  const gst = invoices.reduce(
+    (s, i) => s + Number(i.cgst) + Number(i.sgst) + Number(i.igst),
+    0,
+  );
 
   const clients = [...byClient.entries()]
     .map(([orgId, r]) => ({
@@ -240,7 +246,7 @@ async function servicesReport(from: Date, to: Date) {
       name: p.service.name,
       category: p.service.categoryTier1,
       sold: 0,
-      listPrice: p.service.starterPrice ?? 0,
+      listPrice: Number(p.service.starterPrice ?? 0),
     };
     row.sold += 1;
     byService.set(p.serviceId, row);
@@ -258,7 +264,7 @@ async function servicesReport(from: Date, to: Date) {
     if (!inv.engagementId) continue;
     revenueByEngagement.set(
       inv.engagementId,
-      (revenueByEngagement.get(inv.engagementId) ?? 0) + inv.grandTotal,
+      (revenueByEngagement.get(inv.engagementId) ?? 0) + Number(inv.grandTotal),
     );
   }
 

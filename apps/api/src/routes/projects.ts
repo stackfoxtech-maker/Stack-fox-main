@@ -278,7 +278,8 @@ export async function projectRoutes(app: FastifyInstance) {
     }
 
     // G-041: if cost delta > 0, create invoice before approving
-    if (cr.costDelta && cr.costDelta > 0 && cr.projectId) {
+    const costDelta = Number(cr.costDelta ?? 0);
+    if (costDelta > 0 && cr.projectId) {
       const project = await prisma.project.findUnique({ where: { id: cr.projectId }, include: { engagement: true } });
       if (project) {
         const invoice = await prisma.invoice.create({
@@ -289,9 +290,9 @@ export async function projectRoutes(app: FastifyInstance) {
             milestoneRef: `CR-${crId}`,
             sacCode: "998314",
             gstType: "IGST",
-            subtotal: cr.costDelta,
-            igst: Math.round(cr.costDelta * 0.18),
-            grandTotal: cr.costDelta + Math.round(cr.costDelta * 0.18),
+            subtotal: costDelta,
+            igst: Math.round(costDelta * 0.18),
+            grandTotal: costDelta + Math.round(costDelta * 0.18),
             status: "SENT",
           },
         });

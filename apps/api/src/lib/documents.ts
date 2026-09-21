@@ -58,12 +58,12 @@ export async function buildInvoicePdf(
     : null;
 
   // Money is stored in paise; the printed document is in rupees.
-  const P = (paise: number) => Math.round(paise) / 100;
+  const P = (paise: number | bigint) => Math.round(Number(paise)) / 100;
 
   const paid =
     invoice.status === "PAID"
-      ? invoice.grandTotal
-      : Math.min(Math.max(0, invoice.amountPaid ?? 0), invoice.grandTotal);
+      ? Number(invoice.grandTotal)
+      : Math.min(Math.max(0, Number(invoice.amountPaid ?? 0)), Number(invoice.grandTotal));
   const rate = invoice.gstRate ?? 18;
   const isInterState = invoice.gstType === "IGST";
 

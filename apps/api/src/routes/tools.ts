@@ -78,7 +78,7 @@ Return as JSON with sections: performance, seo, accessibility, security, mobile,
       orderBy: { effectiveFrom: "desc" },
     });
 
-    const rate = rateCard?.rate ?? 500000; // paise per point
+    const rate = Number(rateCard?.rate ?? 500000); // paise per point
     const tierMultiplier = TIER_MULTIPLIER[tier ?? "GROWTH"] ?? 1;
 
     const items = serviceUnits.map((su) => {
@@ -236,7 +236,7 @@ Return as structured JSON.`;
     });
     if (!service) return reply.code(404).send({ error: "Service not found" });
 
-    const expressSubtotal = service.starterPrice ?? 0;
+    const expressSubtotal = Number(service.starterPrice ?? 0);
 
     let org = await prisma.org.findFirst({ where: { contactEmail: email } });
     if (!org) {

@@ -17,7 +17,10 @@ type InvoiceLike = {
   orderId: string | null;
   engagementId: string | null;
   milestoneRef: string | null;
-  grandTotal: number;
+  // Postgres holds this as BIGINT since the money widening, so Prisma types it
+  // as bigint even though packages/prisma hands back a number at runtime.
+  // Accepting both means callers pass a row straight through.
+  grandTotal: number | bigint;
 };
 
 /**
@@ -30,7 +33,7 @@ type InvoiceLike = {
  * it is safe to call from a retried webhook.
  */
 export async function recordInvoicePayment(invoice: InvoiceLike, facts: PaymentFacts): Promise<void> {
-  const amount = facts.amount ?? invoice.grandTotal;
+  const amount = facts.amount ?? Number(invoice.grandTotal);
 
   // 1. Payment row — requires an Order (the schema relation is mandatory).
   if (invoice.orderId) {

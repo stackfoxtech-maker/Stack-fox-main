@@ -48,8 +48,10 @@ export async function referralRoutes(app: FastifyInstance) {
       }),
     ]);
 
-    const totalEarnings = earnings._sum.commissionAmount ?? 0;
-    const paidOut = paid._sum.commissionAmount ?? 0;
+    // Prisma types a BigInt _sum as bigint; it arrives as a number at
+    // runtime (see packages/prisma). Number() is correct under either.
+    const totalEarnings = Number(earnings._sum.commissionAmount ?? 0);
+    const paidOut = Number(paid._sum.commissionAmount ?? 0);
 
     return ok({
       total,
