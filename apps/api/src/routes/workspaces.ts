@@ -13,6 +13,17 @@ import { requireRole } from "../plugins/auth";
 import { isInternalRole } from "@stackfox/core";
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { LIST_CAP } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import {
+  CreateCustomLineSchema,
+  CreateWorkspaceSchema,
+  ScopeAdvisorSchema,
+  SeReturnSchema,
+  ToggleFeatureSchema,
+  UpdateCustomLineSchema,
+  UpdateWorkspaceSchema,
+  WorkspaceServiceSchema,
+} from "./workspaceSchemas";
 
 /**
  * Workspace access.
@@ -58,8 +69,10 @@ export async function workspaceRoutes(app: FastifyInstance) {
   });
 
   // POST /workspaces
-  app.post("/workspaces", async (req) => {
-    const canvas = (req.body as any)?.canvas ?? [];
+  app.post("/workspaces", async (req, reply) => {
+    const createBody = parseBody(req, reply, CreateWorkspaceSchema);
+    if (!createBody) return;
+    const canvas = createBody.canvas ?? [];
     return prisma.workspace.create({
       data: {
         userId: req.user?.sub,
@@ -80,8 +93,9 @@ export async function workspaceRoutes(app: FastifyInstance) {
   app.patch("/workspaces/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
     if (!(await workspaceInScope(id, req, reply))) return;
-    const body = req.body as { canvas?: any[]; timelineMult?: number };
-    const data: any = {};
+    const body = parseBody(req, reply, UpdateWorkspaceSchema);
+    if (!body) return;
+    const data: Record<string, unknown> = {};
     if (body.canvas) {
       data.canvas = body.canvas;
       data.canonicalHash = canonicalHash(body.canvas);
@@ -95,7 +109,9 @@ export async function workspaceRoutes(app: FastifyInstance) {
   app.post("/workspaces/:id/add-service", async (req, reply) => {
     const { id } = req.params as { id: string };
     if (!(await workspaceInScope(id, req, reply))) return;
-    const { serviceId } = req.body as { serviceId: string };
+    const svcBody = parseBody(req, reply, WorkspaceServiceSchema);
+    if (!svcBody) return;
+    const { serviceId } = svcBody;
 
     const ws = await prisma.workspace.findUnique({ where: { id } });
     if (!ws) return reply.code(404).send({ error: "Workspace not found" });
@@ -164,7 +180,9 @@ export async function workspaceRoutes(app: FastifyInstance) {
   app.post("/workspaces/:id/remove-service", async (req, reply) => {
     const { id } = req.params as { id: string };
     if (!(await workspaceInScope(id, req, reply))) return;
-    const { serviceId } = req.body as { serviceId: string };
+    const rmBody = parseBody(req, reply, WorkspaceServiceSchema);
+    if (!rmBody) return;
+    const { serviceId } = rmBody;
 
     const ws = await prisma.workspace.findUnique({ where: { id } });
     if (!ws) return reply.code(404).send({ error: "Workspace not found" });
@@ -204,11 +222,9 @@ export async function workspaceRoutes(app: FastifyInstance) {
   app.patch("/workspaces/:id/toggle-feature", async (req, reply) => {
     const { id } = req.params as { id: string };
     if (!(await workspaceInScope(id, req, reply))) return;
-    const { serviceId, featureId, enabled } = req.body as {
-      serviceId: string;
-      featureId: string;
-      enabled: boolean;
-    };
+    const toggleBody = parseBody(req, reply, ToggleFeatureSchema);
+    if (!toggleBody) return;
+    const { serviceId, featureId, enabled } = toggleBody;
 
     const ws = await prisma.workspace.findUnique({ where: { id } });
     if (!ws) return reply.code(404).send({ error: "Workspace not found" });
@@ -246,14 +262,8 @@ export async function workspaceRoutes(app: FastifyInstance) {
   app.post("/workspaces/:id/add-custom-line", async (req, reply) => {
     const { id } = req.params as { id: string };
     if (!(await workspaceInScope(id, req, reply))) return;
-    const body = req.body as {
-      title: string;
-      description: string;
-      acceptCriteria: string;
-      deliverables?: string[];
-      estHours: Record<string, { o: number; l: number; p: number }>;
-      confidence: string;
-    };
+    const body = parseBody(req, reply, CreateCustomLineSchema);
+    if (!body) return;
 
     const ws = await prisma.workspace.findUnique({ where: { id } });
     if (!ws) return reply.code(404).send({ error: "Workspace not found" });
@@ -283,14 +293,11 @@ export async function workspaceRoutes(app: FastifyInstance) {
   app.patch("/workspaces/:id/custom-lines/:lineId", async (req, reply) => {
     if (!(await workspaceInScope((req.params as { id: string }).id, req, reply))) return;
     const { lineId } = req.params as { lineId: string };
-    const body = req.body as Partial<{
-      title: string;
-      description: string;
-      acceptCriteria: string;
-      estHours: Record<string, { o: number; l: number; p: number }>;
-      confidence: string;
-    }>;
-    return prisma.customLine.update({ where: { id: lineId }, data: body as any });
+    // `data: body as any` used to spread the whole body into the update, so
+    // any column on CustomLine was settable. The schema names the fields.
+    const body = parseBody(req, reply, UpdateCustomLineSchema);
+    if (!body) return;
+    return prisma.customLine.update({ where: { id: lineId }, data: body });
   });
 
   // DELETE /workspaces/:id/custom-lines/:lineId
@@ -348,7 +355,9 @@ export async function workspaceRoutes(app: FastifyInstance) {
     // let a client approve their own workspace and skip review entirely.
     if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
     const { id } = req.params as { id: string };
-    const { notes } = req.body as { notes: string };
+    const seBody = parseBody(req, reply, SeReturnSchema);
+    if (!seBody) return;
+    const { notes } = seBody;
 
     const updated = await prisma.workspace.update({
       where: { id },
@@ -407,7 +416,9 @@ export async function workspaceRoutes(app: FastifyInstance) {
   app.post("/workspaces/:id/advisor", async (req, reply) => {
     const { id } = req.params as { id: string };
     if (!(await workspaceInScope(id, req, reply))) return;
-    const { answers } = req.body as { answers: Record<string, string> };
+    const advisorBody = parseBody(req, reply, ScopeAdvisorSchema);
+    if (!advisorBody) return;
+    const { answers } = advisorBody;
 
     const services = await prisma.serviceUnit.findMany({
       take: LIST_CAP,

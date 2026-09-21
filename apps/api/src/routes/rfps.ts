@@ -5,6 +5,8 @@ import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
 import { requireRole } from "../plugins/auth";
 import { SALES_ROLES } from "@stackfox/core";
+import { parseBody } from "../lib/validate";
+import { CreateRfpSchema, RfpDecisionSchema, RfpOutcomeSchema } from "./crmSchemas";
 
 export async function rfpRoutes(app: FastifyInstance) {
   app.get("/rfps", async (req, reply) => {
@@ -23,7 +25,8 @@ export async function rfpRoutes(app: FastifyInstance) {
 
   app.post("/rfps", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const body = req.body as any;
+    const body = parseBody(req, reply, CreateRfpSchema);
+    if (!body) return;
     return prisma.rfp.create({
       data: {
         orgId: body.orgId,
@@ -41,7 +44,10 @@ export async function rfpRoutes(app: FastifyInstance) {
   app.patch("/rfps/:id/decision", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { decision, reason } = req.body as { decision: string; reason?: string };
+    // `decision` was written straight into `status` with no check at all.
+    const decBody = parseBody(req, reply, RfpDecisionSchema);
+    if (!decBody) return;
+    const { decision, reason } = decBody;
     return prisma.rfp.update({
       where: { id },
       data: { status: decision, decisionNote: reason },
@@ -66,7 +72,9 @@ export async function rfpRoutes(app: FastifyInstance) {
   app.patch("/rfps/:id/outcome", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { outcome } = req.body as { outcome: string };
+    const outBody = parseBody(req, reply, RfpOutcomeSchema);
+    if (!outBody) return;
+    const { outcome } = outBody;
     return prisma.rfp.update({
       where: { id },
       data: { status: outcome },

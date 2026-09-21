@@ -6,6 +6,17 @@ import { queues } from "../lib/queue";
 import { toJson } from "../lib/json";
 import { ok, withId, withIds, paginated, pageParams } from "../lib/http";
 import { SALES_ROLES } from "@stackfox/core";
+import { parseBody } from "../lib/validate";
+import {
+  CreateFollowUpSchema,
+  CreateLeadNoteSchema,
+  CreateLeadSchema,
+  UpdateFollowUpSchema,
+  UpdateLeadSchema,
+  UpdateLeadStageSchema,
+  CreateProposalSchema,
+  UpdateProposalSchema,
+} from "./crmSchemas";
 
 /**
  * Sales CRM — leads, pipeline, follow-ups and proposals.
@@ -177,7 +188,8 @@ export async function leadRoutes(app: FastifyInstance) {
   });
 
   app.post("/leads", async (req, reply) => {
-    const b = req.body as Record<string, any>;
+    const b = parseBody(req, reply, CreateLeadSchema);
+    if (!b) return;
     const name = (b.ownerName || b.name || "").trim();
     const company = (b.company || b.businessName || "").trim();
     if (!name && !company) {
@@ -197,7 +209,7 @@ export async function leadRoutes(app: FastifyInstance) {
         location: b.location ?? null,
         website: b.website ?? null,
         priority,
-        value: Number.isFinite(+b.value) ? Math.round(+b.value) : 0,
+        value: Math.round(b.value ?? 0),
         stage,
         source: b.source ?? "sales",
         assignedTo: b.assignedTo ?? req.user!.sub,
@@ -220,7 +232,8 @@ export async function leadRoutes(app: FastifyInstance) {
 
   app.patch("/leads/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const b = req.body as Record<string, any>;
+    const b = parseBody(req, reply, UpdateLeadSchema);
+    if (!b) return;
     const data: any = {};
     for (const f of [
       "ownerName",
@@ -248,7 +261,9 @@ export async function leadRoutes(app: FastifyInstance) {
 
   app.patch("/leads/:id/stage", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const { stage } = req.body as { stage?: string };
+    const stageBody = parseBody(req, reply, UpdateLeadStageSchema);
+    if (!stageBody) return;
+    const { stage } = stageBody;
     const st = toStage(stage);
     if (!st) {
       return reply
@@ -291,9 +306,9 @@ export async function leadRoutes(app: FastifyInstance) {
 
   app.post("/leads/:id/notes", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const { body, type } = req.body as { body?: string; type?: string };
-    if (!body?.trim())
-      return reply.code(400).send({ message: "A note body is required" });
+    const noteBody = parseBody(req, reply, CreateLeadNoteSchema);
+    if (!noteBody) return;
+    const { body, type } = noteBody;
     const kind = ["NOTE", "CALL", "EMAIL", "MEETING"].includes(type ?? "")
       ? type!
       : "NOTE";
@@ -347,8 +362,8 @@ export async function leadRoutes(app: FastifyInstance) {
 
   app.post("/leads/:id/followups", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const b = req.body as Record<string, any>;
-    if (!b.dueAt) return reply.code(400).send({ message: "dueAt is required" });
+    const b = parseBody(req, reply, CreateFollowUpSchema);
+    if (!b) return;
     const channel = norm(b.channel, CHANNELS) ?? "CALL";
 
     const lead = await prisma.lead.findUnique({ where: { id } });
@@ -376,11 +391,9 @@ export async function leadRoutes(app: FastifyInstance) {
 
   app.patch("/followups/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const { status, note, dueAt } = req.body as {
-      status?: string;
-      note?: string;
-      dueAt?: string;
-    };
+    const fuBody = parseBody(req, reply, UpdateFollowUpSchema);
+    if (!fuBody) return;
+    const { status, note, dueAt } = fuBody;
     const data: any = {};
     if (["PENDING", "DONE", "SKIPPED"].includes(status ?? "")) {
       data.status = status;
@@ -428,9 +441,8 @@ export async function leadRoutes(app: FastifyInstance) {
 
   app.post("/leads/:id/proposals", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const b = req.body as Record<string, any>;
-    if (!b.title?.trim())
-      return reply.code(400).send({ message: "A proposal title is required" });
+    const b = parseBody(req, reply, CreateProposalSchema);
+    if (!b) return;
 
     const lead = await prisma.lead.findUnique({ where: { id } });
     if (!lead) return reply.code(404).send({ message: "Lead not found" });
@@ -441,8 +453,10 @@ export async function leadRoutes(app: FastifyInstance) {
         title: b.title.trim(),
         packages: toJson(b.packages ?? {}),
         notes: b.notes ?? null,
-        totalMin: Number.isFinite(+b.totalMin) ? Math.round(+b.totalMin) : 0,
-        totalMax: Number.isFinite(+b.totalMax) ? Math.round(+b.totalMax) : 0,
+        // The schema already guarantees a finite number in range when
+        // present, so this is just the default for an omitted field.
+        totalMin: Math.round(b.totalMin ?? 0),
+        totalMax: Math.round(b.totalMax ?? 0),
         createdBy: req.user!.sub,
       },
     });
@@ -451,7 +465,8 @@ export async function leadRoutes(app: FastifyInstance) {
 
   app.patch("/proposals/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const b = req.body as Record<string, any>;
+    const b = parseBody(req, reply, UpdateProposalSchema);
+    if (!b) return;
     const data: any = {};
     if (typeof b.title === "string" && b.title.trim()) data.title = b.title.trim();
     if (b.packages !== undefined) data.packages = toJson(b.packages);
