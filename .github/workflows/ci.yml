@@ -37,6 +37,13 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # Gating on this is only honest because the tree was reformatted once, in
+      # a single commit listed in .git-blame-ignore-revs. A format check on a
+      # never-formatted tree is a permanently red gate, which teaches people to
+      # ignore CI.
+      - name: Format
+        run: pnpm format:check
+
       - name: Typecheck API
         run: pnpm --filter @stackfox/api typecheck
 

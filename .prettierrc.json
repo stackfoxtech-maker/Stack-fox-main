@@ -1,0 +1,18 @@
+{
+  "printWidth": 90,
+  "singleQuote": false,
+  "semi": true,
+  "trailingComma": "all",
+  "tabWidth": 2,
+  "arrowParens": "always",
+  "endOfLine": "auto",
+  "overrides": [
+    {
+      "files": ["client/**/*.{js,jsx}"],
+      "options": {
+        "singleQuote": true,
+        "printWidth": 100
+      }
+    }
+  ]
+}
