@@ -34,6 +34,9 @@ jobs:
           pnpm --filter @stackfox/prisma build
           pnpm --filter @stackfox/core build
 
+      - name: Lint
+        run: pnpm lint
+
       - name: Typecheck API
         run: pnpm --filter @stackfox/api typecheck
 
@@ -114,3 +117,62 @@ jobs:
 
       - name: Run suites
         run: pnpm --filter @stackfox/api test
+
+  security:
+    name: secrets · dependencies
+    runs-on: ubuntu-latest
+    steps:
+      # gitleaks needs the history, not just the tip, or a secret committed
+      # earlier in the branch walks straight through.
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Scan history for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 9.6.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+
+      - name: Dependency audit (workspace)
+        run: node scripts/audit-gate.mjs
+
+      - name: Dependency audit (client)
+        working-directory: client
+        run: |
+          npm ci --legacy-peer-deps
+          node ../scripts/audit-gate.mjs --npm
+
+  drift:
+    name: schema ↔ migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shadow
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/shadow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9.6.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+
+      # A schema.prisma edited without a matching migration deploys cleanly and
+      # then fails at the first query against the missing column. This replays
+      # the migrations into a shadow database and diffs the result against the
+      # schema: any difference is a migration someone forgot to generate.
+      - name: Migrations reproduce the schema
+        run: pnpm --filter @stackfox/prisma db:drift
