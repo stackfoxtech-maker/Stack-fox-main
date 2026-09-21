@@ -1,13 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Filter, X, ArrowRight } from 'lucide-react';
+import { Search, ArrowRight } from 'lucide-react';
 import { usePageTitle, useDebounce } from '@lib/hooks';
 import { cn, formatINR } from '@lib/utils';
-import { Section, SectionHeading, Button, Spinner } from '@components/ui/Primitives';
+import { Section, SectionHeading, Spinner } from '@components/ui/Primitives';
 import { useCatalogue } from '@lib/useStorefrontData';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
-import toast from 'react-hot-toast';
 
 const ITEMS_PER_PAGE = 24;
 

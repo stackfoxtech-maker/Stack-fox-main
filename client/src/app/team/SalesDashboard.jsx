@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Users, UserPlus, Mic, Phone, Calendar, FileText, TrendingUp, Target, Award, XCircle, BarChart3, Plus, ArrowRight, BookOpen, Lightbulb, ThumbsUp, ThumbsDown, RotateCcw, Share2, Printer } from 'lucide-react';
+import { Users, UserPlus, Mic, Phone, Calendar, FileText, TrendingUp, Target, Award, XCircle, BarChart3, ArrowRight, BookOpen, Lightbulb, RotateCcw, Share2 } from 'lucide-react';
 import { businessCategories, getPitch } from '@data/salesPitchLibrary';
 import { apiGet } from '@lib/api';
 import { toast } from 'react-hot-toast';

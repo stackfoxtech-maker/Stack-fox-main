@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { FolderKanban, ArrowLeft, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize, cn, getStatusBadge } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
+import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
 
 const MilestoneBar = ({ milestones }) => {

@@ -81,7 +81,7 @@ async function provisionQuote(quote: any, userId: string) {
     serviceById.set(created.id, created);
   }
 
-  const checkoutDetails = (quote.checkoutDetails as any) ?? {};
+  const checkoutDetails = (quote.checkoutDetails) ?? {};
   const milestoneTemplates = getMilestoneTemplates(tier);
 
   const result = await prisma.$transaction(

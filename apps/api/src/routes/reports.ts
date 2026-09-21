@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { clientScope } from "../lib/scope";
 import { LIST_CAP, ok } from "../lib/http";
-import { uploadFile, getPresignedDownload, isStorageConfigured } from "../lib/storage";
+import { uploadFile, isStorageConfigured } from "../lib/storage";
 import { SLA_TARGETS } from "@stackfox/core";
 import { issueDownload } from "../lib/documentIntegrity";
 

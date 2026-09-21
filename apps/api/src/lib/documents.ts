@@ -3,6 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { uploadFile, copyToWorm } from "./storage";
 import { recordDocument } from "./documentIntegrity";
 import { renderDocument } from "./pdf";
+import { asString } from "./json";
 import {
   renderCompanyInvoicePdf,
   awlInvoiceNumber,
@@ -178,7 +179,7 @@ export async function buildContractPdf(contractId: string): Promise<string | nul
 
   const clauses = (contract.clauseConfig ?? {}) as Record<string, unknown>;
   const clauseLines = Object.entries(clauses).map(
-    ([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`,
+    ([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : asString(v)}`,
   );
 
   const pdf = await renderDocument({

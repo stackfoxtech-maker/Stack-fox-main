@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Search, X, ArrowRight, CornerDownLeft, Sparkles, 
-  Clock, TrendingUp, Rocket, Cloud, Smartphone, 
+  Search, X, ArrowRight, Sparkles, TrendingUp, Rocket, Cloud, Smartphone, 
   Database, Zap, Globe 
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { cn } from '@lib/utils';
 import { useCatalogue } from '@lib/useStorefrontData';
 
 export default function SearchOverlay({ isOpen, onClose }) {

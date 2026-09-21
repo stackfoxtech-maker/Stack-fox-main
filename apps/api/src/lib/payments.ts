@@ -88,7 +88,7 @@ let stripe: any = null;
 export function getStripe() {
   if (stripe || !process.env.STRIPE_SECRET_KEY) return stripe;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Stripe = require("stripe");
     stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   } catch {

@@ -1,7 +1,6 @@
 import { createWorker, QUEUE } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
 import { generateContent } from "../lib/gemini";
-import { queues } from "../lib/queue";
 import { TIMEOUT } from "../lib/timeouts";
 
 createWorker(QUEUE.whatsappCommerce, async (job) => {

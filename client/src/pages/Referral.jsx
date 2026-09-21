@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Gift, Link2, Copy, Check, Users, IndianRupee, ArrowRight } from 'lucide-react';
+import { Gift, Link2, Copy, Check, Users, IndianRupee } from 'lucide-react';
 
 const steps = [
   { icon: Link2, title: 'Share Your Link', desc: 'Copy your unique referral link and share it with businesses you know.' },

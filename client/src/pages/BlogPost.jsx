@@ -1,11 +1,11 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, Clock, Calendar, User, Share2, 
-  Linkedin, Twitter, MessageCircle, ChevronLeft, ChevronRight, Loader2
+  ArrowLeft, Clock, Calendar, 
+  Linkedin, Twitter, MessageCircle
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { sanitizeHtml } from '@lib/utils';
-import { Section, Button, Spinner } from '@components/ui/Primitives';
+import { Section, Spinner } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';
 import { useEffect, useState } from 'react';
 import api from '@lib/api';

@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 /**
  * GST invoice engine for the free Invoice Generator tool.
@@ -236,7 +236,7 @@ export function computeInvoice(input: GstInvoiceInput): ComputedInvoice {
     ? (input.invoiceType as InvoiceType)
     : "tax";
 
-  let gstRate = Number(input.gstRate ?? 18);
+  const gstRate = Number(input.gstRate ?? 18);
   if (!VALID_GST_RATES.includes(gstRate)) {
     warnings.push(`Unusual GST rate ${gstRate}% — expected one of ${VALID_GST_RATES.join(", ")}.`);
   }
@@ -636,7 +636,7 @@ export async function renderGstInvoicePdf(inv: ComputedInvoice): Promise<Buffer>
     b.ifsc ? `IFSC: ${b.ifsc}` : "",
     b.upi ? `UPI: ${b.upi}` : "",
     b.swift ? `SWIFT: ${b.swift}` : "",
-  ].filter(Boolean) as string[];
+  ].filter(Boolean);
   if (bankLines.length) {
     draw("BANK DETAILS", MARGIN, 8, { bold: true, color: BRAND });
     y -= 11;

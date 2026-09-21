@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { usePageTitle } from '@lib/hooks';
-import { FileText, Plus, Search, Edit3, Trash2, Eye, Sparkles, Wand2, X, Save, AlertCircle, Loader2, Star } from 'lucide-react';
+import { Plus, Search, Edit3, Trash2, Eye, Sparkles, Wand2, X, Save, Loader2, Star } from 'lucide-react';
 import { Button, Input, Spinner, Badge } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';

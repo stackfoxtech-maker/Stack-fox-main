@@ -58,7 +58,12 @@ export async function adminRoutes(app: FastifyInstance) {
         starterPrice: created.starterPrice,
         starterTimelineDays: created.starterTimelineDays,
       });
-    } catch {}
+    } catch (err) {
+      // The row is committed either way; the catalogue is a derived index.
+      // Silence here meant search kept serving a service that no longer
+      // matched the database, with nothing to show why.
+      req.log.warn({ err, serviceId: created.id }, "catalogue add failed");
+    }
     return created;
   });
 
@@ -71,7 +76,9 @@ export async function adminRoutes(app: FastifyInstance) {
     if (existing && body.name && body.name !== existing.name) {
       try {
         updateServiceNameInCatalogue(id, body.name);
-      } catch {}
+      } catch (err) {
+        req.log.warn({ err, serviceId: id }, "catalogue rename failed");
+      }
     }
     return updated;
   });
@@ -81,7 +88,9 @@ export async function adminRoutes(app: FastifyInstance) {
     await prisma.serviceUnit.delete({ where: { id } });
     try {
       removeServiceFromCatalogue(id);
-    } catch {}
+    } catch (err) {
+      req.log.warn({ err, serviceId: id }, "catalogue removal failed");
+    }
     return { success: true };
   });
 

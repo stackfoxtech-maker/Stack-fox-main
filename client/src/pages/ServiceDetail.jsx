@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, Clock, Tag, MessageSquare, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Clock, MessageSquare, ArrowRight } from 'lucide-react';
 
 const services = {
   1: { name: 'Website Development', category: 'Development', price: 45000, delivery: '15–20 days', description: 'Full-stack custom website built with modern technologies. Includes responsive design, CMS integration, SEO-ready structure, and deployment. We handle everything from wireframes to launch so you can focus on your business.' },

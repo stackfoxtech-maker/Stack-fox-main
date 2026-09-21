@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth, requireRole } from "../plugins/auth";
+import { requireAuth } from "../plugins/auth";
 import { LIST_CAP } from "../lib/http";
 
 export async function reviewRoutes(app: FastifyInstance) {

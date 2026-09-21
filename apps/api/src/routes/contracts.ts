@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth, requireRole } from "../plugins/auth";
+import { requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
-import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
+import { isStorageConfigured } from "../lib/storage";
 import { buildContractPdf } from "../lib/documents";
 import { clientScope } from "../lib/scope";
 import { LIST_CAP, ok, withId, withIds } from "../lib/http";

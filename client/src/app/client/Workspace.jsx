@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FolderOpen, CheckCircle2, Users, Clock, FileText, ListTodo, LayoutDashboard } from 'lucide-react';
+import { CheckCircle2, Users, Clock, FileText, ListTodo, LayoutDashboard } from 'lucide-react';
 import { Badge, Spinner, EmptyState } from '@components/ui/Primitives';
 import { formatDate, timeAgo, getInitials, getAvatarColor } from '@lib/utils';
 import api from '@lib/api';

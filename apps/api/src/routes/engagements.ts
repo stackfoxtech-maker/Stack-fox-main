@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth, requireRole } from "../plugins/auth";
+import { requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { SALES_ROLES, canTransition } from "@stackfox/core";
 import { clientScope, clientWriteScope, assertEngagementInScope } from "../lib/scope";

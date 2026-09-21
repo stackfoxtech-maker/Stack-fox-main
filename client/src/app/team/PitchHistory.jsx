@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { TrendingUp, Trophy, Star, Copy, Share2, Filter, ChevronDown } from 'lucide-react';
+import { TrendingUp, Trophy, Star, Share2 } from 'lucide-react';
 import { businessCategories, getPitch } from '@data/salesPitchLibrary';
-import { Button, Badge } from '@components/ui/Primitives';
+import { Badge } from '@components/ui/Primitives';
 
 const categoryColors = {
   'gym': 'badge-fox', 'restaurant': 'badge-info', 'cafe': 'badge-info', 'hotel': 'badge-info',

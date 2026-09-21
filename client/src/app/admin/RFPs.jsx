@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FileText, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
-import { Badge, EmptyState, Spinner } from '@components/ui/Primitives';
+import { EmptyState, Spinner } from '@components/ui/Primitives';
 import { formatDate, capitalize } from '@lib/utils';
 import api from '@lib/api';
 import toast from 'react-hot-toast';

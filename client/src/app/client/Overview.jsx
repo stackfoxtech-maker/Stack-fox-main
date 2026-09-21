@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FolderKanban, Receipt, FileText, ArrowRight, Clock, CheckCircle } from 'lucide-react';
+import { FolderKanban, Receipt, FileText, ArrowRight } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, formatDate, getStatusBadge, capitalize } from '@lib/utils';
+import { formatDate, getStatusBadge, capitalize } from '@lib/utils';
 import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
 import useAuthStore from '@store/authStore';

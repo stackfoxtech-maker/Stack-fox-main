@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronRight, ChevronLeft, CheckCircle, MessageCircle, Target, Zap, Shield, Phone, Timer, Save, ArrowRight, Sparkles } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle, MessageCircle, Target, Zap, Shield, Phone, Timer, Save, Sparkles } from 'lucide-react';
 import { Button, Badge } from '@components/ui/Primitives';
 import { cn } from '@lib/utils';
 import { businessCategories, getPitch } from '@data/salesPitchLibrary';

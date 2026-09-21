@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { usePageTitle } from '@lib/hooks';
 import { Input, Button } from '@components/ui/Primitives';
 import useAuthStore from '@store/authStore';

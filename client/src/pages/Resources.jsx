@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Clock, User, ArrowRight, Search, Tag, Loader2 } from 'lucide-react';
+import { BookOpen, Clock, ArrowRight, Search } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { Section, SectionHeading, Button, Input, Spinner } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';

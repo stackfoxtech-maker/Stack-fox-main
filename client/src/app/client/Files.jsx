@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Files as FilesIcon, Upload, Download, Trash2, FileText, Image } from 'lucide-react';
+import { Files as FilesIcon, Upload, Trash2, FileText, Image } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, cn } from '@lib/utils';
-import { Spinner, EmptyState, Button } from '@components/ui/Primitives';
+import { Spinner, EmptyState } from '@components/ui/Primitives';
 import api, { apiUpload } from '@lib/api';
 import toast from 'react-hot-toast';
 

@@ -18,5 +18,31 @@ export function toJsonOrNull<T>(
   value: T | null | undefined,
 ): Prisma.InputJsonValue | typeof Prisma.JsonNull {
   if (value === null || value === undefined) return Prisma.JsonNull;
-  return value as unknown as Prisma.InputJsonValue;
+  return value;
+}
+
+/**
+ * Stringify a value read out of a JSON column, without the `[object Object]`
+ * trap.
+ *
+ * Prisma Json fields arrive as `unknown`, and eight sites called `String(v)`
+ * on one. Where the result is then pattern-matched (a GST state code, a
+ * filename) an object silently becomes the literal text "[object Object]" and
+ * fails the match — harmless. Where it is used as a key it is not: the Google
+ * id_token path derived `googleId` this way, so two malformed tokens would
+ * have produced the same account identifier.
+ *
+ * Objects and arrays return "", which every caller already treats as absent.
+ */
+export function asString(value: unknown): string {
+  switch (typeof value) {
+    case "string":
+      return value;
+    case "number":
+    case "boolean":
+    case "bigint":
+      return String(value);
+    default:
+      return "";
+  }
 }

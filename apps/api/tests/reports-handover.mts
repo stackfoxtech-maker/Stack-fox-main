@@ -105,7 +105,7 @@ const reveal = await post(`/handover/${proj.id}/credentials/${vault.id}/reveal`)
 checks.push([`credential reveal -> ${reveal.s}`, reveal.s === 200]);
 checks.push([`decrypts correctly`, reveal.b?.data?.credentials?.password === "s3cr3t"]);
 const audited = await prisma.credentialVault.findUnique({ where: { id: vault.id } });
-checks.push([`reveal is audit-logged`, Array.isArray(audited?.accessLog) && (audited!.accessLog as any[]).length === 1]);
+checks.push([`reveal is audit-logged`, Array.isArray(audited?.accessLog) && (audited.accessLog as any[]).length === 1]);
 
 const accept = await post(`/handover/${proj.id}/accept`, { notes: "All good" });
 checks.push([`handover accept -> ${accept.s}`, accept.s === 200]);

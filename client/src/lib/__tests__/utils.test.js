@@ -52,6 +52,8 @@ describe('formatINRShort', () => {
 
 describe('cn', () => {
   it('joins class names and drops falsy ones', () => {
+    // The constant falsy argument is exactly what is under test.
+    // eslint-disable-next-line no-constant-binary-expression
     expect(cn('a', false && 'b', 'c')).toBe('a c');
   });
 

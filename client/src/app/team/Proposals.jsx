@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { FileText, Printer, CheckCircle, Wand2, MessageCircle, Sparkles, Send } from 'lucide-react';
 import { Button, Input, Textarea, Badge } from '@components/ui/Primitives';
 import { businessCategories, getPitch } from '@data/salesPitchLibrary';

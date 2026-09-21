@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
-import { generateContent, generateStructured } from "../lib/gemini";
+import { generateContent } from "../lib/gemini";
 import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import { emitEvent } from "../lib/events";

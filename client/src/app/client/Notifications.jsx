@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Bell, Check, CheckCheck } from 'lucide-react';
+import { Bell, Check } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { cn, timeAgo } from '@lib/utils';
 import { Spinner, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
+import toast from 'react-hot-toast';
 
 export default function Notifications() {
   usePageTitle('Notifications');
@@ -21,7 +22,9 @@ export default function Notifications() {
     try {
       await api.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n));
-    } catch {}
+    } catch {
+      toast.error('Could not mark that as read.');
+    }
   };
 
   if (loading) return <div className="flex justify-center py-20"><Spinner /></div>;

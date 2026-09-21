@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Plus, Filter, MessageSquare, Wand2, ChevronRight, Share2, Copy, MessageCircle } from 'lucide-react';
 import { Button, Input, Textarea, Modal, Badge, Spinner } from '@components/ui/Primitives';
 import { businessCategories, leadStatuses, getPitch } from '@data/salesPitchLibrary';

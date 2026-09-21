@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { redis } from "../lib/redis";
+import { redis, tryRedis } from "../lib/redis";
 import { signToken, signRefreshToken, requireAuth, verifyToken, verifyTokenOfType } from "../plugins/auth";
 import { randomInt } from "crypto";
 import * as ids from "../lib/id";
@@ -76,7 +76,7 @@ async function issueSession(user: { id: string; email: string; role: string }, o
   const payload = { sub: user.id, email: user.email, role: user.role, orgId, epoch };
   const accessToken = signToken(payload);
   const refreshToken = signRefreshToken(payload);
-  try { await redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000); } catch {}
+  await tryRedis("store refresh token", () => redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000), null);
   return { accessToken, refreshToken };
 }
 
@@ -110,7 +110,7 @@ export async function authRoutes(app: FastifyInstance) {
     const orgId = await ensurePersonalOrg(user.id);
 
     const { token: verifyTok, hash } = generateToken();
-    try { await redis.set(`verify:${hash}`, user.id, "EX", 86400); } catch {}
+    await tryRedis("store verify token", () => redis.set(`verify:${hash}`, user.id, "EX", 86400), null);
     // Verification is best-effort: a mail outage must not fail the signup that
     // has already created the account and the org.
     void deliver(app, verifyEmailMessage(email, verifyTok), "verification", email, verifyTok);
@@ -179,14 +179,14 @@ export async function authRoutes(app: FastifyInstance) {
     try {
       // Refresh tokens only — an access token presented here must not renew a
       // session even though it verifies under the same secret.
-      decoded = verifyTokenOfType(presented, "refresh") as unknown as { sub: string };
+      decoded = verifyTokenOfType(presented, "refresh");
     } catch {
       return reply.code(401).send({ message: "Invalid token" });
     }
 
     // The signature alone is not enough: a refresh token must still be the one
     // on record, so logout and password changes actually revoke sessions.
-    let onRecord: string | null = null;
+    let onRecord: string | null;
     try { onRecord = await redis.get(`refresh:${decoded.sub}`); } catch {
       return reply.code(503).send({ message: "Session store unavailable" });
     }
@@ -206,7 +206,7 @@ export async function authRoutes(app: FastifyInstance) {
     };
     // Rotate on every use so a leaked token has a single-use lifetime.
     const refreshToken = signRefreshToken(payload);
-    try { await redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000); } catch {}
+    await tryRedis("store refresh token", () => redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000), null);
 
     return { data: { accessToken: signToken(payload), refreshToken } };
   });
@@ -254,7 +254,7 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const key = `reset:${hashToken(token)}`;
-    let userId: string | null = null;
+    let userId: string | null;
     try { userId = await redis.get(key); } catch {
       return reply.code(503).send({ message: "Password reset is temporarily unavailable" });
     }
@@ -272,9 +272,7 @@ export async function authRoutes(app: FastifyInstance) {
     // Drop every existing session: epoch bump invalidates all outstanding
     // access tokens (Redis-independent) and clears the refresh token.
     await bumpSessionEpoch(userId);
-    try {
-      await redis.del(key);
-    } catch {}
+    await tryRedis("clear reset token", () => redis.del(key), 0);
 
     return { success: true, message: "Password reset" };
   });
@@ -288,7 +286,7 @@ export async function authRoutes(app: FastifyInstance) {
     if (!token) return reply.code(400).send({ message: "Token required" });
 
     const key = `verify:${hashToken(token)}`;
-    let userId: string | null = null;
+    let userId: string | null;
     try { userId = await redis.get(key); } catch {
       return reply.code(503).send({ message: "Verification is temporarily unavailable" });
     }
@@ -302,7 +300,7 @@ export async function authRoutes(app: FastifyInstance) {
       where: { id: userId },
       data: { authData: toJson({ ...authData, verified: true, verifiedAt: new Date().toISOString() }) },
     });
-    try { await redis.del(key); } catch {}
+    await tryRedis("clear verify token", () => redis.del(key), 0);
 
     return { success: true, message: "Email verified" };
   });
@@ -393,25 +391,29 @@ export async function authRoutes(app: FastifyInstance) {
       // exhausted, the code is invalidated outright rather than left guessable
       // for the rest of its 5-minute window.
       const attemptsKey = `otp-attempts:${email}`;
-      let attempts = 0;
-      try { attempts = Number((await redis.get(attemptsKey)) ?? 0); } catch {}
+      // Fails closed: an unreachable Redis reports the cap as already hit
+      // rather than resetting the counter to zero on every error.
+      const attempts = await tryRedis(
+        "read OTP attempts",
+        async () => Number((await redis.get(attemptsKey)) ?? 0),
+        OTP_MAX_ATTEMPTS,
+      );
       if (attempts >= OTP_MAX_ATTEMPTS) {
         return reply.code(429).send({ error: "Too many incorrect attempts. Request a new code." });
       }
 
-      let stored: string | null = null;
-      try { stored = await redis.get(`otp:${email}`); } catch {}
+      const stored = await tryRedis("read email OTP", () => redis.get(`otp:${email}`), null);
       if (!stored || stored !== code) {
-        try {
+        await tryRedis("record failed OTP attempt", async () => {
           const ttl = await redis.ttl(`otp:${email}`);
           await redis.set(attemptsKey, attempts + 1, "EX", ttl > 0 ? ttl : 300);
-        } catch {}
+        }, undefined);
         return reply.code(401).send({ error: "Invalid or expired OTP" });
       }
-      try {
+      await tryRedis("clear consumed email OTP", async () => {
         await redis.del(`otp:${email}`);
         await redis.del(attemptsKey);
-      } catch {}
+      }, undefined);
     }
 
     let user = await prisma.user.findFirst({
@@ -482,7 +484,7 @@ export async function authRoutes(app: FastifyInstance) {
     if (error) return reply.redirect(`${webAppUrl()}/login?error=${encodeURIComponent(error)}`);
     if (!code || !state) return reply.redirect(`${webAppUrl()}/login?error=invalid_response`);
 
-    let redirectTo: string | null = null;
+    let redirectTo: string | null;
     try {
       redirectTo = await redis.get(`oauth:state:${state}`);
       // Burn it immediately: a replayed code must not produce a second session.
@@ -574,27 +576,30 @@ export async function authRoutes(app: FastifyInstance) {
     if (!phone || !code) return reply.code(400).send({ error: "phone and code are required" });
 
     const attemptsKey = `otp-attempts:${phone}`;
-    let attempts = 0;
-    try { attempts = Number((await redis.get(attemptsKey)) ?? 0); } catch {}
+    // Fails closed, as on the email path above.
+    const attempts = await tryRedis(
+      "read OTP attempts",
+      async () => Number((await redis.get(attemptsKey)) ?? 0),
+      OTP_MAX_ATTEMPTS,
+    );
     if (attempts >= OTP_MAX_ATTEMPTS) {
       return reply.code(429).send({ error: "Too many incorrect attempts. Request a new code." });
     }
 
-    let stored: string | null = null;
-    try { stored = await redis.get(`otp:${phone}`); } catch {}
+    const stored = await tryRedis("read phone OTP", () => redis.get(`otp:${phone}`), null);
     if (!stored || stored !== code) {
       // Same counter shape as the email path: capped against the 6-digit space
       // and expiring with the code rather than lingering.
-      try {
+      await tryRedis("record failed OTP attempt", async () => {
         const ttl = await redis.ttl(`otp:${phone}`);
         await redis.set(attemptsKey, attempts + 1, "EX", ttl > 0 ? ttl : 300);
-      } catch {}
+      }, undefined);
       return reply.code(401).send({ error: "Invalid OTP" });
     }
-    try {
+    await tryRedis("clear consumed phone OTP", async () => {
       await redis.del(`otp:${phone}`);
       await redis.del(attemptsKey);
-    } catch {}
+    }, undefined);
 
     let user = await prisma.user.findFirst({ where: { phone } });
     if (user && isInternalRole(user.role)) {

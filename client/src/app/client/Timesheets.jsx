@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Clock, CheckCircle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate } from '@lib/utils';
 import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
+import toast from 'react-hot-toast';
 
 export default function Timesheets() {
   usePageTitle('Timesheets');
@@ -23,7 +24,9 @@ export default function Timesheets() {
     try {
       await api.post(`/timesheets/${id}/approve-all`);
       setTimesheets(prev => prev.map(t => t.id === id ? { ...t, status: 'APPROVED' } : t));
-    } catch {}
+    } catch {
+      toast.error('Could not approve the timesheet. Try again.');
+    }
   };
 
   return (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Bell, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { Spinner, Badge, EmptyState, Modal, Button, Input, Textarea } from '@components/ui/Primitives';
+import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
 
 export default function Notifications() {

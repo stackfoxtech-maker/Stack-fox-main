@@ -58,3 +58,31 @@ export const cache = {
     await redis.del(`lock:${key}`);
   },
 };
+
+/**
+ * Run a Redis call whose failure must not take the request down, and say so
+ * when it fails.
+ *
+ * Sixteen sites wrote `try { await redis.… } catch {}`. The intent was right —
+ * a Redis outage should not stop someone logging in — but the silence was not.
+ * One of those swallows was security-relevant: on the OTP paths the attempt
+ * counter is read as `attempts = Number(await redis.get(key) ?? 0)`, so a
+ * throwing Redis left `attempts` at 0 and reset the brute-force limit on every
+ * error rather than failing closed.
+ *
+ * `fallback` is what the caller gets when Redis is unreachable. Choose it so
+ * the degraded path is the safe one: a *high* attempt count locks the code out,
+ * a zero unlocks it.
+ */
+export async function tryRedis<T>(
+  op: string,
+  fn: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.warn(`[redis] ${op} failed: ${(err as Error).message}`);
+    return fallback;
+  }
+}

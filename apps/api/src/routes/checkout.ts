@@ -268,7 +268,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
       if (hasHandshake) {
         const valid =
           !!rzpOrderId &&
-          verifyRazorpaySignature(rzpOrderId, pay.razorpay_payment_id!, pay.razorpay_signature!);
+          verifyRazorpaySignature(rzpOrderId, pay.razorpay_payment_id!, pay.razorpay_signature);
         if (!valid) {
           return reply.code(400).send({ error: "Payment signature verification failed" });
         }
@@ -464,7 +464,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
     if (!pkg) return reply.code(404).send({ error: "Package not found" });
 
     // Calculate total with add-ons
-    let total = pkg.flatPrice;
+    const total = pkg.flatPrice;
     // Add-on pricing would be looked up from a config table
 
     // Create or find user

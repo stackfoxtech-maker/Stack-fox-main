@@ -37,7 +37,9 @@ export default function Support() {
       const r = await api.get(`/support/${selected._id}`);
       setSelected(r.data.data.ticket);
       fetch();
-    } catch {}
+    } catch {
+      toast.error('Could not send your reply. Try again.');
+    }
   };
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;

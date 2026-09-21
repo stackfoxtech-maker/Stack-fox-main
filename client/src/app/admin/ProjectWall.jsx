@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { MessageSquare, Search, Filter, Loader2 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, capitalize, getInitials } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Select } from '@components/ui/Primitives';
+import { Spinner, Badge, Select } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 

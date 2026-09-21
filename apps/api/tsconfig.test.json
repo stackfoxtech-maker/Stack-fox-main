@@ -1,0 +1,11 @@
+{
+  "extends": "@stackfox/tsconfig/node.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["tests/**/*.mts", "scripts/**/*.mts"]
+}

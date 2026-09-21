@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Briefcase } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, capitalize, cn } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Button, Select } from '@components/ui/Primitives';
+import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 

@@ -8,6 +8,7 @@
  */
 import { apiPublicUrl } from "./urls";
 import { TIMEOUT } from "./timeouts";
+import { asString } from "./json";
 
 const AUTHORIZE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -73,14 +74,19 @@ export async function exchangeCode(code: string): Promise<GoogleProfile> {
   if (!idToken) throw new Error("Google token response contained no id_token");
 
   const claims = decodeJwtPayload(idToken);
-  if (!claims.sub || !claims.email) throw new Error("Google id_token was missing sub or email");
+
+  // googleId is an account key, so a non-string claim must not be coerced
+  // into the literal "[object Object]" and shared between two identities.
+  const googleId = asString(claims.sub);
+  const email = asString(claims.email).toLowerCase();
+  if (!googleId || !email) throw new Error("Google id_token was missing sub or email");
 
   return {
-    googleId: String(claims.sub),
-    email: String(claims.email).toLowerCase(),
+    googleId,
+    email,
     emailVerified: claims.email_verified === true || claims.email_verified === "true",
-    name: claims.name ? String(claims.name) : undefined,
-    picture: claims.picture ? String(claims.picture) : undefined,
+    name: asString(claims.name) || undefined,
+    picture: asString(claims.picture) || undefined,
   };
 }
 

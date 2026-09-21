@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { MessageCircle, Send } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { timeAgo, getInitials, getAvatarColor } from '@lib/utils';
-import { Spinner, EmptyState, Button, Input } from '@components/ui/Primitives';
+import { Spinner, EmptyState, Button } from '@components/ui/Primitives';
 import api from '@lib/api';
 import useAuthStore from '@store/authStore';
+import toast from 'react-hot-toast';
 
 export default function Messages() {
   usePageTitle('Messages');
@@ -36,7 +37,9 @@ export default function Messages() {
       setNewMsg('');
       const r = await api.get(`/messages/${activeConv._id}`);
       setMessages(r.data.data || []);
-    } catch {}
+    } catch {
+      toast.error('Could not send your message. Try again.');
+    }
     setSending(false);
   };
 

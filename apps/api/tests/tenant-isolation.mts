@@ -11,7 +11,6 @@
 import "../src/env";
 import { prisma } from "@stackfox/prisma";
 import * as ids from "../src/lib/id";
-import { hashPassword } from "../src/lib/password";
 
 const BASE = "http://localhost:4000";
 const stamp = Date.now();

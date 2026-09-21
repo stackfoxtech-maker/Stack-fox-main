@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, Plus } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate } from '@lib/utils';
 import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';

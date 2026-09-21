@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { MessageSquare, Search, Copy, RotateCcw, ChevronRight } from 'lucide-react';
-import { Button, Input, Badge } from '@components/ui/Primitives';
+import { MessageSquare, Search, Copy, ChevronRight } from 'lucide-react';
+import { Button, Badge } from '@components/ui/Primitives';
 import { objectionKeys, genericObjections, businessCategories, pitchLibrary } from '@data/salesPitchLibrary';
-import { toast } from 'react-hot-toast';
 
 const topObjectionsByCategory = {
   'gym': ['expensive', 'noNeed', 'hasInstagram'],

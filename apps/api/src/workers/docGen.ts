@@ -6,6 +6,7 @@ import { renderDocument, inr, type DocLineItem } from "../lib/pdf";
 import { buildInvoicePdf, buildContractPdf } from "../lib/documents";
 import * as ids from "../lib/id";
 import { resolveGstType, splitGst } from "../lib/gst";
+import { asString } from "../lib/json";
 
 const GST_RATE = 0.18;
 
@@ -177,7 +178,7 @@ createWorker(QUEUE.docGen, async (job) => {
       .filter(([, v]) => v)
       .map(([k, v]) => ({
         desc: k.replace(/^\w/, (c) => c.toUpperCase()),
-        amount: typeof v === "object" ? "" : String(v),
+        amount: asString(v),
       }));
 
     const range = proposal.totalMin === proposal.totalMax

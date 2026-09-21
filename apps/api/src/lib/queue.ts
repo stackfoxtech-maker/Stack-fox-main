@@ -9,7 +9,7 @@ export const connection = {
   username: redis.options.username,
   password: redis.options.password,
   tls: redis.options.tls,
-  maxRetriesPerRequest: null as null,
+  maxRetriesPerRequest: null,
   connectTimeout: 5000,
 };
 

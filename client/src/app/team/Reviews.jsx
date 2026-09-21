@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Star, ClipboardCheck, Clock, Send } from 'lucide-react';
-import { Badge } from '@components/ui/Primitives';
 import { formatDate } from '@lib/utils';
 import api from '@lib/api';
 import toast from 'react-hot-toast';

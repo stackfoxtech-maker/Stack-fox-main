@@ -6,7 +6,7 @@ import { verifyRazorpayWebhookSignature, getStripe } from "../lib/payments";
 import { recordInvoicePayment } from "../lib/billing";
 import { clientScope } from "../lib/scope";
 import { LIST_CAP, pageParams } from "../lib/http";
-import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
+import { isStorageConfigured } from "../lib/storage";
 import { buildInvoicePdf } from "../lib/documents";
 import { requireRole } from "../plugins/auth";
 import { ADMIN_ROLES, FINANCE_ROLES, FINANCE_VIEW_ROLES } from "@stackfox/core";

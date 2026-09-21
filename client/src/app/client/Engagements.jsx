@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Handshake, ArrowRight, Calendar, Users, ChevronRight } from 'lucide-react';
+import { Handshake, ArrowRight, ChevronRight } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, formatDate, getStatusBadge } from '@lib/utils';
+import { formatDate } from '@lib/utils';
 import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
 

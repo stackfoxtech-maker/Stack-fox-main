@@ -3,7 +3,6 @@ import { Users, TrendingUp, Award, IndianRupee } from 'lucide-react';
 import { Badge, EmptyState, Spinner } from '@components/ui/Primitives';
 import { formatINR, formatDate, getInitials, capitalize } from '@lib/utils';
 import api from '@lib/api';
-import toast from 'react-hot-toast';
 
 const payoutVariant = (status) =>
   status === 'PAID' || status === 'CONVERTED' ? 'success' : status === 'EXPIRED' || status === 'DUPLICATE' ? 'neutral' : 'warning';

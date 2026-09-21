@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
 import { DELIVERY_ROLES, isInternalRole } from "@stackfox/core";
-import { LIST_CAP, ok, pageParams, paginated, withId } from "../lib/http";
+import { LIST_CAP, ok, pageParams, paginated } from "../lib/http";
 import { emitEvent } from "../lib/events";
 
 /**

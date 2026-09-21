@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ShoppingCart, X, Trash2, Plus, Minus, ArrowRight, Package,
-  FileText, AlertTriangle, TrendingUp, Download, MessageSquare
+  FileText, AlertTriangle, TrendingUp, MessageSquare
 } from 'lucide-react';
 import { CURRENCIES } from '@lib/constants';
 import { applyTierMultiplier, computeEstimateRange, TIERS, TIER_LABELS } from '@lib/estimate';

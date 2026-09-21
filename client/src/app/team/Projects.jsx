@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FolderKanban, ArrowLeft } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatDate, capitalize, getStatusBadge, formatINR } from '@lib/utils';
+import { formatDate, capitalize, getStatusBadge } from '@lib/utils';
 import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';

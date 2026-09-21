@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { clientScope, clientWriteScope, assertProjectInScope } from "../lib/scope";
 import { LIST_CAP, ok, withIds } from "../lib/http";
-import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
+import { isStorageConfigured } from "../lib/storage";
 import { decryptSecret } from "../lib/crypto";
 import { toJson } from "../lib/json";
 import { emitEvent } from "../lib/events";

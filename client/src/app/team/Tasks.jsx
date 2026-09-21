@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { CheckSquare, Plus, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { CheckSquare } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { capitalize, cn, formatDate } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
+import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 

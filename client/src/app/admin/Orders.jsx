@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Mail, MessageSquare, ExternalLink, ChevronDown, ChevronUp, User, ScrollText, FileText, ShieldCheck, PenTool, Clock, CheckCircle2, AlertTriangle, Download} from 'lucide-react';
+import { ShoppingBag, Mail, MessageSquare, ChevronDown, ChevronUp, User, ScrollText, PenTool, Clock, CheckCircle2, AlertTriangle, Download} from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';

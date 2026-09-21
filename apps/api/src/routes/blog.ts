@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
 import { isInternalRole } from "@stackfox/core";
 import { generateStructured } from "../lib/gemini";
-import { ok, withId, withIds, paginated, pageParams } from "../lib/http";
+import { ok, paginated, pageParams } from "../lib/http";
 import { sanitizeHtml } from "../lib/sanitizeHtml";
 
 /**

@@ -41,7 +41,7 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
     const seen = new Set<string>();
     let collisions = 0;
     for (let i = 0; i < N; i++) {
-      const id = (gen as () => string)();
+      const id = (gen)();
       if (seen.has(id)) collisions++;
       seen.add(id);
     }
@@ -132,7 +132,7 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
   for (const c of cases) {
     let r;
     try {
-      r = computeInvoice(c.input as any);
+      r = computeInvoice(c.input);
     } catch (err) {
       check(`computeInvoice: ${c.label}`, false, `threw: ${(err as Error).message}`);
       continue;

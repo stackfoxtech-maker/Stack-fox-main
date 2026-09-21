@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePageTitle } from '@lib/hooks';
-import { Input, Textarea, Button } from '@components/ui/Primitives';
+import { Input, Button } from '@components/ui/Primitives';
 import useAuthStore from '@store/authStore';
 import toast from 'react-hot-toast';
 

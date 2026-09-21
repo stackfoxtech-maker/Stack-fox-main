@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, TrendingUp, Users, Package, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatINRShort } from '@lib/utils';
 import { Spinner, Badge } from '@components/ui/Primitives';
 import api from '@lib/api';
-import toast from 'react-hot-toast';
 
 export default function Analytics() {
   usePageTitle('Admin Analytics');

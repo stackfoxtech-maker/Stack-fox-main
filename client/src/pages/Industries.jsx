@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ShoppingCart, ArrowRight, Heart, Building2, GraduationCap, UtensilsCrossed, Calendar, ShoppingBag } from 'lucide-react';
+import { Check, ShoppingCart, Heart, Building2, GraduationCap, UtensilsCrossed, Calendar, ShoppingBag } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR } from '@lib/utils';
 import { Section, SectionHeading, Button } from '@components/ui/Primitives';

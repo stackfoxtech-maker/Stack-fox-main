@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
-  Search, ShoppingCart, Info, X, Plus, Check,
+  Search, ShoppingCart, Plus, Check,
   Edit3, Sparkles, Share2, ArrowRight, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -11,11 +11,8 @@ import { CURRENCIES, FBT_PAIRS } from '@lib/constants';
 
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
-import useUiStore from '@store/uiStore';
 import { Button, Section } from '@components/ui/Primitives';
-import { BrandLogo } from '@components/ui/BrandLogo';
 import SF_DATA from '@data/stackfox-data.json';
-import api from '@lib/api';
 import toast from 'react-hot-toast';
 
 /* ─────────────────────────────────────────────────────────────────────────────
