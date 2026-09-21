@@ -17,6 +17,14 @@
 import "../src/env";
 import { prisma } from "@stackfox/prisma";
 
+/** Only the fields these checks read. */
+type ApiBody = {
+  data?: {
+    accessToken?: string;
+    quote?: { id?: string; total?: number };
+  };
+} | null;
+
 const BASE = process.env.TEST_API_URL ?? "http://localhost:4000";
 const stamp = Date.now();
 
@@ -32,7 +40,7 @@ async function register() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "Quote Test", email, password: "testpass1234" }),
     });
-    const b = await res.json().catch(() => null);
+    const b = (await res.json().catch(() => null)) as ApiBody;
     if (b?.data?.accessToken) return b.data.accessToken as string;
     if (res.status !== 429) throw new Error(`register failed: ${JSON.stringify(b)}`);
     await new Promise((r) => setTimeout(r, 10_000));
@@ -48,7 +56,10 @@ async function quoteFromCart(items: unknown[], tier?: string) {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ items, ...(tier ? { tier } : {}) }),
   });
-  return { status: res.status, body: await res.json().catch(() => null) };
+  return {
+    status: res.status,
+    body: (await res.json().catch(() => null)) as ApiBody,
+  };
 }
 
 // A real, published service to quote against.
