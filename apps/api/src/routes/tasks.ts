@@ -4,6 +4,8 @@ import { requireAuth, requireRole } from "../plugins/auth";
 import { DELIVERY_ROLES, isInternalRole } from "@stackfox/core";
 import { LIST_CAP, ok, pageParams, paginated } from "../lib/http";
 import { emitEvent } from "../lib/events";
+import { parseBody } from "../lib/validate";
+import { CreateTaskSchema } from "./opsSchemas";
 
 /**
  * Delivery tasks.
@@ -136,12 +138,9 @@ export async function taskRoutes(app: FastifyInstance) {
 
   app.post("/tasks", async (req, reply) => {
     if (!requireRole(req, reply, DELIVERY_ROLES)) return;
-    const { title, description, assigneeId, projectId, priority, status, dueDate } =
-      req.body as Record<string, string | undefined>;
-
-    if (!title?.trim() || !assigneeId) {
-      return reply.code(400).send({ message: "title and assigneeId are required" });
-    }
+    const body = parseBody(req, reply, CreateTaskSchema);
+    if (!body) return;
+    const { title, description, assigneeId, projectId, priority, status, dueDate } = body;
 
     const assignee = await prisma.user.findUnique({ where: { id: assigneeId } });
     if (!assignee || !assignee.isActive) {

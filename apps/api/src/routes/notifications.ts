@@ -1,6 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
+import { parseBody } from "../lib/validate";
+import { MarkNotificationsReadSchema, NotificationPrefsSchema } from "./opsSchemas";
 
 // Per-user notification inbox — distinct from NotificationContent (admin
 // templates keyed by event_code.channel, no userId/readAt on that model).
@@ -41,7 +43,9 @@ export async function notificationRoutes(app: FastifyInstance) {
 
   app.patch("/notifications/read", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { ids } = req.body as { ids: string[] };
+    const readBody = parseBody(req, reply, MarkNotificationsReadSchema);
+    if (!readBody) return;
+    const { ids } = readBody;
     await prisma.notification.updateMany({
       where: { id: { in: ids }, userId: req.user!.sub },
       data: { readAt: new Date() },
@@ -60,7 +64,8 @@ export async function notificationRoutes(app: FastifyInstance) {
 
   app.patch("/notifications/preferences", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const prefs = req.body as any;
+    const prefs = parseBody(req, reply, NotificationPrefsSchema);
+    if (!prefs) return;
     await prisma.user.update({
       where: { id: req.user!.sub },
       data: { notificationPrefs: prefs },

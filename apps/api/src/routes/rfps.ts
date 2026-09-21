@@ -7,6 +7,7 @@ import { requireRole } from "../plugins/auth";
 import { SALES_ROLES } from "@stackfox/core";
 import { parseBody } from "../lib/validate";
 import { CreateRfpSchema, RfpDecisionSchema, RfpOutcomeSchema } from "./crmSchemas";
+import { CreateSdnNoteSchema } from "./opsSchemas";
 
 export async function rfpRoutes(app: FastifyInstance) {
   app.get("/rfps", async (req, reply) => {
@@ -84,7 +85,8 @@ export async function rfpRoutes(app: FastifyInstance) {
   app.post("/rfps/:id/sdns", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const body = req.body as any;
+    const body = parseBody(req, reply, CreateSdnNoteSchema);
+    if (!body) return;
     return prisma.sdnNote.create({
       data: {
         rfpId: id,

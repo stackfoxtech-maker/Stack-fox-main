@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
 import { CATALOGUE_ROLES } from "@stackfox/core";
+import { parseBody } from "../lib/validate";
+import { UpdateStatusSchema } from "./opsSchemas";
 
 export async function projectInquiryRoutes(app: FastifyInstance) {
   app.get("/project-inquiries", async (req, reply) => {
@@ -29,7 +31,9 @@ export async function projectInquiryRoutes(app: FastifyInstance) {
   app.patch("/project-inquiries/:id/status", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { status } = req.body as { status: string };
+    const piBody = parseBody(req, reply, UpdateStatusSchema);
+    if (!piBody) return;
+    const { status } = piBody;
 
     const valid = ["NEW", "CONTACTED", "QUALIFIED", "CONVERTED", "LOST"];
     if (!valid.includes(status)) {

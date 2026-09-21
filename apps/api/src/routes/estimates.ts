@@ -7,6 +7,8 @@ import * as ids from "../lib/id";
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { isInternalRole } from "@stackfox/core";
 import { issueDownload } from "../lib/documentIntegrity";
+import { parseBody } from "../lib/validate";
+import { CreateEstimateSchema } from "./opsSchemas";
 
 /**
  * Estimates were fully open: GET /estimates/:id returned the client's service
@@ -42,7 +44,9 @@ async function estimateInScope(id: string, req: FastifyRequest, reply: FastifyRe
 export async function estimateRoutes(app: FastifyInstance) {
   // POST /estimates — generate from workspace
   app.post("/estimates", async (req, reply) => {
-    const { workspaceId } = req.body as { workspaceId: string };
+    const estBody = parseBody(req, reply, CreateEstimateSchema);
+    if (!estBody) return;
+    const { workspaceId } = estBody;
     const ws = await prisma.workspace.findUnique({
       where: { id: workspaceId },
       include: { customLineItems: true },

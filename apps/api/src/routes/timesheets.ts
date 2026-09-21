@@ -4,6 +4,8 @@ import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { clientScope } from "../lib/scope";
 import { LIST_CAP, ok, withId, withIds } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import { QueryTimesheetLineSchema, ResolveTimesheetLineSchema } from "./opsSchemas";
 
 export async function timesheetRoutes(app: FastifyInstance) {
   app.get("/timesheets", async (req, reply) => {
@@ -80,7 +82,9 @@ export async function timesheetRoutes(app: FastifyInstance) {
   app.post("/timesheets/:id/query-line", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { lineId, note } = req.body as { lineId: string; note: string };
+    const qBody = parseBody(req, reply, QueryTimesheetLineSchema);
+    if (!qBody) return;
+    const { lineId, note } = qBody;
 
     await prisma.timesheetLine.update({
       where: { id: lineId },
@@ -97,7 +101,9 @@ export async function timesheetRoutes(app: FastifyInstance) {
 
   app.post("/timesheets/:id/resolve-line", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { lineId } = req.body as { lineId: string };
+    const rBody = parseBody(req, reply, ResolveTimesheetLineSchema);
+    if (!rBody) return;
+    const { lineId } = rBody;
 
     await prisma.timesheetLine.update({
       where: { id: lineId },

@@ -12,6 +12,7 @@ import {
 } from "@stackfox/core";
 import { ok, withId } from "../lib/http";
 import { parseBody } from "../lib/validate";
+import { ScreeningReviewSchema } from "./opsSchemas";
 import {
   CreateServiceSchema,
   UpdateServiceSchema,
@@ -341,9 +342,11 @@ export async function adminRoutes(app: FastifyInstance) {
     });
   });
 
-  app.patch("/admin/screening/:id", async (req) => {
+  app.patch("/admin/screening/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const { result, reviewNote } = req.body as { result: string; reviewNote?: string };
+    const srBody = parseBody(req, reply, ScreeningReviewSchema);
+    if (!srBody) return;
+    const { result, reviewNote } = srBody;
     return prisma.screeningResult.update({
       where: { id },
       data: { result, reviewNote, reviewedBy: req.user!.sub, reviewedAt: new Date() },

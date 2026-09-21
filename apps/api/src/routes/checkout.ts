@@ -24,6 +24,11 @@ import {
 } from "@stackfox/core";
 import { parseBody } from "../lib/validate";
 import { StartCheckoutSchema, CompleteCheckoutSchema } from "./moneySchemas";
+import {
+  CheckoutSignSchema,
+  CheckoutStepSchema,
+  ExpressCheckoutSchema,
+} from "./opsSchemas";
 
 export async function checkoutRoutes(app: FastifyInstance) {
   // POST /checkout/start — hash guard G-039
@@ -104,7 +109,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
     const { sid } = req.params as { sid: string };
     const session = await readSession(sid);
     if (!session) return reply.code(404).send({ error: "Session expired" });
-    session.accountDetails = req.body as Record<string, unknown>;
+    const step2 = parseBody(req, reply, CheckoutStepSchema);
+    if (!step2) return;
+    session.accountDetails = step2;
     session.step = 2;
 
     // KYC gate check
@@ -127,7 +134,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
     const { sid } = req.params as { sid: string };
     const session = await readSession(sid);
     if (!session) return reply.code(404).send({ error: "Session expired" });
-    session.engagementDetails = req.body as Record<string, unknown>;
+    const step3 = parseBody(req, reply, CheckoutStepSchema);
+    if (!step3) return;
+    session.engagementDetails = step3;
     session.step = 3;
     await writeSession(sid, session);
     return session;
@@ -138,7 +147,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
     const { sid } = req.params as { sid: string };
     const session = await readSession(sid);
     if (!session) return reply.code(404).send({ error: "Session expired" });
-    session.paymentTerms = req.body as Record<string, unknown>;
+    const step4 = parseBody(req, reply, CheckoutStepSchema);
+    if (!step4) return;
+    session.paymentTerms = step4;
     session.step = 4;
     await writeSession(sid, session);
     return session;
@@ -149,7 +160,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
     const { sid } = req.params as { sid: string };
     const session = await readSession(sid);
     if (!session) return reply.code(404).send({ error: "Session expired" });
-    session.clauseSelections = req.body as Record<string, unknown>;
+    const step5 = parseBody(req, reply, CheckoutStepSchema);
+    if (!step5) return;
+    session.clauseSelections = step5;
     session.step = 5;
     await writeSession(sid, session);
 
@@ -169,10 +182,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
   app.post("/checkout/:sid/sign", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { sid } = req.params as { sid: string };
-    const { rail, evidence } = req.body as {
-      rail: string;
-      evidence: Record<string, unknown>;
-    };
+    const signBody = parseBody(req, reply, CheckoutSignSchema);
+    if (!signBody) return;
+    const { rail, evidence } = signBody;
 
     const session = await readSession(sid);
     if (!session) return reply.code(404).send({ error: "Session expired" });
@@ -501,13 +513,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
   // POST /checkout/express — Starter tier 3-field checkout
   app.post("/checkout/express", async (req, reply) => {
-    const { name, phone, email, packageId, addOns } = req.body as {
-      name: string;
-      phone: string;
-      email: string;
-      packageId: string;
-      addOns?: string[];
-    };
+    const expBody = parseBody(req, reply, ExpressCheckoutSchema);
+    if (!expBody) return;
+    const { name, phone, email, packageId, addOns } = expBody;
 
     const pkg = await prisma.package.findUnique({
       where: { id: packageId },

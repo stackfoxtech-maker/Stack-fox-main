@@ -5,6 +5,8 @@ import { isInternalRole } from "@stackfox/core";
 import { LIST_CAP, ok, withIds } from "../lib/http";
 import * as ids from "../lib/id";
 import { queues } from "../lib/queue";
+import { parseBody } from "../lib/validate";
+import { ReferralSchema } from "./opsSchemas";
 
 /**
  * Referral programme.
@@ -71,10 +73,9 @@ export async function referralRoutes(app: FastifyInstance) {
    */
   app.post("/referrals", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { referredEmail, referredName } = req.body as {
-      referredEmail?: string;
-      referredName?: string;
-    };
+    const refBody = parseBody(req, reply, ReferralSchema);
+    if (!refBody) return;
+    const { referredEmail, referredName } = refBody;
 
     const email = referredEmail?.trim().toLowerCase();
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {

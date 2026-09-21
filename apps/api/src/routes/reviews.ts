@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { LIST_CAP } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import { CreateReviewSchema } from "./opsSchemas";
 
 export async function reviewRoutes(app: FastifyInstance) {
   app.get("/reviews/my", async (req, reply) => {
@@ -85,18 +87,10 @@ export async function reviewRoutes(app: FastifyInstance) {
 
   app.post("/reviews", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { revieweeId, rating, comment, period } = req.body as {
-      revieweeId: string;
-      rating: number;
-      comment?: string;
-      period: string;
-    };
+    const revBody = parseBody(req, reply, CreateReviewSchema);
+    if (!revBody) return;
+    const { revieweeId, rating, comment, period } = revBody;
 
-    if (!rating || rating < 1 || rating > 5) {
-      return reply.code(400).send({ message: "rating (1-5) is required" });
-    }
-
-    if (!revieweeId) return reply.code(400).send({ message: "revieweeId is required" });
     if (revieweeId === req.user!.sub) {
       return reply.code(400).send({ message: "You cannot review yourself." });
     }

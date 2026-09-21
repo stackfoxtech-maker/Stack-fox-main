@@ -5,6 +5,8 @@ import { LIST_CAP, ok } from "../lib/http";
 import { uploadFile, isStorageConfigured } from "../lib/storage";
 import { SLA_TARGETS } from "@stackfox/core";
 import { issueDownload } from "../lib/documentIntegrity";
+import { parseBody } from "../lib/validate";
+import { GenerateReportSchema } from "./opsSchemas";
 
 /**
  * Client reporting.
@@ -372,7 +374,9 @@ export async function reportRoutes(app: FastifyInstance) {
     const scope = await clientScope(req, reply);
     if (scope === undefined) return;
 
-    const { type } = req.body as { type?: string };
+    const repBody = parseBody(req, reply, GenerateReportSchema);
+    if (!repBody) return;
+    const { type } = repBody;
     if (!type || !REPORT_TYPES.includes(type as ReportType)) {
       return reply.code(400).send({
         message: `A report type is required. Available: ${REPORT_TYPES.join(", ")}.`,

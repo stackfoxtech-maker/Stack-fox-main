@@ -8,6 +8,8 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import { requireRole } from "../plugins/auth";
 import { clientScope } from "../lib/scope";
 import { toJson } from "../lib/json";
+import { parseBody } from "../lib/validate";
+import { CreateProgramSchema } from "./opsSchemas";
 
 /**
  * A programme groups engagements for one client, so it is readable by that
@@ -37,12 +39,13 @@ async function programInScope(
 export async function programRoutes(app: FastifyInstance) {
   app.post("/programs", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const body = req.body as any;
+    const body = parseBody(req, reply, CreateProgramSchema);
+    if (!body) return;
     return prisma.program.create({
       data: {
         id: ids.programId(),
         name: body.name,
-        clientId: body.orgId ?? body.clientId,
+        clientId: body.clientId,
         leadUserId: req.user!.sub,
         budgetEnvelope: body.budgetEnvelope ?? null,
       },

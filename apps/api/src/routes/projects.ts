@@ -7,6 +7,7 @@ import { canTransition, PROJECT_TRANSITIONS } from "@stackfox/core";
 import { clientScope, clientWriteScope, assertProjectInScope } from "../lib/scope";
 import { LIST_CAP, pageParams, paginated } from "../lib/http";
 import { parseBody } from "../lib/validate";
+import { MilestoneDeliverablesSchema } from "./opsSchemas";
 import {
   AssessChangeRequestSchema,
   CreateChangeRequestSchema,
@@ -390,13 +391,16 @@ export async function projectRoutes(app: FastifyInstance) {
       orderBy: { number: "desc" },
     });
 
+    const milestoneBody = parseBody(req, reply, MilestoneDeliverablesSchema);
+    if (!milestoneBody) return;
+
     await prisma.milestone.create({
       data: {
         projectId: id,
         number: (maxMilestone?.number ?? 0) + 1,
         name: "Reactivation",
         paymentPct: 100,
-        deliverables: (req.body as any)?.deliverables ?? [],
+        deliverables: milestoneBody.deliverables ?? [],
       },
     });
 

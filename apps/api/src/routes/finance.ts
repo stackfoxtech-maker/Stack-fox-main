@@ -415,6 +415,11 @@ export async function financeRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: "Invalid signature" });
     }
 
+    // Deliberately unvalidated, and the last `req.body as any` in the routes
+    // along with the Stripe one below. The body is signature-verified against
+    // the raw bytes immediately above, and the shape is Razorpay's to change,
+    // not ours to declare. A strict schema here would reject a legitimate
+    // provider change and silently drop a real payment notification.
     const payload = req.body as any;
     const eventType = payload.event;
     const entity = payload.payload?.payment?.entity;
@@ -510,6 +515,8 @@ export async function financeRoutes(app: FastifyInstance) {
     const sigHeader = req.headers["stripe-signature"] as string | undefined;
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
     const rawBody = (req as any).rawBody as string | undefined;
+    // Same reasoning as the Razorpay handler: verified first, and the shape
+    // belongs to Stripe.
     let event = req.body as any;
 
     if (secret && sigHeader && rawBody) {

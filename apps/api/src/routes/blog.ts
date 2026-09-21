@@ -5,6 +5,8 @@ import { isInternalRole } from "@stackfox/core";
 import { generateStructured } from "../lib/gemini";
 import { ok, paginated, pageParams } from "../lib/http";
 import { sanitizeHtml } from "../lib/sanitizeHtml";
+import { parseBody } from "../lib/validate";
+import { CreateBlogPostSchema, GenerateArticleSchema } from "./opsSchemas";
 
 /**
  * Blog and knowledge base.
@@ -138,14 +140,9 @@ export async function blogRoutes(app: FastifyInstance) {
 
   app.post("/blog/suggest", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { title, content, category } = req.body as {
-      title?: string;
-      content?: string;
-      category?: string;
-    };
-    if (!title?.trim() || !content?.trim()) {
-      return reply.code(400).send({ message: "title and content are required" });
-    }
+    const body = parseBody(req, reply, CreateBlogPostSchema);
+    if (!body) return;
+    const { title, content, category } = body;
 
     const author = await prisma.user.findUnique({
       where: { id: req.user!.sub },
@@ -280,8 +277,9 @@ export async function blogRoutes(app: FastifyInstance) {
     { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
     async (req, reply) => {
       if (!requireRole(req, reply, EDITOR_ROLES)) return;
-      const { topic, category } = req.body as { topic?: string; category?: string };
-      if (!topic?.trim()) return reply.code(400).send({ message: "topic is required" });
+      const genBody = parseBody(req, reply, GenerateArticleSchema);
+      if (!genBody) return;
+      const { topic, category } = genBody;
 
       if (!process.env.GEMINI_API_KEY) {
         return reply.code(503).send({

@@ -41,7 +41,7 @@ async function register() {
       body: JSON.stringify({ name: "Quote Test", email, password: "testpass1234" }),
     });
     const b = (await res.json().catch(() => null)) as ApiBody;
-    if (b?.data?.accessToken) return b.data.accessToken as string;
+    if (b?.data?.accessToken) return b.data.accessToken;
     if (res.status !== 429) throw new Error(`register failed: ${JSON.stringify(b)}`);
     await new Promise((r) => setTimeout(r, 10_000));
   }

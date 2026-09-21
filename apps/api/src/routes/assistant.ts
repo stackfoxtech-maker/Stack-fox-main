@@ -1,5 +1,7 @@
 import { TIMEOUT } from "../lib/timeouts";
 import type { FastifyInstance } from "fastify";
+import { parseBody } from "../lib/validate";
+import { AssistantChatSchema, AssistantRecommendSchema } from "./opsSchemas";
 
 const GEMINI_MODEL = "gemini-3.6-flash";
 
@@ -39,12 +41,9 @@ export async function assistantRoutes(app: FastifyInstance) {
     "/assistant/chat",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-      const { message, history } = req.body as {
-        message?: string;
-        history?: { role: "user" | "model"; text: string }[];
-      };
-      if (!message?.trim())
-        return reply.code(400).send({ message: "message is required" });
+      const body = parseBody(req, reply, AssistantChatSchema);
+      if (!body) return;
+      const { message, history } = body;
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey)
@@ -110,14 +109,13 @@ export async function assistantRoutes(app: FastifyInstance) {
     "/assistant/advise",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-      const { answers, catalog } = req.body as {
-        answers?: Record<string, string>;
-        catalog?: { id: string; name: string; catId: string; price: number }[];
-      };
-      if (!answers || Object.keys(answers).length === 0) {
+      const body = parseBody(req, reply, AssistantRecommendSchema);
+      if (!body) return;
+      const { answers, catalog } = body;
+      if (Object.keys(answers).length === 0) {
         return reply.code(400).send({ message: "answers are required" });
       }
-      if (!catalog || catalog.length === 0) {
+      if (catalog.length === 0) {
         return reply.code(400).send({ message: "catalog is required" });
       }
 

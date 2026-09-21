@@ -3,6 +3,8 @@ import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { ADMIN_ROLES } from "@stackfox/core";
 import { LIST_CAP } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import { JobApplicationSchema, UpdateStatusSchema } from "./opsSchemas";
 
 function serializeJob(j: any) {
   return { ...j, _id: j.id, applicationCount: j._count?.applications ?? undefined };
@@ -30,15 +32,8 @@ export async function jobRoutes(app: FastifyInstance) {
     { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
     async (req, reply) => {
       const { id } = req.params as { id: string };
-      const body = req.body as {
-        name?: string;
-        email?: string;
-        phone?: string;
-        experience?: string;
-        coverLetter?: string;
-        portfolioUrl?: string;
-        linkedinUrl?: string;
-      };
+      const body = parseBody(req, reply, JobApplicationSchema);
+      if (!body) return;
       if (!body.name || !body.email) {
         return reply.code(400).send({ message: "name and email are required" });
       }
@@ -79,7 +74,9 @@ export async function jobRoutes(app: FastifyInstance) {
   app.put("/jobs/applications/:appId", async (req, reply) => {
     if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const { appId } = req.params as { appId: string };
-    const { status } = req.body as { status: string };
+    const jsBody = parseBody(req, reply, UpdateStatusSchema);
+    if (!jsBody) return;
+    const { status } = jsBody;
     const updated = await prisma.jobApplication.update({
       where: { id: appId },
       data: { status },

@@ -6,6 +6,8 @@ import { isInternalRole } from "@stackfox/core";
 import { toJson } from "../lib/json";
 import { resolveOrgId } from "../lib/scope";
 import { LIST_CAP } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import { SendMessageSchema, StartConversationSchema } from "./opsSchemas";
 
 /**
  * Client <-> StackFox messaging.
@@ -80,12 +82,9 @@ export async function messageRoutes(app: FastifyInstance) {
   app.post("/messages/start", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const me = req.user!.sub;
-    const { userId, title, projectId } = req.body as {
-      userId?: string;
-      title?: string;
-      projectId?: string;
-    };
-    if (!userId) return reply.code(400).send({ message: "userId is required" });
+    const convBody = parseBody(req, reply, StartConversationSchema);
+    if (!convBody) return;
+    const { userId, title, projectId } = convBody;
     if (userId === me)
       return reply.code(400).send({ message: "You cannot message yourself" });
 
@@ -171,13 +170,9 @@ export async function messageRoutes(app: FastifyInstance) {
   app.post("/messages/send", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const me = req.user!.sub;
-    const { conversationId, text } = req.body as {
-      conversationId?: string;
-      text?: string;
-    };
-    if (!conversationId || !text?.trim()) {
-      return reply.code(400).send({ message: "conversationId and text are required" });
-    }
+    const sendBody = parseBody(req, reply, SendMessageSchema);
+    if (!sendBody) return;
+    const { conversationId, text } = sendBody;
     if (text.length > 10000) {
       return reply
         .code(400)
