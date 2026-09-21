@@ -4,6 +4,12 @@ import { requireAuth } from "../plugins/auth";
 import { redis } from "../lib/redis";
 import { randomBytes } from "crypto";
 import { findCatalogueItem } from "../lib/catalogue";
+import { parseBody } from "../lib/validate";
+import {
+  AddToCartSchema,
+  RemoveFromCartSchema,
+  UpdateCartQuantitySchema,
+} from "./deliverySchemas";
 
 /**
  * Cart.
@@ -115,21 +121,9 @@ export async function cartRoutes(app: FastifyInstance) {
   app.post("/cart/add", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const userId = req.user!.sub;
-    const {
-      itemId,
-      itemType = "service",
-      quantity = 1,
-      notes,
-      tier,
-    } = req.body as {
-      itemId?: string;
-      itemType?: string;
-      quantity?: number;
-      notes?: string;
-      tier?: string;
-    };
-
-    if (!itemId) return reply.code(400).send({ message: "itemId is required" });
+    const body = parseBody(req, reply, AddToCartSchema);
+    if (!body) return;
+    const { itemId, itemType = "service", quantity = 1, notes, tier } = body;
 
     const qty = Math.max(1, Math.min(99, Math.floor(Number(quantity) || 1)));
 
@@ -177,8 +171,9 @@ export async function cartRoutes(app: FastifyInstance) {
   app.post("/cart/remove", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const userId = req.user!.sub;
-    const { cartItemId } = req.body as { cartItemId?: string };
-    if (!cartItemId) return reply.code(400).send({ message: "cartItemId is required" });
+    const removeBody = parseBody(req, reply, RemoveFromCartSchema);
+    if (!removeBody) return;
+    const { cartItemId } = removeBody;
 
     const items = (await readCart(userId)).filter((i) => i._id !== cartItemId);
     await writeCart(userId, items);
@@ -188,11 +183,9 @@ export async function cartRoutes(app: FastifyInstance) {
   app.post("/cart/update-quantity", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const userId = req.user!.sub;
-    const { cartItemId, quantity } = req.body as {
-      cartItemId?: string;
-      quantity?: number;
-    };
-    if (!cartItemId) return reply.code(400).send({ message: "cartItemId is required" });
+    const qtyBody = parseBody(req, reply, UpdateCartQuantitySchema);
+    if (!qtyBody) return;
+    const { cartItemId, quantity } = qtyBody;
 
     const items = await readCart(userId);
     const item = items.find((i) => i._id === cartItemId);

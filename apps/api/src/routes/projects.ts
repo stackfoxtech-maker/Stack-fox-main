@@ -6,6 +6,13 @@ import * as ids from "../lib/id";
 import { canTransition, PROJECT_TRANSITIONS } from "@stackfox/core";
 import { clientScope, clientWriteScope, assertProjectInScope } from "../lib/scope";
 import { LIST_CAP, pageParams, paginated } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import {
+  AssessChangeRequestSchema,
+  CreateChangeRequestSchema,
+  MilestoneFeedbackSchema,
+  UpdateProjectStatusSchema,
+} from "./deliverySchemas";
 
 export async function projectRoutes(app: FastifyInstance) {
   // GET /projects
@@ -66,7 +73,9 @@ export async function projectRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
     const { id } = req.params as { id: string };
     if (!(await assertProjectInScope(id, scope, reply))) return;
-    const { status } = req.body as { status: string };
+    const statusBody = parseBody(req, reply, UpdateProjectStatusSchema);
+    if (!statusBody) return;
+    const { status } = statusBody;
 
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return reply.code(404).send({ error: "Project not found" });
@@ -163,7 +172,9 @@ export async function projectRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
     const { id, n } = req.params as { id: string; n: string };
     if (!(await assertProjectInScope(id, scope, reply))) return;
-    const { feedback } = req.body as { feedback: string };
+    const fbBody = parseBody(req, reply, MilestoneFeedbackSchema);
+    if (!fbBody) return;
+    const { feedback } = fbBody;
 
     const milestone = await prisma.milestone.findUnique({
       where: { projectId_number: { projectId: id, number: parseInt(n) } },
@@ -222,12 +233,8 @@ export async function projectRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
     const { id } = req.params as { id: string };
     if (!(await assertProjectInScope(id, scope, reply))) return;
-    const body = req.body as {
-      title: string;
-      description: string;
-      urgency?: string;
-      affectedMilestones?: number[];
-    };
+    const body = parseBody(req, reply, CreateChangeRequestSchema);
+    if (!body) return;
 
     const cr = await prisma.changeRequest.create({
       data: {
@@ -261,11 +268,11 @@ export async function projectRoutes(app: FastifyInstance) {
       if (!(await assertProjectInScope(id, scope, reply))) return;
     }
     const { crId } = req.params as { crId: string };
-    const { costDelta, timelineDelta, scopeImpact } = req.body as {
-      costDelta: number;
-      timelineDelta: number;
-      scopeImpact: string;
-    };
+    // costDelta becomes an invoice once this request is approved (see the
+    // G-041 block below), so it is integer paise like any other money field.
+    const assessBody = parseBody(req, reply, AssessChangeRequestSchema);
+    if (!assessBody) return;
+    const { costDelta, timelineDelta, scopeImpact } = assessBody;
 
     const updated = await prisma.changeRequest.update({
       where: { id: crId },

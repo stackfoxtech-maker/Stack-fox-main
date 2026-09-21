@@ -14,6 +14,13 @@ import { isStorageConfigured, deleteFile } from "../lib/storage";
 import { encryptSecret, isCredentialEncryptionConfigured } from "../lib/crypto";
 import { VAULT_ROLES } from "@stackfox/core";
 import { issueDownload } from "../lib/documentIntegrity";
+import { parseBody } from "../lib/validate";
+import {
+  CreateUploadSchema,
+  CreateVaultEntrySchema,
+  FileCommentSchema,
+  MAX_FILE_COMMENTS,
+} from "./fileSchemas";
 
 /**
  * Resolves a file only if it sits inside the caller's tenant. Files hang off a
@@ -67,8 +74,8 @@ export async function fileRoutes(app: FastifyInstance) {
         .send({ error: "File storage is not configured on this environment." });
     }
 
-    const body = req.body as any;
-    if (!body?.filename) return reply.code(400).send({ error: "filename is required" });
+    const body = parseBody(req, reply, CreateUploadSchema);
+    if (!body) return;
     if (body.projectId && !(await assertProjectInScope(body.projectId, scope, reply)))
       return;
 
@@ -78,7 +85,7 @@ export async function fileRoutes(app: FastifyInstance) {
         .code(400)
         .send({ error: `Files of type ${contentType} cannot be uploaded.` });
     }
-    const size = Number(body.size ?? 0);
+    const size = body.size ?? 0;
     if (size > MAX_UPLOAD_BYTES) {
       return reply
         .code(400)
@@ -172,8 +179,9 @@ export async function fileRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
 
     const { id } = req.params as { id: string };
-    const { comment } = req.body as { comment: string };
-    if (!comment?.trim()) return reply.code(400).send({ error: "comment is required" });
+    const body = parseBody(req, reply, FileCommentSchema);
+    if (!body) return;
+    const { comment } = body;
 
     const file = await findFileInScope(id, scope);
     if (!file) return reply.code(404).send({ error: "File not found" });
@@ -187,13 +195,18 @@ export async function fileRoutes(app: FastifyInstance) {
     comments.push({
       author: req.user!.sub,
       authorName: author?.name ?? "Unknown",
-      text: comment.trim(),
+      text: comment,
       at: new Date().toISOString(),
     });
 
+    // The array lives on the File row and was appended to without limit, so a
+    // busy file dragged its whole comment history into every read of it. Keep
+    // the most recent; a file needing more than this wants a real table.
+    const capped = comments.slice(-MAX_FILE_COMMENTS);
+
     const updated = await prisma.file.update({
       where: { id },
-      data: { comments: toJson(comments) },
+      data: { comments: toJson(capped) },
     });
     return ok(withId(updated));
   });
@@ -207,9 +220,9 @@ export async function fileRoutes(app: FastifyInstance) {
 
   app.post("/vault", async (req, reply) => {
     if (!requireRole(req, reply, VAULT_ROLES)) return;
-    const body = req.body as any;
+    const body = parseBody(req, reply, CreateVaultEntrySchema);
+    if (!body) return;
 
-    if (!body?.projectId) return reply.code(400).send({ error: "projectId is required" });
     if (!isCredentialEncryptionConfigured()) {
       return reply.code(503).send({
         error: "Credential encryption is not configured; refusing to store secrets.",

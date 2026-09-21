@@ -4,6 +4,8 @@ import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
 import { LIST_CAP } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import { CreateChangeRequestSchema } from "./deliverySchemas";
 
 // Client-facing change requests, not tied to a specific project — mirrors
 // the project-scoped /projects/:id/change-requests used by PM-side flows,
@@ -11,14 +13,9 @@ import { LIST_CAP } from "../lib/http";
 export async function changeRequestRoutes(app: FastifyInstance) {
   app.post("/change-requests", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { title, description, urgency } = req.body as {
-      title?: string;
-      description?: string;
-      urgency?: string;
-    };
-    if (!title || !description) {
-      return reply.code(400).send({ message: "title and description are required" });
-    }
+    const body = parseBody(req, reply, CreateChangeRequestSchema);
+    if (!body) return;
+    const { title, description, urgency } = body;
 
     const cr = await prisma.changeRequest.create({
       data: {
