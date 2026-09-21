@@ -78,7 +78,49 @@ const schema = z.object({
   HOST: z.string().optional(),
 });
 
+/**
+ * Connection pooling, and one footgun worth catching at boot.
+ *
+ * Supabase's pooler (port 6543) is pgbouncer in transaction mode, which does
+ * not support prepared statements. Prisma uses them by default, so a pooled
+ * URL without `?pgbouncer=true` fails intermittently and confusingly — it
+ * works under light load and starts erroring once connections get reused.
+ *
+ * Prisma's default connection_limit is num_cpus * 2 + 1, which on a shared
+ * Railway container is a handful of connections; behind a pooler the limit
+ * that matters is the pooler's, so an explicit small value avoids holding more
+ * server-side connections than the plan allows.
+ */
+function checkPoolingConfig(url: string | undefined): void {
+  if (!url) return;
+  const pooled = url.includes("pooler.") || url.includes(":6543");
+  if (pooled && !url.includes("pgbouncer=true")) {
+    console.warn(
+      [
+        "",
+        "  DATABASE_URL points at a connection pooler but does not set pgbouncer=true.",
+        "  Prisma will use prepared statements, which pgbouncer's transaction mode",
+        "  does not support — expect intermittent failures under load rather than a",
+        "  clean error at boot.",
+        "",
+      ].join("\n"),
+    );
+  }
+  if (pooled && !/connection_limit=/.test(url)) {
+    console.warn(
+      [
+        "  DATABASE_URL has no connection_limit. Behind a pooler, set a small",
+        "  explicit value (e.g. connection_limit=5) so one container cannot",
+        "  exhaust the shared pool.",
+        "",
+      ].join("\n"),
+    );
+  }
+}
+
 const parsed = schema.safeParse(process.env);
+
+checkPoolingConfig(process.env.DATABASE_URL);
 
 if (!parsed.success) {
   const lines = parsed.error.issues.map((i) => `  ${i.path.join(".")}: ${i.message}`);

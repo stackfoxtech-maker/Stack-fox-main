@@ -29,11 +29,13 @@
     "test:validation": "tsx tests/validation.mts",
     "test:apikeys": "tsx tests/api-keys.mts",
     "test:v1": "tsx tests/public-api-tenancy.mts",
-    "test:regressions": "tsx tests/critical-regressions.mts"
+    "test:regressions": "tsx tests/critical-regressions.mts",
+    "test:catalogue": "tsx tests/catalogue-cache.mts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
     "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "@fastify/compress": "^7.0.3",
     "@fastify/cors": "^9.0.0",
     "@fastify/helmet": "^11.0.0",
     "@fastify/rate-limit": "^9.0.0",

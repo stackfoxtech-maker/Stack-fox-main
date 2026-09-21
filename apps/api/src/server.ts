@@ -4,6 +4,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
+import compress from "@fastify/compress";
 
 import { prisma } from "@stackfox/prisma";
 import { redis } from "./lib/redis";
@@ -112,6 +113,19 @@ async function start() {
     credentials: true,
   });
   await app.register(helmet);
+
+  // Responses here are JSON lists — an engagement list with its projects, a
+  // 255-row catalogue, a report — which compress by roughly an order of
+  // magnitude. Railway bills egress and a good share of clients are on Indian
+  // mobile networks, so this is latency as much as cost.
+  //
+  // threshold: below ~1 KB the compressed frame plus the CPU is not worth it.
+  // Brotli first where the client supports it, gzip otherwise.
+  await app.register(compress, {
+    global: true,
+    threshold: 1024,
+    encodings: ["br", "gzip", "deflate"],
+  });
   // Backed by Redis, not the default in-process LRU. Counters in memory reset
   // on every deploy and do not aggregate across replicas, so horizontal scaling
   // silently multiplied every limit — including the ones guarding OTP and the

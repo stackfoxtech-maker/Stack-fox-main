@@ -181,6 +181,21 @@ export function writeRawCatalogue(raw: RawCatalogue): void {
   const path = cataloguePath();
   if (!path) throw new Error("Catalogue file not found");
   writeFileSync(path, JSON.stringify(raw, null, 2), "utf8");
+
+  // Drop the in-memory copy, or every read until the next restart serves the
+  // file as it was before this write. An admin creating, renaming or deleting
+  // a service saw their change land in the file and then not appear anywhere
+  // — the classic "it worked on redeploy" bug.
+  //
+  // Done here rather than in each of the three mutators because this is the
+  // only way the file changes, so a fourth mutator added later is covered
+  // without anyone remembering to.
+  //
+  // ponytail: process-local. With more than one replica the others keep their
+  // stale copy until they restart; a pub/sub invalidation over Redis is the
+  // upgrade path if this is ever scaled out.
+  cache = null;
+  loadedFrom = null;
 }
 
 export function updateServiceNameInCatalogue(dbId: string, newName: string): boolean {
