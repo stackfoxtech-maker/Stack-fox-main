@@ -33,6 +33,8 @@ const SUITES = [
   "money-and-ids.mts",
   "observability.mts",
   "validation.mts",
+  "api-keys.mts",
+  "public-api-tenancy.mts",
 ];
 
 function run(file: string): Promise<number> {
@@ -46,6 +48,17 @@ function run(file: string): Promise<number> {
   });
 }
 
+/**
+ * Known limitation: the rate limiter is Redis-backed and shared, so a full run
+ * can exhaust the 100 req/min budget and a later suite sees 429s that have
+ * nothing to do with what it is testing. access-control.mts is the usual
+ * casualty — it passes alone and can fail here.
+ *
+ * Not papered over with a higher limit in test, because phase0-security.mts
+ * asserts the limiter actually holds and a test-only ceiling would make that
+ * assertion meaningless. Re-run a failing suite on its own, or restart the
+ * stack, before believing a failure.
+ */
 const results: Array<{ suite: string; code: number }> = [];
 for (const suite of SUITES) {
   console.log(`\n─── ${suite} ───`);

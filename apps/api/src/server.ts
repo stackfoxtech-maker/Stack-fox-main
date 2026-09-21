@@ -61,6 +61,8 @@ import { reportRoutes } from "./routes/reports";
 import { handoverRoutes } from "./routes/handover";
 import { adminReportRoutes } from "./routes/adminReports";
 import { documentRoutes } from "./routes/documents";
+import { publicApiRoutes } from "./routes/publicApi";
+import { apiKeyRoutes } from "./routes/apiKeys";
 
 const app = Fastify({
   // Railway terminates TLS and forwards, so without this every request is keyed
@@ -209,18 +211,17 @@ async function start() {
   await app.register(fileRoutes, { prefix: "/" });
   await app.register(ticketRoutes, { prefix: "/" });
   await app.register(notificationRoutes, { prefix: "/" });
-  // publicApiRoutes (/v1/*) is DELIBERATELY NOT REGISTERED.
+  // /v1 is registered again. It was unregistered in Phase 0 because its only
+  // guard checked that `x-api-key` was non-empty and returned true, and every
+  // list took its `orgId` from the query string — so a caller both
+  // authenticated with any string and chose whose data to read.
   //
-  // Its only guard was `requireApiKey`, which checked that the `x-api-key`
-  // header was non-empty and returned true — it never validated the value. That
-  // left 13 unauthenticated, untenanted endpoints serving every org's
-  // engagements, invoices, projects, tickets and events, plus a webhook
-  // registration endpoint that accepted an arbitrary URL for an arbitrary org.
-  //
-  // Re-enable ONLY once requireApiKey resolves the presented key against
-  // ApiKey.keyHash (the model already exists, see schema.prisma), rejects
-  // revoked keys, and every /v1 query is scoped by the key's orgId.
-  // No first-party client calls /v1/*, so nothing depends on this today.
+  // The three conditions that had to be met before re-enabling are met:
+  // requireApiKey resolves the presented key against ApiKey.keyHash, a revoked
+  // key is rejected, and every /v1 query is scoped by the key's own orgId with
+  // no parameter able to override it. See routes/publicApi.ts.
+  await app.register(publicApiRoutes, { prefix: "/" });
+  await app.register(apiKeyRoutes, { prefix: "/" });
   await app.register(adminRoutes, { prefix: "/" });
   await app.register(toolRoutes, { prefix: "/" });
   await app.register(blogRoutes, { prefix: "/" });

@@ -27,6 +27,20 @@ config({ path: resolve(__dirname, "../../../.env") });
  * when they are unset. Fail loudly at boot; never half-work.
  */
 
+/**
+ * An unset variable and one set to the empty string mean the same thing here.
+ *
+ * .env.example ships several keys as `NAME=""` so the shape is discoverable,
+ * and dotenv loads those as empty strings rather than leaving them absent. A
+ * format check on an optional value therefore fires on a variable nobody set —
+ * `SENTRY_DSN=""` made the whole API refuse to boot with "Invalid url", which
+ * is a validator punishing someone for following the template.
+ *
+ * Blank means absent. A value that IS set still has to be valid.
+ */
+const blankAsAbsent = <T extends z.ZodTypeAny>(inner: T) =>
+  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), inner);
+
 const schema = z.object({
   // ── Required everywhere ───────────────────────────────────────────────────
   DATABASE_URL: z.string().min(1, "Postgres connection string"),
@@ -34,14 +48,14 @@ const schema = z.object({
   // ── Required in production, defaulted elsewhere ───────────────────────────
   // plugins/auth.ts throws in production without this; outside production it
   // falls back to a public dev secret. Warn so that is a deliberate choice.
-  JWT_SECRET: z.string().min(32).optional(),
-  NEXTAUTH_SECRET: z.string().min(32).optional(),
+  JWT_SECRET: blankAsAbsent(z.string().min(32).optional()),
+  NEXTAUTH_SECRET: blankAsAbsent(z.string().min(32).optional()),
 
   // ── Degrade gracefully when absent ────────────────────────────────────────
   REDIS_URL: z.string().optional(),
   SUPABASE_URL: z.string().optional(),
   SUPABASE_SECRET_KEY: z.string().optional(),
-  CREDENTIAL_ENCRYPTION_KEY: z.string().length(64).optional(),
+  CREDENTIAL_ENCRYPTION_KEY: blankAsAbsent(z.string().length(64).optional()),
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
@@ -54,8 +68,10 @@ const schema = z.object({
   // Unset means error reporting is off and a 500 is visible only in the logs.
   // Deliberately not required in production: the app must still boot without
   // it, and /health reports whether it is actually on.
-  SENTRY_DSN: z.string().url().optional(),
-  LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).optional(),
+  SENTRY_DSN: blankAsAbsent(z.string().url().optional()),
+  LOG_LEVEL: blankAsAbsent(
+    z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).optional(),
+  ),
 
   NODE_ENV: z.string().optional(),
   PORT: z.string().optional(),

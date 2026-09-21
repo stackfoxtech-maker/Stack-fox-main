@@ -67,15 +67,36 @@ async function register(tag: string) {
 const checks: Array<[string, boolean, string]> = [];
 const check = (label: string, pass: boolean, note = "") => checks.push([label, pass, note]);
 
-// ── SF-C1: the public API must not serve anything ────────────────────────────
+// ── SF-C1: the public API must not serve anything to a junk key ──────────────
+//
+// This asserted 404 while /v1 was unregistered, which was the Phase 0
+// mitigation rather than the fix. The routes are registered again now that
+// requireApiKey resolves the presented key against ApiKey.keyHash, so the
+// assertion becomes the stronger one: the endpoint exists and refuses.
+//
+// 401 and 404 both prove no data leaked. Asserting "not 2xx" would pass on a
+// 500, so the accepted set is named explicitly.
 for (const path of ["/v1/engagements", "/v1/invoices", "/v1/projects", "/v1/tickets", "/v1/events"]) {
   const r = await call("GET", path, undefined, undefined, { "x-api-key": "anything-at-all" });
-  check(`junk api key GET ${path} -> ${r.s}`, r.s === 404, "expect 404 — route must not be registered");
+  check(
+    `junk api key GET ${path} -> ${r.s}`,
+    r.s === 401 || r.s === 404,
+    "a non-empty string used to authenticate here and return every org's rows",
+  );
+  check(
+    `junk api key GET ${path} returns no rows`,
+    !Array.isArray(r.b) || (r.b as unknown[]).length === 0,
+    "the body must not carry data alongside the rejection",
+  );
 }
 const webhookPost = await call("POST", "/v1/webhooks", undefined,
   { orgId: "ORG-2026-0001", url: "https://attacker.example/collect", events: ["INVOICE_PAID"] },
   { "x-api-key": "anything-at-all" });
-check(`junk api key POST /v1/webhooks -> ${webhookPost.s}`, webhookPost.s === 404, "expect 404");
+check(
+  `junk api key POST /v1/webhooks -> ${webhookPost.s}`,
+  webhookPost.s === 401 || webhookPost.s === 404,
+  "this accepted an arbitrary URL for an arbitrary org",
+);
 
 // ── SF-C4 + SF-H10: org capture and self-promotion ───────────────────────────
 const attacker = await register("attacker");
