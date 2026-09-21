@@ -3,12 +3,13 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { applyTierMultiplier, computeEstimateRange } from "../lib/estimate";
 import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
-import { isAdminRole, paymentModeAmount } from "@stackfox/core";
+import { getContractTypes, getMilestoneTemplates, isAdminRole, paymentModeAmount } from "@stackfox/core";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
 import { LIST_CAP, pageParams, paginated } from "../lib/http";
 import { ensurePersonalOrg } from "../lib/scope";
 import * as ids from "../lib/id";
+import { resolveGstType, splitGst } from "../lib/gst";
 
 interface QuoteItem {
   name: string;
@@ -22,137 +23,175 @@ function serializeQuote(q: any) {
   return { ...q, _id: q.id };
 }
 
+/**
+ * Provisions an engagement from a paid quote.
+ *
+ * Two defects fixed here.
+ *
+ * GST: this hardcoded `gstType: "IGST"`, while the checkout path resolves it
+ * from the client's GSTIN via resolveGstType(). A client in StackFox's own
+ * State billed through this path therefore received an inter-State invoice on
+ * an intra-State supply — the tax total is the same, but the CGST/SGST split
+ * and the GSTR-1 section are wrong. Two provisioning paths that disagree about
+ * tax is exactly the drift that duplicated code produces.
+ *
+ * Atomicity: it was a dozen independent writes, so a failure partway left an
+ * ACTIVE engagement with no contracts and no invoice against a quote the
+ * client had already paid.
+ *
+ * The checkout path (routes/checkout.ts) still has its own provisioning shell
+ * because it works from an Estimate canvas rather than cart items and also
+ * creates an Order. Merging the two shells is a larger refactor; what mattered
+ * was that they stop disagreeing about policy, which they now cannot — tier
+ * milestones, contract sets and GST all come from one place.
+ */
 async function provisionQuote(quote: any, userId: string) {
   const orgId = await ensurePersonalOrg(userId);
-  const items = (quote.items as any[]) || [];
+  const items = ((quote.items as any[]) || []).filter((i) => i?.itemId);
   const tier = quote.tier || "GROWTH";
-
   const engId = ids.engagementId();
-  await prisma.engagement.create({
-    data: {
-      id: engId,
-      clientId: orgId,
-      model: "FPM",
-      commercial: { subtotal: quote.subtotal, gst: quote.gstAmount, total: quote.total },
-      methodology: "MILESTONE",
-      status: "ACTIVE",
-      executedAt: quote.paidAt ?? new Date(),
-    },
-  });
 
-  const projects = [];
+  // Resolve the tax treatment from the billing org, exactly as checkout does.
+  const billTo = await prisma.org.findUnique({ where: { id: orgId } });
+  const gstType = resolveGstType(billTo);
+  const { cgst, sgst, igst } = splitGst(quote.gstAmount ?? 0, gstType);
+
+  // One lookup for every service in the quote rather than one per item.
+  const existing = await prisma.serviceUnit.findMany({
+    where: { id: { in: items.map((i) => i.itemId) } },
+  });
+  const serviceById = new Map(existing.map((s) => [s.id, s]));
+
+  // Cart items may reference ids with no catalogue entry (test or
+  // dynamically-created services). Create the missing ones up front so the
+  // transaction below is pure provisioning.
   for (const item of items) {
-    const serviceId = item.itemId;
-    if (!serviceId) continue;
-
-    // Ensure the ServiceUnit exists — cart items may reference test or
-    // dynamically-created IDs that don't have a catalogue entry yet.
-    let service = await prisma.serviceUnit.findUnique({ where: { id: serviceId } });
-    if (!service) {
-      const cat = serviceId.split("-").slice(0, 2).join("-") || "SF-GEN";
-      const slug = serviceId.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      service = await prisma.serviceUnit.create({
-        data: {
-          id: serviceId,
-          name: item.name || "Service",
-          categoryTier1: cat,
-          slug,
-          baseWeight: 1,
-          sacCode: "998314",
-          status: "PUBLISHED",
-        },
-      });
-    }
-
-    const prefix = serviceId.split("-").slice(0, 2).join("-");
-    const project = await prisma.project.create({
+    if (serviceById.has(item.itemId)) continue;
+    const created = await prisma.serviceUnit.create({
       data: {
-        id: ids.projectId(prefix),
-        name: item.name || service.name,
-        engagementId: engId,
-        serviceId,
-        status: "ACTIVE",
-        configSnapshot: item,
+        id: item.itemId,
+        name: item.name || "Service",
+        categoryTier1: item.itemId.split("-").slice(0, 2).join("-") || "SF-GEN",
+        slug: item.itemId.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        baseWeight: 1,
+        sacCode: "998314",
+        status: "PUBLISHED",
       },
     });
-
-    const milestoneTemplates = getMilestoneTemplates(tier);
-    for (let i = 0; i < milestoneTemplates.length; i++) {
-      await prisma.milestone.create({
-        data: {
-          projectId: project.id,
-          number: i + 1,
-          name: milestoneTemplates[i].name,
-          paymentPct: milestoneTemplates[i].pct,
-          deliverables: milestoneTemplates[i].deliverables,
-        },
-      });
-    }
-    projects.push(project);
+    serviceById.set(created.id, created);
   }
 
-  // Create contracts based on tier
-  const contractTypes = getContractTypes(tier);
   const checkoutDetails = (quote.checkoutDetails as any) ?? {};
-  const contracts = [];
-  for (const type of contractTypes) {
-    const contract = await prisma.contract.create({
-      data: {
-        engagementId: engId,
-        type,
-        clauseConfig: toJson(checkoutDetails.clauseSelections ?? {}),
-        status: checkoutDetails.contractSigned ? "CLIENT_SIGNED" : "DRAFT",
-      },
-    });
+  const milestoneTemplates = getMilestoneTemplates(tier);
 
-    // Record client signature if they signed during checkout
-    if (checkoutDetails.contractSigned && checkoutDetails.signatureName) {
-      await prisma.signature.create({
+  const result = await prisma.$transaction(
+    async (tx) => {
+      await tx.engagement.create({
         data: {
-          contractId: contract.id,
-          signerUserId: userId,
-          side: "CLIENT",
-          rail: "CLICK",
-          evidence: {
-            method: "typed_name",
-            name: checkoutDetails.signatureName,
-            timestamp: checkoutDetails.signedAt || new Date().toISOString(),
-            ip: checkoutDetails.signatureIp || "unknown",
-          },
+          id: engId,
+          clientId: orgId,
+          model: "FPM",
+          commercial: { subtotal: quote.subtotal, gst: quote.gstAmount, total: quote.total },
+          methodology: "MILESTONE",
+          status: "ACTIVE",
+          executedAt: quote.paidAt ?? new Date(),
         },
       });
-    }
 
-    contracts.push(contract);
-  }
+      const projects = [];
+      for (const item of items) {
+        const service = serviceById.get(item.itemId)!;
+        const prefix = item.itemId.split("-").slice(0, 2).join("-");
+        const project = await tx.project.create({
+          data: {
+            id: ids.projectId(prefix),
+            name: item.name || service.name,
+            engagementId: engId,
+            serviceId: item.itemId,
+            status: "ACTIVE",
+            configSnapshot: item,
+          },
+        });
 
-  const invoice = await prisma.invoice.create({
-    data: {
-      id: ids.invoiceId(),
-      engagementId: engId,
-      orgId,
-      milestoneRef: "M1",
-      sacCode: "998314",
-      gstType: "IGST",
-      subtotal: quote.subtotal,
-      igst: quote.gstAmount,
-      grandTotal: quote.total,
-      status: "PAID",
-      paidAt: quote.paidAt ?? new Date(),
-      dueDate: quote.paidAt ?? new Date(),
+        await tx.milestone.createMany({
+          data: milestoneTemplates.map((m, i) => ({
+            projectId: project.id,
+            number: i + 1,
+            name: m.name,
+            paymentPct: m.pct,
+            deliverables: m.deliverables,
+          })),
+        });
+
+        projects.push(project);
+      }
+
+      const contracts = [];
+      for (const type of getContractTypes(tier)) {
+        const contract = await tx.contract.create({
+          data: {
+            engagementId: engId,
+            type,
+            clauseConfig: toJson(checkoutDetails.clauseSelections ?? {}),
+            status: checkoutDetails.contractSigned ? "CLIENT_SIGNED" : "DRAFT",
+          },
+        });
+
+        if (checkoutDetails.contractSigned && checkoutDetails.signatureName) {
+          await tx.signature.create({
+            data: {
+              contractId: contract.id,
+              signerUserId: userId,
+              side: "CLIENT",
+              rail: "CLICK",
+              evidence: {
+                method: "typed_name",
+                name: checkoutDetails.signatureName,
+                timestamp: checkoutDetails.signedAt || new Date().toISOString(),
+                ip: checkoutDetails.signatureIp || "unknown",
+              },
+            },
+          });
+        }
+
+        contracts.push(contract);
+      }
+
+      const invoice = await tx.invoice.create({
+        data: {
+          id: ids.invoiceId(),
+          engagementId: engId,
+          orgId,
+          milestoneRef: "M1",
+          sacCode: "998314",
+          gstType,
+          subtotal: quote.subtotal,
+          cgst,
+          sgst,
+          igst,
+          grandTotal: quote.total,
+          status: "PAID",
+          paidAt: quote.paidAt ?? new Date(),
+          dueDate: quote.paidAt ?? new Date(),
+        },
+      });
+
+      return { projects, contracts, invoice };
     },
-  });
+    { timeout: 30_000, maxWait: 10_000 },
+  );
 
+  // Committed — side effects only from here.
   await emitEvent({ code: "ENGAGEMENT_CREATED", payload: { engagementId: engId }, actor: userId, engagementId: engId });
-  for (const p of projects) {
+  for (const p of result.projects) {
     await emitEvent({ code: "PROJECT_CREATED", payload: { projectId: p.id }, actor: userId, projectId: p.id, engagementId: engId });
   }
-  for (const c of contracts) {
+  for (const c of result.contracts) {
     await emitEvent({ code: "CONTRACT_CREATED", payload: { contractId: c.id, type: c.type }, actor: userId, engagementId: engId });
   }
-  await emitEvent({ code: "INVOICE_CREATED", payload: { invoiceId: invoice.id }, actor: "SYSTEM" });
+  await emitEvent({ code: "INVOICE_CREATED", payload: { invoiceId: result.invoice.id }, actor: "SYSTEM" });
 
-  return { engId, projects, contracts, invoice };
+  return { engId, projects: result.projects, contracts: result.contracts, invoice: result.invoice };
 }
 
 export interface BackfillOptions {
@@ -534,28 +573,4 @@ export async function quoteRoutes(app: FastifyInstance) {
   });
 }
 
-function getContractTypes(tier: string): string[] {
-  if (tier === "STARTER") return ["MICRO_SOW"];
-  if (tier === "GROWTH") return ["SOW", "MSA"];
-  return ["SOW", "MSA", "NDA", "IP_WFH", "DPA"];
-}
 
-function getMilestoneTemplates(tier: string) {
-  if (tier === "STARTER") {
-    return [{ name: "Delivery", pct: 100, deliverables: ["Deployed site", "Source code"] }];
-  }
-  if (tier === "GROWTH") {
-    return [
-      { name: "Design & Planning", pct: 30, deliverables: ["Wireframes", "Project plan"] },
-      { name: "Development", pct: 40, deliverables: ["Staging deployment", "Core features"] },
-      { name: "Review & Delivery", pct: 30, deliverables: ["Final deployment", "Documentation"] },
-    ];
-  }
-  return [
-    { name: "Strategy & Discovery", pct: 20, deliverables: ["Strategy document", "Architecture review"] },
-    { name: "Design", pct: 20, deliverables: ["Full design system", "Prototype"] },
-    { name: "Development Phase 1", pct: 25, deliverables: ["Core features", "Staging"] },
-    { name: "Development Phase 2", pct: 20, deliverables: ["All features", "Integration testing"] },
-    { name: "QA, Delivery & Handover", pct: 15, deliverables: ["Production deployment", "Full documentation", "Training"] },
-  ];
-}

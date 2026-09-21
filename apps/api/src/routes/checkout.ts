@@ -17,7 +17,7 @@ import {
 } from "../lib/checkoutSession";
 import { toJson } from "../lib/json";
 import { resolveGstType, splitGst } from "../lib/gst";
-import { paymentModeAmount } from "@stackfox/core";
+import { getContractTypes, getMilestoneTemplates, paymentModeAmount } from "@stackfox/core";
 import { parseBody } from "../lib/validate";
 import { StartCheckoutSchema, CompleteCheckoutSchema } from "./moneySchemas";
 
@@ -513,34 +513,7 @@ async function loadCompletedCheckout(orderId: string) {
   return { order, engagement, projects, invoice };
 }
 
-function getMilestoneTemplates(tier: string) {
-  if (tier === "STARTER") {
-    return [
-      { name: "Delivery", pct: 100, deliverables: ["Deployed site", "Source code"] },
-    ];
-  }
-  if (tier === "GROWTH") {
-    return [
-      { name: "Design & Planning", pct: 30, deliverables: ["Wireframes", "Project plan"] },
-      { name: "Development", pct: 40, deliverables: ["Staging deployment", "Core features"] },
-      { name: "Review & Delivery", pct: 30, deliverables: ["Final deployment", "Documentation"] },
-    ];
-  }
-  // PREMIUM
-  return [
-    { name: "Strategy & Discovery", pct: 20, deliverables: ["Strategy document", "Architecture review"] },
-    { name: "Design", pct: 20, deliverables: ["Full design system", "Prototype"] },
-    { name: "Development Phase 1", pct: 25, deliverables: ["Core features", "Staging"] },
-    { name: "Development Phase 2", pct: 20, deliverables: ["All features", "Integration testing"] },
-    { name: "QA, Delivery & Handover", pct: 15, deliverables: ["Production deployment", "Full documentation", "Training"] },
-  ];
-}
 
-function getContractTypes(tier: string): string[] {
-  if (tier === "STARTER") return ["MICRO_SOW"];
-  if (tier === "GROWTH") return ["SOW", "MSA"];
-  return ["SOW", "MSA", "NDA", "IP_WFH", "DPA"];
-}
 
 async function getEstimateTotals(estimateId: string) {
   const est = await prisma.estimate.findUnique({ where: { id: estimateId } });
