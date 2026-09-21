@@ -58,6 +58,10 @@ jobs:
         working-directory: client
         run: npm run build
 
+      - name: Client unit tests
+        working-directory: client
+        run: npm test
+
   test:
     name: integration suites
     runs-on: ubuntu-latest

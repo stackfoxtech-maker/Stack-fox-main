@@ -22,6 +22,7 @@
     "test:checkout": "tsx tests/checkout-integrity.mts",
     "test:documents": "tsx tests/document-integrity.mts",
     "test:parity": "tsx tests/provisioning-parity.mts",
+    "test:money": "tsx tests/money-and-ids.mts",
     "seed:master-admin": "tsx scripts/seed-master-admin.mts",
     "backfill:quotes": "tsx scripts/backfill-paid-quotes.mts"
   },
