@@ -1,0 +1,11 @@
+# Revisions to skip when running git blame.
+#
+# Enable once per clone:
+#     git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Only whole-tree mechanical reformats belong here. Never a commit that
+# changed behaviour — the point is that blame still finds the person and the
+# reasoning behind every real line.
+
+# style: format the tree with Prettier, once (263 files)
+3ef00283dc2ba25839213bae64104f7b09bcffaa
