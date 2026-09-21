@@ -27,7 +27,9 @@ export function isGoogleConfigured(): boolean {
 }
 
 export function redirectUri(): string {
-  return process.env.GOOGLE_REDIRECT_URI?.trim() || `${apiPublicUrl()}/auth/google/callback`;
+  return (
+    process.env.GOOGLE_REDIRECT_URI?.trim() || `${apiPublicUrl()}/auth/google/callback`
+  );
 }
 
 export function authorizeUrl(state: string): string {
@@ -67,7 +69,9 @@ export async function exchangeCode(code: string): Promise<GoogleProfile> {
   });
 
   if (!res.ok) {
-    throw new Error(`Google token exchange failed: ${res.status} ${(await res.text()).slice(0, 300)}`);
+    throw new Error(
+      `Google token exchange failed: ${res.status} ${(await res.text()).slice(0, 300)}`,
+    );
   }
 
   const { id_token: idToken } = (await res.json()) as { id_token?: string };

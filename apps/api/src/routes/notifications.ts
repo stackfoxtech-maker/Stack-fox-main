@@ -23,7 +23,9 @@ export async function notificationRoutes(app: FastifyInstance) {
     return {
       data: items,
       total,
-      unread: await prisma.notification.count({ where: { userId: req.user!.sub, readAt: null } }),
+      unread: await prisma.notification.count({
+        where: { userId: req.user!.sub, readAt: null },
+      }),
     };
   });
 

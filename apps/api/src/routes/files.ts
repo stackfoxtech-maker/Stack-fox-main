@@ -2,7 +2,12 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { getPresignedUpload } from "../lib/storage";
-import { clientScope, clientWriteScope, projectIdsInScope, assertProjectInScope } from "../lib/scope";
+import {
+  clientScope,
+  clientWriteScope,
+  projectIdsInScope,
+  assertProjectInScope,
+} from "../lib/scope";
 import { LIST_CAP, ok, withId, withIds } from "../lib/http";
 import { toJson } from "../lib/json";
 import { isStorageConfigured, deleteFile } from "../lib/storage";
@@ -57,20 +62,27 @@ export async function fileRoutes(app: FastifyInstance) {
     const scope = await clientWriteScope(req, reply);
     if (scope === undefined) return;
     if (!isStorageConfigured()) {
-      return reply.code(503).send({ error: "File storage is not configured on this environment." });
+      return reply
+        .code(503)
+        .send({ error: "File storage is not configured on this environment." });
     }
 
     const body = req.body as any;
     if (!body?.filename) return reply.code(400).send({ error: "filename is required" });
-    if (body.projectId && !(await assertProjectInScope(body.projectId, scope, reply))) return;
+    if (body.projectId && !(await assertProjectInScope(body.projectId, scope, reply)))
+      return;
 
     const contentType: string = body.contentType ?? "application/octet-stream";
     if (DANGEROUS_CONTENT_TYPES.has(contentType.toLowerCase())) {
-      return reply.code(400).send({ error: `Files of type ${contentType} cannot be uploaded.` });
+      return reply
+        .code(400)
+        .send({ error: `Files of type ${contentType} cannot be uploaded.` });
     }
     const size = Number(body.size ?? 0);
     if (size > MAX_UPLOAD_BYTES) {
-      return reply.code(400).send({ error: `Files must be under ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB.` });
+      return reply
+        .code(400)
+        .send({ error: `Files must be under ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB.` });
     }
 
     const safeFilename = sanitizeFilename(body.filename);
@@ -146,7 +158,10 @@ export async function fileRoutes(app: FastifyInstance) {
     try {
       await deleteFile(file.storageKey);
     } catch (err) {
-      req.log.warn({ err, key: file.storageKey }, "Storage delete failed; removing record anyway");
+      req.log.warn(
+        { err, key: file.storageKey },
+        "Storage delete failed; removing record anyway",
+      );
     }
     await prisma.file.delete({ where: { id } });
     return ok({ success: true });

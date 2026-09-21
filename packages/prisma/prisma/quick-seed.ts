@@ -32,10 +32,30 @@ async function quickSeed() {
   const resetPassword = process.env.SEED_RESET_PASSWORDS === "true";
 
   const users = [
-    { name: "StackFox Admin", email: "admin@stackfox.tech", role: "ADMIN", password: adminPassword },
-    { name: "Sales Executive", email: "sales@stackfox.tech", role: "SE", password: salesPassword },
-    { name: "Senior Sales Manager", email: "sales.lead@stackfox.tech", role: "SENIOR_PM", password: salesPassword },
-    { name: "Sales Manager", email: "sales.manager@stackfox.tech", role: "SALES", password: salesPassword },
+    {
+      name: "StackFox Admin",
+      email: "admin@stackfox.tech",
+      role: "ADMIN",
+      password: adminPassword,
+    },
+    {
+      name: "Sales Executive",
+      email: "sales@stackfox.tech",
+      role: "SE",
+      password: salesPassword,
+    },
+    {
+      name: "Senior Sales Manager",
+      email: "sales.lead@stackfox.tech",
+      role: "SENIOR_PM",
+      password: salesPassword,
+    },
+    {
+      name: "Sales Manager",
+      email: "sales.manager@stackfox.tech",
+      role: "SALES",
+      password: salesPassword,
+    },
   ];
 
   for (const u of users) {
@@ -49,8 +69,12 @@ async function quickSeed() {
   }
 
   console.log("✅ Demo users ready.");
-  console.log("   Passwords are the ADMIN_PASSWORD / SALES_PASSWORD values you supplied.");
-  console.log("   An existing account keeps its current password unless SEED_RESET_PASSWORDS=true.");
+  console.log(
+    "   Passwords are the ADMIN_PASSWORD / SALES_PASSWORD values you supplied.",
+  );
+  console.log(
+    "   An existing account keeps its current password unless SEED_RESET_PASSWORDS=true.",
+  );
 }
 
 quickSeed()

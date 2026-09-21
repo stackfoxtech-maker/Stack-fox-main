@@ -51,7 +51,11 @@ const args = npmMode ? ["audit", "--json"] : ["audit", "--json"];
 
 let raw = "";
 try {
-  raw = execFileSync(cmd, args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, shell: process.platform === "win32" });
+  raw = execFileSync(cmd, args, {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+    shell: process.platform === "win32",
+  });
 } catch (err) {
   // Both tools exit non-zero when they find anything; the JSON is still on stdout.
   raw = err.stdout ?? "";
@@ -71,7 +75,12 @@ function collect(text) {
   for (const [name, v] of Object.entries(d.vulnerabilities ?? {})) {
     if (!v.severity) continue;
     const via = (v.via ?? []).find((x) => typeof x === "object");
-    out.push({ module: name, severity: v.severity, title: via?.title ?? "", url: via?.url ?? "" });
+    out.push({
+      module: name,
+      severity: v.severity,
+      title: via?.title ?? "",
+      url: via?.url ?? "",
+    });
   }
   return out;
 }
@@ -83,7 +92,9 @@ const found = collect(raw).filter((a) => FAIL_AT.includes(a.severity));
 // remember to come back to it.
 const expired = ACCEPTED.filter((e) => e.until < today);
 for (const e of expired) {
-  console.error(`[audit] The exception for ${e.module} expired on ${e.until}. Re-assess it.`);
+  console.error(
+    `[audit] The exception for ${e.module} expired on ${e.until}. Re-assess it.`,
+  );
 }
 
 const accepted = new Set(ACCEPTED.filter((e) => e.until >= today).map((e) => e.module));
@@ -107,4 +118,6 @@ if (blocking.length || expired.length) {
   process.exit(1);
 }
 
-console.log(`[audit] ${found.length} high/critical advisor${found.length === 1 ? "y" : "ies"}, all accounted for.`);
+console.log(
+  `[audit] ${found.length} high/critical advisor${found.length === 1 ? "y" : "ies"}, all accounted for.`,
+);

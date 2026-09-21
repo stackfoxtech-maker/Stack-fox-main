@@ -15,9 +15,16 @@ let cacheValue = null;
 function fetchStorefront() {
   if (cacheValue) return Promise.resolve(cacheValue);
   if (!cachePromise) {
-    cachePromise = api.get('/catalogue/storefront')
-      .then((r) => { cacheValue = r.data; return cacheValue; })
-      .catch((err) => { cachePromise = null; throw err; });
+    cachePromise = api
+      .get('/catalogue/storefront')
+      .then((r) => {
+        cacheValue = r.data;
+        return cacheValue;
+      })
+      .catch((err) => {
+        cachePromise = null;
+        throw err;
+      });
   }
   return cachePromise;
 }
@@ -31,9 +38,21 @@ export function useStorefrontData() {
     if (cacheValue) return;
     let cancelled = false;
     fetchStorefront()
-      .then((d) => { if (!cancelled) { setData(d); setLoading(false); } })
-      .catch((err) => { if (!cancelled) { setError(err); setLoading(false); } });
-    return () => { cancelled = true; };
+      .then((d) => {
+        if (!cancelled) {
+          setData(d);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { data, loading, error };
@@ -41,13 +60,18 @@ export function useStorefrontData() {
 
 export function useCatalogue() {
   const { data, loading, error } = useStorefrontData();
-  return useMemo(() => ({
-    services: data?.services ?? EMPTY_ARR,
-    categories: data?.categories ?? EMPTY_ARR,
-    packages: data?.packages ?? EMPTY_ARR,
-    bundles: data?.industryBundles ?? EMPTY_ARR,
-    addons: data?.addons ?? EMPTY_ARR,
-    meta: data?.meta ?? EMPTY_OBJ,
-    data, loading, error,
-  }), [data, loading, error]);
+  return useMemo(
+    () => ({
+      services: data?.services ?? EMPTY_ARR,
+      categories: data?.categories ?? EMPTY_ARR,
+      packages: data?.packages ?? EMPTY_ARR,
+      bundles: data?.industryBundles ?? EMPTY_ARR,
+      addons: data?.addons ?? EMPTY_ARR,
+      meta: data?.meta ?? EMPTY_OBJ,
+      data,
+      loading,
+      error,
+    }),
+    [data, loading, error],
+  );
 }

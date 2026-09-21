@@ -21,7 +21,10 @@ export async function createRazorpayOrder(
   notes?: Record<string, string>,
 ) {
   const rz = getRazorpay();
-  if (!rz) throw new Error("Razorpay not configured — set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET");
+  if (!rz)
+    throw new Error(
+      "Razorpay not configured — set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET",
+    );
   return rz.orders.create({
     amount: amountPaise,
     currency,
@@ -67,7 +70,10 @@ export function verifyRazorpaySignature(
  * dashboard (Settings → Webhooks), not the API key secret — and over the exact
  * raw request bytes, so pass `req.rawBody`, never a re-serialised object.
  */
-export function verifyRazorpayWebhookSignature(rawBody: string, signature: string): boolean {
+export function verifyRazorpayWebhookSignature(
+  rawBody: string,
+  signature: string,
+): boolean {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET ?? "";
   if (!secret || !signature || !rawBody) return false;
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");

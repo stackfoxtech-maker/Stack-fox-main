@@ -3,7 +3,13 @@ import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { bumpSessionEpoch } from "../lib/session";
 import { LIST_CAP, pageParams, paginated } from "../lib/http";
-import { CATALOGUE_ROLES, CLIENT_ROLES, INTERNAL_ROLES, isAdminRole, isInternalRole } from "@stackfox/core";
+import {
+  CATALOGUE_ROLES,
+  CLIENT_ROLES,
+  INTERNAL_ROLES,
+  isAdminRole,
+  isInternalRole,
+} from "@stackfox/core";
 import { ok, withId } from "../lib/http";
 import { parseBody } from "../lib/validate";
 import {
@@ -38,7 +44,11 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // Service CRUD
   app.get("/admin/services", async (req) => {
-    const { page, limit, skip } = pageParams(req.query as Record<string, string>, 50, 200);
+    const { page, limit, skip } = pageParams(
+      req.query as Record<string, string>,
+      50,
+      200,
+    );
     const [items, total] = await Promise.all([
       prisma.serviceUnit.findMany({ skip, take: limit, orderBy: { id: "asc" } }),
       prisma.serviceUnit.count(),
@@ -230,7 +240,15 @@ export async function adminRoutes(app: FastifyInstance) {
         skip,
         take: l,
         orderBy: { createdAt: "desc" },
-        select: { id: true, email: true, name: true, role: true, orgId: true, isActive: true, createdAt: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          orgId: true,
+          isActive: true,
+          createdAt: true,
+        },
       }),
       prisma.user.count({ where }),
     ]);
@@ -250,7 +268,10 @@ export async function adminRoutes(app: FastifyInstance) {
     // mid-level staff account could deactivate every administrator, and the
     // bumpSessionEpoch at the end made that lockout immediate.
     const callerIsAdmin = isAdminRole(req.user!.role);
-    const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true },
+    });
     if (!target) return reply.code(404).send({ error: "User not found" });
 
     if ((body.isActive !== undefined || body.orgId !== undefined) && !callerIsAdmin) {
@@ -260,7 +281,9 @@ export async function adminRoutes(app: FastifyInstance) {
     }
     // Nobody may act on an account that outranks them, whatever the field.
     if (!callerIsAdmin && isInternalRole(target.role)) {
-      return reply.code(403).send({ error: "Insufficient permissions for this account." });
+      return reply
+        .code(403)
+        .send({ error: "Insufficient permissions for this account." });
     }
 
     const data: Record<string, unknown> = {};
@@ -271,7 +294,9 @@ export async function adminRoutes(app: FastifyInstance) {
 
     if (body.role !== undefined) {
       if (!callerIsAdmin) {
-        return reply.code(403).send({ error: "Only an administrator can change a user's role." });
+        return reply
+          .code(403)
+          .send({ error: "Only an administrator can change a user's role." });
       }
       if (typeof body.role !== "string" || !ALL_ROLES.includes(body.role)) {
         return reply.code(400).send({
@@ -291,7 +316,14 @@ export async function adminRoutes(app: FastifyInstance) {
     const updated = await prisma.user.update({
       where: { id },
       data,
-      select: { id: true, email: true, name: true, role: true, orgId: true, isActive: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        orgId: true,
+        isActive: true,
+      },
     });
 
     // A role change or a deactivation must not leave a stale session live.
@@ -419,7 +451,9 @@ export async function adminRoutes(app: FastifyInstance) {
       }),
     ]);
 
-    const orderEngIds = orders.map((o) => o.engagementId).filter((id): id is string => Boolean(id));
+    const orderEngIds = orders
+      .map((o) => o.engagementId)
+      .filter((id): id is string => Boolean(id));
     const engagements = await prisma.engagement.findMany({
       take: LIST_CAP,
       where: { id: { in: orderEngIds } },
@@ -488,8 +522,14 @@ export async function adminRoutes(app: FastifyInstance) {
         paidAt: o.paidAt,
         razorpayOrderId: o.razorpayOrderId,
         engagement: eng,
-        contracts: (eng?.contracts || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-        projects: (eng?.projects || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        contracts: (eng?.contracts || []).sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        ),
+        projects: (eng?.projects || []).sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        ),
         payments: o.payments,
       };
     };

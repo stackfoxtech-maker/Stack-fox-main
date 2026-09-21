@@ -181,9 +181,10 @@ createWorker(QUEUE.docGen, async (job) => {
         amount: asString(v),
       }));
 
-    const range = proposal.totalMin === proposal.totalMax
-      ? inr(proposal.totalMax)
-      : `${inr(proposal.totalMin)} – ${inr(proposal.totalMax)}`;
+    const range =
+      proposal.totalMin === proposal.totalMax
+        ? inr(proposal.totalMax)
+        : `${inr(proposal.totalMin)} – ${inr(proposal.totalMax)}`;
 
     const pdf = await renderDocument({
       title: "Proposal",

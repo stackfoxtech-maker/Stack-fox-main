@@ -23,15 +23,31 @@ const STARTER: MilestoneTemplate[] = [
 const GROWTH: MilestoneTemplate[] = [
   { name: "Design & Planning", pct: 30, deliverables: ["Wireframes", "Project plan"] },
   { name: "Development", pct: 40, deliverables: ["Staging deployment", "Core features"] },
-  { name: "Review & Delivery", pct: 30, deliverables: ["Final deployment", "Documentation"] },
+  {
+    name: "Review & Delivery",
+    pct: 30,
+    deliverables: ["Final deployment", "Documentation"],
+  },
 ];
 
 const PREMIUM: MilestoneTemplate[] = [
-  { name: "Strategy & Discovery", pct: 20, deliverables: ["Strategy document", "Architecture review"] },
+  {
+    name: "Strategy & Discovery",
+    pct: 20,
+    deliverables: ["Strategy document", "Architecture review"],
+  },
   { name: "Design", pct: 20, deliverables: ["Full design system", "Prototype"] },
   { name: "Development Phase 1", pct: 25, deliverables: ["Core features", "Staging"] },
-  { name: "Development Phase 2", pct: 20, deliverables: ["All features", "Integration testing"] },
-  { name: "QA, Delivery & Handover", pct: 15, deliverables: ["Production deployment", "Full documentation", "Training"] },
+  {
+    name: "Development Phase 2",
+    pct: 20,
+    deliverables: ["All features", "Integration testing"],
+  },
+  {
+    name: "QA, Delivery & Handover",
+    pct: 15,
+    deliverables: ["Production deployment", "Full documentation", "Training"],
+  },
 ];
 
 /** Milestone schedule for a tier. Unknown tiers fall back to PREMIUM, as both call sites did. */

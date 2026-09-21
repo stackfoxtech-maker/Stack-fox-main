@@ -48,9 +48,7 @@ function summarise(h: Health): string {
 
 export async function checkHealth(): Promise<Health> {
   const [database, redisUp] = await Promise.all([
-    prisma
-      .$queryRaw`SELECT 1`.then(() => true)
-      .catch(() => false),
+    prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
     redis
       .ping()
       .then(() => true)
@@ -70,8 +68,7 @@ export function shouldAlert(previous: string | null, current: string): boolean {
 /** What each failure actually costs, so an alert says why it matters. */
 const IMPACT: Record<keyof Health, string> = {
   database: "every request that touches data fails",
-  redis:
-    "OTP, password reset, token revocation and all background jobs are degraded",
+  redis: "OTP, password reset, token revocation and all background jobs are degraded",
   storage: "invoice, contract and quote PDFs cannot be stored or served",
 };
 

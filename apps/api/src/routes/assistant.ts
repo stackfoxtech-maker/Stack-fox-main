@@ -39,55 +39,67 @@ export async function assistantRoutes(app: FastifyInstance) {
     "/assistant/chat",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const { message, history } = req.body as {
-      message?: string;
-      history?: { role: "user" | "model"; text: string }[];
-    };
-    if (!message?.trim()) return reply.code(400).send({ message: "message is required" });
+      const { message, history } = req.body as {
+        message?: string;
+        history?: { role: "user" | "model"; text: string }[];
+      };
+      if (!message?.trim())
+        return reply.code(400).send({ message: "message is required" });
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return reply.code(500).send({ message: "AI assistant is not configured" });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey)
+        return reply.code(500).send({ message: "AI assistant is not configured" });
 
-    const contents = [
-      ...(history ?? []).slice(-10).map((h) => ({ role: h.role, parts: [{ text: h.text }] })),
-      { role: "user", parts: [{ text: message }] },
-    ];
+      const contents = [
+        ...(history ?? [])
+          .slice(-10)
+          .map((h) => ({ role: h.role, parts: [{ text: h.text }] })),
+        { role: "user", parts: [{ text: message }] },
+      ];
 
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          signal: AbortSignal.timeout(TIMEOUT.llm),
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents,
-            // gemini-3.6-flash spends part of the output budget on internal
-            // "thinking" tokens before the visible answer — too low a cap
-            // here truncates mid-thought and returns garbled/partial text.
-            generationConfig: { maxOutputTokens: 2048 },
-          }),
-        },
-      );
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            signal: AbortSignal.timeout(TIMEOUT.llm),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+              contents,
+              // gemini-3.6-flash spends part of the output budget on internal
+              // "thinking" tokens before the visible answer — too low a cap
+              // here truncates mid-thought and returns garbled/partial text.
+              generationConfig: { maxOutputTokens: 2048 },
+            }),
+          },
+        );
 
-      const data = (await res.json()) as any;
-      if (!res.ok) {
-        req.log.error({ geminiError: data?.error }, "Gemini request failed");
-        return reply.code(502).send({ message: data?.error?.message ?? "AI assistant is temporarily unavailable" });
+        const data = (await res.json()) as any;
+        if (!res.ok) {
+          req.log.error({ geminiError: data?.error }, "Gemini request failed");
+          return reply.code(502).send({
+            message: data?.error?.message ?? "AI assistant is temporarily unavailable",
+          });
+        }
+
+        const reply_text: string | undefined =
+          data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!reply_text) {
+          return reply
+            .code(502)
+            .send({ message: "AI assistant returned an empty response" });
+        }
+
+        return { data: { reply: reply_text } };
+      } catch (err: any) {
+        req.log.error(err);
+        return reply
+          .code(502)
+          .send({ message: "AI assistant is temporarily unavailable" });
       }
-
-      const reply_text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!reply_text) {
-        return reply.code(502).send({ message: "AI assistant returned an empty response" });
-      }
-
-      return { data: { reply: reply_text } };
-    } catch (err: any) {
-      req.log.error(err);
-      return reply.code(502).send({ message: "AI assistant is temporarily unavailable" });
-    }
-  });
+    },
+  );
 
   // POST /assistant/advise — AI Scope Advisor (Product Bible §4.2).
   // Takes the 10-question flow's answers plus the client's own catalog
@@ -98,24 +110,29 @@ export async function assistantRoutes(app: FastifyInstance) {
     "/assistant/advise",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const { answers, catalog } = req.body as {
-      answers?: Record<string, string>;
-      catalog?: { id: string; name: string; catId: string; price: number }[];
-    };
-    if (!answers || Object.keys(answers).length === 0) {
-      return reply.code(400).send({ message: "answers are required" });
-    }
-    if (!catalog || catalog.length === 0) {
-      return reply.code(400).send({ message: "catalog is required" });
-    }
+      const { answers, catalog } = req.body as {
+        answers?: Record<string, string>;
+        catalog?: { id: string; name: string; catId: string; price: number }[];
+      };
+      if (!answers || Object.keys(answers).length === 0) {
+        return reply.code(400).send({ message: "answers are required" });
+      }
+      if (!catalog || catalog.length === 0) {
+        return reply.code(400).send({ message: "catalog is required" });
+      }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return reply.code(500).send({ message: "AI assistant is not configured" });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey)
+        return reply.code(500).send({ message: "AI assistant is not configured" });
 
-    const catalogLines = catalog.map((c) => `${c.id} | ${c.name} | ₹${c.price}`).join("\n");
-    const answerLines = Object.entries(answers).map(([q, a]) => `${q}: ${a}`).join("\n");
+      const catalogLines = catalog
+        .map((c) => `${c.id} | ${c.name} | ₹${c.price}`)
+        .join("\n");
+      const answerLines = Object.entries(answers)
+        .map(([q, a]) => `${q}: ${a}`)
+        .join("\n");
 
-    const prompt = `You are the StackFox AI Scope Advisor. A prospective client answered a 10-question
+      const prompt = `You are the StackFox AI Scope Advisor. A prospective client answered a 10-question
 intake. Recommend a service configuration using ONLY item ids from the catalog below — never invent
 an id or price.
 
@@ -135,47 +152,63 @@ Respond with strict JSON matching this shape, nothing else:
 }
 Pick STARTER only if the scope is genuinely simple and low-budget. itemIds must all exist in the catalog above.`;
 
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          signal: AbortSignal.timeout(TIMEOUT.llm),
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 2048, responseMimeType: "application/json" },
-          }),
-        },
-      );
-
-      const data = (await res.json()) as any;
-      if (!res.ok) {
-        req.log.error({ geminiError: data?.error }, "Gemini advisor request failed");
-        return reply.code(502).send({ message: data?.error?.message ?? "AI assistant is temporarily unavailable" });
-      }
-
-      const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) return reply.code(502).send({ message: "AI assistant returned an empty response" });
-
-      let advice: any;
       try {
-        advice = JSON.parse(text);
-      } catch {
-        return reply.code(502).send({ message: "AI assistant returned malformed output" });
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            signal: AbortSignal.timeout(TIMEOUT.llm),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+              generationConfig: {
+                maxOutputTokens: 2048,
+                responseMimeType: "application/json",
+              },
+            }),
+          },
+        );
+
+        const data = (await res.json()) as any;
+        if (!res.ok) {
+          req.log.error({ geminiError: data?.error }, "Gemini advisor request failed");
+          return reply.code(502).send({
+            message: data?.error?.message ?? "AI assistant is temporarily unavailable",
+          });
+        }
+
+        const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text)
+          return reply
+            .code(502)
+            .send({ message: "AI assistant returned an empty response" });
+
+        let advice: any;
+        try {
+          advice = JSON.parse(text);
+        } catch {
+          return reply
+            .code(502)
+            .send({ message: "AI assistant returned malformed output" });
+        }
+
+        // Guard against hallucinated ids so "Load into Builder" never breaks.
+        const validIds = new Set(catalog.map((c) => c.id));
+        const clean = (ids: unknown) =>
+          Array.isArray(ids) ? ids.filter((id) => validIds.has(id)) : [];
+        advice.itemIds = clean(advice.itemIds);
+        if (advice.lighterAlt)
+          advice.lighterAlt.itemIds = clean(advice.lighterAlt.itemIds);
+        if (advice.heavierAlt)
+          advice.heavierAlt.itemIds = clean(advice.heavierAlt.itemIds);
+
+        return { data: advice };
+      } catch (err: any) {
+        req.log.error(err);
+        return reply
+          .code(502)
+          .send({ message: "AI assistant is temporarily unavailable" });
       }
-
-      // Guard against hallucinated ids so "Load into Builder" never breaks.
-      const validIds = new Set(catalog.map((c) => c.id));
-      const clean = (ids: unknown) => (Array.isArray(ids) ? ids.filter((id) => validIds.has(id)) : []);
-      advice.itemIds = clean(advice.itemIds);
-      if (advice.lighterAlt) advice.lighterAlt.itemIds = clean(advice.lighterAlt.itemIds);
-      if (advice.heavierAlt) advice.heavierAlt.itemIds = clean(advice.heavierAlt.itemIds);
-
-      return { data: advice };
-    } catch (err: any) {
-      req.log.error(err);
-      return reply.code(502).send({ message: "AI assistant is temporarily unavailable" });
-    }
-  });
+    },
+  );
 }

@@ -5,35 +5,35 @@
 @layer base {
   :root {
     /* Calm Guidance — see DESIGN.md */
-    --color-fox: #FF4D00;
-    --color-fox-light: #FFF1EA;
-    --color-fox-dark: #E04400;
-    --color-sage: #5B8A72;
-    --color-sage-light: #EEF3F0;
-    --color-sage-dark: #3B5C4B;
-    --color-bg: #FAF8F5;
-    --color-bg-sunken: #F5F3EF;
-    --color-bg-card: #FFFFFF;
-    --color-bg-elevated: #FFFFFF;
-    --color-text: #1A1918;
-    --color-text-secondary: #57524A;
+    --color-fox: #ff4d00;
+    --color-fox-light: #fff1ea;
+    --color-fox-dark: #e04400;
+    --color-sage: #5b8a72;
+    --color-sage-light: #eef3f0;
+    --color-sage-dark: #3b5c4b;
+    --color-bg: #faf8f5;
+    --color-bg-sunken: #f5f3ef;
+    --color-bg-card: #ffffff;
+    --color-bg-elevated: #ffffff;
+    --color-text: #1a1918;
+    --color-text-secondary: #57524a;
     /* was #9C968A — 2.8:1 on the warm ground, failed AA. #6E6860 is 5.2:1. */
-    --color-text-muted: #6E6860;
-    --color-border: #EDEAE4;
-    --color-border-hover: #C6C1B5;
+    --color-text-muted: #6e6860;
+    --color-border: #edeae4;
+    --color-border-hover: #c6c1b5;
     --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
     --font-display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
-    --radius-sm: 0.5rem;    /* 8px  — inputs, chips */
-    --radius-md: 0.875rem;  /* 14px — cards */
-    --radius-lg: 1.25rem;   /* 20px — feature panels */
+    --radius-sm: 0.5rem; /* 8px  — inputs, chips */
+    --radius-md: 0.875rem; /* 14px — cards */
+    --radius-lg: 1.25rem; /* 20px — feature panels */
     --radius-xl: 1.25rem;
     --radius-pill: 9999px;
-    --shadow-sm: 0 1px 2px rgba(26,25,24,.06);
-    --shadow-card: 0 1px 2px rgba(26,25,24,.06);
-    --shadow-md: 0 4px 16px -4px rgba(26,25,24,.10);
-    --shadow-elevated: 0 12px 32px -8px rgba(26,25,24,.14);
-    --shadow-lg: 0 14px 40px -12px rgba(26,25,24,.16);
+    --shadow-sm: 0 1px 2px rgba(26, 25, 24, 0.06);
+    --shadow-card: 0 1px 2px rgba(26, 25, 24, 0.06);
+    --shadow-md: 0 4px 16px -4px rgba(26, 25, 24, 0.1);
+    --shadow-elevated: 0 12px 32px -8px rgba(26, 25, 24, 0.14);
+    --shadow-lg: 0 14px 40px -12px rgba(26, 25, 24, 0.16);
     --ease-enter: cubic-bezier(0.2, 0.7, 0.2, 1);
     --ease-exit: cubic-bezier(0.4, 0, 1, 1);
     --transition-fast: 120ms var(--ease-enter);
@@ -82,7 +82,12 @@
   }
 
   /* Bricolage Grotesque is the display face; body + prices stay DM Sans. */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
     font-weight: 600;
     line-height: 1.12;
@@ -126,7 +131,6 @@
     font-family: inherit;
     font-size: inherit;
   }
-
 
   /* Scrollbar */
   ::-webkit-scrollbar {
@@ -177,7 +181,7 @@
   }
 
   .text-gradient-fox {
-    background: linear-gradient(120deg, #FF4D00 0%, #FF7642 100%);
+    background: linear-gradient(120deg, #ff4d00 0%, #ff7642 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -229,12 +233,18 @@
     object-fit: cover;
     display: block;
   }
-  .img-frame-sm { border-radius: var(--radius-md); }
+  .img-frame-sm {
+    border-radius: var(--radius-md);
+  }
 
   /* Subtle warm dot grid — the one allowed background texture besides grain.
      No wavy dividers, no blobs. */
   .dot-grid {
-    background-image: radial-gradient(circle at 1px 1px, rgba(26,25,24,0.06) 1px, transparent 0);
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(26, 25, 24, 0.06) 1px,
+      transparent 0
+    );
     background-size: 28px 28px;
   }
 
@@ -243,7 +253,7 @@
   }
 
   .bg-noise::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
@@ -256,7 +266,9 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     padding: 1.5rem;
-    transition: box-shadow var(--transition-base), transform var(--transition-base);
+    transition:
+      box-shadow var(--transition-base),
+      transform var(--transition-base);
   }
 
   .card-fx:hover {
@@ -270,7 +282,9 @@
     border-radius: var(--radius-md);
     padding: 1.5rem;
     box-shadow: var(--shadow-md);
-    transition: box-shadow var(--transition-base), transform var(--transition-base);
+    transition:
+      box-shadow var(--transition-base),
+      transform var(--transition-base);
   }
 
   .card-fx-elevated:hover {
@@ -291,7 +305,9 @@
     font-size: 0.9375rem;
     border-radius: var(--radius-pill);
     box-shadow: var(--shadow-md);
-    transition: background var(--transition-fast), transform var(--transition-fast);
+    transition:
+      background var(--transition-fast),
+      transform var(--transition-fast);
     white-space: nowrap;
   }
 
@@ -300,7 +316,9 @@
     transform: translateY(-1px);
   }
 
-  .btn-fox:active { transform: translateY(0); }
+  .btn-fox:active {
+    transform: translateY(0);
+  }
 
   .btn-fox:disabled {
     opacity: 0.5;
@@ -323,7 +341,9 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-pill);
     box-shadow: var(--shadow-sm);
-    transition: border-color var(--transition-fast), transform var(--transition-fast);
+    transition:
+      border-color var(--transition-fast),
+      transform var(--transition-fast);
     white-space: nowrap;
   }
 
@@ -344,7 +364,9 @@
     font-weight: 600;
     font-size: 0.9rem;
     border-radius: var(--radius-pill);
-    transition: color var(--transition-fast), background var(--transition-fast);
+    transition:
+      color var(--transition-fast),
+      background var(--transition-fast);
   }
 
   .btn-ghost:hover {
@@ -361,7 +383,9 @@
     border-radius: var(--radius-sm);
     font-size: 1rem;
     color: var(--color-text);
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    transition:
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
     outline: none;
   }
 
@@ -396,23 +420,23 @@
   }
 
   .badge-success {
-    background: #EAF3DE;
-    color: #27500A;
+    background: #eaf3de;
+    color: #27500a;
   }
 
   .badge-warning {
-    background: #FAEEDA;
+    background: #faeeda;
     color: #633806;
   }
 
   .badge-danger {
-    background: #FCEBEB;
-    color: #791F1F;
+    background: #fcebeb;
+    color: #791f1f;
   }
 
   .badge-info {
-    background: #E6F1FB;
-    color: #0C447C;
+    background: #e6f1fb;
+    color: #0c447c;
   }
 
   .badge-neutral {
@@ -465,14 +489,30 @@
 }
 
 @layer utilities {
-  .animate-delay-100 { animation-delay: 100ms; }
-  .animate-delay-200 { animation-delay: 200ms; }
-  .animate-delay-300 { animation-delay: 300ms; }
-  .animate-delay-400 { animation-delay: 400ms; }
-  .animate-delay-500 { animation-delay: 500ms; }
-  .animate-delay-600 { animation-delay: 600ms; }
-  .animate-delay-700 { animation-delay: 700ms; }
-  .animate-delay-800 { animation-delay: 800ms; }
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+  .animate-delay-400 {
+    animation-delay: 400ms;
+  }
+  .animate-delay-500 {
+    animation-delay: 500ms;
+  }
+  .animate-delay-600 {
+    animation-delay: 600ms;
+  }
+  .animate-delay-700 {
+    animation-delay: 700ms;
+  }
+  .animate-delay-800 {
+    animation-delay: 800ms;
+  }
 
   .hide-scrollbar {
     -ms-overflow-style: none;
@@ -485,33 +525,67 @@
 }
 
 @keyframes slideInRight {
-  from { transform: translateX(100%); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to   { transform: scale(1);    opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideUp {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-.animate-scale-in   { animation: scaleIn  0.15s ease-out; }
-.animate-fade-in    { animation: fadeIn   0.2s ease-out; }
-.animate-slide-up   { animation: slideUp  0.25s ease-out; }
+.animate-scale-in {
+  animation: scaleIn 0.15s ease-out;
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+.animate-slide-up {
+  animation: slideUp 0.25s ease-out;
+}
 
 /* Premium Blog Content Typography */
 .blog-content {
@@ -548,7 +622,8 @@
   font-weight: 700;
 }
 
-.blog-content ul, .blog-content ol {
+.blog-content ul,
+.blog-content ol {
   margin-bottom: 2rem;
   padding-left: 1.25rem;
 }
@@ -578,7 +653,7 @@
   list-style-type: decimal;
 }
 
-.blog-content blockquote, 
+.blog-content blockquote,
 .blog-content div[style*="border-left"] {
   border-left: 4px solid var(--color-fox) !important;
   padding: 2rem !important;
@@ -614,4 +689,3 @@
     scroll-behavior: auto !important;
   }
 }
-

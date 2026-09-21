@@ -28,12 +28,17 @@ import {
 import { RecordUtrSchema, UpdateInvoiceStatusSchema } from "../src/routes/financeSchemas";
 
 const checks: Array<[string, boolean, string]> = [];
-const check = (label: string, pass: boolean, note = "") => checks.push([label, pass, note]);
+const check = (label: string, pass: boolean, note = "") =>
+  checks.push([label, pass, note]);
 
-const accepts = (schema: { safeParse: (v: unknown) => { success: boolean } }, v: unknown) =>
-  schema.safeParse(v).success;
-const rejects = (schema: { safeParse: (v: unknown) => { success: boolean } }, v: unknown) =>
-  !schema.safeParse(v).success;
+const accepts = (
+  schema: { safeParse: (v: unknown) => { success: boolean } },
+  v: unknown,
+) => schema.safeParse(v).success;
+const rejects = (
+  schema: { safeParse: (v: unknown) => { success: boolean } },
+  v: unknown,
+) => !schema.safeParse(v).success;
 
 // ── The registration password hole ───────────────────────────────────────────
 //
@@ -47,14 +52,23 @@ const rejects = (schema: { safeParse: (v: unknown) => { success: boolean } }, v:
     rejects(RegisterSchema, { email: "a@b.com", password: "a" }),
     "this is the hole: reset enforced 8, registration enforced nothing",
   );
-  check("registration rejects 7 characters", rejects(RegisterSchema, { email: "a@b.com", password: "1234567" }));
-  check("registration accepts 8", accepts(RegisterSchema, { email: "a@b.com", password: "12345678" }));
+  check(
+    "registration rejects 7 characters",
+    rejects(RegisterSchema, { email: "a@b.com", password: "1234567" }),
+  );
+  check(
+    "registration accepts 8",
+    accepts(RegisterSchema, { email: "a@b.com", password: "12345678" }),
+  );
   check(
     "a 10,000-character password is rejected",
     rejects(password, "x".repeat(10_000)),
     "scrypt cost scales with input length on an unauthenticated endpoint",
   );
-  check("registration rejects a malformed email", rejects(RegisterSchema, { email: "not-an-email", password: "12345678" }));
+  check(
+    "registration rejects a malformed email",
+    rejects(RegisterSchema, { email: "not-an-email", password: "12345678" }),
+  );
   check(
     "registration rejects an unexpected field",
     rejects(RegisterSchema, { email: "a@b.com", password: "12345678", role: "ADMIN" }),
@@ -109,15 +123,30 @@ const rejects = (schema: { safeParse: (v: unknown) => { success: boolean } }, v:
 // this object to decide the same tax question. It was Record<string, unknown>
 // written straight to a Json column.
 {
-  check("a normal address is accepted", accepts(billingAddress, { line1: "1 Road", city: "Jaipur", stateCode: "08" }));
-  check("a three-digit state code is rejected", rejects(billingAddress, { stateCode: "080" }));
-  check("a non-numeric state code is rejected", rejects(billingAddress, { stateCode: "RJ" }));
+  check(
+    "a normal address is accepted",
+    accepts(billingAddress, { line1: "1 Road", city: "Jaipur", stateCode: "08" }),
+  );
+  check(
+    "a three-digit state code is rejected",
+    rejects(billingAddress, { stateCode: "080" }),
+  );
+  check(
+    "a non-numeric state code is rejected",
+    rejects(billingAddress, { stateCode: "RJ" }),
+  );
   check(
     "arbitrary nesting is rejected",
-    rejects(billingAddress, { line1: "x", evil: { deeply: { nested: "x".repeat(1000) } } }),
+    rejects(billingAddress, {
+      line1: "x",
+      evil: { deeply: { nested: "x".repeat(1000) } },
+    }),
     "it was written to a Json column unbounded",
   );
-  check("a 10,000-character line is rejected", rejects(billingAddress, { line1: "x".repeat(10_000) }));
+  check(
+    "a 10,000-character line is rejected",
+    rejects(billingAddress, { line1: "x".repeat(10_000) }),
+  );
   check("an empty address is accepted", accepts(billingAddress, {}));
 }
 
@@ -125,28 +154,46 @@ const rejects = (schema: { safeParse: (v: unknown) => { success: boolean } }, v:
 {
   check("creating an org requires a name", rejects(CreateOrgSchema, { type: "COMPANY" }));
   check("a whitespace-only name is rejected", rejects(CreateOrgSchema, { name: "   " }));
-  check("a valid org is accepted", accepts(CreateOrgSchema, { name: "Acme", gstin: "27AAPFU0939F1ZV" }));
+  check(
+    "a valid org is accepted",
+    accepts(CreateOrgSchema, { name: "Acme", gstin: "27AAPFU0939F1ZV" }),
+  );
   check(
     "an empty PATCH is rejected",
     rejects(UpdateOrgSchema, {}),
     "it used to issue a database write and return 200, which reads as success",
   );
-  check("adding a member requires a real email", rejects(AddOrgMemberSchema, { email: "nope", role: "CLIENT_VIEWER" }));
+  check(
+    "adding a member requires a real email",
+    rejects(AddOrgMemberSchema, { email: "nope", role: "CLIENT_VIEWER" }),
+  );
 }
 
 // ── OTP ──────────────────────────────────────────────────────────────────────
 {
-  check("sending an OTP with neither email nor phone is rejected", rejects(SendOtpSchema, {}));
+  check(
+    "sending an OTP with neither email nor phone is rejected",
+    rejects(SendOtpSchema, {}),
+  );
   check("email only is accepted", accepts(SendOtpSchema, { email: "a@b.com" }));
   check("phone only is accepted", accepts(SendOtpSchema, { phone: "+919876543210" }));
-  check("a malformed phone number is rejected", rejects(SendOtpSchema, { phone: "not a phone" }));
+  check(
+    "a malformed phone number is rejected",
+    rejects(SendOtpSchema, { phone: "not a phone" }),
+  );
   check(
     "a 5,000-character phone number is rejected",
     rejects(SendOtpSchema, { phone: `+${"9".repeat(5000)}` }),
     "it reaches an outbound API call and a log line",
   );
-  check("a non-numeric OTP code is rejected", rejects(VerifyOtpSchema, { email: "a@b.com", code: "abcdef" }));
-  check("a numeric code is accepted", accepts(VerifyOtpSchema, { email: "a@b.com", code: "123456" }));
+  check(
+    "a non-numeric OTP code is rejected",
+    rejects(VerifyOtpSchema, { email: "a@b.com", code: "abcdef" }),
+  );
+  check(
+    "a numeric code is accepted",
+    accepts(VerifyOtpSchema, { email: "a@b.com", code: "123456" }),
+  );
 }
 
 // ── Privilege ────────────────────────────────────────────────────────────────
@@ -168,22 +215,46 @@ const rejects = (schema: { safeParse: (v: unknown) => { success: boolean } }, v:
     "a user cannot set their own orgId via /users/me",
     rejects(UpdateMeSchema, { orgId: "org_someone_else" }),
   );
-  check("a normal profile update is accepted", accepts(UpdateMeSchema, { name: "Alok", skills: ["Go"] }));
+  check(
+    "a normal profile update is accepted",
+    accepts(UpdateMeSchema, { name: "Alok", skills: ["Go"] }),
+  );
   check("an empty profile update is rejected", rejects(UpdateMeSchema, {}));
-  check("41 skills are rejected", rejects(UpdateMeSchema, { skills: Array(41).fill("x") }));
-  check("40 skills are accepted", accepts(UpdateMeSchema, { skills: Array(40).fill("x") }));
-  check("an unbounded name is rejected", rejects(UpdateMeSchema, { name: "x".repeat(10_000) }));
-  check("a non-URL avatar is rejected", rejects(UpdateMeSchema, { avatarUrl: "javascript:alert(1)" }));
+  check(
+    "41 skills are rejected",
+    rejects(UpdateMeSchema, { skills: Array(41).fill("x") }),
+  );
+  check(
+    "40 skills are accepted",
+    accepts(UpdateMeSchema, { skills: Array(40).fill("x") }),
+  );
+  check(
+    "an unbounded name is rejected",
+    rejects(UpdateMeSchema, { name: "x".repeat(10_000) }),
+  );
+  check(
+    "a non-URL avatar is rejected",
+    rejects(UpdateMeSchema, { avatarUrl: "javascript:alert(1)" }),
+  );
   check("clearing the avatar is accepted", accepts(UpdateMeSchema, { avatarUrl: "" }));
 
-  check("creating a user requires a strong password", rejects(CreateUserSchema, { name: "A", email: "a@b.com", password: "short" }));
+  check(
+    "creating a user requires a strong password",
+    rejects(CreateUserSchema, { name: "A", email: "a@b.com", password: "short" }),
+  );
   check(
     "a password change to the same value is rejected",
-    rejects(ChangePasswordSchema, { currentPassword: "samepassword", newPassword: "samepassword" }),
+    rejects(ChangePasswordSchema, {
+      currentPassword: "samepassword",
+      newPassword: "samepassword",
+    }),
   );
   check(
     "a genuine password change is accepted",
-    accepts(ChangePasswordSchema, { currentPassword: "oldpassword", newPassword: "newpassword" }),
+    accepts(ChangePasswordSchema, {
+      currentPassword: "oldpassword",
+      newPassword: "newpassword",
+    }),
   );
 
   check(
@@ -191,13 +262,19 @@ const rejects = (schema: { safeParse: (v: unknown) => { success: boolean } }, v:
     rejects(ListUsersQuerySchema, { search: "x".repeat(5000) }),
     "it goes straight into a Prisma contains",
   );
-  check("a stray query parameter is tolerated", accepts(ListUsersQuerySchema, { search: "alok", utm_source: "x" }));
+  check(
+    "a stray query parameter is tolerated",
+    accepts(ListUsersQuerySchema, { search: "alok", utm_source: "x" }),
+  );
 }
 
 // ── Money ────────────────────────────────────────────────────────────────────
 {
   check("a normal UTR is accepted", accepts(RecordUtrSchema, { utr: "AXISN12345678" }));
-  check("a UTR with spaces is rejected", rejects(RecordUtrSchema, { utr: "AXIS 123 456" }));
+  check(
+    "a UTR with spaces is rejected",
+    rejects(RecordUtrSchema, { utr: "AXIS 123 456" }),
+  );
   check("a missing UTR is rejected", rejects(RecordUtrSchema, {}));
   check(
     "an unbounded UTR is rejected",
@@ -213,16 +290,28 @@ const rejects = (schema: { safeParse: (v: unknown) => { success: boolean } }, v:
     "an ISO paidAt is accepted",
     accepts(RecordUtrSchema, { utr: "AXISN12345678", paidAt: "2026-09-21T10:00:00Z" }),
   );
-  check("a plain date is accepted", accepts(RecordUtrSchema, { utr: "AXISN12345678", paidAt: "2026-09-21" }));
-  check("a negative amount is rejected", rejects(RecordUtrSchema, { utr: "AXISN12345678", amount: -500 }));
+  check(
+    "a plain date is accepted",
+    accepts(RecordUtrSchema, { utr: "AXISN12345678", paidAt: "2026-09-21" }),
+  );
+  check(
+    "a negative amount is rejected",
+    rejects(RecordUtrSchema, { utr: "AXISN12345678", amount: -500 }),
+  );
   check(
     "a fractional amount is rejected",
     rejects(RecordUtrSchema, { utr: "AXISN12345678", amount: 100.5 }),
     "money is integer paise everywhere",
   );
-  check("a whole-paise amount is accepted", accepts(RecordUtrSchema, { utr: "AXISN12345678", amount: 50000 }));
+  check(
+    "a whole-paise amount is accepted",
+    accepts(RecordUtrSchema, { utr: "AXISN12345678", amount: 50000 }),
+  );
   check("a status is required", rejects(UpdateInvoiceStatusSchema, {}));
-  check("a status is accepted", accepts(UpdateInvoiceStatusSchema, { status: "partially-paid" }));
+  check(
+    "a status is accepted",
+    accepts(UpdateInvoiceStatusSchema, { status: "partially-paid" }),
+  );
 }
 
 // ── Report ───────────────────────────────────────────────────────────────────

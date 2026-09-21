@@ -120,9 +120,11 @@ export async function referralRoutes(app: FastifyInstance) {
       },
     });
 
-    await queues.referralProcessor.add("process", { referralId: referral.id }).catch((err) => {
-      req.log.warn({ err }, "Referral queued for processing but dispatch failed");
-    });
+    await queues.referralProcessor
+      .add("process", { referralId: referral.id })
+      .catch((err) => {
+        req.log.warn({ err }, "Referral queued for processing but dispatch failed");
+      });
 
     return ok({ ...referral, _id: referral.id });
   });

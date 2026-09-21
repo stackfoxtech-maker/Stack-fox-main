@@ -76,9 +76,7 @@ const app = Fastify({
   genReqId: (req) => normaliseReqId(req.headers["x-request-id"]) ?? newReqId(),
   logger: {
     transport:
-      process.env.NODE_ENV === "development"
-        ? { target: "pino-pretty" }
-        : undefined,
+      process.env.NODE_ENV === "development" ? { target: "pino-pretty" } : undefined,
     redact: {
       // A log aggregator is a second place a bearer token can leak from, and
       // it is the place nobody audits.
@@ -167,7 +165,10 @@ async function start() {
   app.get("/health", async (_req, reply) => {
     const [db, cache] = await Promise.all([
       prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
-      redis.ping().then(() => true).catch(() => false),
+      redis
+        .ping()
+        .then(() => true)
+        .catch(() => false),
     ]);
 
     const status = db && cache ? "ok" : db ? "degraded" : "down";

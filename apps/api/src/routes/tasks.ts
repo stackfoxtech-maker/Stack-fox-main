@@ -24,7 +24,9 @@ function serializeTask(t: any) {
   return {
     ...t,
     _id: t.id,
-    project: t.project ? { id: t.project.id, projectNumber: t.project.id, name: t.project.name } : null,
+    project: t.project
+      ? { id: t.project.id, projectNumber: t.project.id, name: t.project.name }
+      : null,
   };
 }
 
@@ -104,7 +106,9 @@ export async function taskRoutes(app: FastifyInstance) {
       .map((u) => {
         const mine = openTasks.filter((t) => t.assigneeId === u.id);
         const overdue = mine.filter((t) => t.dueDate && t.dueDate < now).length;
-        const urgent = mine.filter((t) => t.priority === "urgent" || t.priority === "high").length;
+        const urgent = mine.filter(
+          (t) => t.priority === "urgent" || t.priority === "high",
+        ).length;
 
         return {
           id: u.id,
@@ -125,7 +129,8 @@ export async function taskRoutes(app: FastifyInstance) {
     return ok(rows, {
       capacity,
       totalOpenTasks: openTasks.length,
-      unassigned: openTasks.filter((t) => !internal.some((u) => u.id === t.assigneeId)).length,
+      unassigned: openTasks.filter((t) => !internal.some((u) => u.id === t.assigneeId))
+        .length,
     });
   });
 
@@ -201,9 +206,11 @@ export async function taskRoutes(app: FastifyInstance) {
     const data: Record<string, unknown> = {};
     if (typeof body.status === "string") data.status = body.status;
     if (typeof body.priority === "string") data.priority = body.priority;
-    if (typeof body.title === "string" && body.title.trim()) data.title = body.title.trim();
+    if (typeof body.title === "string" && body.title.trim())
+      data.title = body.title.trim();
     if (typeof body.description === "string") data.description = body.description;
-    if (body.dueDate !== undefined) data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+    if (body.dueDate !== undefined)
+      data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
 
     // Reassignment is a lead-only action.
     if (typeof body.assigneeId === "string" && body.assigneeId !== task.assigneeId) {

@@ -125,7 +125,8 @@ export async function publicApiRoutes(app: FastifyInstance) {
       where: { id },
       include: { featureUnits: true },
     });
-    if (!svc || svc.status !== "PUBLISHED") return reply.code(404).send({ error: "Not found" });
+    if (!svc || svc.status !== "PUBLISHED")
+      return reply.code(404).send({ error: "Not found" });
     return svc;
   });
 
@@ -328,5 +329,8 @@ export async function publicApiRoutes(app: FastifyInstance) {
   });
 
   // Unauthenticated by design — a monitor needs to reach it.
-  app.get("/v1/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));
+  app.get("/v1/health", async () => ({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  }));
 }

@@ -81,11 +81,17 @@ const schema = z.object({
 const parsed = schema.safeParse(process.env);
 
 if (!parsed.success) {
-  const lines = parsed.error.issues.map(
-    (i) => `  ${i.path.join(".")}: ${i.message}`,
-  );
+  const lines = parsed.error.issues.map((i) => `  ${i.path.join(".")}: ${i.message}`);
   console.error(
-    ["", "  Environment is not usable:", "", ...lines, "", "  See .env.example.", ""].join("\n"),
+    [
+      "",
+      "  Environment is not usable:",
+      "",
+      ...lines,
+      "",
+      "  See .env.example.",
+      "",
+    ].join("\n"),
   );
   process.exit(1);
 }
@@ -106,7 +112,8 @@ const PRODUCTION_REQUIRED: Array<[string, string]> = [
 
 if (isProd) {
   const missing = PRODUCTION_REQUIRED.filter(
-    ([name]) => !process.env[name] && !(name === "JWT_SECRET" && process.env.NEXTAUTH_SECRET),
+    ([name]) =>
+      !process.env[name] && !(name === "JWT_SECRET" && process.env.NEXTAUTH_SECRET),
   );
   if (missing.length) {
     console.error(

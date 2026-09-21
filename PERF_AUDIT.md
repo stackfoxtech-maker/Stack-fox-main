@@ -9,20 +9,20 @@ in the running dev app. Dev-mode byte counts are inflated (unbundled modules); t
 
 ## Status — all items resolved 2026-09-02
 
-| # | What shipped |
-|---|---|
-| P0-1 | Real logo kept but rebuilt: white keyed to transparent, resized, palette-quantised → **`logo.png` 22 KB** (was 486 KB), `favicon.png` 4.7 KB, `logo-512.png` for PWA install. Hi-res original kept at `client/assets-src/logo-source.png`. |
-| P0-2 | Builder groups services once (`servicesByCat` / `catCounts` maps), `<ServiceCard>` is `React.memo`, and the "All" view shows **6 per category + "View all N"** — 78 cards instead of 255. |
-| P0-3 | `pdfExport` is now `import()`-ed on click in `CartDrawer` + `Quotes`; `<CartDrawer>` itself is `lazy()` and only mounts once the cart is used. **Entry chunk 562 KB → 75 KB.** |
-| P0-4 | Razorpay `<script>` removed from `index.html`; `src/lib/razorpay.js` loads it on demand from `Checkout` / `Invoices`. |
-| P1-1 | `pdfExport` no longer statically imports the catalogue, so Vite splits `stackfox-data.json` (83 KB) into a lazy chunk. Home now uses a generated `src/data/catalog-summary.json` (~2 KB) — `scripts/gen-catalog-summary.mjs`. |
-| P1-2 | `useStorefrontData` has a session promise-cache (1 request, not N); `SearchOverlay` is `lazy()` + mounted on first open. |
-| P1-3 | `sw.js` rewritten — cache-first for `/assets/*`, network-first for navigations, nothing else touched, bounded caches, `v3`. Registration moved to `main.jsx`, **PROD-only**; dev registrations are torn down (kills the "failed to fetch script" console spam). |
-| P1-4 | Home hero `pravatar` images → inline initial-avatars (0 requests). |
-| P2-3 | About + Industries hero images are `loading="eager"` + `fetchpriority="high"`. |
-| P2-4 | Toaster font `Outfit` → DM Sans. |
-| — | **All 13 marketing images now served from Cloudinary** (`res.cloudinary.com/efgleg53/…/stackfox/*`) with `f_auto,q_auto` + responsive `srcset` via `src/lib/img.js`. Sources moved to `client/assets-src/img/` (out of the served bundle). |
-| — | **Mobile**: shared `src/app/DashboardShell.jsx` — desktop sidebar unchanged; mobile gets a top app bar + fixed bottom tab bar (4 primary + "More" drawer). All four dashboards (client/admin/team/sales) use it. Builder service tiles go 3-up + compact on phones. |
+| #    | What shipped                                                                                                                                                                                                                                                        |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0-1 | Real logo kept but rebuilt: white keyed to transparent, resized, palette-quantised → **`logo.png` 22 KB** (was 486 KB), `favicon.png` 4.7 KB, `logo-512.png` for PWA install. Hi-res original kept at `client/assets-src/logo-source.png`.                          |
+| P0-2 | Builder groups services once (`servicesByCat` / `catCounts` maps), `<ServiceCard>` is `React.memo`, and the "All" view shows **6 per category + "View all N"** — 78 cards instead of 255.                                                                           |
+| P0-3 | `pdfExport` is now `import()`-ed on click in `CartDrawer` + `Quotes`; `<CartDrawer>` itself is `lazy()` and only mounts once the cart is used. **Entry chunk 562 KB → 75 KB.**                                                                                      |
+| P0-4 | Razorpay `<script>` removed from `index.html`; `src/lib/razorpay.js` loads it on demand from `Checkout` / `Invoices`.                                                                                                                                               |
+| P1-1 | `pdfExport` no longer statically imports the catalogue, so Vite splits `stackfox-data.json` (83 KB) into a lazy chunk. Home now uses a generated `src/data/catalog-summary.json` (~2 KB) — `scripts/gen-catalog-summary.mjs`.                                       |
+| P1-2 | `useStorefrontData` has a session promise-cache (1 request, not N); `SearchOverlay` is `lazy()` + mounted on first open.                                                                                                                                            |
+| P1-3 | `sw.js` rewritten — cache-first for `/assets/*`, network-first for navigations, nothing else touched, bounded caches, `v3`. Registration moved to `main.jsx`, **PROD-only**; dev registrations are torn down (kills the "failed to fetch script" console spam).     |
+| P1-4 | Home hero `pravatar` images → inline initial-avatars (0 requests).                                                                                                                                                                                                  |
+| P2-3 | About + Industries hero images are `loading="eager"` + `fetchpriority="high"`.                                                                                                                                                                                      |
+| P2-4 | Toaster font `Outfit` → DM Sans.                                                                                                                                                                                                                                    |
+| —    | **All 13 marketing images now served from Cloudinary** (`res.cloudinary.com/efgleg53/…/stackfox/*`) with `f_auto,q_auto` + responsive `srcset` via `src/lib/img.js`. Sources moved to `client/assets-src/img/` (out of the served bundle).                          |
+| —    | **Mobile**: shared `src/app/DashboardShell.jsx` — desktop sidebar unchanged; mobile gets a top app bar + fixed bottom tab bar (4 primary + "More" drawer). All four dashboards (client/admin/team/sales) use it. Builder service tiles go 3-up + compact on phones. |
 
 P2-1 (font weight trim) deferred — marginal and risky (variable fonts download one
 file per family regardless of the weight list).
@@ -31,20 +31,20 @@ file per family regardless of the weight list).
 
 ## TL;DR — what's actually slow
 
-| # | Problem | Impact | Effort |
-|---|---------|--------|--------|
-| P0-1 | **`public/logo.png` is a 1024×1024 JPEG, 486 KB**, rendered at 16–28 px and used as the favicon. Loads on every page. | ~480 KB wasted on every first paint | 5 min |
-| P0-2 | **Builder renders all 255 service cards at once** when the category is "All" (the default). No pagination/virtualization; the per-category filter runs 13×255 times per render. | Multi-hundred-ms main-thread jank on `/builder`, worse on mobile | 1–2 h |
-| P0-3 | **jsPDF (~150 KB gz) is on the critical path for every visitor** — `App.jsx` renders `<CartDrawer>` eagerly → `pdfExport.js` → `import { jsPDF }`. | Landing page ships a PDF library nobody on it will use | 30 min |
-| P0-4 | **Razorpay checkout SDK loads as a blocking `<script>` in `<head>` on every page** and pulls 4 Razorpay domains (`checkout.`, `cdn.`, `api.`, `lumberjack.` — the last is analytics). | Render-blocking + third-party tracking on the marketing site | 20 min |
-| P1-1 | **The 100 KB catalog JSON (`shared/stackfox-data.json`) is bundled into the entry** (via `pdfExport` → CartDrawer, and directly by Home/Pricing/Industries). | Every visitor downloads the full 255-service catalog to see the homepage | 30–60 min |
-| P1-2 | **`/catalogue/storefront` (89 KB) is fetched app-wide via `Navbar → SearchOverlay → useStorefrontData`**, with no shared cache — refetched again on Catalog/Packages. | Redundant 89 KB API calls; fires even if search is never opened | 30 min |
-| P1-3 | **Service worker is network-first for everything, caches every GET forever, and runs in dev** — the source of the repeating `"An unknown error occurred when fetching the script"` console errors. | No repeat-visit speed-up, unbounded cache growth, dev noise | 30 min |
-| P1-4 | **5 external `i.pravatar.cc` avatar requests** in the Home hero (above the fold). | 5 blocking third-party image requests on LCP path | 15 min |
-| P2-1 | 3 web-font families / 6 files (Bricolage variable + DM Sans variable + JetBrains Mono), ~230 KB. `display=swap` is set (good). | Trim unused weights; consider `&text=` for the wordmark | 20 min |
-| P2-2 | No `React.memo` on Builder/Catalog service cards → every debounced search keystroke re-renders the whole list. | Compounds P0-2 | 30 min |
-| P2-3 | Above-the-fold images (`about-workspace`, `industries-hero`) are `loading="lazy"` — should be `eager` + `fetchpriority="high"`. | Minor LCP delay on those routes | 5 min |
-| P2-4 | `main.jsx` Toaster `fontFamily: 'Outfit'` — font no longer loaded (DESIGN.md swapped to DM Sans). Cosmetic, not perf. | — | 1 min |
+| #    | Problem                                                                                                                                                                                            | Impact                                                                   | Effort    |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------- |
+| P0-1 | **`public/logo.png` is a 1024×1024 JPEG, 486 KB**, rendered at 16–28 px and used as the favicon. Loads on every page.                                                                              | ~480 KB wasted on every first paint                                      | 5 min     |
+| P0-2 | **Builder renders all 255 service cards at once** when the category is "All" (the default). No pagination/virtualization; the per-category filter runs 13×255 times per render.                    | Multi-hundred-ms main-thread jank on `/builder`, worse on mobile         | 1–2 h     |
+| P0-3 | **jsPDF (~150 KB gz) is on the critical path for every visitor** — `App.jsx` renders `<CartDrawer>` eagerly → `pdfExport.js` → `import { jsPDF }`.                                                 | Landing page ships a PDF library nobody on it will use                   | 30 min    |
+| P0-4 | **Razorpay checkout SDK loads as a blocking `<script>` in `<head>` on every page** and pulls 4 Razorpay domains (`checkout.`, `cdn.`, `api.`, `lumberjack.` — the last is analytics).              | Render-blocking + third-party tracking on the marketing site             | 20 min    |
+| P1-1 | **The 100 KB catalog JSON (`shared/stackfox-data.json`) is bundled into the entry** (via `pdfExport` → CartDrawer, and directly by Home/Pricing/Industries).                                       | Every visitor downloads the full 255-service catalog to see the homepage | 30–60 min |
+| P1-2 | **`/catalogue/storefront` (89 KB) is fetched app-wide via `Navbar → SearchOverlay → useStorefrontData`**, with no shared cache — refetched again on Catalog/Packages.                              | Redundant 89 KB API calls; fires even if search is never opened          | 30 min    |
+| P1-3 | **Service worker is network-first for everything, caches every GET forever, and runs in dev** — the source of the repeating `"An unknown error occurred when fetching the script"` console errors. | No repeat-visit speed-up, unbounded cache growth, dev noise              | 30 min    |
+| P1-4 | **5 external `i.pravatar.cc` avatar requests** in the Home hero (above the fold).                                                                                                                  | 5 blocking third-party image requests on LCP path                        | 15 min    |
+| P2-1 | 3 web-font families / 6 files (Bricolage variable + DM Sans variable + JetBrains Mono), ~230 KB. `display=swap` is set (good).                                                                     | Trim unused weights; consider `&text=` for the wordmark                  | 20 min    |
+| P2-2 | No `React.memo` on Builder/Catalog service cards → every debounced search keystroke re-renders the whole list.                                                                                     | Compounds P0-2                                                           | 30 min    |
+| P2-3 | Above-the-fold images (`about-workspace`, `industries-hero`) are `loading="lazy"` — should be `eager` + `fetchpriority="high"`.                                                                    | Minor LCP delay on those routes                                          | 5 min     |
+| P2-4 | `main.jsx` Toaster `fontFamily: 'Outfit'` — font no longer loaded (DESIGN.md swapped to DM Sans). Cosmetic, not perf.                                                                              | —                                                                        | 1 min     |
 
 ---
 
@@ -81,18 +81,21 @@ correctly code-split and never touch a public visitor.
 ### P0-1 · logo.png — 486 KB, 1024² JPEG-as-PNG
 
 `client/public/logo.png` — a 1 MP JPEG with a `.png` extension. Referenced by:
+
 - `index.html:24` `<link rel="icon" type="image/png" href="/logo.png" />`
 - `client/src/components/ui/BrandLogo.jsx:29` `<img src="/logo.png" … style={{ width: size }}/>` — Navbar (size 28), Footer (size 16), FoxBot.
 
 **Fix:** there is already a `client/public/favicon.svg` (455 bytes). Either:
+
 - point `BrandLogo` and the favicon at `favicon.svg`, delete `logo.png`; or
 - export a real 64×64 PNG (`logo-64.png`, ~3 KB) for the wordmark + keep the SVG favicon.
-Also fix `index.html` to `<link rel="icon" href="/favicon.svg">`.
-Expected saving: **~485 KB per first visit.**
+  Also fix `index.html` to `<link rel="icon" href="/favicon.svg">`.
+  Expected saving: **~485 KB per first visit.**
 
 ### P0-2 · Builder renders 255 cards at once
 
 `client/src/pages/Builder.jsx`:
+
 - Default `activeCat` is `'all'` (`Builder.jsx:96`).
 - Lines 535–598: for `'all'` it maps every category and renders `catServices.map(svc => <card/>)` for all 13 → **255 cards, ~1,800 DOM nodes**, no windowing.
 - Line 537 `filteredServices.filter(s => s.catId === cat.dataId)` runs **inside** the `.map(cat)` → O(13 × 255) array scans **per render**.
@@ -100,11 +103,13 @@ Expected saving: **~485 KB per first visit.**
 - Line 546 `text-[10px]` badge (also a DESIGN.md floor violation).
 
 **Fix (in order of value):**
+
 1. Precompute once:
    ```js
    const servicesByCat = useMemo(() => {
      const m = new Map();
-     for (const s of filteredServices) (m.get(s.catId) ?? m.set(s.catId, []).get(s.catId)).push(s);
+     for (const s of filteredServices)
+       (m.get(s.catId) ?? m.set(s.catId, []).get(s.catId)).push(s);
      return m;
    }, [filteredServices]);
    const catCounts = useMemo(() => {
@@ -126,6 +131,7 @@ imports `exportQuotePDF` from `pdfExport.js`, which does `import { jsPDF } from 
 at module scope (`pdfExport.js:2`). So jsPDF + `stackfox-data.json` are in the shell.
 
 **Fix:**
+
 - In `CartDrawer.jsx`, drop the static import and load it on click:
   ```js
   const handleDownload = async () => {
@@ -147,14 +153,17 @@ Expected: **−150 KB gz** off every non-checkout page.
 **Fix:** remove it from `index.html`. Load it only where a payment starts
 (`Checkout.jsx` / `ExpressCheckout.jsx` / `PaymentConfirmation.jsx`) via a small
 loader:
+
 ```js
-const loadRazorpay = () => new Promise((res, rej) => {
-  if (window.Razorpay) return res();
-  const s = document.createElement('script');
-  s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-  s.onload = res; s.onerror = rej;
-  document.body.appendChild(s);
-});
+const loadRazorpay = () =>
+  new Promise((res, rej) => {
+    if (window.Razorpay) return res();
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = res;
+    s.onerror = rej;
+    document.body.appendChild(s);
+  });
 ```
 
 ### P1-1 · Catalog JSON in the entry bundle
@@ -164,6 +173,7 @@ const loadRazorpay = () => new Promise((res, rej) => {
 via P0-3) and the public `Home`, `Pricing`, `Industries`.
 
 **Fix:**
+
 - Fixing P0-3 removes the shell reference. Then Vite splits the JSON into a shared
   **async** chunk loaded only by pages that need it.
 - Home/Pricing/Industries only use `categories` (13 items) and `services.length`.
@@ -181,6 +191,7 @@ via P0-3) and the public `Home`, `Pricing`, `Industries`.
 (`useStorefrontData.js` has none).
 
 **Fix:**
+
 - Add a module-level in-flight promise cache to `useStorefrontData` (or move it into a
   Zustand store / React Query) so N consumers = 1 request per session.
 - Lazy-mount `SearchOverlay` only when the user opens search, so the fetch is deferred
@@ -198,6 +209,7 @@ requests → the recurring `"An unknown error occurred when fetching the script"
 console errors on every page.
 
 **Fix:**
+
 - Guard registration: `if (import.meta.env.PROD && 'serviceWorker' in navigator)` —
   move the register call from `index.html` into `main.jsx`.
 - `sw.js`: **cache-first** for `/assets/*` (content-hashed, immutable), network-first

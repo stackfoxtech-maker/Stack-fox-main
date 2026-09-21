@@ -62,7 +62,9 @@ export function generateApiKey(): { key: string; hash: string; prefix: string } 
 
 /** Rejects anything that is not shaped like one of our keys, before any I/O. */
 function looksLikeKey(value: unknown): value is string {
-  return typeof value === "string" && /^sk_live_[A-Za-z0-9_-]{20,128}$/.test(value.trim());
+  return (
+    typeof value === "string" && /^sk_live_[A-Za-z0-9_-]{20,128}$/.test(value.trim())
+  );
 }
 
 export type VerifyResult =
@@ -95,7 +97,8 @@ export async function verifyApiKey(presented: unknown): Promise<VerifyResult> {
   // comparison explicit rather than implied by the query.
   const a = Buffer.from(record.keyHash, "utf8");
   const b = Buffer.from(hash, "utf8");
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return { ok: false, reason: "unknown" };
+  if (a.length !== b.length || !timingSafeEqual(a, b))
+    return { ok: false, reason: "unknown" };
 
   if (record.revokedAt) return { ok: false, reason: "revoked" };
 

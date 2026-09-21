@@ -53,7 +53,8 @@ function fromRow(row: {
 
 /** The fields the row owns as columns; everything else goes into `data`. */
 function splitForRow(s: CheckoutSession) {
-  const { estimateId, tier, step, razorpayOrderId, consumedAt, resultOrderId, ...rest } = s;
+  const { estimateId, tier, step, razorpayOrderId, consumedAt, resultOrderId, ...rest } =
+    s;
   return { estimateId, tier, step, razorpayOrderId, data: rest };
 }
 

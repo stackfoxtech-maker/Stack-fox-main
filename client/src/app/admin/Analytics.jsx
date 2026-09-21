@@ -20,29 +20,52 @@ export default function Analytics() {
 
     Promise.all([
       api.get('/analytics/revenue').catch((err) => {
-        if (!cancelled) setErrors((p) => ({ ...p, revenue: err?.response?.data?.message || err?.message || 'Failed' }));
+        if (!cancelled)
+          setErrors((p) => ({
+            ...p,
+            revenue: err?.response?.data?.message || err?.message || 'Failed',
+          }));
         return { data: { data: [] } };
       }),
       api.get('/analytics/conversion').catch((err) => {
-        if (!cancelled) setErrors((p) => ({ ...p, conversion: err?.response?.data?.message || err?.message || 'Failed' }));
+        if (!cancelled)
+          setErrors((p) => ({
+            ...p,
+            conversion: err?.response?.data?.message || err?.message || 'Failed',
+          }));
         return { data: { data: {} } };
       }),
       api.get('/analytics/services').catch((err) => {
-        if (!cancelled) setErrors((p) => ({ ...p, services: err?.response?.data?.message || err?.message || 'Failed' }));
+        if (!cancelled)
+          setErrors((p) => ({
+            ...p,
+            services: err?.response?.data?.message || err?.message || 'Failed',
+          }));
         return { data: { data: [] } };
       }),
-    ]).then(([r, c, s]) => {
-      if (!cancelled) {
-        setRevenue(r.data.data);
-        setConversion(c.data.data);
-        setServices(s.data.data);
-      }
-    }).finally(() => { if (!cancelled) setLoading(false); });
+    ])
+      .then(([r, c, s]) => {
+        if (!cancelled) {
+          setRevenue(r.data.data);
+          setConversion(c.data.data);
+          setServices(s.data.data);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
 
   return (
     <div className="space-y-6">
@@ -62,16 +85,24 @@ export default function Analytics() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border border-warm-200 p-5">
           <div className="text-xs text-warm-500 mb-1">Total revenue</div>
-          <div className="text-2xl font-bold font-mono text-warm-900">{formatINR(revenue?.totalRevenue || 0)}</div>
+          <div className="text-2xl font-bold font-mono text-warm-900">
+            {formatINR(revenue?.totalRevenue || 0)}
+          </div>
         </div>
         <div className="bg-white rounded-2xl border border-warm-200 p-5">
           <div className="text-xs text-warm-500 mb-1">Pending amount</div>
-          <div className="text-2xl font-bold font-mono text-warning-500">{formatINR(revenue?.pendingAmount || 0)}</div>
+          <div className="text-2xl font-bold font-mono text-warning-500">
+            {formatINR(revenue?.pendingAmount || 0)}
+          </div>
         </div>
         <div className="bg-white rounded-2xl border border-warm-200 p-5">
           <div className="text-xs text-warm-500 mb-1">Conversion rate</div>
-          <div className="text-2xl font-bold font-mono text-success-700">{conversion?.conversionRate || 0}%</div>
-          <p className="text-[10px] text-warm-400 mt-1">{conversion?.paidQuotes || 0} of {conversion?.totalQuotes || 0} quotes converted</p>
+          <div className="text-2xl font-bold font-mono text-success-700">
+            {conversion?.conversionRate || 0}%
+          </div>
+          <p className="text-[10px] text-warm-400 mt-1">
+            {conversion?.paidQuotes || 0} of {conversion?.totalQuotes || 0} quotes converted
+          </p>
         </div>
       </div>
 
@@ -83,19 +114,26 @@ export default function Analytics() {
             <div className="flex-1">
               <div className="flex justify-between text-xs text-warm-500 mb-1">
                 <span>Converted</span>
-                <span>{conversion.paidQuotes} / {conversion.totalQuotes}</span>
+                <span>
+                  {conversion.paidQuotes} / {conversion.totalQuotes}
+                </span>
               </div>
               <div className="h-3 bg-warm-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-success-500 rounded-full transition-all"
-                  style={{ width: `${conversion.totalQuotes > 0 ? Math.round((conversion.paidQuotes / conversion.totalQuotes) * 100) : 0}%` }}
+                  style={{
+                    width: `${conversion.totalQuotes > 0 ? Math.round((conversion.paidQuotes / conversion.totalQuotes) * 100) : 0}%`,
+                  }}
                 />
               </div>
             </div>
-            <Badge variant={conversion.conversionRate >= 50 ? 'success' : 'warning'}>{conversion.conversionRate}%</Badge>
+            <Badge variant={conversion.conversionRate >= 50 ? 'success' : 'warning'}>
+              {conversion.conversionRate}%
+            </Badge>
           </div>
           <p className="text-xs text-warm-400">
-            {conversion.totalQuotes - (conversion.paidQuotes || 0)} quotes did not convert in this period.
+            {conversion.totalQuotes - (conversion.paidQuotes || 0)} quotes did not convert in this
+            period.
           </p>
         </div>
       )}
@@ -112,9 +150,14 @@ export default function Analytics() {
                 <div key={i} className="flex items-center gap-3">
                   <span className="text-xs text-warm-500 w-24 font-mono">{m.label}</span>
                   <div className="flex-1 h-6 bg-warm-100 rounded-lg overflow-hidden">
-                    <div className="h-full bg-fox-500 rounded-lg transition-all" style={{ width: `${pct}%` }} />
+                    <div
+                      className="h-full bg-fox-500 rounded-lg transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
-                  <span className="text-xs font-mono text-warm-700 w-24 text-right">{formatINRShort(m.value)}</span>
+                  <span className="text-xs font-mono text-warm-700 w-24 text-right">
+                    {formatINRShort(m.value)}
+                  </span>
                 </div>
               );
             })}

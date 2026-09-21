@@ -3,7 +3,11 @@ import { prisma } from "@stackfox/prisma";
 import { canonicalHash } from "../lib/hash";
 import { emitEvent } from "../lib/events";
 import { generateStructured } from "../lib/gemini";
-import { CATALOGUE_ROLES, resolveDependencies, type DependencyEdge } from "@stackfox/core";
+import {
+  CATALOGUE_ROLES,
+  resolveDependencies,
+  type DependencyEdge,
+} from "@stackfox/core";
 
 import { requireRole } from "../plugins/auth";
 import { isInternalRole } from "@stackfox/core";
@@ -21,11 +25,7 @@ import { LIST_CAP } from "../lib/http";
  *
  * Returns the workspace, or null after sending the response.
  */
-async function workspaceInScope(
-  id: string,
-  req: FastifyRequest,
-  reply: FastifyReply,
-) {
+async function workspaceInScope(id: string, req: FastifyRequest, reply: FastifyReply) {
   const ws = await prisma.workspace.findUnique({
     where: { id },
     include: { customLineItems: { orderBy: { sortOrder: "asc" } } },
@@ -113,7 +113,9 @@ export async function workspaceRoutes(app: FastifyInstance) {
 
     // Resolve dependencies
     const deps = await prisma.dependency.findMany({
-      take: LIST_CAP, where: { fromId: serviceId } });
+      take: LIST_CAP,
+      where: { fromId: serviceId },
+    });
     const edges: DependencyEdge[] = deps.map((d) => ({
       fromId: d.fromId,
       toId: d.toId,
@@ -189,7 +191,13 @@ export async function workspaceRoutes(app: FastifyInstance) {
       actor: req.user?.sub ?? "ANONYMOUS",
     });
 
-    return { workspace: updated, warnings: warnings.length > 0 ? `Services ${warnings.join(", ")} require ${serviceId}` : null };
+    return {
+      workspace: updated,
+      warnings:
+        warnings.length > 0
+          ? `Services ${warnings.join(", ")} require ${serviceId}`
+          : null,
+    };
   });
 
   // PATCH /workspaces/:id/toggle-feature

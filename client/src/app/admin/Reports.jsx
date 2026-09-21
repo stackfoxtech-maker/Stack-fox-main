@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
 } from 'recharts';
 import { BarChart3, Users, Briefcase, Wrench, Download, Calendar, Loader2 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
@@ -16,14 +24,34 @@ import toast from 'react-hot-toast';
  * decorative.
  */
 const REPORTS = [
-  { key: 'revenue', label: 'Revenue', icon: BarChart3, color: 'text-success-700 bg-success-50',
-    desc: 'Invoiced versus collected, and where revenue is concentrated by client.' },
-  { key: 'projects', label: 'Projects', icon: Briefcase, color: 'text-info-700 bg-info-50',
-    desc: 'Completion rates, milestone progress and which projects are running late.' },
-  { key: 'users', label: 'Users', icon: Users, color: 'text-purple-600 bg-purple-50',
-    desc: 'Signups by month, role mix and accounts going cold.' },
-  { key: 'services', label: 'Services', icon: Wrench, color: 'text-fox-600 bg-fox-500/10',
-    desc: 'Which catalogue items actually sell, and what they earn.' },
+  {
+    key: 'revenue',
+    label: 'Revenue',
+    icon: BarChart3,
+    color: 'text-success-700 bg-success-50',
+    desc: 'Invoiced versus collected, and where revenue is concentrated by client.',
+  },
+  {
+    key: 'projects',
+    label: 'Projects',
+    icon: Briefcase,
+    color: 'text-info-700 bg-info-50',
+    desc: 'Completion rates, milestone progress and which projects are running late.',
+  },
+  {
+    key: 'users',
+    label: 'Users',
+    icon: Users,
+    color: 'text-purple-600 bg-purple-50',
+    desc: 'Signups by month, role mix and accounts going cold.',
+  },
+  {
+    key: 'services',
+    label: 'Services',
+    icon: Wrench,
+    color: 'text-fox-600 bg-fox-500/10',
+    desc: 'Which catalogue items actually sell, and what they earn.',
+  },
 ];
 
 const CHART_COLOR = '#FF6B35';
@@ -65,12 +93,18 @@ const Table = ({ columns, rows, render }) => (
     <table className="w-full text-sm">
       <thead>
         <tr className="text-left text-xs text-warm-500 border-b border-warm-200">
-          {columns.map((c) => <th key={c} className="py-2 pr-4 font-medium">{c}</th>)}
+          {columns.map((c) => (
+            <th key={c} className="py-2 pr-4 font-medium">
+              {c}
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={i} className="border-b border-warm-100 last:border-0">{render(r)}</tr>
+          <tr key={i} className="border-b border-warm-100 last:border-0">
+            {render(r)}
+          </tr>
         ))}
       </tbody>
     </table>
@@ -84,7 +118,10 @@ const Td = ({ children, mono }) => (
 export default function Reports() {
   usePageTitle('Admin Reports');
   const [type, setType] = useState('revenue');
-  const [range, setRange] = useState({ from: defaultFrom(), to: new Date().toISOString().slice(0, 10) });
+  const [range, setRange] = useState({
+    from: defaultFrom(),
+    to: new Date().toISOString().slice(0, 10),
+  });
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -93,7 +130,8 @@ export default function Reports() {
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    api.get(`/admin/reports/${type}`, { params: { from: range.from, to: range.to } })
+    api
+      .get(`/admin/reports/${type}`, { params: { from: range.from, to: range.to } })
       .then((r) => setReport(r.data.data))
       .catch((err) => {
         setReport(null);
@@ -102,7 +140,9 @@ export default function Reports() {
       .finally(() => setLoading(false));
   }, [type, range.from, range.to]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   // The CSV is rendered server-side so it always matches what is on screen.
   const exportCsv = async () => {
@@ -144,13 +184,17 @@ export default function Reports() {
         <div className="flex items-center gap-2">
           <Calendar size={14} className="text-warm-400" />
           <input
-            type="date" value={range.from} max={range.to}
+            type="date"
+            value={range.from}
+            max={range.to}
             onChange={(e) => setRange((p) => ({ ...p, from: e.target.value }))}
             className="text-xs border border-warm-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-fox-500/30"
           />
           <span className="text-xs text-warm-400">to</span>
           <input
-            type="date" value={range.to} min={range.from}
+            type="date"
+            value={range.to}
+            min={range.from}
             onChange={(e) => setRange((p) => ({ ...p, to: e.target.value }))}
             className="text-xs border border-warm-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-fox-500/30"
           />
@@ -164,7 +208,8 @@ export default function Reports() {
             </button>
           ))}
           <button
-            onClick={exportCsv} disabled={exporting || loading || !report}
+            onClick={exportCsv}
+            disabled={exporting || loading || !report}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fox-500 text-white text-xs font-medium hover:bg-fox-600 disabled:opacity-50 transition"
           >
             {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
@@ -179,7 +224,9 @@ export default function Reports() {
             key={r.key}
             onClick={() => setType(r.key)}
             className={`text-left bg-white rounded-2xl border p-4 transition ${
-              type === r.key ? 'border-fox-400 ring-2 ring-fox-500/20' : 'border-warm-200 hover:border-warm-300'
+              type === r.key
+                ? 'border-fox-400 ring-2 ring-fox-500/20'
+                : 'border-warm-200 hover:border-warm-300'
             }`}
           >
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${r.color}`}>
@@ -192,9 +239,13 @@ export default function Reports() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <div className="flex justify-center py-20">
+          <Spinner size="lg" />
+        </div>
       ) : error ? (
-        <div className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">{error}</div>
+        <div className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">
+          {error}
+        </div>
       ) : !report ? null : (
         <>
           {type === 'revenue' && (
@@ -211,12 +262,26 @@ export default function Reports() {
                   <BarChart data={report.series}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#EEE9E3" vertical={false} />
                     <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#A8A29E" />
-                    <YAxis tick={{ fontSize: 11 }} stroke="#A8A29E" width={70}
-                           tickFormatter={(v) => `₹${v >= 100000 ? `${(v / 100000).toFixed(1)}L` : v}`} />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      stroke="#A8A29E"
+                      width={70}
+                      tickFormatter={(v) => `₹${v >= 100000 ? `${(v / 100000).toFixed(1)}L` : v}`}
+                    />
                     <Tooltip formatter={(v) => formatINR(v)} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="invoiced" name="Invoiced" fill={CHART_COLOR} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="collected" name="Collected" fill={CHART_COLOR_ALT} radius={[4, 4, 0, 0]} />
+                    <Bar
+                      dataKey="invoiced"
+                      name="Invoiced"
+                      fill={CHART_COLOR}
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="collected"
+                      name="Collected"
+                      fill={CHART_COLOR_ALT}
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -256,14 +321,28 @@ export default function Reports() {
                 <Stat label="At risk" value={t.atRisk} />
               </div>
               <div className="bg-white rounded-2xl border border-warm-200 p-6">
-                <h3 className="text-sm font-medium text-warm-700 mb-4">Projects started per month</h3>
+                <h3 className="text-sm font-medium text-warm-700 mb-4">
+                  Projects started per month
+                </h3>
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={report.series}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#EEE9E3" vertical={false} />
                     <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#A8A29E" />
-                    <YAxis tick={{ fontSize: 11 }} stroke="#A8A29E" allowDecimals={false} width={30} />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      stroke="#A8A29E"
+                      allowDecimals={false}
+                      width={30}
+                    />
                     <Tooltip />
-                    <Line type="monotone" dataKey="value" name="Projects" stroke={CHART_COLOR} strokeWidth={2} dot={{ r: 3 }} />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      name="Projects"
+                      stroke={CHART_COLOR}
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -282,7 +361,9 @@ export default function Reports() {
                         <Td>{p.service}</Td>
                         <Td>{p.status}</Td>
                         <Td mono>{p.completionPct}%</Td>
-                        <Td mono>{p.late > 0 ? <span className="text-danger-600">{p.late}</span> : '—'}</Td>
+                        <Td mono>
+                          {p.late > 0 ? <span className="text-danger-600">{p.late}</span> : '—'}
+                        </Td>
                       </>
                     )}
                   />
@@ -305,7 +386,12 @@ export default function Reports() {
                   <BarChart data={report.series}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#EEE9E3" vertical={false} />
                     <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#A8A29E" />
-                    <YAxis tick={{ fontSize: 11 }} stroke="#A8A29E" allowDecimals={false} width={30} />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      stroke="#A8A29E"
+                      allowDecimals={false}
+                      width={30}
+                    />
                     <Tooltip />
                     <Bar dataKey="value" name="Signups" fill={CHART_COLOR} radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -315,7 +401,10 @@ export default function Reports() {
                 <div className="bg-white rounded-2xl border border-warm-200 p-6">
                   <h3 className="text-sm font-medium text-warm-700 mb-3">By role</h3>
                   {Object.entries(report.byRole).map(([role, n]) => (
-                    <div key={role} className="flex justify-between py-1.5 border-b border-warm-100 last:border-0 text-sm">
+                    <div
+                      key={role}
+                      className="flex justify-between py-1.5 border-b border-warm-100 last:border-0 text-sm"
+                    >
                       <span className="text-warm-700">{role}</span>
                       <span className="font-mono text-warm-900">{n}</span>
                     </div>
@@ -324,7 +413,10 @@ export default function Reports() {
                 <div className="bg-white rounded-2xl border border-warm-200 p-6">
                   <h3 className="text-sm font-medium text-warm-700 mb-3">Account health</h3>
                   {Object.entries(report.byHealth).map(([state, n]) => (
-                    <div key={state} className="flex justify-between py-1.5 border-b border-warm-100 last:border-0 text-sm">
+                    <div
+                      key={state}
+                      className="flex justify-between py-1.5 border-b border-warm-100 last:border-0 text-sm"
+                    >
                       <span className="text-warm-700">{state}</span>
                       <span className="font-mono text-warm-900">{n}</span>
                     </div>
@@ -343,17 +435,35 @@ export default function Reports() {
                 <Stat label="Units sold" value={t.unitsSold} />
               </div>
               <div className="bg-white rounded-2xl border border-warm-200 p-6">
-                <h3 className="text-sm font-medium text-warm-700 mb-4">Top services by units sold</h3>
+                <h3 className="text-sm font-medium text-warm-700 mb-4">
+                  Top services by units sold
+                </h3>
                 {report.series.length === 0 ? (
                   <p className="text-sm text-warm-400 py-4">No services sold in this range.</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={240}>
                     <BarChart data={report.series} layout="vertical" margin={{ left: 90 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#EEE9E3" horizontal={false} />
-                      <XAxis type="number" tick={{ fontSize: 11 }} stroke="#A8A29E" allowDecimals={false} />
-                      <YAxis type="category" dataKey="label" tick={{ fontSize: 10 }} stroke="#A8A29E" width={90} />
+                      <XAxis
+                        type="number"
+                        tick={{ fontSize: 11 }}
+                        stroke="#A8A29E"
+                        allowDecimals={false}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="label"
+                        tick={{ fontSize: 10 }}
+                        stroke="#A8A29E"
+                        width={90}
+                      />
                       <Tooltip />
-                      <Bar dataKey="value" name="Units sold" fill={CHART_COLOR} radius={[0, 4, 4, 0]} />
+                      <Bar
+                        dataKey="value"
+                        name="Units sold"
+                        fill={CHART_COLOR}
+                        radius={[0, 4, 4, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 )}

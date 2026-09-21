@@ -19,7 +19,7 @@ git log --oneline -20 -- packages/prisma/prisma/migrations
 - **No migration** → roll back the service. Nothing else to think about.
 - **Migration** → read [Rolling back across a migration](#rolling-back-across-a-migration)
   before touching anything. Reverting the code while the new schema is live is
-  usually fine; reverting the *schema* under live code usually is not.
+  usually fine; reverting the _schema_ under live code usually is not.
 
 ---
 
@@ -104,7 +104,7 @@ Two consequences:
 - **A rollback cannot undo a migration.** The old image runs `migrate deploy`
   with its own, shorter migration list; Prisma applies what is missing and
   skips what is already applied. It never removes anything. Redeploying an old
-  image gives you old *code* against the *current* schema.
+  image gives you old _code_ against the _current_ schema.
 - **A failed migration means the container never starts.** `migrate deploy`
   runs before the server does, so a migration error looks like a service that
   will not boot and fails its health check — not like a database error. If a

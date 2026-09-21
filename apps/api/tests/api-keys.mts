@@ -18,19 +18,26 @@ import {
 } from "../src/lib/apiKey";
 
 const checks: Array<[string, boolean, string]> = [];
-const check = (label: string, pass: boolean, note = "") => checks.push([label, pass, note]);
+const check = (label: string, pass: boolean, note = "") =>
+  checks.push([label, pass, note]);
 
 // ── Key generation ───────────────────────────────────────────────────────────
 {
   const { key, hash, prefix } = generateApiKey();
 
-  check("a key is prefixed so it is recognisable in a log or a paste", key.startsWith("sk_live_"));
+  check(
+    "a key is prefixed so it is recognisable in a log or a paste",
+    key.startsWith("sk_live_"),
+  );
   check(
     `a key carries enough entropy (${key.length} chars)`,
     key.length >= 40,
     "32 bytes base64url — brute force is not the threat model",
   );
-  check("the prefix is a slice of the key, not the key", prefix === keyPrefix(key) && prefix.length < key.length);
+  check(
+    "the prefix is a slice of the key, not the key",
+    prefix === keyPrefix(key) && prefix.length < key.length,
+  );
   check(
     "the stored prefix cannot reconstruct the key",
     !key.startsWith(prefix + prefix) && prefix.length === 16,
@@ -56,11 +63,18 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
     hashes.add(k.hash);
   }
   check(`${N} keys are unique`, keys.size === N);
-  check(`${N} hashes are unique`, hashes.size === N, "keyHash is a unique index — a collision is an insert failure");
+  check(
+    `${N} hashes are unique`,
+    hashes.size === N,
+    "keyHash is a unique index — a collision is an insert failure",
+  );
 
   // A one-character change must not produce a near-miss hash.
   const flipped = key.slice(0, -1) + (key.endsWith("A") ? "B" : "A");
-  check("a single changed character changes the hash entirely", hashApiKey(flipped) !== hash);
+  check(
+    "a single changed character changes the hash entirely",
+    hashApiKey(flipped) !== hash,
+  );
 }
 
 // ── Format rejection happens before any database work ────────────────────────
@@ -80,22 +94,35 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
     !looksLikeKey("x"),
     "this exact input used to return true and grant access to every org",
   );
-  check("a key without the prefix is rejected", !looksLikeKey("AAAAAAAAAAAAAAAAAAAAAAAA"));
+  check(
+    "a key without the prefix is rejected",
+    !looksLikeKey("AAAAAAAAAAAAAAAAAAAAAAAA"),
+  );
   check("a too-short key is rejected", !looksLikeKey("sk_live_short"));
-  check("a 10,000-character key is rejected", !looksLikeKey("sk_live_" + "A".repeat(10_000)));
+  check(
+    "a 10,000-character key is rejected",
+    !looksLikeKey("sk_live_" + "A".repeat(10_000)),
+  );
   check(
     "SQL-ish input is rejected by shape",
     !looksLikeKey("sk_live_' OR 1=1--"),
     "Prisma parameterises anyway; this stops it reaching the query at all",
   );
-  check("a non-string is rejected", !looksLikeKey({ toString: () => "sk_live_aaaaaaaaaaaaaaaaaaaaaa" }));
+  check(
+    "a non-string is rejected",
+    !looksLikeKey({ toString: () => "sk_live_aaaaaaaaaaaaaaaaaaaaaa" }),
+  );
   check("whitespace around a real key is tolerated", looksLikeKey(`  ${key}  `));
 }
 
 // ── Scopes ───────────────────────────────────────────────────────────────────
 {
   const readOnly: ApiKeyIdentity = { id: "k1", orgId: "org_a", scopes: ["read"] };
-  const readWrite: ApiKeyIdentity = { id: "k2", orgId: "org_a", scopes: ["read", "write"] };
+  const readWrite: ApiKeyIdentity = {
+    id: "k2",
+    orgId: "org_a",
+    scopes: ["read", "write"],
+  };
   const noScopes: ApiKeyIdentity = { id: "k3", orgId: "org_a", scopes: [] };
 
   check("a read key has read", hasScope(readOnly, "read"));
@@ -104,8 +131,14 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
     !hasScope(readOnly, "write"),
     "webhook registration and deletion are the only /v1 mutations",
   );
-  check("a read-write key has both", hasScope(readWrite, "read") && hasScope(readWrite, "write"));
-  check("a key with no scopes has none", !hasScope(noScopes, "read") && !hasScope(noScopes, "write"));
+  check(
+    "a read-write key has both",
+    hasScope(readWrite, "read") && hasScope(readWrite, "write"),
+  );
+  check(
+    "a key with no scopes has none",
+    !hasScope(noScopes, "read") && !hasScope(noScopes, "write"),
+  );
   check("the scope list is exactly read and write", SCOPES.join(",") === "read,write");
 }
 
@@ -116,7 +149,10 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
 // request carries an orgId, and nothing in a query or body can supply one.
 {
   const identity: ApiKeyIdentity = { id: "k1", orgId: "org_a", scopes: ["read"] };
-  check("an authenticated key always names exactly one org", typeof identity.orgId === "string" && identity.orgId.length > 0);
+  check(
+    "an authenticated key always names exactly one org",
+    typeof identity.orgId === "string" && identity.orgId.length > 0,
+  );
 
   // Mirrors orgOf() in routes/publicApi.ts: the org is read from the key, and
   // a query parameter claiming a different org is simply not consulted.

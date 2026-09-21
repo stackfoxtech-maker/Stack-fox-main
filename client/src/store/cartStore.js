@@ -17,11 +17,11 @@ const useCartStore = create((set, get) => ({
   roiItems: [],
 
   setCurIdx: (curIdx) => set({ curIdx }),
-  setMetadata: (metadata) => set({ 
-    warnings: metadata.warnings || [], 
-    roiItems: metadata.roiItems || [] 
-  }),
-
+  setMetadata: (metadata) =>
+    set({
+      warnings: metadata.warnings || [],
+      roiItems: metadata.roiItems || [],
+    }),
 
   setOpen: (open) => set({ isOpen: open }),
   toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
@@ -142,11 +142,17 @@ const useCartStore = create((set, get) => ({
   updateQuantity: async (cartItemId, quantity, isAuthenticated) => {
     if (!isAuthenticated) {
       const items = get().items.map((i) =>
-        i._id === cartItemId ? { ...i, quantity: Math.max(1, Math.min(99, quantity)) } : i
+        i._id === cartItemId ? { ...i, quantity: Math.max(1, Math.min(99, quantity)) } : i,
       );
       const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
       const gstAmount = Math.round(subtotal * 0.18);
-      set({ items, subtotal, gstAmount, total: subtotal + gstAmount, itemCount: items.reduce((c, i) => c + i.quantity, 0) });
+      set({
+        items,
+        subtotal,
+        gstAmount,
+        total: subtotal + gstAmount,
+        itemCount: items.reduce((c, i) => c + i.quantity, 0),
+      });
       return;
     }
 

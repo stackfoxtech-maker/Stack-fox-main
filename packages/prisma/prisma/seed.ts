@@ -144,12 +144,14 @@ async function seed() {
             sortOrder: idx,
           },
         });
-      })
+      }),
     );
   }
 
   // ── 2. Bundles (from packages + industryBundles) ─────
-  console.log(`  → ${data.packages.length} packages + ${data.industryBundles.length} industry bundles...`);
+  console.log(
+    `  → ${data.packages.length} packages + ${data.industryBundles.length} industry bundles...`,
+  );
   for (const pkg of data.packages) {
     await prisma.bundle.upsert({
       where: { id: pkg.id },
@@ -248,7 +250,11 @@ async function seed() {
     const salesPassword = requireSeedPassword("SALES_PASSWORD");
     const demoSalesUsers = [
       { name: "Sales Executive", email: "sales@stackfox.tech", role: "SE" },
-      { name: "Senior Sales Manager", email: "sales.lead@stackfox.tech", role: "SENIOR_PM" },
+      {
+        name: "Senior Sales Manager",
+        email: "sales.lead@stackfox.tech",
+        role: "SENIOR_PM",
+      },
       { name: "Sales Manager", email: "sales.manager@stackfox.tech", role: "SALES" },
     ];
     for (const u of demoSalesUsers) {
@@ -258,7 +264,9 @@ async function seed() {
       console.log(`    ${u.email} — ${result}`);
     }
   } else {
-    console.log("  → Demo sales team users skipped (set SEED_DEMO_USERS=true to create them)");
+    console.log(
+      "  → Demo sales team users skipped (set SEED_DEMO_USERS=true to create them)",
+    );
   }
 
   // ── 6. Feature flags ──────────────────────────────
@@ -293,7 +301,8 @@ async function seed() {
     {
       title: "Why we publish every price",
       category: "Philosophy",
-      excerpt: "Agencies hide pricing behind a sales call. Here is why StackFox does the opposite.",
+      excerpt:
+        "Agencies hide pricing behind a sales call. Here is why StackFox does the opposite.",
       content:
         "Most software agencies treat pricing as a negotiation. You describe your project, sit through two or three calls, and eventually receive a number you cannot sanity-check. We think that is backwards. Every one of our 240+ service pieces has a public price. You can assemble a plan, see the total — GST included — and only talk to us when the shape of it looks right.",
     },
@@ -330,7 +339,13 @@ async function seed() {
     const slug = slugify(p.title); // 5 hand-picked, distinct titles
     await prisma.blogPost.upsert({
       where: { slug },
-      update: { title: p.title, excerpt: p.excerpt, content: p.content, category: p.category, status: "PUBLISHED" },
+      update: {
+        title: p.title,
+        excerpt: p.excerpt,
+        content: p.content,
+        category: p.category,
+        status: "PUBLISHED",
+      },
       create: {
         title: p.title,
         slug,
@@ -354,7 +369,7 @@ async function seed() {
 function generateFeatureNames(
   serviceName: string,
   catId: string,
-  count: number
+  count: number,
 ): string[] {
   const templates: Record<string, string[]> = {
     "web-dev": [

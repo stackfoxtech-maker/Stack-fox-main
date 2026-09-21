@@ -73,7 +73,11 @@ export function normaliseReqId(value: unknown): string | null {
 }
 
 /** Runs `fn` with `reqId` bound to every log line and job it produces. */
-export function runWithReqId<T>(reqId: string, bindings: Record<string, unknown>, fn: () => T): T {
+export function runWithReqId<T>(
+  reqId: string,
+  bindings: Record<string, unknown>,
+  fn: () => T,
+): T {
   return storage.run({ reqId, logger: rootLogger.child({ reqId, ...bindings }) }, fn);
 }
 

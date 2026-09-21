@@ -28,7 +28,11 @@ export async function feedbackRoutes(app: FastifyInstance) {
       },
     });
 
-    await emitEvent({ code: "FEEDBACK_SUBMITTED", payload: { feedbackId: feedback.id, rating }, actor: req.user!.sub });
+    await emitEvent({
+      code: "FEEDBACK_SUBMITTED",
+      payload: { feedbackId: feedback.id, rating },
+      actor: req.user!.sub,
+    });
 
     return { data: feedback };
   });

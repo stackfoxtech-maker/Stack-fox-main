@@ -15,7 +15,11 @@ export default function Invoices() {
   const [downloading, setDownloading] = useState(null);
 
   useEffect(() => {
-    api.get('/invoices').then((r) => setInvoices(r.data.data || [])).catch(() => {}).finally(() => setLoading(false));
+    api
+      .get('/invoices')
+      .then((r) => setInvoices(r.data.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const handlePay = async (invoice) => {
@@ -81,19 +85,29 @@ export default function Invoices() {
     setDownloading(null);
   };
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-warm-900">Invoices</h2>
 
       {invoices.length === 0 ? (
-        <EmptyState icon={Receipt} title="No invoices yet" description="Invoices will appear here when your project milestones are billed." />
+        <EmptyState
+          icon={Receipt}
+          title="No invoices yet"
+          description="Invoices will appear here when your project milestones are billed."
+        />
       ) : (
         <div className="space-y-3">
           {invoices.map((inv) => {
             const balance = inv.total - (inv.paidAmount || 0);
-            const canPay = ['sent', 'viewed', 'partially-paid', 'overdue'].includes(inv.status) && balance > 0;
+            const canPay =
+              ['sent', 'viewed', 'partially-paid', 'overdue'].includes(inv.status) && balance > 0;
 
             return (
               <div key={inv._id} className="bg-white rounded-2xl border border-warm-200 p-5">
@@ -101,25 +115,37 @@ export default function Invoices() {
                   <div>
                     <h3 className="font-medium text-warm-900">{inv.invoiceNumber}</h3>
                     <p className="text-xs text-warm-500 mt-0.5">
-                      {inv.clientDetails?.name || inv.org?.name || '—'} &middot; {formatDate(inv.createdAt)} &middot; Due {formatDate(inv.dueDate)}
+                      {inv.clientDetails?.name || inv.org?.name || '—'} &middot;{' '}
+                      {formatDate(inv.createdAt)} &middot; Due {formatDate(inv.dueDate)}
                       {inv.project?.projectNumber && ` &middot; ${inv.project.projectNumber}`}
                     </p>
                   </div>
-                  <Badge variant={getStatusBadge(inv.status)?.replace('badge-', '')}>{capitalize(inv.status)}</Badge>
+                  <Badge variant={getStatusBadge(inv.status)?.replace('badge-', '')}>
+                    {capitalize(inv.status)}
+                  </Badge>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 bg-warm-50 rounded-xl p-3 text-center mb-3">
                   <div>
                     <div className="text-xs text-warm-500">Total</div>
-                    <div className="font-mono text-sm font-bold text-warm-900">{formatINR(inv.total)}</div>
+                    <div className="font-mono text-sm font-bold text-warm-900">
+                      {formatINR(inv.total)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs text-warm-500">Paid</div>
-                    <div className="font-mono text-sm text-success-700">{formatINR(inv.paidAmount || 0)}</div>
+                    <div className="font-mono text-sm text-success-700">
+                      {formatINR(inv.paidAmount || 0)}
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs text-warm-500">Balance</div>
-                    <div className={cn('font-mono text-sm font-semibold', balance > 0 ? 'text-danger-500' : 'text-success-700')}>
+                    <div
+                      className={cn(
+                        'font-mono text-sm font-semibold',
+                        balance > 0 ? 'text-danger-500' : 'text-success-700',
+                      )}
+                    >
                       {formatINR(balance)}
                     </div>
                   </div>
@@ -127,13 +153,21 @@ export default function Invoices() {
 
                 {inv.gst && (
                   <div className="text-xs text-warm-400 mb-3">
-                    GST: {inv.gst.isInterState ? `IGST ${formatINR(inv.gst.igst)}` : `CGST ${formatINR(inv.gst.cgst)} + SGST ${formatINR(inv.gst.sgst)}`}
+                    GST:{' '}
+                    {inv.gst.isInterState
+                      ? `IGST ${formatINR(inv.gst.igst)}`
+                      : `CGST ${formatINR(inv.gst.cgst)} + SGST ${formatINR(inv.gst.sgst)}`}
                   </div>
                 )}
 
                 <div className="flex flex-wrap items-center gap-2">
                   {canPay && (
-                    <Button variant="primary" size="sm" isLoading={paying === inv._id} onClick={() => handlePay(inv)}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      isLoading={paying === inv._id}
+                      onClick={() => handlePay(inv)}
+                    >
                       <CreditCard size={16} /> Pay {formatINR(balance)}
                     </Button>
                   )}

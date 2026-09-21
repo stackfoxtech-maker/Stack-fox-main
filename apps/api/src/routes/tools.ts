@@ -26,12 +26,12 @@ export async function toolRoutes(app: FastifyInstance) {
     "/tools/audit",
     { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
     async (req) => {
-    const { url, email } = req.body as { url: string; email?: string };
-    const session = await prisma.toolSession.create({
-      data: { tool: "AUDIT", input: { url, email }, status: "PROCESSING" },
-    });
+      const { url, email } = req.body as { url: string; email?: string };
+      const session = await prisma.toolSession.create({
+        data: { tool: "AUDIT", input: { url, email }, status: "PROCESSING" },
+      });
 
-    const prompt = `Analyze the website at ${url}. Provide a comprehensive audit covering:
+      const prompt = `Analyze the website at ${url}. Provide a comprehensive audit covering:
 1. Performance (load time, core web vitals estimates)
 2. SEO (meta tags, headings, structured data)
 3. Accessibility (WCAG compliance issues)
@@ -40,82 +40,98 @@ export async function toolRoutes(app: FastifyInstance) {
 6. Recommendations for IT services that could improve the site.
 Return as JSON with sections: performance, seo, accessibility, security, mobile, recommendations.`;
 
-    const result = await generateContent(prompt);
-    await prisma.toolSession.update({
-      where: { id: session.id },
-      data: { output: { report: result }, status: "COMPLETED" },
-    });
-
-    if (email) {
-      await prisma.toolConversion.create({
-        data: { sessionId: session.id, email, source: "audit" },
+      const result = await generateContent(prompt);
+      await prisma.toolSession.update({
+        where: { id: session.id },
+        data: { output: { report: result }, status: "COMPLETED" },
       });
-    }
 
-    return { sessionId: session.id, report: result };
-  });
+      if (email) {
+        await prisma.toolConversion.create({
+          data: { sessionId: session.id, email, source: "audit" },
+        });
+      }
+
+      return { sessionId: session.id, report: result };
+    },
+  );
 
   // Instant Estimate Tool
   app.post(
     "/tools/estimate",
     { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
     async (req) => {
-    const { services, tier, email } = req.body as { services: string[]; tier?: string; email?: string };
-    const session = await prisma.toolSession.create({
-      data: { tool: "ESTIMATE", input: { services, tier }, status: "PROCESSING" },
-    });
-
-    const serviceUnits = await prisma.serviceUnit.findMany({
-      take: LIST_CAP,
-      where: { OR: [{ id: { in: services } }, { slug: { in: services } }] },
-      include: { featureUnits: true },
-    });
-
-    // Rate cards are effective-dated rather than flagged active: the live rate
-    // is the most recent one whose effectiveFrom has already passed.
-    const rateCard = await prisma.rateCard.findFirst({
-      where: { type: "POINT", effectiveFrom: { lte: new Date() } },
-      orderBy: { effectiveFrom: "desc" },
-    });
-
-    const rate = Number(rateCard?.rate ?? 500000); // paise per point
-    const tierMultiplier = TIER_MULTIPLIER[tier ?? "GROWTH"] ?? 1;
-
-    const items = serviceUnits.map((su) => {
-      const points = su.baseWeight;
-      const cost = Math.round(points * rate * tierMultiplier);
-      return { service: su.name, code: su.id, slug: su.slug, points, cost };
-    });
-
-    const subtotal = items.reduce((s, i) => s + i.cost, 0);
-    const gst = Math.round(subtotal * 0.18);
-    const estimate = { items, subtotal, gst, total: subtotal + gst, tier: tier ?? "GROWTH" };
-
-    await prisma.toolSession.update({
-      where: { id: session.id },
-      data: { output: estimate, status: "COMPLETED" },
-    });
-
-    if (email) {
-      await prisma.toolConversion.create({
-        data: { sessionId: session.id, email, source: "estimate" },
+      const { services, tier, email } = req.body as {
+        services: string[];
+        tier?: string;
+        email?: string;
+      };
+      const session = await prisma.toolSession.create({
+        data: { tool: "ESTIMATE", input: { services, tier }, status: "PROCESSING" },
       });
-    }
 
-    return { sessionId: session.id, estimate };
-  });
+      const serviceUnits = await prisma.serviceUnit.findMany({
+        take: LIST_CAP,
+        where: { OR: [{ id: { in: services } }, { slug: { in: services } }] },
+        include: { featureUnits: true },
+      });
+
+      // Rate cards are effective-dated rather than flagged active: the live rate
+      // is the most recent one whose effectiveFrom has already passed.
+      const rateCard = await prisma.rateCard.findFirst({
+        where: { type: "POINT", effectiveFrom: { lte: new Date() } },
+        orderBy: { effectiveFrom: "desc" },
+      });
+
+      const rate = Number(rateCard?.rate ?? 500000); // paise per point
+      const tierMultiplier = TIER_MULTIPLIER[tier ?? "GROWTH"] ?? 1;
+
+      const items = serviceUnits.map((su) => {
+        const points = su.baseWeight;
+        const cost = Math.round(points * rate * tierMultiplier);
+        return { service: su.name, code: su.id, slug: su.slug, points, cost };
+      });
+
+      const subtotal = items.reduce((s, i) => s + i.cost, 0);
+      const gst = Math.round(subtotal * 0.18);
+      const estimate = {
+        items,
+        subtotal,
+        gst,
+        total: subtotal + gst,
+        tier: tier ?? "GROWTH",
+      };
+
+      await prisma.toolSession.update({
+        where: { id: session.id },
+        data: { output: estimate, status: "COMPLETED" },
+      });
+
+      if (email) {
+        await prisma.toolConversion.create({
+          data: { sessionId: session.id, email, source: "estimate" },
+        });
+      }
+
+      return { sessionId: session.id, estimate };
+    },
+  );
 
   // Brief Generator Tool
   app.post(
     "/tools/brief",
     { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
     async (req) => {
-    const { industry, goals, budget, timeline } = req.body as any;
-    const session = await prisma.toolSession.create({
-      data: { tool: "BRIEF", input: { industry, goals, budget, timeline }, status: "PROCESSING" },
-    });
+      const { industry, goals, budget, timeline } = req.body as any;
+      const session = await prisma.toolSession.create({
+        data: {
+          tool: "BRIEF",
+          input: { industry, goals, budget, timeline },
+          status: "PROCESSING",
+        },
+      });
 
-    const prompt = `Generate a professional IT services project brief for:
+      const prompt = `Generate a professional IT services project brief for:
 Industry: ${industry}
 Goals: ${JSON.stringify(goals)}
 Budget range: ${budget}
@@ -123,35 +139,37 @@ Timeline: ${timeline}
 Include: executive summary, scope, deliverables, timeline, budget breakdown, success metrics.
 Return as structured JSON.`;
 
-    const result = await generateContent(prompt);
-    await prisma.toolSession.update({
-      where: { id: session.id },
-      data: { output: { brief: result }, status: "COMPLETED" },
-    });
+      const result = await generateContent(prompt);
+      await prisma.toolSession.update({
+        where: { id: session.id },
+        data: { output: { brief: result }, status: "COMPLETED" },
+      });
 
-    return { sessionId: session.id, brief: result };
-  });
+      return { sessionId: session.id, brief: result };
+    },
+  );
 
   // Legal Template Generator
   app.post(
     "/tools/legal",
     { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
     async (req) => {
-    const { templateType, params } = req.body as { templateType: string; params: any };
-    const session = await prisma.toolSession.create({
-      data: { tool: "LEGAL", input: { templateType, params }, status: "PROCESSING" },
-    });
+      const { templateType, params } = req.body as { templateType: string; params: any };
+      const session = await prisma.toolSession.create({
+        data: { tool: "LEGAL", input: { templateType, params }, status: "PROCESSING" },
+      });
 
-    const prompt = `Generate a ${templateType} legal document template for IT services with these parameters: ${JSON.stringify(params)}. Include standard clauses for Indian IT services. Return as structured JSON with sections.`;
+      const prompt = `Generate a ${templateType} legal document template for IT services with these parameters: ${JSON.stringify(params)}. Include standard clauses for Indian IT services. Return as structured JSON with sections.`;
 
-    const result = await generateContent(prompt);
-    await prisma.toolSession.update({
-      where: { id: session.id },
-      data: { output: { document: result }, status: "COMPLETED" },
-    });
+      const result = await generateContent(prompt);
+      await prisma.toolSession.update({
+        where: { id: session.id },
+        data: { output: { document: result }, status: "COMPLETED" },
+      });
 
-    return { sessionId: session.id, document: result };
-  });
+      return { sessionId: session.id, document: result };
+    },
+  );
 
   // Invoice Generator Tool
   //
@@ -176,7 +194,9 @@ Return as structured JSON.`;
           where: { id: session.id },
           data: { status: "FAILED" },
         });
-        return reply.code(400).send({ error: "Could not compute invoice from the supplied data." });
+        return reply
+          .code(400)
+          .send({ error: "Could not compute invoice from the supplied data." });
       }
 
       let pdfBase64: string | null = null;
@@ -229,7 +249,11 @@ Return as structured JSON.`;
 
   // Express Checkout (Starter tier 3-field)
   app.post("/tools/express-checkout", async (req, reply) => {
-    const { serviceCode, email, phone } = req.body as { serviceCode: string; email: string; phone: string };
+    const { serviceCode, email, phone } = req.body as {
+      serviceCode: string;
+      email: string;
+      phone: string;
+    };
 
     const service = await prisma.serviceUnit.findFirst({
       where: { OR: [{ id: serviceCode }, { slug: serviceCode }] },
@@ -277,7 +301,10 @@ Return as structured JSON.`;
   // Referral
   app.post("/tools/referral", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { referredEmail, referredName } = req.body as { referredEmail: string; referredName: string };
+    const { referredEmail, referredName } = req.body as {
+      referredEmail: string;
+      referredName: string;
+    };
 
     const referral = await prisma.referral.create({
       data: {
@@ -307,26 +334,27 @@ Return as structured JSON.`;
     "/tools/preview",
     { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
     async (req) => {
-    const { serviceId, tier } = req.body as { serviceId: string; tier?: string };
-    const service = await prisma.serviceUnit.findUnique({
-      where: { id: serviceId },
-      include: { featureUnits: true },
-    });
-    if (!service) return { error: "Service not found" };
+      const { serviceId, tier } = req.body as { serviceId: string; tier?: string };
+      const service = await prisma.serviceUnit.findUnique({
+        where: { id: serviceId },
+        include: { featureUnits: true },
+      });
+      if (!service) return { error: "Service not found" };
 
-    const prompt = `Generate a preview/mockup description for the IT service "${service.name}" at ${tier ?? "GROWTH"} tier. Include: what the deliverable looks like, sample screenshots description, key features highlighted, timeline preview. Return as JSON.`;
+      const prompt = `Generate a preview/mockup description for the IT service "${service.name}" at ${tier ?? "GROWTH"} tier. Include: what the deliverable looks like, sample screenshots description, key features highlighted, timeline preview. Return as JSON.`;
 
-    const result = await generateContent(prompt);
-    const preview = await prisma.preview.create({
-      data: {
-        serviceId,
-        inputData: toJson({ tier: tier ?? "GROWTH", content: result }),
-        status: "GENERATED",
-      },
-    });
+      const result = await generateContent(prompt);
+      const preview = await prisma.preview.create({
+        data: {
+          serviceId,
+          inputData: toJson({ tier: tier ?? "GROWTH", content: result }),
+          status: "GENERATED",
+        },
+      });
 
-    return { previewId: preview.id, preview: result };
-  });
+      return { previewId: preview.id, preview: result };
+    },
+  );
 
   // WhatsApp webhook
   app.post("/webhooks/whatsapp", async (req) => {
@@ -373,16 +401,15 @@ Return as structured JSON.`;
 
   // Demo / Lead capture
   app.post("/lead/demo", async (req) => {
-    const { name, email, phone, company, message, preferredDate, source } =
-      req.body as {
-        name: string;
-        email: string;
-        phone?: string;
-        company?: string;
-        message?: string;
-        preferredDate?: string;
-        source?: string;
-      };
+    const { name, email, phone, company, message, preferredDate, source } = req.body as {
+      name: string;
+      email: string;
+      phone?: string;
+      company?: string;
+      message?: string;
+      preferredDate?: string;
+      source?: string;
+    };
 
     const lead = await prisma.lead.create({
       data: {

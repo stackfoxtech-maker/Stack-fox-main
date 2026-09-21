@@ -36,10 +36,7 @@ function walk(dir, out = []) {
  *    (`/admin/${tab}` where tab ∈ services|features|dependencies|bundles); every
  *    concrete path resolves, the checker just can't see through the variable.
  */
-const ALLOW = new Set([
-  "/admin/:x",
-  "/admin/:x/:x",
-]);
+const ALLOW = new Set(["/admin/:x", "/admin/:x/:x"]);
 
 const norm = (u) =>
   u
@@ -79,7 +76,9 @@ for (const f of clientFiles) {
     const segs = n.split("/");
     if (
       [...routes].some(
-        (r) => r.split("/").slice(0, 3).join("/") === segs.slice(0, 3).join("/") && r.startsWith(n.replace(/(:x)+$/, "")),
+        (r) =>
+          r.split("/").slice(0, 3).join("/") === segs.slice(0, 3).join("/") &&
+          r.startsWith(n.replace(/(:x)+$/, "")),
       )
     )
       continue;

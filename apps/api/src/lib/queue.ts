@@ -144,12 +144,14 @@ export function createWorker<T = any>(
     const carried = (job?.data as Record<string, unknown> | null)?.[REQ_ID_FIELD];
     // The listener fires outside the job's async context, so bind the id from
     // the payload rather than reading the store.
-    log().child({
-      queue: name,
-      jobId: job?.id,
-      jobName: job?.name,
-      ...(typeof carried === "string" ? { reqId: carried } : {}),
-    }).error({ err }, "job failed");
+    log()
+      .child({
+        queue: name,
+        jobId: job?.id,
+        jobName: job?.name,
+        ...(typeof carried === "string" ? { reqId: carried } : {}),
+      })
+      .error({ err }, "job failed");
 
     // Only once the job has exhausted its retries — a transient failure that
     // BullMQ successfully retries is not an incident.
@@ -175,5 +177,8 @@ export const queues = Object.fromEntries(
 export async function shutdownQueues(): Promise<void> {
   const workers = openWorkers.splice(0, openWorkers.length);
   const qs = openQueues.splice(0, openQueues.length);
-  await Promise.allSettled([...workers.map((w) => w.close()), ...qs.map((q) => q.close())]);
+  await Promise.allSettled([
+    ...workers.map((w) => w.close()),
+    ...qs.map((q) => q.close()),
+  ]);
 }

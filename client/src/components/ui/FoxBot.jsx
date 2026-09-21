@@ -21,7 +21,10 @@ export function FoxBot() {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
 
-    const history = messages.map((m) => ({ role: m.role === 'user' ? 'user' : 'model', text: m.text }));
+    const history = messages.map((m) => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      text: m.text,
+    }));
     setMessages((prev) => [...prev, { role: 'user', text: trimmed }]);
     setInput('');
     setSending(true);
@@ -32,7 +35,12 @@ export function FoxBot() {
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: 'bot', text: err.response?.data?.message || "Sorry, I'm having trouble responding right now — try again in a moment." },
+        {
+          role: 'bot',
+          text:
+            err.response?.data?.message ||
+            "Sorry, I'm having trouble responding right now — try again in a moment.",
+        },
       ]);
     } finally {
       setSending(false);
@@ -71,20 +79,27 @@ export function FoxBot() {
             </button>
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2.5 mb-3 pr-0.5" style={{ minHeight: '120px' }}>
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto space-y-2.5 mb-3 pr-0.5"
+            style={{ minHeight: '120px' }}
+          >
             {messages.length === 0 && (
               <div className="bg-fox-50 rounded-xl p-3.5 text-xs text-warm-700 border border-fox-100/50 leading-relaxed">
                 <div className="flex items-center gap-1.5 mb-1 font-bold text-fox-600">
                   Hi! AI Assistant here <Sparkles size={10} />
                 </div>
-                I can help you pick services, estimate your project, or book a call. What are you building?
+                I can help you pick services, estimate your project, or book a call. What are you
+                building?
               </div>
             )}
             {messages.map((m, i) => (
               <div
                 key={i}
                 className={`text-xs rounded-xl p-3 leading-relaxed whitespace-pre-wrap ${
-                  m.role === 'user' ? 'bg-fox-500 text-white ml-6' : 'bg-warm-50 text-warm-700 border border-warm-100 mr-6'
+                  m.role === 'user'
+                    ? 'bg-fox-500 text-white ml-6'
+                    : 'bg-warm-50 text-warm-700 border border-warm-100 mr-6'
                 }`}
               >
                 {m.text}
@@ -130,7 +145,10 @@ export function FoxBot() {
             </button>
           </form>
 
-          <Link to="/contact" className="text-center text-[10px] text-warm-400 hover:text-fox-500 mt-2">
+          <Link
+            to="/contact"
+            className="text-center text-[10px] text-warm-400 hover:text-fox-500 mt-2"
+          >
             Prefer talking to a human? Book a free call
           </Link>
         </div>

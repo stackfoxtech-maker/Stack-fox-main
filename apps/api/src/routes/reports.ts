@@ -63,7 +63,13 @@ async function spendReport(scope: string | null) {
   const where = scope !== null ? { orgId: scope } : {};
   const invoices = await prisma.invoice.findMany({
     where: { ...where, status: { not: "CANCELLED" } },
-    select: { grandTotal: true, status: true, createdAt: true, paidAt: true, dueDate: true },
+    select: {
+      grandTotal: true,
+      status: true,
+      createdAt: true,
+      paidAt: true,
+      dueDate: true,
+    },
   });
 
   const months = recentMonths(6);
@@ -129,7 +135,9 @@ async function timelineReport(scope: string | null) {
     );
 
     // Only approved milestones with a due date can be scored for punctuality.
-    const scored = p.milestones.filter((m) => m.status === "APPROVED" && m.dueDate && m.approvedAt);
+    const scored = p.milestones.filter(
+      (m) => m.status === "APPROVED" && m.dueDate && m.approvedAt,
+    );
     const onTime = scored.filter((m) => m.approvedAt! <= endOfDueDay(m.dueDate!)).length;
 
     return {
@@ -141,7 +149,8 @@ async function timelineReport(scope: string | null) {
       progressPct: total > 0 ? Math.round((approved / total) * 100) : 0,
       lateCount: late.length,
       onTimePct: scored.length > 0 ? Math.round((onTime / scored.length) * 100) : null,
-      nextDue: p.milestones.find((m) => m.status !== "APPROVED" && m.dueDate)?.dueDate ?? null,
+      nextDue:
+        p.milestones.find((m) => m.status !== "APPROVED" && m.dueDate)?.dueDate ?? null,
     };
   });
 
@@ -157,7 +166,9 @@ async function timelineReport(scope: string | null) {
       late: rows.reduce((s, r) => s + r.lateCount, 0),
       onTimePct:
         scoredRows.length > 0
-          ? Math.round(scoredRows.reduce((s, r) => s + r.onTimePct!, 0) / scoredRows.length)
+          ? Math.round(
+              scoredRows.reduce((s, r) => s + r.onTimePct!, 0) / scoredRows.length,
+            )
           : null,
     },
   };
@@ -188,9 +199,11 @@ async function revisionsReport(scope: string | null) {
       roundsUsed,
       roundsIncluded,
       // Above 100% means revisions spilled into billable change requests.
-      roundsUtilisationPct: roundsIncluded > 0 ? Math.round((roundsUsed / roundsIncluded) * 100) : 0,
+      roundsUtilisationPct:
+        roundsIncluded > 0 ? Math.round((roundsUsed / roundsIncluded) * 100) : 0,
       bugsRaised: bugs.length,
-      bugsOpen: bugs.filter((t) => !["RESOLVED", "VERIFIED", "CLOSED"].includes(t.status)).length,
+      bugsOpen: bugs.filter((t) => !["RESOLVED", "VERIFIED", "CLOSED"].includes(t.status))
+        .length,
       severityMix: {
         P1: bugs.filter((t) => t.severity === "P1").length,
         P2: bugs.filter((t) => t.severity === "P2").length,
@@ -249,7 +262,8 @@ async function engagementReport(scope: string | null) {
     rows.length === 0
       ? null
       : Math.round(
-          rows.reduce((s, r) => s + (r.at.getTime() - r.createdAt.getTime()) / 60000, 0) / rows.length,
+          rows.reduce((s, r) => s + (r.at.getTime() - r.createdAt.getTime()) / 60000, 0) /
+            rows.length,
         );
 
   const avgResponse = avgMinutes(
@@ -263,7 +277,9 @@ async function engagementReport(scope: string | null) {
   const withinResponse = acknowledged.filter((t) => {
     const target = SLA_TARGETS[(t.severity as keyof typeof SLA_TARGETS) ?? "P3"];
     if (!target) return true;
-    return (t.acknowledgedAt!.getTime() - t.createdAt.getTime()) / 60000 <= target.responseMin;
+    return (
+      (t.acknowledgedAt!.getTime() - t.createdAt.getTime()) / 60000 <= target.responseMin
+    );
   }).length;
 
   const feedback = await prisma.feedback.findMany({
@@ -283,14 +299,19 @@ async function engagementReport(scope: string | null) {
     })),
     totals: {
       tickets: tickets.length,
-      open: tickets.filter((t) => !["RESOLVED", "VERIFIED", "CLOSED"].includes(t.status)).length,
+      open: tickets.filter((t) => !["RESOLVED", "VERIFIED", "CLOSED"].includes(t.status))
+        .length,
       avgResponseMinutes: avgResponse,
       avgResolutionMinutes: avgResolution,
       slaMetPct:
-        acknowledged.length > 0 ? Math.round((withinResponse / acknowledged.length) * 100) : null,
+        acknowledged.length > 0
+          ? Math.round((withinResponse / acknowledged.length) * 100)
+          : null,
       avgRating:
         feedback.length > 0
-          ? Math.round((feedback.reduce((s, f) => s + f.rating, 0) / feedback.length) * 10) / 10
+          ? Math.round(
+              (feedback.reduce((s, f) => s + f.rating, 0) / feedback.length) * 10,
+            ) / 10
           : null,
       // Standard NPS: %promoters - %detractors, over respondents who scored.
       nps: rated > 0 ? Math.round(((promoters - detractors) / rated) * 100) : null,
@@ -321,7 +342,10 @@ export async function reportRoutes(app: FastifyInstance) {
       engagementReport(scope),
     ]);
 
-    return ok({ spend, timeline, revisions, engagement }, { generatedAt: new Date().toISOString() });
+    return ok(
+      { spend, timeline, revisions, engagement },
+      { generatedAt: new Date().toISOString() },
+    );
   });
 
   app.get("/reports/:type", async (req, reply) => {
@@ -368,13 +392,20 @@ export async function reportRoutes(app: FastifyInstance) {
     if (!isStorageConfigured()) {
       // Still return the payload — the page can render it even if we cannot
       // persist a downloadable copy.
-      return ok({ ...document, downloadUrl: null }, {
-        warning: "Report storage is not configured; download is unavailable.",
-      });
+      return ok(
+        { ...document, downloadUrl: null },
+        {
+          warning: "Report storage is not configured; download is unavailable.",
+        },
+      );
     }
 
     const key = `reports/${scope ?? "internal"}/${type}-${generatedAt.getTime()}.json`;
-    await uploadFile(key, Buffer.from(JSON.stringify(document, null, 2)), "application/json");
+    await uploadFile(
+      key,
+      Buffer.from(JSON.stringify(document, null, 2)),
+      "application/json",
+    );
     const downloadUrl = await issueDownload(req, {
       documentType: "REPORT",
       documentId: key,

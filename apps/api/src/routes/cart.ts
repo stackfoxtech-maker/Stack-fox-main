@@ -115,7 +115,13 @@ export async function cartRoutes(app: FastifyInstance) {
   app.post("/cart/add", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const userId = req.user!.sub;
-    const { itemId, itemType = "service", quantity = 1, notes, tier } = req.body as {
+    const {
+      itemId,
+      itemType = "service",
+      quantity = 1,
+      notes,
+      tier,
+    } = req.body as {
       itemId?: string;
       itemType?: string;
       quantity?: number;
@@ -129,7 +135,10 @@ export async function cartRoutes(app: FastifyInstance) {
 
     const priced = await catalogPrice(itemId, itemType, tier);
     if (!priced) {
-      req.log.warn({ itemId, itemType }, "Add-to-cart rejected: id not in catalogue or database");
+      req.log.warn(
+        { itemId, itemType },
+        "Add-to-cart rejected: id not in catalogue or database",
+      );
       return reply.code(404).send({
         message: "That item is no longer available. Please refresh and try again.",
       });
@@ -146,7 +155,9 @@ export async function cartRoutes(app: FastifyInstance) {
       if (notes !== undefined) items[idx].notes = notes;
     } else {
       if (items.length >= MAX_ITEMS) {
-        return reply.code(409).send({ message: `A cart can hold at most ${MAX_ITEMS} line items.` });
+        return reply
+          .code(409)
+          .send({ message: `A cart can hold at most ${MAX_ITEMS} line items.` });
       }
       items.push({
         _id: `cart_${randomBytes(8).toString("hex")}`,
@@ -177,12 +188,16 @@ export async function cartRoutes(app: FastifyInstance) {
   app.post("/cart/update-quantity", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const userId = req.user!.sub;
-    const { cartItemId, quantity } = req.body as { cartItemId?: string; quantity?: number };
+    const { cartItemId, quantity } = req.body as {
+      cartItemId?: string;
+      quantity?: number;
+    };
     if (!cartItemId) return reply.code(400).send({ message: "cartItemId is required" });
 
     const items = await readCart(userId);
     const item = items.find((i) => i._id === cartItemId);
-    if (!item) return reply.code(404).send({ message: "That item is no longer in your cart." });
+    if (!item)
+      return reply.code(404).send({ message: "That item is no longer in your cart." });
 
     item.quantity = Math.max(1, Math.min(99, Math.floor(Number(quantity) || 1)));
     await writeCart(userId, items);

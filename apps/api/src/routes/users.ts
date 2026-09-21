@@ -5,7 +5,12 @@ import { emitEvent } from "../lib/events";
 import { hashPassword, verifyPassword } from "../lib/password";
 import { toJson } from "../lib/json";
 import { LIST_CAP, ok, pageParams, paginated, withId } from "../lib/http";
-import { ADMIN_ROLES, CLIENT_ROLES, INTERNAL_ROLES, isInternalRole } from "@stackfox/core";
+import {
+  ADMIN_ROLES,
+  CLIENT_ROLES,
+  INTERNAL_ROLES,
+  isInternalRole,
+} from "@stackfox/core";
 import { ensurePersonalOrg } from "../lib/scope";
 import { bumpSessionEpoch } from "../lib/session";
 import { parseBody, parseQuery } from "../lib/validate";
@@ -16,7 +21,6 @@ import {
   UpdateMeSchema,
   UpdateUserSchema,
 } from "./userSchemas";
-
 
 const ALL_ROLES = [...INTERNAL_ROLES, ...CLIENT_ROLES] as readonly string[];
 
@@ -70,7 +74,9 @@ export async function userRoutes(app: FastifyInstance) {
     if (!body) return;
     const { name, email, password, role, designation } = body;
     if (role && !ALL_ROLES.includes(role)) {
-      return reply.code(400).send({ message: `Unknown role. Valid roles: ${ALL_ROLES.join(", ")}` });
+      return reply
+        .code(400)
+        .send({ message: `Unknown role. Valid roles: ${ALL_ROLES.join(", ")}` });
     }
 
     const normalisedEmail = email.trim().toLowerCase();
@@ -151,7 +157,7 @@ export async function userRoutes(app: FastifyInstance) {
     const { currentPassword, newPassword } = body;
 
     const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
-    const authData = ((user?.authData ?? {}) as Record<string, unknown>);
+    const authData = (user?.authData ?? {}) as Record<string, unknown>;
     const storedHash = (authData.passwordHash as string) ?? "";
 
     // verifyPassword also accepts the legacy unsalted digest, so a user whose
@@ -193,8 +199,13 @@ export async function userRoutes(app: FastifyInstance) {
       where: { isActive: true, role: { in: [...INTERNAL_ROLES] } },
       orderBy: { name: "asc" },
       select: {
-        id: true, name: true, email: true, role: true,
-        designation: true, skills: true, avatarUrl: true,
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        designation: true,
+        skills: true,
+        avatarUrl: true,
       },
     });
     return ok(staff.map((u) => ({ ...u, _id: u.id })));
@@ -212,7 +223,9 @@ export async function userRoutes(app: FastifyInstance) {
     const data: any = {};
     if (role !== undefined) {
       if (!ALL_ROLES.includes(role)) {
-        return reply.code(400).send({ message: `Unknown role. Valid roles: ${ALL_ROLES.join(", ")}` });
+        return reply
+          .code(400)
+          .send({ message: `Unknown role. Valid roles: ${ALL_ROLES.join(", ")}` });
       }
       // Locking yourself out, or quietly demoting yourself, is never intended.
       if (id === req.user!.sub && role !== req.user!.role) {
@@ -222,7 +235,9 @@ export async function userRoutes(app: FastifyInstance) {
     }
     if (isActive !== undefined) {
       if (id === req.user!.sub && isActive === false) {
-        return reply.code(409).send({ message: "You cannot deactivate your own account." });
+        return reply
+          .code(409)
+          .send({ message: "You cannot deactivate your own account." });
       }
       data.isActive = isActive;
     }

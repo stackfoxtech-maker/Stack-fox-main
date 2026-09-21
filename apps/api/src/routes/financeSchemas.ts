@@ -30,15 +30,14 @@ export const RecordUtrSchema = strictObject({
     .trim()
     .min(6, "A bank reference is required")
     .max(40)
-    .regex(/^[A-Za-z0-9-]+$/, "A bank reference contains only letters, digits and hyphens"),
+    .regex(
+      /^[A-Za-z0-9-]+$/,
+      "A bank reference contains only letters, digits and hyphens",
+    ),
   // Omitted means "now"; the handler clamps the amount to the outstanding
   // balance either way.
   amount: paise.optional(),
-  paidAt: z
-    .string()
-    .datetime({ offset: true })
-    .or(z.string().date())
-    .optional(),
+  paidAt: z.string().datetime({ offset: true }).or(z.string().date()).optional(),
 });
 
 /**

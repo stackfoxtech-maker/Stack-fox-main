@@ -24,7 +24,9 @@ export function withId<T extends { id?: unknown }>(row: T): T & { _id: unknown }
   return { ...row, _id: (row as { id?: unknown }).id };
 }
 
-export function withIds<T extends { id?: unknown }>(rows: T[]): Array<T & { _id: unknown }> {
+export function withIds<T extends { id?: unknown }>(
+  rows: T[],
+): Array<T & { _id: unknown }> {
   return rows.map(withId);
 }
 
@@ -62,7 +64,10 @@ export function pageParams(
   maxLimit = 100,
 ): { page: number; limit: number; skip: number } {
   const page = Math.max(1, parseInt(query.page ?? "1") || 1);
-  const limit = Math.min(maxLimit, Math.max(1, parseInt(query.limit ?? String(defaultLimit)) || defaultLimit));
+  const limit = Math.min(
+    maxLimit,
+    Math.max(1, parseInt(query.limit ?? String(defaultLimit)) || defaultLimit),
+  );
   return { page, limit, skip: (page - 1) * limit };
 }
 

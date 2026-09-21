@@ -78,7 +78,9 @@ export async function engagementRoutes(app: FastifyInstance) {
     if (!eng) return reply.code(404).send({ error: "Engagement not found" });
 
     if (!canTransition(eng.status, status, ENGAGEMENT_TRANSITIONS as any)) {
-      return reply.code(409).send({ error: `Cannot transition from ${eng.status} to ${status}` });
+      return reply
+        .code(409)
+        .send({ error: `Cannot transition from ${eng.status} to ${status}` });
     }
 
     const updated = await prisma.engagement.update({
@@ -86,7 +88,9 @@ export async function engagementRoutes(app: FastifyInstance) {
       data: {
         status,
         ...(status === "ACTIVE" ? { executedAt: new Date() } : {}),
-        ...(status === "COMPLETED" || status === "TERMINATED" ? { endsAt: new Date() } : {}),
+        ...(status === "COMPLETED" || status === "TERMINATED"
+          ? { endsAt: new Date() }
+          : {}),
       },
     });
 

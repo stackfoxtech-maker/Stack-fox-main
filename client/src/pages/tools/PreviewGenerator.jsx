@@ -16,11 +16,20 @@ function PreviewCard({ platform, title, desc, url }) {
         <span className="text-sm font-medium text-warm-700">{platform.label}</span>
       </div>
       <div className="border border-warm-200 rounded-xl overflow-hidden">
-        <div className="bg-warm-100 h-40 flex items-center justify-center text-warm-400 text-sm">OG Image Preview</div>
+        <div className="bg-warm-100 h-40 flex items-center justify-center text-warm-400 text-sm">
+          OG Image Preview
+        </div>
         <div className="p-4">
-          <p className="text-xs text-warm-400 uppercase tracking-wide mb-1">{url || 'example.com'}</p>
-          <h4 className="font-semibold text-warm-900 text-sm leading-snug mb-1">{title || 'Your Page Title'}</h4>
-          <p className="text-xs text-warm-500 line-clamp-2">{desc || 'A brief description of your page will appear here. This is the meta description tag content.'}</p>
+          <p className="text-xs text-warm-400 uppercase tracking-wide mb-1">
+            {url || 'example.com'}
+          </p>
+          <h4 className="font-semibold text-warm-900 text-sm leading-snug mb-1">
+            {title || 'Your Page Title'}
+          </h4>
+          <p className="text-xs text-warm-500 line-clamp-2">
+            {desc ||
+              'A brief description of your page will appear here. This is the meta description tag content.'}
+          </p>
         </div>
       </div>
     </div>
@@ -43,21 +52,46 @@ export default function PreviewGenerator() {
       </div>
 
       <div className="bg-white rounded-2xl border border-warm-200 p-6 mb-8 space-y-3">
-        <input placeholder="https://yoursite.com/page" value={url} onChange={(e) => setUrl(e.target.value)} className="w-full border border-warm-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500" />
-        <input placeholder="Page Title (og:title)" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-warm-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500" />
-        <textarea placeholder="Description (og:description)" value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} className="w-full border border-warm-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500 resize-none" />
+        <input
+          placeholder="https://yoursite.com/page"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="w-full border border-warm-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500"
+        />
+        <input
+          placeholder="Page Title (og:title)"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full border border-warm-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500"
+        />
+        <textarea
+          placeholder="Description (og:description)"
+          value={desc}
+          onChange={(e) => setDesc(e.target.value)}
+          rows={2}
+          className="w-full border border-warm-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500 resize-none"
+        />
       </div>
 
       <div className="flex gap-2 mb-6">
         {platforms.map((p) => (
-          <button key={p.id} onClick={() => setActive(p.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition ${active === p.id ? 'bg-fox-500 text-white' : 'bg-warm-100 text-warm-600 hover:bg-warm-200'}`}>
+          <button
+            key={p.id}
+            onClick={() => setActive(p.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition ${active === p.id ? 'bg-fox-500 text-white' : 'bg-warm-100 text-warm-600 hover:bg-warm-200'}`}
+          >
             <p.icon className="w-4 h-4" /> {p.label}
           </button>
         ))}
       </div>
 
       <div className="flex justify-center">
-        <PreviewCard platform={platforms.find((p) => p.id === active)} title={title} desc={desc} url={url} />
+        <PreviewCard
+          platform={platforms.find((p) => p.id === active)}
+          title={title}
+          desc={desc}
+          url={url}
+        />
       </div>
     </div>
   );

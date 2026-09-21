@@ -44,7 +44,11 @@ export default function Blueprint() {
         <h3 className="font-semibold text-warm-900 mb-4">Select Components</h3>
         <div className="flex flex-wrap gap-3">
           {components.map((c) => (
-            <button key={c.id} onClick={() => toggle(c.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition ${selected.has(c.id) ? 'border-fox-500 bg-fox-500/10 text-fox-500 font-medium' : 'border-warm-200 text-warm-600 hover:border-warm-300'}`}>
+            <button
+              key={c.id}
+              onClick={() => toggle(c.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition ${selected.has(c.id) ? 'border-fox-500 bg-fox-500/10 text-fox-500 font-medium' : 'border-warm-200 text-warm-600 hover:border-warm-300'}`}
+            >
               <c.icon className="w-4 h-4" /> {c.label}
             </button>
           ))}
@@ -64,7 +68,9 @@ export default function Blueprint() {
                   <span className="text-xs font-medium text-warm-900">{c.label}</span>
                   <span className="text-xs text-fox-500">{techs[c.id] || '—'}</span>
                 </div>
-                {i < activeComps.length - 1 && <ArrowRight className="w-5 h-5 text-warm-300 mx-1" />}
+                {i < activeComps.length - 1 && (
+                  <ArrowRight className="w-5 h-5 text-warm-300 mx-1" />
+                )}
               </div>
             ))}
           </div>
@@ -74,15 +80,25 @@ export default function Blueprint() {
             {activeComps.map((c) => (
               <div key={c.id}>
                 <label className="text-sm text-warm-600 mb-1 block">{c.label}</label>
-                <select value={techs[c.id] || ''} onChange={(e) => setTech(c.id, e.target.value)} className="w-full border border-warm-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500">
+                <select
+                  value={techs[c.id] || ''}
+                  onChange={(e) => setTech(c.id, e.target.value)}
+                  className="w-full border border-warm-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500"
+                >
                   <option value="">Choose...</option>
-                  {techOptions[c.id].map((t) => <option key={t} value={t}>{t}</option>)}
+                  {techOptions[c.id].map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
                 </select>
               </div>
             ))}
           </div>
 
-          <button className="mt-6 bg-fox-500 text-white rounded-xl px-6 py-3 hover:bg-fox-600 transition w-full">Export Blueprint</button>
+          <button className="mt-6 bg-fox-500 text-white rounded-xl px-6 py-3 hover:bg-fox-600 transition w-full">
+            Export Blueprint
+          </button>
         </div>
       )}
     </div>

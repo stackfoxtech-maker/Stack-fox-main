@@ -100,7 +100,10 @@ registerCron("softex-quarterly", async (job) => {
     try {
       await fileForEngagement(row.engagementId, quarter, year);
     } catch (err) {
-      log().error({ err, quarter, year, engagementId: row.engagementId }, "softex row failed");
+      log().error(
+        { err, quarter, year, engagementId: row.engagementId },
+        "softex row failed",
+      );
     }
   }
 });

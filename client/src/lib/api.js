@@ -9,7 +9,7 @@ export const API_BASE =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD
     ? (console.warn('VITE_API_URL is not set — falling back to the default API host'),
-       'https://stackfox-api-production-c639.up.railway.app')
+      'https://stackfox-api-production-c639.up.railway.app')
     : '/api');
 
 const api = axios.create({
@@ -28,7 +28,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // ── Response interceptor: handle 401 refresh ─
@@ -80,7 +80,7 @@ api.interceptors.response.use(
         const { data } = await axios.post(
           `${API_BASE}/auth/refresh-token`,
           { refreshToken },
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         const newToken = data.data.accessToken;
@@ -102,8 +102,10 @@ api.interceptors.response.use(
         localStorage.removeItem('sf_user');
 
         // Only redirect if we're not already on auth pages
-        if (!window.location.pathname.startsWith('/login') &&
-            !window.location.pathname.startsWith('/signup')) {
+        if (
+          !window.location.pathname.startsWith('/login') &&
+          !window.location.pathname.startsWith('/signup')
+        ) {
           window.location.href = '/login?expired=true';
         }
 
@@ -140,7 +142,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // ── Convenience methods ─────────────────────

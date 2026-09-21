@@ -30,16 +30,23 @@ export default function BriefBuilder() {
     <div className="max-w-3xl mx-auto px-6 py-16">
       <p className="text-sm text-orange-600 font-semibold mb-2">Free Tool · Powered by StackFox</p>
       <h1 className="text-4xl font-bold mb-3">AI Brief Generator</h1>
-      <p className="text-gray-600 mb-8">Turn a rough idea into a structured project brief in under 30 seconds.</p>
+      <p className="text-gray-600 mb-8">
+        Turn a rough idea into a structured project brief in under 30 seconds.
+      </p>
 
       <div className="flex flex-wrap gap-2 mb-6">
         {INPUT_MODES.map((m) => (
           <button
             key={m}
             type="button"
-            onClick={() => { setMode(m); setInputValue(''); }}
+            onClick={() => {
+              setMode(m);
+              setInputValue('');
+            }}
             className={`px-4 py-2 rounded-full border-2 text-sm font-medium transition-colors ${
-              mode === m ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-300 text-gray-600 hover:border-purple-500 hover:text-purple-600'
+              mode === m
+                ? 'bg-purple-600 border-purple-600 text-white'
+                : 'border-gray-300 text-gray-600 hover:border-purple-500 hover:text-purple-600'
             }`}
           >
             {m}
@@ -49,7 +56,13 @@ export default function BriefBuilder() {
 
       <form onSubmit={generate} className="bg-white border rounded-2xl p-6 mb-10">
         <label className="block text-sm font-semibold mb-2">
-          {mode === 'Voice note' ? 'Record your voice note' : mode === 'Competitor URL' ? 'Enter competitor URL' : mode === 'Sketch/image' ? 'Upload a sketch or image' : 'Describe your project'}
+          {mode === 'Voice note'
+            ? 'Record your voice note'
+            : mode === 'Competitor URL'
+              ? 'Enter competitor URL'
+              : mode === 'Sketch/image'
+                ? 'Upload a sketch or image'
+                : 'Describe your project'}
         </label>
         {mode === 'Voice note' ? (
           <textarea
@@ -97,10 +110,22 @@ export default function BriefBuilder() {
       {brief && (
         <div className="bg-[#FAFAF8] border rounded-2xl p-8">
           <h2 className="text-2xl font-bold mb-4">Your Brief</h2>
-          <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 rounded-xl p-4">{brief}</pre>
+          <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 rounded-xl p-4">
+            {brief}
+          </pre>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/builder" className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700">Load into Builder</Link>
-            <Link to="/tools/estimator" className="px-5 py-2.5 border-2 border-purple-500 text-purple-600 rounded-xl font-semibold hover:bg-purple-50">Estimate This Brief</Link>
+            <Link
+              to="/builder"
+              className="px-5 py-2.5 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700"
+            >
+              Load into Builder
+            </Link>
+            <Link
+              to="/tools/estimator"
+              className="px-5 py-2.5 border-2 border-purple-500 text-purple-600 rounded-xl font-semibold hover:bg-purple-50"
+            >
+              Estimate This Brief
+            </Link>
           </div>
         </div>
       )}

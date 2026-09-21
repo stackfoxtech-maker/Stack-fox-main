@@ -32,13 +32,18 @@ type InvoiceLike = {
  * Idempotent on the gateway payment id and on the invoice's revRec entry, so
  * it is safe to call from a retried webhook.
  */
-export async function recordInvoicePayment(invoice: InvoiceLike, facts: PaymentFacts): Promise<void> {
+export async function recordInvoicePayment(
+  invoice: InvoiceLike,
+  facts: PaymentFacts,
+): Promise<void> {
   const amount = facts.amount ?? Number(invoice.grandTotal);
 
   // 1. Payment row — requires an Order (the schema relation is mandatory).
   if (invoice.orderId) {
     const already = facts.gatewayPaymentId
-      ? await prisma.payment.findFirst({ where: { gatewayPaymentId: facts.gatewayPaymentId } })
+      ? await prisma.payment.findFirst({
+          where: { gatewayPaymentId: facts.gatewayPaymentId },
+        })
       : null;
     if (!already) {
       await prisma.payment.create({
@@ -56,7 +61,10 @@ export async function recordInvoicePayment(invoice: InvoiceLike, facts: PaymentF
       });
       // Mirror onto the order so a fully-paid order stops looking PENDING.
       await prisma.order
-        .update({ where: { id: invoice.orderId }, data: { status: "PAID", paidAt: new Date() } })
+        .update({
+          where: { id: invoice.orderId },
+          data: { status: "PAID", paidAt: new Date() },
+        })
         .catch(() => {});
     }
   }

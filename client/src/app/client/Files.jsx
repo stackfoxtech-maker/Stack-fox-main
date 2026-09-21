@@ -13,10 +13,16 @@ export default function Files() {
   const [uploading, setUploading] = useState(false);
 
   const fetchFiles = () => {
-    api.get('/files').then((r) => setFiles(r.data.data || [])).catch(() => {}).finally(() => setLoading(false));
+    api
+      .get('/files')
+      .then((r) => setFiles(r.data.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchFiles(); }, []);
+  useEffect(() => {
+    fetchFiles();
+  }, []);
 
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -45,32 +51,55 @@ export default function Files() {
     }
   };
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-warm-900">Files</h2>
-        <label className={cn('btn-fox text-sm px-4 py-2 cursor-pointer', uploading && 'opacity-50')}>
+        <label
+          className={cn('btn-fox text-sm px-4 py-2 cursor-pointer', uploading && 'opacity-50')}
+        >
           <Upload size={16} /> {uploading ? 'Uploading...' : 'Upload'}
           <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
         </label>
       </div>
 
       {files.length === 0 ? (
-        <EmptyState icon={FilesIcon} title="No files yet" description="Upload project files, documents, or deliverables." />
+        <EmptyState
+          icon={FilesIcon}
+          title="No files yet"
+          description="Upload project files, documents, or deliverables."
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {files.map((f) => (
-            <div key={f._id} className="bg-white rounded-xl border border-warm-200 p-4 flex items-start gap-3">
+            <div
+              key={f._id}
+              className="bg-white rounded-xl border border-warm-200 p-4 flex items-start gap-3"
+            >
               <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center shrink-0">
-                {f.mimeType?.startsWith('image') ? <Image size={18} className="text-info-500" /> : <FileText size={18} className="text-warm-500" />}
+                {f.mimeType?.startsWith('image') ? (
+                  <Image size={18} className="text-info-500" />
+                ) : (
+                  <FileText size={18} className="text-warm-500" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-warm-900 truncate">{f.originalName || f.name}</p>
+                <p className="text-sm font-medium text-warm-900 truncate">
+                  {f.originalName || f.name}
+                </p>
                 <p className="text-xs text-warm-400 mt-0.5">{formatDate(f.createdAt)}</p>
               </div>
-              <button onClick={() => handleDelete(f._id)} className="p-1.5 hover:bg-danger-50 rounded-lg text-warm-400 hover:text-danger-500 transition-colors">
+              <button
+                onClick={() => handleDelete(f._id)}
+                className="p-1.5 hover:bg-danger-50 rounded-lg text-warm-400 hover:text-danger-500 transition-colors"
+              >
                 <Trash2 size={14} />
               </button>
             </div>

@@ -14,7 +14,11 @@ createWorker(QUEUE.webhookDispatcher, async (job) => {
   });
 
   for (const endpoint of endpoints) {
-    const body = JSON.stringify({ event: code, payload, timestamp: new Date().toISOString() });
+    const body = JSON.stringify({
+      event: code,
+      payload,
+      timestamp: new Date().toISOString(),
+    });
     const signature = hmacSign(body, endpoint.secret);
 
     const delivery = await prisma.webhookDelivery.create({

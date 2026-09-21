@@ -20,7 +20,13 @@ const motionize = (as) => (typeof as === 'string' ? motion[as] || motion.div : m
  *   <Reveal stagger> + <Reveal.Item>   children in sequence
  */
 export function Reveal({
-  children, as = 'div', delay = 0, variant = 'up', stagger: isStagger = false, className, ...rest
+  children,
+  as = 'div',
+  delay = 0,
+  variant = 'up',
+  stagger: isStagger = false,
+  className,
+  ...rest
 }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, amount: 0.15 });

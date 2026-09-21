@@ -16,17 +16,35 @@ import {
   VerifyOtpSchema,
   VerifyPhoneOtpSchema,
 } from "./authSchemas";
-import { signToken, signRefreshToken, requireAuth, verifyToken, verifyTokenOfType } from "../plugins/auth";
+import {
+  signToken,
+  signRefreshToken,
+  requireAuth,
+  verifyToken,
+  verifyTokenOfType,
+} from "../plugins/auth";
 import { randomInt } from "crypto";
 import * as ids from "../lib/id";
-import { hashPassword, verifyPassword, needsRehash, generateToken, hashToken } from "../lib/password";
+import {
+  hashPassword,
+  verifyPassword,
+  needsRehash,
+  generateToken,
+  hashToken,
+} from "../lib/password";
 import { ensurePersonalOrg } from "../lib/scope";
 import { toJson } from "../lib/json";
 import { isInternalRole, CLIENT_ROLES } from "@stackfox/core";
 
 const ORG_MANAGER_ROLES = ["ORG_OWNER", "CLIENT_ADMIN"];
 const ASSIGNABLE_MEMBER_ROLES = CLIENT_ROLES as readonly string[];
-import { sendMail, isMailConfigured, passwordResetEmail, verifyEmailMessage, otpEmail } from "../lib/mailer";
+import {
+  sendMail,
+  isMailConfigured,
+  passwordResetEmail,
+  verifyEmailMessage,
+  otpEmail,
+} from "../lib/mailer";
 import { sendPhoneOtp, verifyPhoneOtp, isSmsConfigured } from "../lib/sms";
 import { authorizeUrl, exchangeCode, isGoogleConfigured } from "../lib/googleOAuth";
 import { getSessionEpoch, bumpSessionEpoch } from "../lib/session";
@@ -62,7 +80,10 @@ async function deliver(
 ) {
   if (!isMailConfigured()) {
     if (process.env.NODE_ENV === "production") {
-      app.log.error({ kind, email }, "No email provider configured — link could not be delivered");
+      app.log.error(
+        { kind, email },
+        "No email provider configured — link could not be delivered",
+      );
     } else {
       app.log.info(`[dev] ${kind} token for ${email}: ${token}`);
     }
@@ -84,14 +105,21 @@ async function deliver(
  * here — a path that skips the Redis write issues a refresh token that
  * /auth/refresh-token will always reject.
  */
-async function issueSession(user: { id: string; email: string; role: string }, orgId?: string) {
+async function issueSession(
+  user: { id: string; email: string; role: string },
+  orgId?: string,
+) {
   // Stamp the token with the user's current session epoch so a later
   // logout / password reset (which bumps the epoch) invalidates it.
   const epoch = await getSessionEpoch(user.id);
   const payload = { sub: user.id, email: user.email, role: user.role, orgId, epoch };
   const accessToken = signToken(payload);
   const refreshToken = signRefreshToken(payload);
-  await tryRedis("store refresh token", () => redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000), null);
+  await tryRedis(
+    "store refresh token",
+    () => redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000),
+    null,
+  );
   return { accessToken, refreshToken };
 }
 
@@ -101,90 +129,118 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/register",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const body = parseBody(req, reply, RegisterSchema);
-    if (!body) return;
-    const { name, email, password } = body;
+      const body = parseBody(req, reply, RegisterSchema);
+      if (!body) return;
+      const { name, email, password } = body;
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) return reply.code(409).send({ message: "Email already registered" });
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) return reply.code(409).send({ message: "Email already registered" });
 
-    const user = await prisma.user.create({
-      data: {
-        name: name || email.split("@")[0],
+      const user = await prisma.user.create({
+        data: {
+          name: name || email.split("@")[0],
+          email,
+          role: "INDIVIDUAL_CLIENT",
+          authData: toJson({
+            provider: "email",
+            passwordHash: await hashPassword(password),
+            verified: false,
+          }),
+        },
+      });
+
+      // Every client-side user is scoped by an Org; individuals get a personal one
+      // so the portal has a tenant to filter on from the very first request.
+      const orgId = await ensurePersonalOrg(user.id);
+
+      const { token: verifyTok, hash } = generateToken();
+      await tryRedis(
+        "store verify token",
+        () => redis.set(`verify:${hash}`, user.id, "EX", 86400),
+        null,
+      );
+      // Verification is best-effort: a mail outage must not fail the signup that
+      // has already created the account and the org.
+      void deliver(
+        app,
+        verifyEmailMessage(email, verifyTok),
+        "verification",
         email,
-        role: "INDIVIDUAL_CLIENT",
-        authData: toJson({
-          provider: "email",
-          passwordHash: await hashPassword(password),
-          verified: false,
-        }),
-      },
-    });
+        verifyTok,
+      );
 
-    // Every client-side user is scoped by an Org; individuals get a personal one
-    // so the portal has a tenant to filter on from the very first request.
-    const orgId = await ensurePersonalOrg(user.id);
+      const { accessToken, refreshToken } = await issueSession(user, orgId);
 
-    const { token: verifyTok, hash } = generateToken();
-    await tryRedis("store verify token", () => redis.set(`verify:${hash}`, user.id, "EX", 86400), null);
-    // Verification is best-effort: a mail outage must not fail the signup that
-    // has already created the account and the org.
-    void deliver(app, verifyEmailMessage(email, verifyTok), "verification", email, verifyTok);
-
-    const { accessToken, refreshToken } = await issueSession(user, orgId);
-
-    return {
-      data: {
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, orgId },
-        accessToken,
-        refreshToken,
-      },
-    };
-  });
+      return {
+        data: {
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            orgId,
+          },
+          accessToken,
+          refreshToken,
+        },
+      };
+    },
+  );
 
   // POST /auth/login — email + password login
   app.post(
     "/auth/login",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const body = parseBody(req, reply, LoginSchema);
-    if (!body) return;
-    const { email, password } = body;
-    if (!email || !password) return reply.code(400).send({ message: "Email and password required" });
+      const body = parseBody(req, reply, LoginSchema);
+      if (!body) return;
+      const { email, password } = body;
+      if (!email || !password)
+        return reply.code(400).send({ message: "Email and password required" });
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return reply.code(401).send({ message: "Invalid credentials" });
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) return reply.code(401).send({ message: "Invalid credentials" });
 
-    if (!user.isActive) return reply.code(403).send({ message: "This account is disabled" });
+      if (!user.isActive)
+        return reply.code(403).send({ message: "This account is disabled" });
 
-    const authData = (user.authData as Record<string, unknown> | null) ?? {};
-    const storedHash = authData.passwordHash as string | undefined;
-    if (!storedHash || !(await verifyPassword(password, storedHash))) {
-      return reply.code(401).send({ message: "Invalid credentials" });
-    }
+      const authData = (user.authData as Record<string, unknown> | null) ?? {};
+      const storedHash = authData.passwordHash as string | undefined;
+      if (!storedHash || !(await verifyPassword(password, storedHash))) {
+        return reply.code(401).send({ message: "Invalid credentials" });
+      }
 
-    // Transparently upgrade anyone still on the legacy unsalted digest.
-    if (needsRehash(storedHash)) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { authData: toJson({ ...authData, passwordHash: await hashPassword(password) }) },
-      });
-    }
+      // Transparently upgrade anyone still on the legacy unsalted digest.
+      if (needsRehash(storedHash)) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            authData: toJson({ ...authData, passwordHash: await hashPassword(password) }),
+          },
+        });
+      }
 
-    const orgId = isInternalRole(user.role)
-      ? (user.orgId ?? undefined)
-      : await ensurePersonalOrg(user.id);
+      const orgId = isInternalRole(user.role)
+        ? (user.orgId ?? undefined)
+        : await ensurePersonalOrg(user.id);
 
-    const { accessToken, refreshToken } = await issueSession(user, orgId);
+      const { accessToken, refreshToken } = await issueSession(user, orgId);
 
-    return {
-      data: {
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, orgId },
-        accessToken,
-        refreshToken,
-      },
-    };
-  });
+      return {
+        data: {
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            orgId,
+          },
+          accessToken,
+          refreshToken,
+        },
+      };
+    },
+  );
 
   // POST /auth/refresh-token
   app.post("/auth/refresh-token", async (req, reply) => {
@@ -192,7 +248,8 @@ export async function authRoutes(app: FastifyInstance) {
     const refreshBody = parseBody(req, reply, RefreshTokenSchema);
     if (!refreshBody) return;
     const bodyToken = refreshBody.refreshToken;
-    const presented = bodyToken ?? (header?.startsWith("Bearer ") ? header.slice(7) : null);
+    const presented =
+      bodyToken ?? (header?.startsWith("Bearer ") ? header.slice(7) : null);
     if (!presented) return reply.code(401).send({ message: "No token" });
 
     let decoded: { sub: string };
@@ -207,7 +264,9 @@ export async function authRoutes(app: FastifyInstance) {
     // The signature alone is not enough: a refresh token must still be the one
     // on record, so logout and password changes actually revoke sessions.
     let onRecord: string | null;
-    try { onRecord = await redis.get(`refresh:${decoded.sub}`); } catch {
+    try {
+      onRecord = await redis.get(`refresh:${decoded.sub}`);
+    } catch {
       return reply.code(503).send({ message: "Session store unavailable" });
     }
     if (!onRecord || onRecord !== presented) {
@@ -215,7 +274,8 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
-    if (!user || !user.isActive) return reply.code(401).send({ message: "User not found" });
+    if (!user || !user.isActive)
+      return reply.code(401).send({ message: "User not found" });
 
     const payload = {
       sub: user.id,
@@ -226,7 +286,11 @@ export async function authRoutes(app: FastifyInstance) {
     };
     // Rotate on every use so a leaked token has a single-use lifetime.
     const refreshToken = signRefreshToken(payload);
-    await tryRedis("store refresh token", () => redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000), null);
+    await tryRedis(
+      "store refresh token",
+      () => redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000),
+      null,
+    );
 
     return { data: { accessToken: signToken(payload), refreshToken } };
   });
@@ -236,154 +300,218 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/forgot-password",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const body = parseBody(req, reply, ForgotPasswordSchema);
-    if (!body) return;
-    const { email } = body;
-    if (!email) return reply.code(400).send({ message: "Email is required" });
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (user) {
-      const { token, hash } = generateToken();
-      // Key on the hash, not the email, so the token itself is the only way in
-      // and a Redis dump cannot be replayed.
-      let stored = true;
-      try { await redis.set(`reset:${hash}`, user.id, "EX", 3600); } catch { stored = false; }
-      if (!stored) {
-        // The token was never persisted, so the emailed link could not work.
-        // Failing loudly beats a "check your email" that never arrives.
-        return reply.code(503).send({ message: "Password reset is temporarily unavailable" });
+      const body = parseBody(req, reply, ForgotPasswordSchema);
+      if (!body) return;
+      const { email } = body;
+      if (!email) return reply.code(400).send({ message: "Email is required" });
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (user) {
+        const { token, hash } = generateToken();
+        // Key on the hash, not the email, so the token itself is the only way in
+        // and a Redis dump cannot be replayed.
+        let stored = true;
+        try {
+          await redis.set(`reset:${hash}`, user.id, "EX", 3600);
+        } catch {
+          stored = false;
+        }
+        if (!stored) {
+          // The token was never persisted, so the emailed link could not work.
+          // Failing loudly beats a "check your email" that never arrives.
+          return reply
+            .code(503)
+            .send({ message: "Password reset is temporarily unavailable" });
+        }
+        const result = await deliver(
+          app,
+          passwordResetEmail(email, token),
+          "password reset",
+          email,
+          token,
+        );
+        if (!result.delivered && isMailConfigured()) {
+          // A configured provider that rejected the send is a real outage, not an
+          // unknown-account case, so it is safe to surface without leaking
+          // whether the address exists — every caller reaching here has an account.
+          return reply.code(502).send({
+            message: "We could not send the reset email. Please try again shortly.",
+          });
+        }
       }
-      const result = await deliver(app, passwordResetEmail(email, token), "password reset", email, token);
-      if (!result.delivered && isMailConfigured()) {
-        // A configured provider that rejected the send is a real outage, not an
-        // unknown-account case, so it is safe to surface without leaking
-        // whether the address exists — every caller reaching here has an account.
-        return reply.code(502).send({ message: "We could not send the reset email. Please try again shortly." });
-      }
-    }
-    // Always the same response — otherwise this endpoint enumerates accounts.
-    return { success: true, message: "If an account exists, a reset link has been sent" };
-  });
+      // Always the same response — otherwise this endpoint enumerates accounts.
+      return {
+        success: true,
+        message: "If an account exists, a reset link has been sent",
+      };
+    },
+  );
 
   // POST /auth/reset-password
   app.post(
     "/auth/reset-password",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const body = parseBody(req, reply, ResetPasswordSchema);
-    if (!body) return;
-    const { token, password } = body;
-    if (!token || !password) return reply.code(400).send({ message: "Token and password required" });
-    if (password.length < 8) {
-      return reply.code(400).send({ message: "Password must be at least 8 characters" });
-    }
+      const body = parseBody(req, reply, ResetPasswordSchema);
+      if (!body) return;
+      const { token, password } = body;
+      if (!token || !password)
+        return reply.code(400).send({ message: "Token and password required" });
+      if (password.length < 8) {
+        return reply
+          .code(400)
+          .send({ message: "Password must be at least 8 characters" });
+      }
 
-    const key = `reset:${hashToken(token)}`;
-    let userId: string | null;
-    try { userId = await redis.get(key); } catch {
-      return reply.code(503).send({ message: "Password reset is temporarily unavailable" });
-    }
-    if (!userId) return reply.code(400).send({ message: "This reset link is invalid or has expired" });
+      const key = `reset:${hashToken(token)}`;
+      let userId: string | null;
+      try {
+        userId = await redis.get(key);
+      } catch {
+        return reply
+          .code(503)
+          .send({ message: "Password reset is temporarily unavailable" });
+      }
+      if (!userId)
+        return reply
+          .code(400)
+          .send({ message: "This reset link is invalid or has expired" });
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return reply.code(400).send({ message: "This reset link is invalid or has expired" });
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user)
+        return reply
+          .code(400)
+          .send({ message: "This reset link is invalid or has expired" });
 
-    const authData = (user.authData as Record<string, unknown> | null) ?? {};
-    await prisma.user.update({
-      where: { id: userId },
-      data: { authData: toJson({ ...authData, passwordHash: await hashPassword(password) }) },
-    });
+      const authData = (user.authData as Record<string, unknown> | null) ?? {};
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          authData: toJson({ ...authData, passwordHash: await hashPassword(password) }),
+        },
+      });
 
-    // Drop every existing session: epoch bump invalidates all outstanding
-    // access tokens (Redis-independent) and clears the refresh token.
-    await bumpSessionEpoch(userId);
-    await tryRedis("clear reset token", () => redis.del(key), 0);
+      // Drop every existing session: epoch bump invalidates all outstanding
+      // access tokens (Redis-independent) and clears the refresh token.
+      await bumpSessionEpoch(userId);
+      await tryRedis("clear reset token", () => redis.del(key), 0);
 
-    return { success: true, message: "Password reset" };
-  });
+      return { success: true, message: "Password reset" };
+    },
+  );
 
   // POST /auth/verify-email
   app.post(
     "/auth/verify-email",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const body = parseBody(req, reply, VerifyEmailSchema);
-    if (!body) return;
-    const { token } = body;
-    if (!token) return reply.code(400).send({ message: "Token required" });
+      const body = parseBody(req, reply, VerifyEmailSchema);
+      if (!body) return;
+      const { token } = body;
+      if (!token) return reply.code(400).send({ message: "Token required" });
 
-    const key = `verify:${hashToken(token)}`;
-    let userId: string | null;
-    try { userId = await redis.get(key); } catch {
-      return reply.code(503).send({ message: "Verification is temporarily unavailable" });
-    }
-    if (!userId) return reply.code(400).send({ message: "This verification link is invalid or has expired" });
+      const key = `verify:${hashToken(token)}`;
+      let userId: string | null;
+      try {
+        userId = await redis.get(key);
+      } catch {
+        return reply
+          .code(503)
+          .send({ message: "Verification is temporarily unavailable" });
+      }
+      if (!userId)
+        return reply
+          .code(400)
+          .send({ message: "This verification link is invalid or has expired" });
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return reply.code(400).send({ message: "This verification link is invalid or has expired" });
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user)
+        return reply
+          .code(400)
+          .send({ message: "This verification link is invalid or has expired" });
 
-    const authData = (user.authData as Record<string, unknown> | null) ?? {};
-    await prisma.user.update({
-      where: { id: userId },
-      data: { authData: toJson({ ...authData, verified: true, verifiedAt: new Date().toISOString() }) },
-    });
-    await tryRedis("clear verify token", () => redis.del(key), 0);
+      const authData = (user.authData as Record<string, unknown> | null) ?? {};
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          authData: toJson({
+            ...authData,
+            verified: true,
+            verifiedAt: new Date().toISOString(),
+          }),
+        },
+      });
+      await tryRedis("clear verify token", () => redis.del(key), 0);
 
-    return { success: true, message: "Email verified" };
-  });
+      return { success: true, message: "Email verified" };
+    },
+  );
 
   // POST /auth/otp/send
   app.post(
     "/auth/otp/send",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const body = parseBody(req, reply, SendOtpSchema);
-    if (!body) return;
-    const { email, phone } = body;
+      const body = parseBody(req, reply, SendOtpSchema);
+      if (!body) return;
+      const { email, phone } = body;
 
-    // ── Phone: MSG91 generates, stores and rate-limits the code ────────────────
-    if (phone && !email) {
-      if (isSmsConfigured()) {
-        const result = await sendPhoneOtp(phone);
-        if (!result.ok) {
-          app.log.error({ phone, error: result.error }, "OTP SMS failed");
-          return reply.code(502).send({ error: "We could not send your code. Please try again shortly." });
+      // ── Phone: MSG91 generates, stores and rate-limits the code ────────────────
+      if (phone && !email) {
+        if (isSmsConfigured()) {
+          const result = await sendPhoneOtp(phone);
+          if (!result.ok) {
+            app.log.error({ phone, error: result.error }, "OTP SMS failed");
+            return reply
+              .code(502)
+              .send({ error: "We could not send your code. Please try again shortly." });
+          }
+          return { success: true, message: "OTP sent", channel: "sms" };
         }
-        return { success: true, message: "OTP sent", channel: "sms" };
+        if (process.env.NODE_ENV === "production") {
+          return reply
+            .code(503)
+            .send({ error: "Phone verification is not available on this server" });
+        }
+        app.log.info(
+          `[dev] no SMS provider — phone OTP for ${phone} would be sent by MSG91`,
+        );
+        return { success: true, message: "OTP sent", channel: "log" };
+      }
+
+      // ── Email: we generate + store in Redis, Resend delivers ───────────────────
+      const otp = String(randomInt(100000, 999999));
+      let stored = true;
+      try {
+        await redis.set(`otp:${email}`, otp, "EX", 300); // 5 min TTL
+      } catch {
+        stored = false;
+      }
+      if (!stored) {
+        return reply
+          .code(503)
+          .send({ error: "One-time codes are temporarily unavailable" });
+      }
+
+      if (isMailConfigured()) {
+        const result = await sendMail(otpEmail(email!, otp));
+        if (!result.delivered) {
+          app.log.error({ email, error: result.error }, "OTP email failed");
+          return reply
+            .code(502)
+            .send({ error: "We could not send your code. Please try again shortly." });
+        }
+        return { success: true, message: "OTP sent", channel: "email" };
       }
       if (process.env.NODE_ENV === "production") {
-        return reply.code(503).send({ error: "Phone verification is not available on this server" });
+        app.log.error({ email }, "OTP requested but no email provider is configured");
+        return reply
+          .code(503)
+          .send({ error: "One-time codes are not available on this server" });
       }
-      app.log.info(`[dev] no SMS provider — phone OTP for ${phone} would be sent by MSG91`);
+      app.log.info(`[dev] OTP for ${email}: ${otp}`);
       return { success: true, message: "OTP sent", channel: "log" };
-    }
-
-    // ── Email: we generate + store in Redis, Resend delivers ───────────────────
-    const otp = String(randomInt(100000, 999999));
-    let stored = true;
-    try {
-      await redis.set(`otp:${email}`, otp, "EX", 300); // 5 min TTL
-    } catch {
-      stored = false;
-    }
-    if (!stored) {
-      return reply.code(503).send({ error: "One-time codes are temporarily unavailable" });
-    }
-
-    if (isMailConfigured()) {
-      const result = await sendMail(otpEmail(email!, otp));
-      if (!result.delivered) {
-        app.log.error({ email, error: result.error }, "OTP email failed");
-        return reply.code(502).send({ error: "We could not send your code. Please try again shortly." });
-      }
-      return { success: true, message: "OTP sent", channel: "email" };
-    }
-    if (process.env.NODE_ENV === "production") {
-      app.log.error({ email }, "OTP requested but no email provider is configured");
-      return reply.code(503).send({ error: "One-time codes are not available on this server" });
-    }
-    app.log.info(`[dev] OTP for ${email}: ${otp}`);
-    return { success: true, message: "OTP sent", channel: "log" };
-  });
+    },
+  );
 
   // POST /auth/otp/verify
   const OTP_MAX_ATTEMPTS = 5;
@@ -391,83 +519,109 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/otp/verify",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const body = parseBody(req, reply, VerifyOtpSchema);
-    if (!body) return;
-    const { email, phone, code } = body;
+      const body = parseBody(req, reply, VerifyOtpSchema);
+      if (!body) return;
+      const { email, phone, code } = body;
 
-    if (phone && !email) {
-      // MSG91 holds the code for phone and enforces its own lockout.
-      if (!isSmsConfigured()) {
-        return reply.code(503).send({ error: "Phone verification is not available on this server" });
+      if (phone && !email) {
+        // MSG91 holds the code for phone and enforces its own lockout.
+        if (!isSmsConfigured()) {
+          return reply
+            .code(503)
+            .send({ error: "Phone verification is not available on this server" });
+        }
+        const result = await verifyPhoneOtp(phone, code);
+        if (!result.ok) {
+          const ipBlocked = /whitelist/i.test(result.error ?? "");
+          if (ipBlocked)
+            app.log.error({ error: result.error }, "MSG91 rejected the server IP");
+          return reply.code(ipBlocked ? 503 : 401).send({
+            error: ipBlocked
+              ? "Phone verification is misconfigured"
+              : "Invalid or expired code",
+          });
+        }
+      } else {
+        // Email code lives in Redis. A wrong-guess counter (same TTL as the code
+        // itself) caps brute-force attempts against the 6-digit space — once
+        // exhausted, the code is invalidated outright rather than left guessable
+        // for the rest of its 5-minute window.
+        const attemptsKey = `otp-attempts:${email}`;
+        // Fails closed: an unreachable Redis reports the cap as already hit
+        // rather than resetting the counter to zero on every error.
+        const attempts = await tryRedis(
+          "read OTP attempts",
+          async () => Number((await redis.get(attemptsKey)) ?? 0),
+          OTP_MAX_ATTEMPTS,
+        );
+        if (attempts >= OTP_MAX_ATTEMPTS) {
+          return reply
+            .code(429)
+            .send({ error: "Too many incorrect attempts. Request a new code." });
+        }
+
+        const stored = await tryRedis(
+          "read email OTP",
+          () => redis.get(`otp:${email}`),
+          null,
+        );
+        if (!stored || stored !== code) {
+          await tryRedis(
+            "record failed OTP attempt",
+            async () => {
+              const ttl = await redis.ttl(`otp:${email}`);
+              await redis.set(attemptsKey, attempts + 1, "EX", ttl > 0 ? ttl : 300);
+            },
+            undefined,
+          );
+          return reply.code(401).send({ error: "Invalid or expired OTP" });
+        }
+        await tryRedis(
+          "clear consumed email OTP",
+          async () => {
+            await redis.del(`otp:${email}`);
+            await redis.del(attemptsKey);
+          },
+          undefined,
+        );
       }
-      const result = await verifyPhoneOtp(phone, code);
-      if (!result.ok) {
-        const ipBlocked = /whitelist/i.test(result.error ?? "");
-        if (ipBlocked) app.log.error({ error: result.error }, "MSG91 rejected the server IP");
-        return reply.code(ipBlocked ? 503 : 401).send({
-          error: ipBlocked ? "Phone verification is misconfigured" : "Invalid or expired code",
+
+      let user = await prisma.user.findFirst({
+        where: email ? { email } : { phone },
+      });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            name: email?.split("@")[0] ?? phone ?? "User",
+            email: email ?? `${phone}@phone.stackfox.in`,
+            phone,
+            role: "INDIVIDUAL_CLIENT",
+          },
         });
       }
-    } else {
-      // Email code lives in Redis. A wrong-guess counter (same TTL as the code
-      // itself) caps brute-force attempts against the 6-digit space — once
-      // exhausted, the code is invalidated outright rather than left guessable
-      // for the rest of its 5-minute window.
-      const attemptsKey = `otp-attempts:${email}`;
-      // Fails closed: an unreachable Redis reports the cap as already hit
-      // rather than resetting the counter to zero on every error.
-      const attempts = await tryRedis(
-        "read OTP attempts",
-        async () => Number((await redis.get(attemptsKey)) ?? 0),
-        OTP_MAX_ATTEMPTS,
-      );
-      if (attempts >= OTP_MAX_ATTEMPTS) {
-        return reply.code(429).send({ error: "Too many incorrect attempts. Request a new code." });
-      }
 
-      const stored = await tryRedis("read email OTP", () => redis.get(`otp:${email}`), null);
-      if (!stored || stored !== code) {
-        await tryRedis("record failed OTP attempt", async () => {
-          const ttl = await redis.ttl(`otp:${email}`);
-          await redis.set(attemptsKey, attempts + 1, "EX", ttl > 0 ? ttl : 300);
-        }, undefined);
-        return reply.code(401).send({ error: "Invalid or expired OTP" });
-      }
-      await tryRedis("clear consumed email OTP", async () => {
-        await redis.del(`otp:${email}`);
-        await redis.del(attemptsKey);
-      }, undefined);
-    }
+      const orgId = isInternalRole(user.role)
+        ? (user.orgId ?? undefined)
+        : await ensurePersonalOrg(user.id);
 
-    let user = await prisma.user.findFirst({
-      where: email ? { email } : { phone },
-    });
+      const { accessToken, refreshToken } = await issueSession(user, orgId);
 
-    if (!user) {
-      user = await prisma.user.create({
+      return {
         data: {
-          name: email?.split("@")[0] ?? phone ?? "User",
-          email: email ?? `${phone}@phone.stackfox.in`,
-          phone,
-          role: "INDIVIDUAL_CLIENT",
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            orgId,
+          },
+          accessToken,
+          refreshToken,
         },
-      });
-    }
-
-    const orgId = isInternalRole(user.role)
-      ? (user.orgId ?? undefined)
-      : await ensurePersonalOrg(user.id);
-
-    const { accessToken, refreshToken } = await issueSession(user, orgId);
-
-    return {
-      data: {
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, orgId },
-        accessToken,
-        refreshToken,
-      },
-    };
-  });
+      };
+    },
+  );
 
   // ── Google Sign-In ────────────────────────
   //
@@ -480,7 +634,9 @@ export async function authRoutes(app: FastifyInstance) {
   // GET /auth/google — start the flow
   app.get("/auth/google", async (req, reply) => {
     if (!isGoogleConfigured()) {
-      return reply.code(503).send({ message: "Google sign-in is not configured on this server" });
+      return reply
+        .code(503)
+        .send({ message: "Google sign-in is not configured on this server" });
     }
 
     const { redirect } = req.query as { redirect?: string };
@@ -501,11 +657,17 @@ export async function authRoutes(app: FastifyInstance) {
 
   // GET /auth/google/callback — finish the flow
   app.get("/auth/google/callback", async (req, reply) => {
-    const { code, state, error } = req.query as { code?: string; state?: string; error?: string };
+    const { code, state, error } = req.query as {
+      code?: string;
+      state?: string;
+      error?: string;
+    };
 
     // The user hit "Cancel" on Google's consent screen.
-    if (error) return reply.redirect(`${webAppUrl()}/login?error=${encodeURIComponent(error)}`);
-    if (!code || !state) return reply.redirect(`${webAppUrl()}/login?error=invalid_response`);
+    if (error)
+      return reply.redirect(`${webAppUrl()}/login?error=${encodeURIComponent(error)}`);
+    if (!code || !state)
+      return reply.redirect(`${webAppUrl()}/login?error=invalid_response`);
 
     let redirectTo: string | null;
     try {
@@ -595,64 +757,85 @@ export async function authRoutes(app: FastifyInstance) {
     "/auth/whatsapp/callback",
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
-    const verifyBody = parseBody(req, reply, VerifyPhoneOtpSchema);
-    if (!verifyBody) return;
-    const { phone, code } = verifyBody;
+      const verifyBody = parseBody(req, reply, VerifyPhoneOtpSchema);
+      if (!verifyBody) return;
+      const { phone, code } = verifyBody;
 
-    const attemptsKey = `otp-attempts:${phone}`;
-    // Fails closed, as on the email path above.
-    const attempts = await tryRedis(
-      "read OTP attempts",
-      async () => Number((await redis.get(attemptsKey)) ?? 0),
-      OTP_MAX_ATTEMPTS,
-    );
-    if (attempts >= OTP_MAX_ATTEMPTS) {
-      return reply.code(429).send({ error: "Too many incorrect attempts. Request a new code." });
-    }
+      const attemptsKey = `otp-attempts:${phone}`;
+      // Fails closed, as on the email path above.
+      const attempts = await tryRedis(
+        "read OTP attempts",
+        async () => Number((await redis.get(attemptsKey)) ?? 0),
+        OTP_MAX_ATTEMPTS,
+      );
+      if (attempts >= OTP_MAX_ATTEMPTS) {
+        return reply
+          .code(429)
+          .send({ error: "Too many incorrect attempts. Request a new code." });
+      }
 
-    const stored = await tryRedis("read phone OTP", () => redis.get(`otp:${phone}`), null);
-    if (!stored || stored !== code) {
-      // Same counter shape as the email path: capped against the 6-digit space
-      // and expiring with the code rather than lingering.
-      await tryRedis("record failed OTP attempt", async () => {
-        const ttl = await redis.ttl(`otp:${phone}`);
-        await redis.set(attemptsKey, attempts + 1, "EX", ttl > 0 ? ttl : 300);
-      }, undefined);
-      return reply.code(401).send({ error: "Invalid OTP" });
-    }
-    await tryRedis("clear consumed phone OTP", async () => {
-      await redis.del(`otp:${phone}`);
-      await redis.del(attemptsKey);
-    }, undefined);
-
-    let user = await prisma.user.findFirst({ where: { phone } });
-    if (user && isInternalRole(user.role)) {
-      // A staff account must not be reachable through an unauthenticated phone
-      // callback. Staff sign in with a password.
-      return reply.code(403).send({ error: "This account cannot sign in this way." });
-    }
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name: "WhatsApp User",
-          email: `${phone}@wa.stackfox.in`,
-          phone,
-          role: "INDIVIDUAL_CLIENT",
+      const stored = await tryRedis(
+        "read phone OTP",
+        () => redis.get(`otp:${phone}`),
+        null,
+      );
+      if (!stored || stored !== code) {
+        // Same counter shape as the email path: capped against the 6-digit space
+        // and expiring with the code rather than lingering.
+        await tryRedis(
+          "record failed OTP attempt",
+          async () => {
+            const ttl = await redis.ttl(`otp:${phone}`);
+            await redis.set(attemptsKey, attempts + 1, "EX", ttl > 0 ? ttl : 300);
+          },
+          undefined,
+        );
+        return reply.code(401).send({ error: "Invalid OTP" });
+      }
+      await tryRedis(
+        "clear consumed phone OTP",
+        async () => {
+          await redis.del(`otp:${phone}`);
+          await redis.del(attemptsKey);
         },
-      });
-    }
+        undefined,
+      );
 
-    const orgId = await ensurePersonalOrg(user.id);
-    const { accessToken, refreshToken } = await issueSession(user, orgId);
+      let user = await prisma.user.findFirst({ where: { phone } });
+      if (user && isInternalRole(user.role)) {
+        // A staff account must not be reachable through an unauthenticated phone
+        // callback. Staff sign in with a password.
+        return reply.code(403).send({ error: "This account cannot sign in this way." });
+      }
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            name: "WhatsApp User",
+            email: `${phone}@wa.stackfox.in`,
+            phone,
+            role: "INDIVIDUAL_CLIENT",
+          },
+        });
+      }
 
-    return {
-      data: {
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, orgId },
-        accessToken,
-        refreshToken,
-      },
-    };
-  });
+      const orgId = await ensurePersonalOrg(user.id);
+      const { accessToken, refreshToken } = await issueSession(user, orgId);
+
+      return {
+        data: {
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            orgId,
+          },
+          accessToken,
+          refreshToken,
+        },
+      };
+    },
+  );
 
   // POST /auth/logout
   app.post("/auth/logout", async (req, reply) => {
@@ -756,7 +939,8 @@ export async function authRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
 
     const caller = req.user!;
-    const isOwnOrgManager = caller.orgId === id && ORG_MANAGER_ROLES.includes(caller.role);
+    const isOwnOrgManager =
+      caller.orgId === id && ORG_MANAGER_ROLES.includes(caller.role);
     if (!isInternalRole(caller.role) && !isOwnOrgManager) {
       return reply.code(403).send({ error: "Insufficient permissions" });
     }
@@ -784,7 +968,8 @@ export async function authRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
 
     const caller = req.user!;
-    const isOwnOrgManager = caller.orgId === id && ORG_MANAGER_ROLES.includes(caller.role);
+    const isOwnOrgManager =
+      caller.orgId === id && ORG_MANAGER_ROLES.includes(caller.role);
     if (!isInternalRole(caller.role) && !isOwnOrgManager) {
       return reply.code(403).send({ error: "Insufficient permissions" });
     }
@@ -797,9 +982,12 @@ export async function authRoutes(app: FastifyInstance) {
     // own org — never grant staff/admin access. Staff callers may assign any
     // known role (including internal ones, e.g. staffing an internal org).
     const roleIsKnown = ASSIGNABLE_MEMBER_ROLES.includes(role) || isInternalRole(role);
-    const roleIsAllowedForCaller = isInternalRole(caller.role) || ASSIGNABLE_MEMBER_ROLES.includes(role);
+    const roleIsAllowedForCaller =
+      isInternalRole(caller.role) || ASSIGNABLE_MEMBER_ROLES.includes(role);
     if (!roleIsKnown || !roleIsAllowedForCaller) {
-      return reply.code(400).send({ error: `Unknown or unassignable role. Valid roles: ${ASSIGNABLE_MEMBER_ROLES.join(", ")}` });
+      return reply.code(400).send({
+        error: `Unknown or unassignable role. Valid roles: ${ASSIGNABLE_MEMBER_ROLES.join(", ")}`,
+      });
     }
 
     let user = await prisma.user.findUnique({ where: { email } });

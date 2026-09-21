@@ -3,7 +3,15 @@ import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 
 /** Company-wide aggregates — internal staff only. */
-const ANALYTICS_ROLES = ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM", "SALES", "SE"];
+const ANALYTICS_ROLES = [
+  "ADMIN",
+  "SUPER_ADMIN",
+  "FINANCE",
+  "SENIOR_PM",
+  "PM",
+  "SALES",
+  "SE",
+];
 
 function toRupees(paise: number | bigint) {
   return Number(paise) / 100;
@@ -13,25 +21,21 @@ export async function analyticsRoutes(app: FastifyInstance) {
   app.get("/analytics/overview", async (req, reply) => {
     if (!requireRole(req, reply, ANALYTICS_ROLES)) return;
 
-    const [
-      totalProjects,
-      paidInvoices,
-      activeClientOrgs,
-      pendingInvoices,
-    ] = await Promise.all([
-      prisma.project.count(),
-      prisma.invoice.aggregate({
-        where: { status: "PAID" },
-        _sum: { grandTotal: true },
-      }),
-      prisma.order.findMany({
-        select: { orgId: true },
-        distinct: ["orgId"],
-      }),
-      prisma.invoice.count({
-        where: { status: { in: ["SENT", "OVERDUE"] } },
-      }),
-    ]);
+    const [totalProjects, paidInvoices, activeClientOrgs, pendingInvoices] =
+      await Promise.all([
+        prisma.project.count(),
+        prisma.invoice.aggregate({
+          where: { status: "PAID" },
+          _sum: { grandTotal: true },
+        }),
+        prisma.order.findMany({
+          select: { orgId: true },
+          distinct: ["orgId"],
+        }),
+        prisma.invoice.count({
+          where: { status: { in: ["SENT", "OVERDUE"] } },
+        }),
+      ]);
 
     const activeClients = activeClientOrgs.length;
     const totalRevenue = toRupees(paidInvoices._sum.grandTotal ?? 0);
@@ -85,7 +89,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
       prisma.quote.count({ where: { status: "paid" } }),
     ]);
 
-    const conversionRate = totalQuotes > 0 ? Math.round((paidQuotes / totalQuotes) * 100) : 0;
+    const conversionRate =
+      totalQuotes > 0 ? Math.round((paidQuotes / totalQuotes) * 100) : 0;
 
     return {
       totalQuotes,
@@ -101,7 +106,10 @@ export async function analyticsRoutes(app: FastifyInstance) {
       include: { service: true },
     });
 
-    const stats: Record<string, { serviceId: string; serviceName: string; count: number }> = {};
+    const stats: Record<
+      string,
+      { serviceId: string; serviceName: string; count: number }
+    > = {};
 
     for (const p of projects) {
       const sid = p.serviceId;

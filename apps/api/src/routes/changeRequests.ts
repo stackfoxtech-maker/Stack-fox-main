@@ -32,7 +32,11 @@ export async function changeRequestRoutes(app: FastifyInstance) {
       },
     });
 
-    await emitEvent({ code: "CR_SUBMITTED", payload: { crId: cr.id }, actor: req.user!.sub });
+    await emitEvent({
+      code: "CR_SUBMITTED",
+      payload: { crId: cr.id },
+      actor: req.user!.sub,
+    });
 
     return { data: cr };
   });

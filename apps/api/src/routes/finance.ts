@@ -16,7 +16,14 @@ import { RecordUtrSchema, UpdateInvoiceStatusSchema } from "./financeSchemas";
 
 const VALID_GST_RATES = [0, 5, 12, 18, 28];
 const INVOICE_STATUSES = [
-  "DRAFT", "SENT", "VIEWED", "PAID", "PARTIALLY_PAID", "OVERDUE", "CANCELLED", "DISPUTED",
+  "DRAFT",
+  "SENT",
+  "VIEWED",
+  "PAID",
+  "PARTIALLY_PAID",
+  "OVERDUE",
+  "CANCELLED",
+  "DISPUTED",
 ];
 /** Statuses that represent a live receivable (issued, not settled or void). */
 const OPEN_RECEIVABLE = ["SENT", "VIEWED", "OVERDUE", "PARTIALLY_PAID", "DISPUTED"];
@@ -160,7 +167,9 @@ export async function financeRoutes(app: FastifyInstance) {
     if (!body.orgId) return reply.code(400).send({ error: "orgId is required" });
 
     const subtotal = Math.max(0, Math.round(Number(body.subtotal) || 0));
-    const gstRate = VALID_GST_RATES.includes(Number(body.gstRate)) ? Number(body.gstRate) : 18;
+    const gstRate = VALID_GST_RATES.includes(Number(body.gstRate))
+      ? Number(body.gstRate)
+      : 18;
     const gstType = body.gstType === "CGST_SGST" ? "CGST_SGST" : "IGST";
 
     const taxTotal = Math.round((subtotal * gstRate) / 100);
@@ -231,7 +240,9 @@ export async function financeRoutes(app: FastifyInstance) {
     const existingPaid = Number(existing.amountPaid ?? 0);
     const balance = Math.max(0, existingTotal - existingPaid);
     const applied =
-      amount != null ? Math.min(balance, Math.max(0, Math.round(Number(amount)))) : balance;
+      amount != null
+        ? Math.min(balance, Math.max(0, Math.round(Number(amount))))
+        : balance;
     const newPaid = Math.min(existingTotal, existingPaid + applied);
     const fullyPaid = newPaid >= existingTotal;
 
@@ -242,7 +253,7 @@ export async function financeRoutes(app: FastifyInstance) {
         amountPaid: newPaid,
         status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
         paidAt: fullyPaid
-          ? existing.paidAt ?? (paidAt ? new Date(paidAt) : new Date())
+          ? (existing.paidAt ?? (paidAt ? new Date(paidAt) : new Date()))
           : null,
       },
     });
@@ -276,7 +287,10 @@ export async function financeRoutes(app: FastifyInstance) {
 
     // Accept the lowercase display form ("partially-paid") or the stored form
     // ("PARTIALLY_PAID") — the admin UI renders the lowercased variant.
-    const normalized = String(status ?? "").trim().toUpperCase().replace(/-/g, "_");
+    const normalized = String(status ?? "")
+      .trim()
+      .toUpperCase()
+      .replace(/-/g, "_");
     if (!INVOICE_STATUSES.includes(normalized)) {
       return reply.code(400).send({
         error: `Invalid status. Allowed: ${INVOICE_STATUSES.join(", ").toLowerCase()}`,
@@ -352,7 +366,9 @@ export async function financeRoutes(app: FastifyInstance) {
   // Razorpay webhook
   app.post("/webhooks/razorpay", async (req, reply) => {
     if (!process.env.RAZORPAY_WEBHOOK_SECRET) {
-      req.log.error("RAZORPAY_WEBHOOK_SECRET not set — Razorpay webhooks cannot be verified");
+      req.log.error(
+        "RAZORPAY_WEBHOOK_SECRET not set — Razorpay webhooks cannot be verified",
+      );
       return reply.code(503).send({ error: "Webhook verification not configured" });
     }
 
@@ -503,9 +519,19 @@ export async function financeRoutes(app: FastifyInstance) {
     });
 
     const now = Date.now();
-    const buckets = { current: 0, d30: 0, d60: 0, d90: 0, d90plus: 0, totalOutstanding: 0 };
+    const buckets = {
+      current: 0,
+      d30: 0,
+      d60: 0,
+      d90: 0,
+      d90plus: 0,
+      totalOutstanding: 0,
+    };
     for (const inv of invoices) {
-      const outstanding = Math.max(0, Number(inv.grandTotal ?? 0) - Number(inv.amountPaid ?? 0));
+      const outstanding = Math.max(
+        0,
+        Number(inv.grandTotal ?? 0) - Number(inv.amountPaid ?? 0),
+      );
       if (outstanding === 0) continue;
       buckets.totalOutstanding += outstanding;
       const anchor = (inv.dueDate ?? inv.createdAt).getTime();
@@ -554,7 +580,9 @@ export async function financeRoutes(app: FastifyInstance) {
       take: LIST_CAP,
       where: {
         createdAt: { gte: startDate, lt: endDate },
-        status: { in: ["SENT", "VIEWED", "PARTIALLY_PAID", "PAID", "OVERDUE", "DISPUTED"] },
+        status: {
+          in: ["SENT", "VIEWED", "PARTIALLY_PAID", "PAID", "OVERDUE", "DISPUTED"],
+        },
       },
       include: { org: true },
     });

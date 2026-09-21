@@ -71,7 +71,9 @@ export async function getPresignedDownload(
     .createSignedUrl(key, expiresIn, { download: true });
 
   if (error || !data) {
-    throw new Error(`Could not sign download for ${key}: ${error?.message ?? "no url returned"}`);
+    throw new Error(
+      `Could not sign download for ${key}: ${error?.message ?? "no url returned"}`,
+    );
   }
   return data.signedUrl;
 }
@@ -91,7 +93,9 @@ export async function getPresignedUpload(
     .createSignedUploadUrl(key);
 
   if (error || !data) {
-    throw new Error(`Could not sign upload for ${key}: ${error?.message ?? "no url returned"}`);
+    throw new Error(
+      `Could not sign upload for ${key}: ${error?.message ?? "no url returned"}`,
+    );
   }
   return { url: data.signedUrl, token: data.token };
 }

@@ -110,7 +110,8 @@ export async function assertPublicHttpUrl(
     return { ok: false, reason: "destination hostname does not resolve" };
   }
 
-  if (!addresses.length) return { ok: false, reason: "destination hostname does not resolve" };
+  if (!addresses.length)
+    return { ok: false, reason: "destination hostname does not resolve" };
   if (addresses.some((a) => isBlockedAddress(a.address))) {
     return { ok: false, reason: "destination resolves to a private or reserved address" };
   }

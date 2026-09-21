@@ -17,7 +17,8 @@ import { computeInvoice } from "../src/lib/gstInvoice";
 import { paymentModeAmount } from "@stackfox/core";
 
 const checks: Array<[string, boolean, string]> = [];
-const check = (label: string, pass: boolean, note = "") => checks.push([label, pass, note]);
+const check = (label: string, pass: boolean, note = "") =>
+  checks.push([label, pass, note]);
 
 // ── Identifier collisions (SF-H2) ────────────────────────────────────────────
 //
@@ -41,7 +42,7 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
     const seen = new Set<string>();
     let collisions = 0;
     for (let i = 0; i < N; i++) {
-      const id = (gen)();
+      const id = gen();
       if (seen.has(id)) collisions++;
       seen.add(id);
     }
@@ -93,17 +94,29 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
     {
       label: "single line, intra-State",
       intra: true,
-      input: { from, to: intraTo, lineItems: [{ description: "Web build", qty: 1, rate: 50000 }] },
+      input: {
+        from,
+        to: intraTo,
+        lineItems: [{ description: "Web build", qty: 1, rate: 50000 }],
+      },
     },
     {
       label: "single line, inter-State",
       intra: false,
-      input: { from, to: interTo, lineItems: [{ description: "Web build", qty: 1, rate: 50000 }] },
+      input: {
+        from,
+        to: interTo,
+        lineItems: [{ description: "Web build", qty: 1, rate: 50000 }],
+      },
     },
     {
       label: "odd amount",
       intra: true,
-      input: { from, to: intraTo, lineItems: [{ description: "Retainer", qty: 3, rate: 333.33 }] },
+      input: {
+        from,
+        to: intraTo,
+        lineItems: [{ description: "Retainer", qty: 3, rate: 333.33 }],
+      },
     },
     {
       label: "many lines",
@@ -124,7 +137,15 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
       input: {
         from,
         to: intraTo,
-        lineItems: [{ description: "Audit", qty: 1, rate: 100000, discount: 10, discountType: "%" as const }],
+        lineItems: [
+          {
+            description: "Audit",
+            qty: 1,
+            rate: 100000,
+            discount: 10,
+            discountType: "%" as const,
+          },
+        ],
       },
     },
   ];
@@ -209,9 +230,21 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
 {
   const grand = 1_000_000; // Rs 10,000 in paise
 
-  check(`FULL charges the whole amount`, paymentModeAmount(grand, "FULL") === grand, `got ${paymentModeAmount(grand, "FULL")}`);
-  check(`UPFRONT applies the 5% discount`, paymentModeAmount(grand, "UPFRONT") === 950_000, `got ${paymentModeAmount(grand, "UPFRONT")}`);
-  check(`MILESTONE charges 30% first`, paymentModeAmount(grand, "MILESTONE") === 300_000, `got ${paymentModeAmount(grand, "MILESTONE")}`);
+  check(
+    `FULL charges the whole amount`,
+    paymentModeAmount(grand, "FULL") === grand,
+    `got ${paymentModeAmount(grand, "FULL")}`,
+  );
+  check(
+    `UPFRONT applies the 5% discount`,
+    paymentModeAmount(grand, "UPFRONT") === 950_000,
+    `got ${paymentModeAmount(grand, "UPFRONT")}`,
+  );
+  check(
+    `MILESTONE charges 30% first`,
+    paymentModeAmount(grand, "MILESTONE") === 300_000,
+    `got ${paymentModeAmount(grand, "MILESTONE")}`,
+  );
 
   for (const mode of ["UPFRONT", "MILESTONE", "FULL"]) {
     const amount = paymentModeAmount(grand, mode);

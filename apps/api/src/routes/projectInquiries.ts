@@ -20,7 +20,10 @@ export async function projectInquiryRoutes(app: FastifyInstance) {
       prisma.lead.count({ where }),
     ]);
 
-    return { data: items, meta: { pagination: { total, page: parseInt(page), limit: parseInt(limit) } } };
+    return {
+      data: items,
+      meta: { pagination: { total, page: parseInt(page), limit: parseInt(limit) } },
+    };
   });
 
   app.patch("/project-inquiries/:id/status", async (req, reply) => {
@@ -30,7 +33,9 @@ export async function projectInquiryRoutes(app: FastifyInstance) {
 
     const valid = ["NEW", "CONTACTED", "QUALIFIED", "CONVERTED", "LOST"];
     if (!valid.includes(status)) {
-      return reply.code(400).send({ message: `Invalid status. Must be one of: ${valid.join(", ")}` });
+      return reply
+        .code(400)
+        .send({ message: `Invalid status. Must be one of: ${valid.join(", ")}` });
     }
 
     const updated = await prisma.lead.update({

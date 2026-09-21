@@ -36,9 +36,9 @@ function statusOf(err: HttpishError): number {
  * message embeds the model, the constraint name and sometimes the value. Map
  * the handful that mean something to a caller, and let the rest be a 500.
  */
-function fromPrisma(err: Prisma.PrismaClientKnownRequestError):
-  | { status: number; body: Record<string, unknown> }
-  | null {
+function fromPrisma(
+  err: Prisma.PrismaClientKnownRequestError,
+): { status: number; body: Record<string, unknown> } | null {
   switch (err.code) {
     case "P2002": {
       // Unique constraint. The target names columns, which is safe to echo and
@@ -48,7 +48,9 @@ function fromPrisma(err: Prisma.PrismaClientKnownRequestError):
       return {
         status: 409,
         body: {
-          error: fields ? `That ${fields} is already taken` : "That value is already taken",
+          error: fields
+            ? `That ${fields} is already taken`
+            : "That value is already taken",
         },
       };
     }
@@ -57,7 +59,10 @@ function fromPrisma(err: Prisma.PrismaClientKnownRequestError):
       // model name, which would confirm the existence of internal tables.
       return { status: 404, body: { error: "Not found" } };
     case "P2003":
-      return { status: 409, body: { error: "That record is still referenced by something else" } };
+      return {
+        status: 409,
+        body: { error: "That record is still referenced by something else" },
+      };
     default:
       return null;
   }
@@ -73,7 +78,10 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (err instanceof ZodError) {
       return reply.code(400).send({
         error: "Invalid request",
-        details: err.issues.map((i) => ({ path: i.path.join(".") || "(root)", message: i.message })),
+        details: err.issues.map((i) => ({
+          path: i.path.join(".") || "(root)",
+          message: i.message,
+        })),
         requestId: reqId,
       });
     }
@@ -96,7 +104,11 @@ export function registerErrorHandler(app: FastifyInstance): void {
 
     // A 500 is an incident. Log everything, return nothing.
     req.log.error({ err }, "unhandled error");
-    captureException(err, { reqId, route: req.routeOptions?.url ?? req.url, method: req.method });
+    captureException(err, {
+      reqId,
+      route: req.routeOptions?.url ?? req.url,
+      method: req.method,
+    });
 
     return reply.code(500).send({
       error: "Something went wrong on our side.",

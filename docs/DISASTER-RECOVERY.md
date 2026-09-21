@@ -13,7 +13,7 @@ A backup that has never been restored is a hypothesis. The timings in
 
 `.env.example` carries a commented-out Supabase pooler connection string, and
 Supabase is definitely used for object storage. Whether production Postgres is
-*also* Supabase, or a Railway Postgres service, is set in Railway's environment
+_also_ Supabase, or a Railway Postgres service, is set in Railway's environment
 variables and is not visible in this repository.
 
 The two have different backup products, different retention and different
@@ -25,14 +25,14 @@ railway variables | grep -i database_url
 
 Record the answer here, with the date checked:
 
-| | |
-| --- | --- |
-| Postgres host | **UNCONFIRMED — fill this in** |
-| Plan / tier | **UNCONFIRMED** |
-| Automated backup frequency | **UNCONFIRMED** |
-| Retention window | **UNCONFIRMED** |
-| Point-in-time recovery available | **UNCONFIRMED** |
-| Last verified | — |
+|                                  |                                |
+| -------------------------------- | ------------------------------ |
+| Postgres host                    | **UNCONFIRMED — fill this in** |
+| Plan / tier                      | **UNCONFIRMED**                |
+| Automated backup frequency       | **UNCONFIRMED**                |
+| Retention window                 | **UNCONFIRMED**                |
+| Point-in-time recovery available | **UNCONFIRMED**                |
+| Last verified                    | —                              |
 
 Neither provider takes automated backups on its free tier. If the answer is
 "free tier", the honest RPO is **"everything since the last manual dump"**, and
@@ -42,12 +42,12 @@ the rest of this document describes a procedure with no automated input.
 
 ## What has to survive
 
-| Store | Holds | Backed up by | Loss means |
-| --- | --- | --- | --- |
-| **Postgres** | Everything of record: orgs, users, engagements, invoices, contracts, payments, the document hash ledger | Provider snapshots + the manual dump below | The business is gone. This is the one that matters. |
-| **Supabase Storage** — `documents` | Generated invoice/contract/quote PDFs | Supabase bucket backup (see below) | Regenerable from Postgres for most documents, **except** anything counter-signed |
-| **Supabase Storage** — WORM bucket | Retained documents of record | Object Lock semantics, see [Storage](#storage) | Not regenerable. This is the compliance copy. |
-| **Redis** | Session/refresh tokens, OTP codes, password-reset and verify tokens, OAuth state, rate-limit counters, BullMQ queues | **Nothing, deliberately** | See [Redis](#redis-is-deliberately-not-backed-up) |
+| Store                              | Holds                                                                                                                | Backed up by                                   | Loss means                                                                       |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------- |
+| **Postgres**                       | Everything of record: orgs, users, engagements, invoices, contracts, payments, the document hash ledger              | Provider snapshots + the manual dump below     | The business is gone. This is the one that matters.                              |
+| **Supabase Storage** — `documents` | Generated invoice/contract/quote PDFs                                                                                | Supabase bucket backup (see below)             | Regenerable from Postgres for most documents, **except** anything counter-signed |
+| **Supabase Storage** — WORM bucket | Retained documents of record                                                                                         | Object Lock semantics, see [Storage](#storage) | Not regenerable. This is the compliance copy.                                    |
+| **Redis**                          | Session/refresh tokens, OTP codes, password-reset and verify tokens, OAuth state, rate-limit counters, BullMQ queues | **Nothing, deliberately**                      | See [Redis](#redis-is-deliberately-not-backed-up)                                |
 
 ---
 
@@ -55,10 +55,10 @@ the rest of this document describes a procedure with no automated input.
 
 **RPO — how much data we accept losing.**
 
-| | Target | Met today? |
-| --- | --- | --- |
+|          | Target     | Met today?                                                                                            |
+| -------- | ---------- | ----------------------------------------------------------------------------------------------------- |
 | Postgres | **1 hour** | Depends entirely on Step 0. Point-in-time recovery meets it; daily snapshots do not (worst case 24h). |
-| Storage | 24 hours | Supabase bucket backup cadence — confirm with Step 0 |
+| Storage  | 24 hours   | Supabase bucket backup cadence — confirm with Step 0                                                  |
 
 One hour is chosen because that is roughly the window in which losing writes is
 recoverable by hand: an invoice or two re-issued, a signature re-collected. A
@@ -67,12 +67,12 @@ which for a business of record is not an acceptable answer to a customer.
 
 **RTO — how long until we are serving again.**
 
-| Phase | Measured | Notes |
-| --- | --- | --- |
-| Restore database | **4.4 s** at 175 KiB | Scales with data volume — see below |
-| Application boot | **5.3 s** | Includes `prisma migrate deploy`, which is a no-op on a restored database |
-| **Measured total** | **~11 s** | At current data volume |
-| **Stated RTO** | **4 hours** | See the reasoning below |
+| Phase              | Measured             | Notes                                                                     |
+| ------------------ | -------------------- | ------------------------------------------------------------------------- |
+| Restore database   | **4.4 s** at 175 KiB | Scales with data volume — see below                                       |
+| Application boot   | **5.3 s**            | Includes `prisma migrate deploy`, which is a no-op on a restored database |
+| **Measured total** | **~11 s**            | At current data volume                                                    |
+| **Stated RTO**     | **4 hours**          | See the reasoning below                                                   |
 
 The four-hour target is not derived from the eleven seconds. It is dominated by
 the things the rehearsal could not measure: noticing the outage, deciding to
@@ -92,10 +92,10 @@ A full backup → restore → boot cycle, run end to end.
 
 **Dataset:** 430 rows across the tables checked, 175 KiB compressed dump.
 
-| Step | Elapsed |
-| --- | --- |
-| `pg_dump -Fc` | 1,516 ms |
-| `pg_restore` into a fresh database | 4,385 ms |
+| Step                                                         | Elapsed  |
+| ------------------------------------------------------------ | -------- |
+| `pg_dump -Fc`                                                | 1,516 ms |
+| `pg_restore` into a fresh database                           | 4,385 ms |
 | API boot against the restored database, to healthy `/health` | 5,282 ms |
 
 **Verified, not assumed:**
@@ -117,7 +117,7 @@ A full backup → restore → boot cycle, run end to end.
 **What this rehearsal did not cover**, and must before it can be called
 complete:
 
-- A restore from a *provider snapshot*, rather than from a dump we took
+- A restore from a _provider snapshot_, rather than from a dump we took
   ourselves. That is the path a real disaster uses, and it depends on Step 0.
 - A storage bucket restore.
 - A restore at production data volume.
@@ -136,7 +136,7 @@ should hold the access, or the restore cannot happen while they are asleep.
 
 A restore loses every write since the snapshot. If the damage is one table or
 one bad migration, repairing forward is almost always better. Restore when
-data is *gone* and cannot be re-derived.
+data is _gone_ and cannot be re-derived.
 
 Take a snapshot of the damaged database first, before anything:
 
@@ -190,7 +190,7 @@ column.
 Point `DATABASE_URL` and `DIRECT_DATABASE_URL` at the restored database and
 redeploy. Note that `Dockerfile.server` runs `prisma migrate deploy` before
 starting the server, so a restored database that is behind on migrations will
-be migrated forward automatically — and a *failed* migration presents as a
+be migrated forward automatically — and a _failed_ migration presents as a
 container that will not boot. See [ROLLBACK.md](./ROLLBACK.md).
 
 ### 5. Afterwards
@@ -233,15 +233,15 @@ described as Object Lock.
 
 Everything in Redis is either reconstructible or intentionally short-lived:
 
-| Key | On loss |
-| --- | --- |
-| `refresh:*` | Users log in again |
-| `otp:*`, `otp-attempts:*` | In-flight codes fail; the user requests a new one |
-| `reset:*`, `verify:*` | Outstanding links stop working; re-send them |
-| `oauth:state:*` | In-flight sign-ins fail and restart |
-| `fastify-rate-limit-*` | Counters reset — limits are briefly generous |
-| `lock:*` | Advisory only; the transactional guards do the real work |
-| `checkout:*` | **Nothing.** Checkout sessions are Postgres-authoritative since Phase 2; Redis is a read cache. |
+| Key                       | On loss                                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------------------- |
+| `refresh:*`               | Users log in again                                                                              |
+| `otp:*`, `otp-attempts:*` | In-flight codes fail; the user requests a new one                                               |
+| `reset:*`, `verify:*`     | Outstanding links stop working; re-send them                                                    |
+| `oauth:state:*`           | In-flight sign-ins fail and restart                                                             |
+| `fastify-rate-limit-*`    | Counters reset — limits are briefly generous                                                    |
+| `lock:*`                  | Advisory only; the transactional guards do the real work                                        |
+| `checkout:*`              | **Nothing.** Checkout sessions are Postgres-authoritative since Phase 2; Redis is a read cache. |
 
 The one real loss is **queued BullMQ jobs**: generated documents, notifications
 and webhook deliveries that had been enqueued but not run. Those do not

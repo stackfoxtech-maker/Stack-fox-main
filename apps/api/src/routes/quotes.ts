@@ -3,7 +3,12 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { applyTierMultiplier, computeEstimateRange } from "../lib/estimate";
 import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
-import { getContractTypes, getMilestoneTemplates, isAdminRole, paymentModeAmount } from "@stackfox/core";
+import {
+  getContractTypes,
+  getMilestoneTemplates,
+  isAdminRole,
+  paymentModeAmount,
+} from "@stackfox/core";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
 import { LIST_CAP, pageParams, paginated } from "../lib/http";
@@ -82,7 +87,7 @@ async function provisionQuote(quote: any, userId: string) {
     serviceById.set(created.id, created);
   }
 
-  const checkoutDetails = (quote.checkoutDetails) ?? {};
+  const checkoutDetails = quote.checkoutDetails ?? {};
   const milestoneTemplates = getMilestoneTemplates(tier);
 
   const result = await prisma.$transaction(
@@ -92,7 +97,11 @@ async function provisionQuote(quote: any, userId: string) {
           id: engId,
           clientId: orgId,
           model: "FPM",
-          commercial: { subtotal: quote.subtotal, gst: quote.gstAmount, total: quote.total },
+          commercial: {
+            subtotal: quote.subtotal,
+            gst: quote.gstAmount,
+            total: quote.total,
+          },
           methodology: "MILESTONE",
           status: "ACTIVE",
           executedAt: quote.paidAt ?? new Date(),
@@ -183,16 +192,41 @@ async function provisionQuote(quote: any, userId: string) {
   );
 
   // Committed — side effects only from here.
-  await emitEvent({ code: "ENGAGEMENT_CREATED", payload: { engagementId: engId }, actor: userId, engagementId: engId });
+  await emitEvent({
+    code: "ENGAGEMENT_CREATED",
+    payload: { engagementId: engId },
+    actor: userId,
+    engagementId: engId,
+  });
   for (const p of result.projects) {
-    await emitEvent({ code: "PROJECT_CREATED", payload: { projectId: p.id }, actor: userId, projectId: p.id, engagementId: engId });
+    await emitEvent({
+      code: "PROJECT_CREATED",
+      payload: { projectId: p.id },
+      actor: userId,
+      projectId: p.id,
+      engagementId: engId,
+    });
   }
   for (const c of result.contracts) {
-    await emitEvent({ code: "CONTRACT_CREATED", payload: { contractId: c.id, type: c.type }, actor: userId, engagementId: engId });
+    await emitEvent({
+      code: "CONTRACT_CREATED",
+      payload: { contractId: c.id, type: c.type },
+      actor: userId,
+      engagementId: engId,
+    });
   }
-  await emitEvent({ code: "INVOICE_CREATED", payload: { invoiceId: result.invoice.id }, actor: "SYSTEM" });
+  await emitEvent({
+    code: "INVOICE_CREATED",
+    payload: { invoiceId: result.invoice.id },
+    actor: "SYSTEM",
+  });
 
-  return { engId, projects: result.projects, contracts: result.contracts, invoice: result.invoice };
+  return {
+    engId,
+    projects: result.projects,
+    contracts: result.contracts,
+    invoice: result.invoice,
+  };
 }
 
 export interface BackfillOptions {
@@ -230,7 +264,10 @@ export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
     // for this org that have projects matching the quote's items)
     const existingEngs = await prisma.engagement.findMany({
       where: { clientId: orgId },
-      include: { projects: { select: { id: true } }, contracts: { select: { id: true } } },
+      include: {
+        projects: { select: { id: true } },
+        contracts: { select: { id: true } },
+      },
     });
 
     // If any engagement for this org already has projects, check if contracts are missing
@@ -244,7 +281,11 @@ export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
           const checkoutDetails = (quote.checkoutDetails as any) ?? {};
           if (dryRun) {
             log().info(
-              { contracts: contractTypes.length, engagementId: eng.id, quote: quote.quoteNumber },
+              {
+                contracts: contractTypes.length,
+                engagementId: eng.id,
+                quote: quote.quoteNumber,
+              },
               "backfill would add contracts",
             );
             continue;
@@ -348,11 +389,12 @@ export async function quoteRoutes(app: FastifyInstance) {
       const byId = new Map(users.map((u) => [u.id, u]));
       serialized = serialized.map((q) => ({
         ...q,
-        client: q.userId === req.user!.sub
-          ? null
-          : byId.get(q.userId)
-            ? { ...byId.get(q.userId)!, _id: q.userId }
-            : { _id: q.userId, name: "Unknown user", email: "", phone: "" },
+        client:
+          q.userId === req.user!.sub
+            ? null
+            : byId.get(q.userId)
+              ? { ...byId.get(q.userId)!, _id: q.userId }
+              : { _id: q.userId, name: "Unknown user", email: "", phone: "" },
       }));
     }
 
@@ -376,15 +418,21 @@ export async function quoteRoutes(app: FastifyInstance) {
 
     const items: QuoteItem[] = body?.items ?? [];
     if (items.length === 0) {
-      return reply.code(400).send({ message: "Cart is empty — add items before requesting a quote." });
+      return reply
+        .code(400)
+        .send({ message: "Cart is empty — add items before requesting a quote." });
     }
-    const tier = ["STARTER", "GROWTH", "PREMIUM"].includes(body?.tier ?? "") ? body!.tier! : "GROWTH";
+    const tier = ["STARTER", "GROWTH", "PREMIUM"].includes(body?.tier ?? "")
+      ? body!.tier!
+      : "GROWTH";
 
     const rawSubtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
     const subtotal = applyTierMultiplier(rawSubtotal, tier);
     const gstAmount = Math.round(subtotal * 0.18);
     const now = new Date();
-    const validUntil = new Date(now.getTime() + (tier === "STARTER" ? 30 : 15) * 24 * 60 * 60 * 1000);
+    const validUntil = new Date(
+      now.getTime() + (tier === "STARTER" ? 30 : 15) * 24 * 60 * 60 * 1000,
+    );
 
     const seq = (await prisma.quote.count()) + 1;
     const quote = await prisma.quote.create({
@@ -409,7 +457,10 @@ export async function quoteRoutes(app: FastifyInstance) {
   app.patch("/quotes/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { checkoutDetails, tier } = req.body as { checkoutDetails?: Record<string, unknown>; tier?: string };
+    const { checkoutDetails, tier } = req.body as {
+      checkoutDetails?: Record<string, unknown>;
+      tier?: string;
+    };
 
     const existing = await prisma.quote.findUnique({ where: { id } });
     if (!existing || existing.userId !== req.user!.sub) {
@@ -440,10 +491,14 @@ export async function quoteRoutes(app: FastifyInstance) {
     const isAdmin = isAdminRole(req.user!.role);
     const ALLOWED = ["draft", "reviewing", "approved", "invoiced", "cancelled"];
     if (!isAdmin && !(status === "cancelled")) {
-      return reply.code(403).send({ error: "Only admins can update quote workflow status" });
+      return reply
+        .code(403)
+        .send({ error: "Only admins can update quote workflow status" });
     }
     if (!ALLOWED.includes(status)) {
-      return reply.code(400).send({ error: `Invalid status. Allowed: ${ALLOWED.join(", ")}` });
+      return reply
+        .code(400)
+        .send({ error: `Invalid status. Allowed: ${ALLOWED.join(", ")}` });
     }
 
     const existing = await prisma.quote.findUnique({ where: { id } });
@@ -451,7 +506,11 @@ export async function quoteRoutes(app: FastifyInstance) {
       return reply.code(404).send({ error: "Quote not found" });
     }
     const quote = await prisma.quote.update({ where: { id }, data: { status } });
-    await emitEvent({ code: "QUOTE_STATUS_CHANGED", payload: { quoteId: id, status }, actor: req.user!.sub });
+    await emitEvent({
+      code: "QUOTE_STATUS_CHANGED",
+      payload: { quoteId: id, status },
+      actor: req.user!.sub,
+    });
     return { data: serializeQuote(quote) };
   });
 
@@ -476,7 +535,9 @@ export async function quoteRoutes(app: FastifyInstance) {
     // The payment-terms split only applies to the first payment on a quote.
     // Once a milestone/upfront payment has landed, whatever is left is due in
     // full — there is no further installment schedule to compute against.
-    let mode = ["MILESTONE", "UPFRONT", "FULL"].includes(paymentMode ?? "") ? paymentMode! : "FULL";
+    let mode = ["MILESTONE", "UPFRONT", "FULL"].includes(paymentMode ?? "")
+      ? paymentMode!
+      : "FULL";
     let amount = remainingDue;
     if (amountPaidSoFar === 0) {
       amount = paymentModeAmount(quoteTotal, mode);
@@ -486,13 +547,22 @@ export async function quoteRoutes(app: FastifyInstance) {
 
     let order;
     try {
-      order = await createRazorpayOrder(amount * 100, "INR", `quote_${quote.id}`, { quoteId: quote.id, paymentMode: mode });
+      order = await createRazorpayOrder(amount * 100, "INR", `quote_${quote.id}`, {
+        quoteId: quote.id,
+        paymentMode: mode,
+      });
     } catch (err: any) {
       const description: string | undefined = err?.error?.description ?? err?.message;
       const statusCode: number | undefined = err?.statusCode;
-      req.log.error({ razorpayError: err?.error ?? err, statusCode }, "Razorpay order creation failed");
-      const authFailure = statusCode === 401 || /key_id|key_secret|auth/i.test(description ?? "");
-      return reply.code(authFailure ? 401 : 500).send({ message: description ?? "Failed to create Razorpay order" });
+      req.log.error(
+        { razorpayError: err?.error ?? err, statusCode },
+        "Razorpay order creation failed",
+      );
+      const authFailure =
+        statusCode === 401 || /key_id|key_secret|auth/i.test(description ?? "");
+      return reply
+        .code(authFailure ? 401 : 500)
+        .send({ message: description ?? "Failed to create Razorpay order" });
     }
 
     await prisma.quote.update({
@@ -527,7 +597,10 @@ export async function quoteRoutes(app: FastifyInstance) {
     };
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return reply.code(400).send({ message: "razorpay_order_id, razorpay_payment_id and razorpay_signature are all required" });
+      return reply.code(400).send({
+        message:
+          "razorpay_order_id, razorpay_payment_id and razorpay_signature are all required",
+      });
     }
 
     const quote = await prisma.quote.findUnique({ where: { id } });
@@ -545,7 +618,11 @@ export async function quoteRoutes(app: FastifyInstance) {
       return { data: serializeQuote(quote) };
     }
 
-    const valid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+    const valid = verifyRazorpaySignature(
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    );
     if (!valid) {
       return reply.code(400).send({ message: "Signature verification failed" });
     }
@@ -573,7 +650,12 @@ export async function quoteRoutes(app: FastifyInstance) {
     });
     await emitEvent({
       code: fullyPaid ? "QUOTE_PAID" : "QUOTE_PARTIALLY_PAID",
-      payload: { quoteId: id, razorpayPaymentId: razorpay_payment_id, amountPaid, total: quote.total },
+      payload: {
+        quoteId: id,
+        razorpayPaymentId: razorpay_payment_id,
+        amountPaid,
+        total: quote.total,
+      },
       actor: req.user!.sub,
     });
 
@@ -584,5 +666,3 @@ export async function quoteRoutes(app: FastifyInstance) {
     return { data: serializeQuote(updated) };
   });
 }
-
-

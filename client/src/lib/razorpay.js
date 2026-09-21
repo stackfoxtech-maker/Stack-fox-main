@@ -12,7 +12,10 @@ export function loadRazorpay() {
     s.src = 'https://checkout.razorpay.com/v1/checkout.js';
     s.async = true;
     s.onload = () => resolve(true);
-    s.onerror = () => { promise = undefined; reject(new Error('Razorpay SDK failed to load')); };
+    s.onerror = () => {
+      promise = undefined;
+      reject(new Error('Razorpay SDK failed to load'));
+    };
     document.body.appendChild(s);
   });
   return promise;

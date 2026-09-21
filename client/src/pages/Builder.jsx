@@ -1,8 +1,16 @@
 import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
-  Search, ShoppingCart, Plus, Check,
-  Edit3, Sparkles, Share2, ArrowRight, ChevronLeft, ChevronRight,
+  Search,
+  ShoppingCart,
+  Plus,
+  Check,
+  Edit3,
+  Sparkles,
+  Share2,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePageTitle, useDebounce } from '@lib/hooks';
@@ -31,11 +39,13 @@ function Tour({ steps, active, onComplete }) {
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <span className="text-3xl">{current.icon}</span>
-            <span className="text-xs font-bold text-warm-400 uppercase tracking-widest">Step {step + 1} of {steps.length}</span>
+            <span className="text-xs font-bold text-warm-400 uppercase tracking-widest">
+              Step {step + 1} of {steps.length}
+            </span>
           </div>
           <h3 className="text-xl font-bold text-warm-900 mb-2">{current.title}</h3>
           <p className="text-warm-600 text-sm leading-relaxed mb-6">{current.description}</p>
-          
+
           {current.tip && (
             <div className="bg-fox-50 border border-fox-100 rounded-xl p-3 flex gap-3 mb-6">
               <Sparkles size={18} className="text-fox-500 shrink-0" />
@@ -44,7 +54,7 @@ function Tour({ steps, active, onComplete }) {
           )}
 
           <div className="flex items-center justify-between gap-3">
-            <button 
+            <button
               onClick={onComplete}
               className="text-xs font-medium text-warm-400 hover:text-warm-600 transition-colors"
             >
@@ -52,18 +62,23 @@ function Tour({ steps, active, onComplete }) {
             </button>
             <div className="flex gap-2">
               {step > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => setStep(s => s - 1)}>
+                <Button variant="ghost" size="sm" onClick={() => setStep((s) => s - 1)}>
                   Back
                 </Button>
               )}
-              <Button variant="primary" size="sm" onClick={() => step < steps.length - 1 ? setStep(s => s + 1) : onComplete()}>
-                {step === steps.length - 1 ? "Start Building" : "Next Step"} <ArrowRight size={14} />
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => (step < steps.length - 1 ? setStep((s) => s + 1) : onComplete())}
+              >
+                {step === steps.length - 1 ? 'Start Building' : 'Next Step'}{' '}
+                <ArrowRight size={14} />
               </Button>
             </div>
           </div>
         </div>
         <div className="h-1 bg-warm-100 w-full relative">
-          <div 
+          <div
             className="h-full bg-fox-500 transition-all duration-500 ease-out"
             style={{ width: `${((step + 1) / steps.length) * 100}%` }}
           />
@@ -72,7 +87,6 @@ function Tour({ steps, active, onComplete }) {
     </div>
   );
 }
-
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Service card — memoised so a debounced search keystroke (or any cart change)
@@ -94,8 +108,12 @@ const ServiceCard = memo(function ServiceCard({ svc, price, inCart, onAdd }) {
     >
       <div className="flex-1 sm:mb-3 sm:flex sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0 flex-1">
-          <span className="line-clamp-2 text-[12.5px] font-semibold leading-snug text-warm-900 sm:text-body-md">{svc.name}</span>
-          <span className="mt-1 hidden text-caption font-medium uppercase tracking-wide text-warm-500 sm:block">{svc.estimatedTime || svc.est || '3-5 days'}</span>
+          <span className="line-clamp-2 text-[12.5px] font-semibold leading-snug text-warm-900 sm:text-body-md">
+            {svc.name}
+          </span>
+          <span className="mt-1 hidden text-caption font-medium uppercase tracking-wide text-warm-500 sm:block">
+            {svc.estimatedTime || svc.est || '3-5 days'}
+          </span>
         </div>
         <div className="hidden text-right sm:block">
           <span className="price-tag block text-body-lg text-warm-900">{price}</span>
@@ -103,17 +121,23 @@ const ServiceCard = memo(function ServiceCard({ svc, price, inCart, onAdd }) {
         </div>
       </div>
 
-      <p className="mb-4 hidden flex-1 text-body-sm leading-relaxed text-warm-600 sm:block">{svc.lay || 'A single, individually priced piece of your build.'}</p>
+      <p className="mb-4 hidden flex-1 text-body-sm leading-relaxed text-warm-600 sm:block">
+        {svc.lay || 'A single, individually priced piece of your build.'}
+      </p>
 
       <div className="mt-2 flex items-center justify-between gap-1.5 sm:mt-0 sm:gap-2 sm:border-t sm:border-warm-100 sm:pt-3">
         <span className="price-tag text-[12.5px] text-warm-900 sm:hidden">{price}</span>
-        <span className="hidden text-caption font-medium uppercase tracking-wide text-warm-500 sm:inline">{svc.unit || 'Standard'}</span>
+        <span className="hidden text-caption font-medium uppercase tracking-wide text-warm-500 sm:inline">
+          {svc.unit || 'Standard'}
+        </span>
         <button
           onClick={() => !inCart && onAdd(svc)}
           aria-label={inCart ? 'Added' : `Add ${svc.name}`}
           className={cn(
             'grid h-7 w-7 shrink-0 place-items-center rounded-sm transition-colors sm:h-8 sm:w-8',
-            inCart ? 'bg-sage-100 text-sage-700' : 'bg-fox-50 text-fox-600 hover:bg-fox-500 hover:text-white',
+            inCart
+              ? 'bg-sage-100 text-sage-700'
+              : 'bg-fox-50 text-fox-600 hover:bg-fox-500 hover:text-white',
           )}
         >
           {inCart ? <Check size={14} /> : <Plus size={14} />}
@@ -130,11 +154,20 @@ export default function Builder() {
   usePageTitle('Service Builder');
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   // 1. Stores
   const {
-    items, addItem, removeItem, updateQuantity, toggleCart, itemCount, clearCart,
-    curIdx, setCurIdx, setMetadata, subtotal: cartSubtotal
+    items,
+    addItem,
+    removeItem,
+    updateQuantity,
+    toggleCart,
+    itemCount,
+    clearCart,
+    curIdx,
+    setCurIdx,
+    setMetadata,
+    subtotal: cartSubtotal,
   } = useCartStore();
   const { user, isAuthenticated, isAdmin } = useAuthStore();
 
@@ -143,12 +176,19 @@ export default function Builder() {
   const [search, setSearch] = useState(params.get('q') || '');
   const [showTour, setShowTour] = useState(false);
   const [tourHintDismissed, setTourHintDismissed] = useState(
-    () => typeof localStorage !== 'undefined' && localStorage.getItem('fox_tour_seen') === 'true'
+    () => typeof localStorage !== 'undefined' && localStorage.getItem('fox_tour_seen') === 'true',
   );
-  const dismissTourHint = () => { localStorage.setItem('fox_tour_seen', 'true'); setTourHintDismissed(true); };
-  const [catalog, setCatalog] = useState({ services: [], categories: [], packages: [], bundles: [] });
+  const dismissTourHint = () => {
+    localStorage.setItem('fox_tour_seen', 'true');
+    setTourHintDismissed(true);
+  };
+  const [catalog, setCatalog] = useState({
+    services: [],
+    categories: [],
+    packages: [],
+    bundles: [],
+  });
   const [isLoading, setIsLoading] = useState(true);
-  
 
   // Category chip rail: horizontal scroll controls
   const catRailRef = useRef(null);
@@ -158,10 +198,13 @@ export default function Builder() {
   const debouncedSearch = useDebounce(search, 200);
   const cur = CURRENCIES[curIdx];
 
-  const fmt = useCallback((n) => {
-    const converted = Math.round(Number(n) * (cur?.rate || 1));
-    return (cur?.symbol || '$') + converted.toLocaleString(cur?.locale || 'en-US');
-  }, [cur]);
+  const fmt = useCallback(
+    (n) => {
+      const converted = Math.round(Number(n) * (cur?.rate || 1));
+      return (cur?.symbol || '$') + converted.toLocaleString(cur?.locale || 'en-US');
+    },
+    [cur],
+  );
 
   // 4. Effects
   // URL Sync
@@ -169,10 +212,10 @@ export default function Builder() {
     const newParams = new URLSearchParams(params);
     if (activeCat !== 'all') newParams.set('category', activeCat);
     else newParams.delete('category');
-    
+
     if (debouncedSearch) newParams.set('q', debouncedSearch);
     else newParams.delete('q');
-    
+
     setParams(newParams, { replace: true });
   }, [activeCat, debouncedSearch, setParams]);
 
@@ -211,10 +254,10 @@ export default function Builder() {
   useEffect(() => {
     const fetchData = async () => {
       setCatalog({
-        services: SF_DATA.services.map(s => ({ ...s, dataId: s.id })),
-        categories: SF_DATA.categories.map(c => ({ ...c, dataId: c.id })),
-        packages: (SF_DATA.packages || []).map(p => ({ ...p, dataId: p.id })),
-        bundles: (SF_DATA.industryBundles || []).map(b => ({ ...b, dataId: b.id }))
+        services: SF_DATA.services.map((s) => ({ ...s, dataId: s.id })),
+        categories: SF_DATA.categories.map((c) => ({ ...c, dataId: c.id })),
+        packages: (SF_DATA.packages || []).map((p) => ({ ...p, dataId: p.id })),
+        bundles: (SF_DATA.industryBundles || []).map((b) => ({ ...b, dataId: b.id })),
       });
       setIsLoading(false);
     };
@@ -230,11 +273,13 @@ export default function Builder() {
         const decoded = JSON.parse(decodeURIComponent(escape(atob(cartParam))));
         if (Array.isArray(decoded) && decoded.length > 0) {
           clearCart();
-          decoded.forEach(item => addItem(item, isAuthenticated));
+          decoded.forEach((item) => addItem(item, isAuthenticated));
           params.delete('cart');
           setParams(params);
         }
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error(e);
+      }
     }
   }, []);
 
@@ -242,18 +287,24 @@ export default function Builder() {
   useEffect(() => {
     const itemId = params.get('item');
     if (itemId && !isLoading && catalog.services.length > 0) {
-      const svc = catalog.services.find(s => s.id === itemId);
+      const svc = catalog.services.find((s) => s.id === itemId);
       if (svc) {
         // Ensure category doesn't filter it out
         if (activeCat !== 'all' && activeCat !== svc.catId) {
           setActiveCat('all');
         }
-        
+
         setTimeout(() => {
           const element = document.getElementById(`service-${itemId}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            element.classList.add('ring-4', 'ring-fox-500/30', 'ring-offset-8', 'transition-all', 'duration-700');
+            element.classList.add(
+              'ring-4',
+              'ring-fox-500/30',
+              'ring-offset-8',
+              'transition-all',
+              'duration-700',
+            );
             toast.success(`Selected: ${svc.name}`, { icon: '🎯', position: 'bottom-center' });
             setTimeout(() => {
               element.classList.remove('ring-4', 'ring-fox-500/30', 'ring-offset-8');
@@ -267,13 +318,17 @@ export default function Builder() {
   // Filter Logic
   const filteredServices = useMemo(() => {
     const q = debouncedSearch.toLowerCase();
-    
+
     // Virtual Categories logic
     if (activeCat === 'industry-bundles') {
-       return catalog.bundles.filter(b => b.name.toLowerCase().includes(q) || b.description?.toLowerCase().includes(q));
+      return catalog.bundles.filter(
+        (b) => b.name.toLowerCase().includes(q) || b.description?.toLowerCase().includes(q),
+      );
     }
     if (activeCat === 'service-packages') {
-       return catalog.packages.filter(p => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q));
+      return catalog.packages.filter(
+        (p) => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q),
+      );
     }
 
     let result = catalog.services;
@@ -282,7 +337,7 @@ export default function Builder() {
     }
     if (debouncedSearch) {
       result = result.filter(
-        (s) => s.name.toLowerCase().includes(q) || s.lay?.toLowerCase().includes(q)
+        (s) => s.name.toLowerCase().includes(q) || s.lay?.toLowerCase().includes(q),
       );
     }
     return result;
@@ -296,7 +351,8 @@ export default function Builder() {
     const m = new Map();
     for (const s of filteredServices) {
       const arr = m.get(s.catId);
-      if (arr) arr.push(s); else m.set(s.catId, [s]);
+      if (arr) arr.push(s);
+      else m.set(s.catId, [s]);
     }
     return m;
   }, [filteredServices]);
@@ -312,25 +368,36 @@ export default function Builder() {
   const cartWarnings = useMemo(() => {
     if (items.length === 0 || catalog.services.length === 0) return [];
     const warns = [];
-    items.forEach(c => {
-      const svc = catalog.services.find(s => s.id === c.itemId);
+    items.forEach((c) => {
+      const svc = catalog.services.find((s) => s.id === c.itemId);
       if (!svc) return;
-      (svc.conflicts || []).forEach(cid => {
+      (svc.conflicts || []).forEach((cid) => {
         if (cartItemIds.has(cid)) {
-          const other = catalog.services.find(s => s.id === cid);
-          warns.push({ type: "conflict", id: svc.id, otherId: cid, msg: `${svc.name} conflicts with ${other?.name || cid}` });
+          const other = catalog.services.find((s) => s.id === cid);
+          warns.push({
+            type: 'conflict',
+            id: svc.id,
+            otherId: cid,
+            msg: `${svc.name} conflicts with ${other?.name || cid}`,
+          });
         }
       });
-      (svc.requires || []).forEach(rid => {
+      (svc.requires || []).forEach((rid) => {
         if (!cartItemIds.has(rid)) {
-          const dep = catalog.services.find(s => s.id === rid);
-          warns.push({ type: "requires", id: svc.id, otherId: rid, msg: `${svc.name} requires ${dep?.name || rid}` });
+          const dep = catalog.services.find((s) => s.id === rid);
+          warns.push({
+            type: 'requires',
+            id: svc.id,
+            otherId: rid,
+            msg: `${svc.name} requires ${dep?.name || rid}`,
+          });
         }
       });
     });
     const seen = new Set();
-    return warns.filter(w => {
-      const key = w.type === "conflict" ? [w.id, w.otherId].sort().join("-") : w.id + "-" + w.otherId;
+    return warns.filter((w) => {
+      const key =
+        w.type === 'conflict' ? [w.id, w.otherId].sort().join('-') : w.id + '-' + w.otherId;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -339,9 +406,9 @@ export default function Builder() {
 
   const cartRoi = useMemo(() => {
     return items
-      .map(i => catalog.services.find(s => s.id === i.itemId))
-      .filter(s => s && s.roi)
-      .map(s => ({ ...s.roi, n: s.name, id: s.id }));
+      .map((i) => catalog.services.find((s) => s.id === i.itemId))
+      .filter((s) => s && s.roi)
+      .map((s) => ({ ...s.roi, n: s.name, id: s.id }));
   }, [items, catalog]);
 
   useEffect(() => {
@@ -351,36 +418,61 @@ export default function Builder() {
   const suggestions = useMemo(() => {
     if (items.length === 0 || catalog.services.length === 0) return [];
     const suggestedIds = new Set();
-    items.forEach(i => {
-      (FBT_PAIRS[i.itemId] || []).forEach(rid => {
+    items.forEach((i) => {
+      (FBT_PAIRS[i.itemId] || []).forEach((rid) => {
         if (!cartItemIds.has(rid)) suggestedIds.add(rid);
       });
     });
     if (suggestedIds.size === 0) {
-      const activeCatIds = [...new Set(items.map(i => catalog.services.find(s => s.id === i.itemId)?.catId))];
-      return catalog.services.filter(s => !cartItemIds.has(s.id) && s.catId && !activeCatIds.includes(s.catId)).slice(0, 3);
+      const activeCatIds = [
+        ...new Set(items.map((i) => catalog.services.find((s) => s.id === i.itemId)?.catId)),
+      ];
+      return catalog.services
+        .filter((s) => !cartItemIds.has(s.id) && s.catId && !activeCatIds.includes(s.catId))
+        .slice(0, 3);
     }
-    return Array.from(suggestedIds).map(id => catalog.services.find(s => s.id === id)).filter(Boolean).slice(0, 3);
+    return Array.from(suggestedIds)
+      .map((id) => catalog.services.find((s) => s.id === id))
+      .filter(Boolean)
+      .slice(0, 3);
   }, [items, catalog, cartItemIds]);
 
   // Handlers
-  const handleAdd = useCallback((svc) => {
-    addItem({ itemId: svc.id, itemType: 'service', name: svc.name, price: svc.price }, isAuthenticated);
-  }, [addItem, isAuthenticated]);
+  const handleAdd = useCallback(
+    (svc) => {
+      addItem(
+        { itemId: svc.id, itemType: 'service', name: svc.name, price: svc.price },
+        isAuthenticated,
+      );
+    },
+    [addItem, isAuthenticated],
+  );
 
   const handleShare = () => {
-    if (items.length === 0) { toast.error('Cart is empty'); return; }
+    if (items.length === 0) {
+      toast.error('Cart is empty');
+      return;
+    }
     try {
       const cartString = btoa(unescape(encodeURIComponent(JSON.stringify(items))));
       const shareUrl = `${window.location.origin}${window.location.pathname}?cart=${cartString}`;
       navigator.clipboard.writeText(shareUrl);
       toast.success('Link copied');
-    } catch (e) { toast.error('Failed to generate link'); }
+    } catch (e) {
+      toast.error('Failed to generate link');
+    }
   };
 
   return (
     <Section className="relative">
-      <Tour steps={SF_DATA.tourSteps} active={showTour} onComplete={() => { dismissTourHint(); setShowTour(false); }} />
+      <Tour
+        steps={SF_DATA.tourSteps}
+        active={showTour}
+        onComplete={() => {
+          dismissTourHint();
+          setShowTour(false);
+        }}
+      />
 
       {/*
         Catalogue editing lives in the admin app (/app/admin/catalog), which is
@@ -404,10 +496,12 @@ export default function Builder() {
       <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
         <div className="max-w-xl">
           <span className="eyebrow mb-4">Build &amp; price</span>
-          <h1 className="text-3xl text-warm-900 md:text-display-lg">Assemble your project, piece by piece</h1>
+          <h1 className="text-3xl text-warm-900 md:text-display-lg">
+            Assemble your project, piece by piece
+          </h1>
           <p className="mt-3 text-body-lg text-warm-600">
-            {catalog.services.length}+ individually priced pieces across {catalog.categories.length} domains.
-            Add what you need and watch the total update — GST and all.
+            {catalog.services.length}+ individually priced pieces across {catalog.categories.length}{' '}
+            domains. Add what you need and watch the total update — GST and all.
           </p>
         </div>
 
@@ -420,8 +514,12 @@ export default function Builder() {
           >
             <ShoppingCart size={18} className="text-fox-600" />
             <span className="text-left">
-              <span className="block text-caption uppercase tracking-wide text-warm-500">{itemCount} piece{itemCount > 1 ? 's' : ''}</span>
-              <span className="price-tag block text-body-md text-warm-900">{fmt(cartSubtotal || items.reduce((s, i) => s + i.price * i.quantity, 0))}</span>
+              <span className="block text-caption uppercase tracking-wide text-warm-500">
+                {itemCount} piece{itemCount > 1 ? 's' : ''}
+              </span>
+              <span className="price-tag block text-body-md text-warm-900">
+                {fmt(cartSubtotal || items.reduce((s, i) => s + i.price * i.quantity, 0))}
+              </span>
             </span>
             <ArrowRight size={15} className="text-warm-400" />
           </button>
@@ -463,9 +561,15 @@ export default function Builder() {
             onChange={(e) => setCurIdx(Number(e.target.value))}
             className="rounded-sm border border-warm-200 bg-white px-3 text-body-sm font-semibold text-warm-700"
           >
-            {CURRENCIES.map((c, i) => <option key={c.code} value={i}>{c.code}</option>)}
+            {CURRENCIES.map((c, i) => (
+              <option key={c.code} value={i}>
+                {c.code}
+              </option>
+            ))}
           </select>
-          <Button variant="ghost" onClick={handleShare} aria-label="Copy a shareable link"><Share2 size={16} /></Button>
+          <Button variant="ghost" onClick={handleShare} aria-label="Copy a shareable link">
+            <Share2 size={16} />
+          </Button>
         </div>
       </div>
 
@@ -476,7 +580,7 @@ export default function Builder() {
           className={cn(
             'pointer-events-none absolute left-0 top-0 bottom-6 z-10 flex items-center pr-10 transition-opacity duration-200',
             'bg-gradient-to-r from-warm-white via-warm-white/90 to-transparent',
-            railScroll.left ? 'opacity-100' : 'opacity-0'
+            railScroll.left ? 'opacity-100' : 'opacity-0',
           )}
         >
           <button
@@ -487,7 +591,7 @@ export default function Builder() {
             className={cn(
               'grid place-items-center h-10 w-10 rounded-full bg-white text-warm-600 shadow-md border border-warm-200',
               'hover:text-warm-900 hover:border-warm-300 active:scale-95 transition-all',
-              railScroll.left && 'pointer-events-auto'
+              railScroll.left && 'pointer-events-auto',
             )}
           >
             <ChevronLeft size={18} />
@@ -499,7 +603,7 @@ export default function Builder() {
           className={cn(
             'pointer-events-none absolute right-0 top-0 bottom-6 z-10 flex items-center pl-10 transition-opacity duration-200',
             'bg-gradient-to-l from-warm-white via-warm-white/90 to-transparent',
-            railScroll.right ? 'opacity-100' : 'opacity-0'
+            railScroll.right ? 'opacity-100' : 'opacity-0',
           )}
         >
           <button
@@ -510,54 +614,66 @@ export default function Builder() {
             className={cn(
               'grid place-items-center h-10 w-10 rounded-full bg-white text-warm-600 shadow-md border border-warm-200',
               'hover:text-warm-900 hover:border-warm-300 active:scale-95 transition-all',
-              railScroll.right && 'pointer-events-auto'
+              railScroll.right && 'pointer-events-auto',
             )}
           >
             <ChevronRight size={18} />
           </button>
         </div>
 
-        <div ref={catRailRef} onScroll={syncRailScroll} className="flex gap-3 overflow-x-auto pb-6 hide-scrollbar scroll-smooth">
-        <button
-          onClick={() => setActiveCat('all')}
-          className={cn(
-            'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0',
-            activeCat === 'all' ? 'bg-warm-900 text-white' : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300'
-          )}
+        <div
+          ref={catRailRef}
+          onScroll={syncRailScroll}
+          className="flex gap-3 overflow-x-auto pb-6 hide-scrollbar scroll-smooth"
         >
-          All Services <span className="opacity-50 ml-1">({catalog.services.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveCat('industry-bundles')}
-          className={cn(
-            'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
-            activeCat === 'industry-bundles' ? 'bg-fox-500 text-white ring-4 ring-fox-50' : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300'
-          )}
-        >
-          Special Bundles <span className="opacity-50 ml-1">({catalog.bundles.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveCat('service-packages')}
-          className={cn(
-            'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
-            activeCat === 'service-packages' ? 'bg-fox-500 text-white ring-4 ring-fox-50' : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300'
-          )}
-        >
-          Packages <span className="opacity-50 ml-1">({catalog.packages.length})</span>
-        </button>
-        <div className="w-px h-8 bg-warm-100 mx-2 shrink-0" />
-        {catalog.categories.map((cat) => (
           <button
-            key={cat.dataId}
-            onClick={() => setActiveCat(cat.dataId)}
+            onClick={() => setActiveCat('all')}
             className={cn(
-              'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
-              activeCat === cat.dataId ? 'bg-fox-500 text-white ring-4 ring-fox-50' : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300'
+              'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0',
+              activeCat === 'all'
+                ? 'bg-warm-900 text-white'
+                : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300',
             )}
           >
-            {cat.name} <span className="opacity-50 ml-1">({catCounts.get(cat.dataId) || 0})</span>
+            All Services <span className="opacity-50 ml-1">({catalog.services.length})</span>
           </button>
-        ))}
+          <button
+            onClick={() => setActiveCat('industry-bundles')}
+            className={cn(
+              'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
+              activeCat === 'industry-bundles'
+                ? 'bg-fox-500 text-white ring-4 ring-fox-50'
+                : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300',
+            )}
+          >
+            Special Bundles <span className="opacity-50 ml-1">({catalog.bundles.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveCat('service-packages')}
+            className={cn(
+              'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
+              activeCat === 'service-packages'
+                ? 'bg-fox-500 text-white ring-4 ring-fox-50'
+                : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300',
+            )}
+          >
+            Packages <span className="opacity-50 ml-1">({catalog.packages.length})</span>
+          </button>
+          <div className="w-px h-8 bg-warm-100 mx-2 shrink-0" />
+          {catalog.categories.map((cat) => (
+            <button
+              key={cat.dataId}
+              onClick={() => setActiveCat(cat.dataId)}
+              className={cn(
+                'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
+                activeCat === cat.dataId
+                  ? 'bg-fox-500 text-white ring-4 ring-fox-50'
+                  : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300',
+              )}
+            >
+              {cat.name} <span className="opacity-50 ml-1">({catCounts.get(cat.dataId) || 0})</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -565,115 +681,189 @@ export default function Builder() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-8 space-y-12">
           {isLoading ? (
-             <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4">
-               {[1,2,3,4,5,6].map(i => <div key={i} className="h-24 animate-pulse rounded-md border border-warm-100 bg-white sm:h-40" />)}
-             </div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className="h-24 animate-pulse rounded-md border border-warm-100 bg-white sm:h-40"
+                />
+              ))}
+            </div>
           ) : filteredServices.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-lg border border-warm-100">
-               <p className="text-warm-500">No services found.</p>
-               <Button variant="ghost" className="mt-4" onClick={() => { setSearch(''); setActiveCat('all'); }}>Reset</Button>
+              <p className="text-warm-500">No services found.</p>
+              <Button
+                variant="ghost"
+                className="mt-4"
+                onClick={() => {
+                  setSearch('');
+                  setActiveCat('all');
+                }}
+              >
+                Reset
+              </Button>
             </div>
           ) : (
             <div className="space-y-16">
               {activeCat === 'industry-bundles' && (
                 <div className="space-y-6">
-                   <h2 className="text-2xl font-semibold text-warm-900">Industry-Specific Bundles</h2>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     {filteredServices.map(b => (
-                       <div key={b.id} className="card-fx p-6 bg-white border border-warm-200 rounded-lg relative">
-                          <h3 className="text-lg font-bold text-warm-900">{b.name}</h3>
-                          <p className="text-sm text-warm-500 mt-2 line-clamp-2 leading-relaxed">{b.description}</p>
-                          <div className="mt-4 flex items-center justify-between">
-                            <span className="text-xl font-semibold">{fmt(b.price)}</span>
-                            <Button size="sm" variant="outline" onClick={() => (b.items || []).forEach(id => {
-                              const svc = catalog.services.find(s => s.id === id);
-                              if (svc) addItem({ itemId: id, itemType: 'service', name: svc.name, price: svc.price }, isAuthenticated);
-                            })}>Select All</Button>
-                          </div>
-                       </div>
-                     ))}
-                   </div>
+                  <h2 className="text-2xl font-semibold text-warm-900">
+                    Industry-Specific Bundles
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {filteredServices.map((b) => (
+                      <div
+                        key={b.id}
+                        className="card-fx p-6 bg-white border border-warm-200 rounded-lg relative"
+                      >
+                        <h3 className="text-lg font-bold text-warm-900">{b.name}</h3>
+                        <p className="text-sm text-warm-500 mt-2 line-clamp-2 leading-relaxed">
+                          {b.description}
+                        </p>
+                        <div className="mt-4 flex items-center justify-between">
+                          <span className="text-xl font-semibold">{fmt(b.price)}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              (b.items || []).forEach((id) => {
+                                const svc = catalog.services.find((s) => s.id === id);
+                                if (svc)
+                                  addItem(
+                                    {
+                                      itemId: id,
+                                      itemType: 'service',
+                                      name: svc.name,
+                                      price: svc.price,
+                                    },
+                                    isAuthenticated,
+                                  );
+                              })
+                            }
+                          >
+                            Select All
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               {activeCat === 'service-packages' && (
                 <div className="space-y-6">
-                   <h2 className="text-2xl font-semibold text-warm-900">Recommended Packages</h2>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     {filteredServices.map(p => (
-                       <div key={p.id} className="card-fx p-6 bg-white border border-warm-200 rounded-lg relative">
-                          <h3 className="text-lg font-bold text-warm-900">{p.name}</h3>
-                          <p className="text-sm text-warm-500 mt-2 leading-relaxed">{p.description}</p>
-                          <div className="mt-4 flex items-center justify-between">
-                            <span className="text-xl font-semibold">{fmt(p.price)}</span>
-                            <Button size="sm" variant="outline" onClick={() => (p.items || []).forEach(id => {
-                              const svc = catalog.services.find(s => s.id === id);
-                              if (svc) addItem({ itemId: id, itemType: 'service', name: svc.name, price: svc.price }, isAuthenticated);
-                            })}>Add to Cart</Button>
-                          </div>
-                       </div>
-                     ))}
-                   </div>
+                  <h2 className="text-2xl font-semibold text-warm-900">Recommended Packages</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {filteredServices.map((p) => (
+                      <div
+                        key={p.id}
+                        className="card-fx p-6 bg-white border border-warm-200 rounded-lg relative"
+                      >
+                        <h3 className="text-lg font-bold text-warm-900">{p.name}</h3>
+                        <p className="text-sm text-warm-500 mt-2 leading-relaxed">
+                          {p.description}
+                        </p>
+                        <div className="mt-4 flex items-center justify-between">
+                          <span className="text-xl font-semibold">{fmt(p.price)}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              (p.items || []).forEach((id) => {
+                                const svc = catalog.services.find((s) => s.id === id);
+                                if (svc)
+                                  addItem(
+                                    {
+                                      itemId: id,
+                                      itemType: 'service',
+                                      name: svc.name,
+                                      price: svc.price,
+                                    },
+                                    isAuthenticated,
+                                  );
+                              })
+                            }
+                          >
+                            Add to Cart
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {(activeCat !== 'industry-bundles' && activeCat !== 'service-packages') &&
-               (activeCat === 'all' ? catalog.categories : catalog.categories.filter(c => c.dataId === activeCat)).map(cat => {
-                const catServices = servicesByCat.get(cat.dataId) || [];
-                if (catServices.length === 0) return null;
+              {activeCat !== 'industry-bundles' &&
+                activeCat !== 'service-packages' &&
+                (activeCat === 'all'
+                  ? catalog.categories
+                  : catalog.categories.filter((c) => c.dataId === activeCat)
+                ).map((cat) => {
+                  const catServices = servicesByCat.get(cat.dataId) || [];
+                  if (catServices.length === 0) return null;
 
-                // In the "All" overview (no active search) show a preview per
-                // category instead of all ~255 cards — the "View all" chip jumps
-                // straight into that category. A search already narrows things,
-                // so show every match then.
-                const isOverview = activeCat === 'all' && !debouncedSearch;
-                const shown = isOverview ? catServices.slice(0, PREVIEW_COUNT) : catServices;
-                const hidden = catServices.length - shown.length;
+                  // In the "All" overview (no active search) show a preview per
+                  // category instead of all ~255 cards — the "View all" chip jumps
+                  // straight into that category. A search already narrows things,
+                  // so show every match then.
+                  const isOverview = activeCat === 'all' && !debouncedSearch;
+                  const shown = isOverview ? catServices.slice(0, PREVIEW_COUNT) : catServices;
+                  const hidden = catServices.length - shown.length;
 
-                return (
-                  <div key={cat.dataId} className="space-y-6">
-                    <div className="border-b border-warm-100 pb-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                         <h2 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
-                           {cat.name}
-                           <span className="text-caption bg-warm-100 text-warm-600 px-2 py-0.5 rounded-full">{catServices.length} items</span>
-                         </h2>
-                         {isOverview && hidden > 0 && (
-                           <button
-                             onClick={() => { setActiveCat(cat.dataId); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                             className="text-body-sm font-semibold text-fox-600 hover:text-fox-700 inline-flex items-center gap-1"
-                           >
-                             View all {catServices.length} <ArrowRight size={14} />
-                           </button>
-                         )}
+                  return (
+                    <div key={cat.dataId} className="space-y-6">
+                      <div className="border-b border-warm-100 pb-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <h2 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
+                            {cat.name}
+                            <span className="text-caption bg-warm-100 text-warm-600 px-2 py-0.5 rounded-full">
+                              {catServices.length} items
+                            </span>
+                          </h2>
+                          {isOverview && hidden > 0 && (
+                            <button
+                              onClick={() => {
+                                setActiveCat(cat.dataId);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className="text-body-sm font-semibold text-fox-600 hover:text-fox-700 inline-flex items-center gap-1"
+                            >
+                              View all {catServices.length} <ArrowRight size={14} />
+                            </button>
+                          )}
+                        </div>
+                        {cat.laymanTip && (
+                          <p className="text-warm-600 text-sm mt-1 italic">
+                            &ldquo;{cat.laymanTip}&rdquo;
+                          </p>
+                        )}
                       </div>
-                      {cat.laymanTip && (
-                        <p className="text-warm-600 text-sm mt-1 italic">&ldquo;{cat.laymanTip}&rdquo;</p>
+
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4">
+                        {shown.map((svc) => (
+                          <ServiceCard
+                            key={svc.id}
+                            svc={svc}
+                            price={fmt(svc.price)}
+                            inCart={cartItemIds.has(svc.id)}
+                            onAdd={handleAdd}
+                          />
+                        ))}
+                      </div>
+
+                      {isOverview && hidden > 0 && (
+                        <button
+                          onClick={() => {
+                            setActiveCat(cat.dataId);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="w-full rounded-md border border-dashed border-warm-300 py-3 text-body-sm font-medium text-warm-600 hover:border-fox-300 hover:text-fox-600 transition-colors"
+                        >
+                          + {hidden} more in {cat.name}
+                        </button>
                       )}
                     </div>
-
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4">
-                      {shown.map(svc => (
-                        <ServiceCard
-                          key={svc.id}
-                          svc={svc}
-                          price={fmt(svc.price)}
-                          inCart={cartItemIds.has(svc.id)}
-                          onAdd={handleAdd}
-                        />
-                      ))}
-                    </div>
-
-                    {isOverview && hidden > 0 && (
-                      <button
-                        onClick={() => { setActiveCat(cat.dataId); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                        className="w-full rounded-md border border-dashed border-warm-300 py-3 text-body-sm font-medium text-warm-600 hover:border-fox-300 hover:text-fox-600 transition-colors"
-                      >
-                        + {hidden} more in {cat.name}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           )}
         </div>
@@ -682,42 +872,56 @@ export default function Builder() {
         <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
           {suggestions.length > 0 && (
             <div className="rounded-lg border border-warm-200 bg-white p-6">
-               <h3 className="mb-4 flex items-center gap-2 text-title text-warm-900"><Sparkles size={16} className="text-fox-500" /> Often added together</h3>
-               <div className="space-y-2">
-                 {suggestions.map(s => (
-                   <button key={s.id} onClick={() => handleAdd(s)} className="flex w-full items-center justify-between gap-2 rounded-sm border border-warm-200 bg-warm-white px-3 py-2.5 text-left transition-colors hover:border-fox-300">
-                     <span className="truncate text-body-sm font-medium text-warm-800">{s.name}</span>
-                     <Plus size={14} className="shrink-0 text-fox-500" />
-                   </button>
-                 ))}
-               </div>
+              <h3 className="mb-4 flex items-center gap-2 text-title text-warm-900">
+                <Sparkles size={16} className="text-fox-500" /> Often added together
+              </h3>
+              <div className="space-y-2">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => handleAdd(s)}
+                    className="flex w-full items-center justify-between gap-2 rounded-sm border border-warm-200 bg-warm-white px-3 py-2.5 text-left transition-colors hover:border-fox-300"
+                  >
+                    <span className="truncate text-body-sm font-medium text-warm-800">
+                      {s.name}
+                    </span>
+                    <Plus size={14} className="shrink-0 text-fox-500" />
+                  </button>
+                ))}
+              </div>
             </div>
           )}
-           <Link to="/advisor" className="group block rounded-lg border border-sage-200 bg-sage-50 p-6 transition-transform duration-short hover:-translate-y-0.5">
-             <div className="mb-2 flex items-center gap-2 text-title text-sage-800">
-               <Sparkles className="h-5 w-5 text-sage-600" />
-               Not sure what you need?
-             </div>
-             <p className="max-w-sm text-body-sm leading-relaxed text-sage-800/90">
-               Answer 10 quick questions and our advisor suggests a configuration for your project.
-             </p>
-             <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-sage-800">
-               Start advisor <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-             </span>
-           </Link>
+          <Link
+            to="/advisor"
+            className="group block rounded-lg border border-sage-200 bg-sage-50 p-6 transition-transform duration-short hover:-translate-y-0.5"
+          >
+            <div className="mb-2 flex items-center gap-2 text-title text-sage-800">
+              <Sparkles className="h-5 w-5 text-sage-600" />
+              Not sure what you need?
+            </div>
+            <p className="max-w-sm text-body-sm leading-relaxed text-sage-800/90">
+              Answer 10 quick questions and our advisor suggests a configuration for your project.
+            </p>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-sage-800">
+              Start advisor{' '}
+              <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </Link>
           <div className="rounded-lg border border-warm-200 bg-white p-6">
             <h3 className="text-title text-warm-900 mb-4">How building works</h3>
             <div className="space-y-4">
-               {[
-                  'Browse 240+ services and pick exactly what your project needs.',
-                  'Watch your indicative quote update as you add or remove pieces.',
-                  'Submit your cart to get a detailed proposal within 24 hours.',
-               ].map((text, i) => (
-                 <div key={i} className="flex gap-3">
-                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-pill bg-sage-50 font-mono text-[11px] text-sage-700">{i + 1}</span>
-                   <p className="text-body-sm leading-relaxed text-warm-600">{text}</p>
-                 </div>
-               ))}
+              {[
+                'Browse 240+ services and pick exactly what your project needs.',
+                'Watch your indicative quote update as you add or remove pieces.',
+                'Submit your cart to get a detailed proposal within 24 hours.',
+              ].map((text, i) => (
+                <div key={i} className="flex gap-3">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-pill bg-sage-50 font-mono text-[11px] text-sage-700">
+                    {i + 1}
+                  </span>
+                  <p className="text-body-sm leading-relaxed text-warm-600">{text}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -725,7 +929,10 @@ export default function Builder() {
 
       {itemCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden">
-          <div className="bg-fox-600 text-white rounded-lg p-4 flex items-center justify-between" onClick={toggleCart}>
+          <div
+            className="bg-fox-600 text-white rounded-lg p-4 flex items-center justify-between"
+            onClick={toggleCart}
+          >
             <div className="flex items-center gap-3">
               <ShoppingCart size={24} />
               <div className="font-bold">{itemCount} items Selected</div>

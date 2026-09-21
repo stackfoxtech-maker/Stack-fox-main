@@ -51,7 +51,10 @@ export async function apiKeyRoutes(app: FastifyInstance) {
    * org and the parameter is ignored for them — accepting it would be the
    * same query-parameter tenancy bug /v1 just had.
    */
-  function targetOrg(req: Parameters<typeof requireAuth>[0], queryOrgId?: string): string | null {
+  function targetOrg(
+    req: Parameters<typeof requireAuth>[0],
+    queryOrgId?: string,
+  ): string | null {
     const caller = req.user!;
     if (isInternalRole(caller.role)) return queryOrgId ?? caller.orgId ?? null;
     if (!caller.orgId) return null;
@@ -118,7 +121,10 @@ export async function apiKeyRoutes(app: FastifyInstance) {
     // Scoped by org in the filter, so another tenant's key id revokes nothing
     // rather than revoking theirs.
     const key = await prisma.apiKey.findFirst({
-      where: { id, ...(isInternalRole(caller.role) ? {} : { orgId: orgId ?? "__none__" }) },
+      where: {
+        id,
+        ...(isInternalRole(caller.role) ? {} : { orgId: orgId ?? "__none__" }),
+      },
       select: { id: true, orgId: true, revokedAt: true },
     });
     if (!key) return reply.code(404).send({ error: "Not found" });

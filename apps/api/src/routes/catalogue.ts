@@ -7,7 +7,12 @@ import { TIMEOUT } from "../lib/timeouts";
 export async function catalogueRoutes(app: FastifyInstance) {
   // GET /catalogue/services
   app.get("/catalogue/services", async (req) => {
-    const { category, status, page = "1", limit = "20" } = req.query as Record<string, string>;
+    const {
+      category,
+      status,
+      page = "1",
+      limit = "20",
+    } = req.query as Record<string, string>;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const where: any = {};
@@ -16,7 +21,12 @@ export async function catalogueRoutes(app: FastifyInstance) {
     else where.status = "PUBLISHED";
 
     const [items, total] = await Promise.all([
-      prisma.serviceUnit.findMany({ where, skip, take: parseInt(limit), orderBy: { name: "asc" } }),
+      prisma.serviceUnit.findMany({
+        where,
+        skip,
+        take: parseInt(limit),
+        orderBy: { name: "asc" },
+      }),
       prisma.serviceUnit.count({ where }),
     ]);
 
@@ -33,7 +43,11 @@ export async function catalogueRoutes(app: FastifyInstance) {
       where: { id },
       include: {
         featureUnits: { orderBy: { sortOrder: "asc" } },
-        sdpVersions: { where: { publishedAt: { not: null } }, orderBy: { version: "desc" }, take: 1 },
+        sdpVersions: {
+          where: { publishedAt: { not: null } },
+          orderBy: { version: "desc" },
+          take: 1,
+        },
         depsFrom: { include: { to: true } },
         packages: true,
       },
@@ -153,14 +167,24 @@ export async function catalogueRoutes(app: FastifyInstance) {
 
   // American-spelling aliases used by the client app
   app.get("/catalog/services", async (req, reply) => {
-    const { category, status, page = "1", limit = "20" } = req.query as Record<string, string>;
+    const {
+      category,
+      status,
+      page = "1",
+      limit = "20",
+    } = req.query as Record<string, string>;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const where: any = {};
     if (category) where.categoryTier1 = category;
     if (status) where.status = status;
     else where.status = "PUBLISHED";
     const [items, total] = await Promise.all([
-      prisma.serviceUnit.findMany({ where, skip, take: parseInt(limit), orderBy: { name: "asc" } }),
+      prisma.serviceUnit.findMany({
+        where,
+        skip,
+        take: parseInt(limit),
+        orderBy: { name: "asc" },
+      }),
       prisma.serviceUnit.count({ where }),
     ]);
     return { items, total, page: parseInt(page), limit: parseInt(limit) };

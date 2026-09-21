@@ -1,0 +1,25 @@
+# Normalise line endings.
+#
+# core.autocrlf was doing the work implicitly, which meant the committed bytes
+# depended on whose machine wrote them. That is also why `prettier --write`
+# was not idempotent: with endOfLine "auto" Prettier preserves whatever it
+# finds, so a CRLF working tree and an LF index disagreed on every run.
+#
+# LF in the repository, LF in the working tree, on every platform.
+* text=auto eol=lf
+
+# Binary — never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+
+# Generated. Collapse in diffs and skip in language stats.
+pnpm-lock.yaml linguist-generated=true -diff
+package-lock.json linguist-generated=true -diff
+packages/prisma/src/generated/** linguist-generated=true

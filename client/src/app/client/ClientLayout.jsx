@@ -1,7 +1,25 @@
 import {
-  LayoutDashboard, FolderKanban, FileText, Receipt, Files, MessageCircle, User,
-  LifeBuoy, ShoppingCart, Bell, Handshake, ScrollText, Clock, Milestone, Gift,
-  Layers, MessageSquare, Activity, GitPullRequest, BarChart3, PackageCheck,
+  LayoutDashboard,
+  FolderKanban,
+  FileText,
+  Receipt,
+  Files,
+  MessageCircle,
+  User,
+  LifeBuoy,
+  ShoppingCart,
+  Bell,
+  Handshake,
+  ScrollText,
+  Clock,
+  Milestone,
+  Gift,
+  Layers,
+  MessageSquare,
+  Activity,
+  GitPullRequest,
+  BarChart3,
+  PackageCheck,
 } from 'lucide-react';
 import DashboardShell from '@app/DashboardShell';
 

@@ -5,6 +5,9 @@ export interface FlagDefinition {
   rules: Record<string, unknown>;
 }
 
-export function evaluateFlag(flag: FlagDefinition, _context: Record<string, unknown>): boolean {
+export function evaluateFlag(
+  flag: FlagDefinition,
+  _context: Record<string, unknown>,
+): boolean {
   return flag.defaultValue;
 }

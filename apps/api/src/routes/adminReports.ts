@@ -133,7 +133,10 @@ async function projectsReport(from: Date, to: Date) {
   const rows = projects.map((p) => {
     const approved = p.milestones.filter((m) => m.status === "APPROVED").length;
     const late = p.milestones.filter(
-      (m) => m.status !== "APPROVED" && m.dueDate && new Date(m.dueDate.getTime() + 86400000) < now,
+      (m) =>
+        m.status !== "APPROVED" &&
+        m.dueDate &&
+        new Date(m.dueDate.getTime() + 86400000) < now,
     ).length;
     return {
       projectId: p.id,
@@ -143,7 +146,8 @@ async function projectsReport(from: Date, to: Date) {
       status: p.status,
       milestones: p.milestones.length,
       approved,
-      completionPct: p.milestones.length > 0 ? Math.round((approved / p.milestones.length) * 100) : 0,
+      completionPct:
+        p.milestones.length > 0 ? Math.round((approved / p.milestones.length) * 100) : 0,
       late,
       createdAt: p.createdAt,
     };
@@ -167,12 +171,21 @@ async function projectsReport(from: Date, to: Date) {
     totals: {
       projects: rows.length,
       completed,
-      completionRatePct: rows.length > 0 ? Math.round((completed / rows.length) * 100) : 0,
+      completionRatePct:
+        rows.length > 0 ? Math.round((completed / rows.length) * 100) : 0,
       milestones: rows.reduce((s, r) => s + r.milestones, 0),
       lateMilestones: rows.reduce((s, r) => s + r.late, 0),
       atRisk: rows.filter((r) => r.late > 0).length,
     },
-    columns: ["projectId", "project", "client", "service", "status", "completionPct", "late"],
+    columns: [
+      "projectId",
+      "project",
+      "client",
+      "service",
+      "status",
+      "completionPct",
+      "late",
+    ],
   };
 }
 
@@ -180,9 +193,19 @@ async function usersReport(from: Date, to: Date) {
   const [users, orgs] = await Promise.all([
     prisma.user.findMany({
       where: { createdAt: { gte: from, lte: to } },
-      select: { id: true, name: true, email: true, role: true, isActive: true, orgId: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        orgId: true,
+        createdAt: true,
+      },
     }),
-    prisma.org.findMany({ select: { id: true, name: true, healthState: true, createdAt: true } }),
+    prisma.org.findMany({
+      select: { id: true, name: true, healthState: true, createdAt: true },
+    }),
   ]);
 
   const byRole = users.reduce<Record<string, number>>((acc, u) => {
@@ -197,7 +220,9 @@ async function usersReport(from: Date, to: Date) {
     return acc;
   }, {});
 
-  const atRisk = orgs.filter((o) => o.healthState === "COOLING" || o.healthState === "DORMANT").length;
+  const atRisk = orgs.filter(
+    (o) => o.healthState === "COOLING" || o.healthState === "DORMANT",
+  ).length;
   const lost = orgs.filter((o) => o.healthState === "LOST").length;
 
   return {
@@ -232,7 +257,9 @@ async function servicesReport(from: Date, to: Date) {
   const projects = await prisma.project.findMany({
     where: { createdAt: { gte: from, lte: to } },
     include: {
-      service: { select: { id: true, name: true, categoryTier1: true, starterPrice: true } },
+      service: {
+        select: { id: true, name: true, categoryTier1: true, starterPrice: true },
+      },
       engagement: { select: { id: true } },
     },
   });
@@ -270,7 +297,10 @@ async function servicesReport(from: Date, to: Date) {
 
   const projectsPerEngagement = new Map<string, number>();
   for (const p of projects) {
-    projectsPerEngagement.set(p.engagementId, (projectsPerEngagement.get(p.engagementId) ?? 0) + 1);
+    projectsPerEngagement.set(
+      p.engagementId,
+      (projectsPerEngagement.get(p.engagementId) ?? 0) + 1,
+    );
   }
 
   const revenueByService = new Map<string, number>();
@@ -291,7 +321,9 @@ async function servicesReport(from: Date, to: Date) {
     }))
     .sort((a, b) => b.revenue - a.revenue);
 
-  const catalogueSize = await prisma.serviceUnit.count({ where: { status: "PUBLISHED" } });
+  const catalogueSize = await prisma.serviceUnit.count({
+    where: { status: "PUBLISHED" },
+  });
 
   return {
     series: rows.slice(0, 10).map((r) => ({ label: r.service, value: r.sold })),
@@ -329,30 +361,62 @@ function csvRows(type: ReportType, report: any): string[][] {
       case "revenue":
         return [
           ["Month", "Invoiced (INR)", "Collected (INR)"],
-          ...report.series.map((r: any) => [r.month, String(r.invoiced), String(r.collected)]),
+          ...report.series.map((r: any) => [
+            r.month,
+            String(r.invoiced),
+            String(r.collected),
+          ]),
           [],
           ["Client", "Invoices", "Revenue (INR)", "Share %"],
-          ...report.clients.map((c: any) => [c.client, String(c.invoices), String(c.revenue), String(c.sharePct)]),
+          ...report.clients.map((c: any) => [
+            c.client,
+            String(c.invoices),
+            String(c.revenue),
+            String(c.sharePct),
+          ]),
         ];
       case "projects":
         return [
-          ["Project ID", "Project", "Client", "Service", "Status", "Completion %", "Late milestones"],
+          [
+            "Project ID",
+            "Project",
+            "Client",
+            "Service",
+            "Status",
+            "Completion %",
+            "Late milestones",
+          ],
           ...report.projects.map((p: any) => [
-            p.projectId, p.project, p.client, p.service, p.status, String(p.completionPct), String(p.late),
+            p.projectId,
+            p.project,
+            p.client,
+            p.service,
+            p.status,
+            String(p.completionPct),
+            String(p.late),
           ]),
         ];
       case "users":
         return [
           ["User ID", "Name", "Email", "Role", "Active", "Joined"],
           ...report.users.map((u: any) => [
-            u.id, u.name, u.email, u.role, String(u.isActive), new Date(u.createdAt).toISOString().slice(0, 10),
+            u.id,
+            u.name,
+            u.email,
+            u.role,
+            String(u.isActive),
+            new Date(u.createdAt).toISOString().slice(0, 10),
           ]),
         ];
       case "services":
         return [
           ["Service ID", "Service", "Category", "Units sold", "Revenue (INR)"],
           ...report.services.map((s: any) => [
-            s.serviceId, s.service, s.category, String(s.sold), String(s.revenue),
+            s.serviceId,
+            s.service,
+            s.category,
+            String(s.sold),
+            String(s.revenue),
           ]),
         ];
     }
@@ -381,7 +445,9 @@ export async function adminReportRoutes(app: FastifyInstance) {
 
     const { type } = req.params as { type: string };
     if (!TYPES.includes(type as ReportType)) {
-      return reply.code(404).send({ message: `Unknown report "${type}". Available: ${TYPES.join(", ")}.` });
+      return reply
+        .code(404)
+        .send({ message: `Unknown report "${type}". Available: ${TYPES.join(", ")}.` });
     }
 
     let from: Date;
@@ -389,7 +455,9 @@ export async function adminReportRoutes(app: FastifyInstance) {
     try {
       ({ from, to } = range(req.query as Record<string, string>));
     } catch {
-      return reply.code(400).send({ message: "Invalid date range. Use from=YYYY-MM-DD&to=YYYY-MM-DD." });
+      return reply
+        .code(400)
+        .send({ message: "Invalid date range. Use from=YYYY-MM-DD&to=YYYY-MM-DD." });
     }
 
     const data = await BUILDERS[type as ReportType](from, to);
@@ -421,7 +489,10 @@ export async function adminReportRoutes(app: FastifyInstance) {
 
     return reply
       .header("Content-Type", "text/csv; charset=utf-8")
-      .header("Content-Disposition", `attachment; filename="stackfox-${type}-${stamp}.csv"`)
+      .header(
+        "Content-Disposition",
+        `attachment; filename="stackfox-${type}-${stamp}.csv"`,
+      )
       .send(toCsv(csvRows(type as ReportType, data)));
   });
 }

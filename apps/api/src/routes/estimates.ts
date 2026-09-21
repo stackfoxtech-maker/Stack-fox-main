@@ -30,7 +30,7 @@ async function estimateInScope(id: string, req: FastifyRequest, reply: FastifyRe
   }
 
   const ownerId = est.workspace?.userId ?? null;
-  if (!ownerId) return est;                                  // guest draft
+  if (!ownerId) return est; // guest draft
   if (isInternalRole(req.user?.role)) return est;
   if (req.user?.sub === ownerId) return est;
 
@@ -97,7 +97,9 @@ export async function estimateRoutes(app: FastifyInstance) {
     for (const bundle of bundles) {
       const members = bundle.members as any[];
       const selectedIds = canvas.map((s: any) => s.serviceId);
-      const matched = members.filter((m: any) => selectedIds.includes(m.serviceId)).length;
+      const matched = members.filter((m: any) =>
+        selectedIds.includes(m.serviceId),
+      ).length;
       const matchPct = (matched / members.length) * 100;
       if (matchPct >= bundle.matchThreshold) {
         discount = Math.max(discount, bundle.discountPct);
@@ -179,5 +181,4 @@ export async function estimateRoutes(app: FastifyInstance) {
     });
     return { url };
   });
-
 }

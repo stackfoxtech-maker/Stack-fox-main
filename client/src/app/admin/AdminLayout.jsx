@@ -1,7 +1,25 @@
 import {
-  LayoutDashboard, Package, ShoppingBag, FolderKanban, Users, Briefcase, FileText,
-  BarChart3, Settings, IndianRupee, Handshake, Bell, FileSearch, Gift,
-  ClipboardList, Layers, Flag, Mail, CalendarClock, ShieldCheck, ScrollText,
+  LayoutDashboard,
+  Package,
+  ShoppingBag,
+  FolderKanban,
+  Users,
+  Briefcase,
+  FileText,
+  BarChart3,
+  Settings,
+  IndianRupee,
+  Handshake,
+  Bell,
+  FileSearch,
+  Gift,
+  ClipboardList,
+  Layers,
+  Flag,
+  Mail,
+  CalendarClock,
+  ShieldCheck,
+  ScrollText,
 } from 'lucide-react';
 import DashboardShell from '@app/DashboardShell';
 

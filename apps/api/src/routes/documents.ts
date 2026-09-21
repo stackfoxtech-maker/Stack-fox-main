@@ -25,7 +25,11 @@ export async function documentRoutes(app: FastifyInstance) {
   app.get("/documents/:type/:id/access", async (req, reply) => {
     if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
     const { type, id } = req.params as { type: string; id: string };
-    const { page, limit, skip } = pageParams(req.query as Record<string, string>, 50, 200);
+    const { page, limit, skip } = pageParams(
+      req.query as Record<string, string>,
+      50,
+      200,
+    );
 
     const where = { documentType: type.toUpperCase(), documentId: id };
     const [rows, total] = await Promise.all([
@@ -65,10 +69,12 @@ export async function documentRoutes(app: FastifyInstance) {
 
     // A mismatch is not a server error — it is a finding, and the caller needs
     // the detail to act on it. Only an unreadable object is a failure.
-    if (result.status === "UNREADABLE") return reply.code(502).send({ error: result.reason });
+    if (result.status === "UNREADABLE")
+      return reply.code(502).send({ error: result.reason });
     if (result.status === "NO_LEDGER_ENTRY") {
       return reply.code(404).send({
-        error: "No ledger entry for this document. It predates the ledger, or was never generated.",
+        error:
+          "No ledger entry for this document. It predates the ledger, or was never generated.",
       });
     }
     return ok(result);

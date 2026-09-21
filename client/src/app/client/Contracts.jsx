@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ScrollText, Download, ChevronRight, ArrowRight, FileText, ShieldCheck, Clock, PenTool, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
+import {
+  ScrollText,
+  Download,
+  ChevronRight,
+  ArrowRight,
+  FileText,
+  ShieldCheck,
+  Clock,
+  PenTool,
+  CheckCircle2,
+  AlertCircle,
+  ArrowLeft,
+} from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
@@ -52,25 +64,36 @@ export default function Contracts() {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    api.get('/contracts').then(r => {
-      setContracts(r.data.data || []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    api
+      .get('/contracts')
+      .then((r) => {
+        setContracts(r.data.data || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     if (id) {
-      api.get(`/contracts/${id}`).then(r => setSelected(r.data.data)).catch(() => {});
+      api
+        .get(`/contracts/${id}`)
+        .then((r) => setSelected(r.data.data))
+        .catch(() => {});
     }
   }, [id]);
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
 
   // Detail view
   if (id && selected) {
     const statusConfig = STATUS_CONFIG[selected.status] || { label: selected.status };
-    const clientSig = selected.signatures?.find(s => s.side === 'CLIENT');
-    const sfSig = selected.signatures?.find(s => s.side === 'STACKFOX');
+    const clientSig = selected.signatures?.find((s) => s.side === 'CLIENT');
+    const sfSig = selected.signatures?.find((s) => s.side === 'STACKFOX');
 
     return (
       <div className="space-y-6">
@@ -79,7 +102,9 @@ export default function Contracts() {
             <ArrowLeft size={14} /> All Contracts
           </Link>
           <ChevronRight size={14} />
-          <span className="text-warm-900 font-medium">{CONTRACT_TYPE_LABELS[selected.type] || selected.type}</span>
+          <span className="text-warm-900 font-medium">
+            {CONTRACT_TYPE_LABELS[selected.type] || selected.type}
+          </span>
         </div>
 
         {/* Contract Header */}
@@ -90,7 +115,9 @@ export default function Contracts() {
                 <ScrollText size={20} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-warm-900">{CONTRACT_TYPE_LABELS[selected.type] || selected.type}</h2>
+                <h2 className="text-lg font-bold text-warm-900">
+                  {CONTRACT_TYPE_LABELS[selected.type] || selected.type}
+                </h2>
                 <ContractTypeTag type={selected.type} />
               </div>
             </div>
@@ -124,20 +151,30 @@ export default function Contracts() {
             {/* Details grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <span className="text-[10px] font-bold text-warm-400 uppercase tracking-widest">Contract ID</span>
+                <span className="text-[10px] font-bold text-warm-400 uppercase tracking-widest">
+                  Contract ID
+                </span>
                 <p className="text-sm font-mono text-warm-700 mt-1 truncate">{selected.id}</p>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-warm-400 uppercase tracking-widest">Created</span>
+                <span className="text-[10px] font-bold text-warm-400 uppercase tracking-widest">
+                  Created
+                </span>
                 <p className="text-sm text-warm-700 mt-1">{formatDate(selected.createdAt)}</p>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-warm-400 uppercase tracking-widest">Engagement</span>
-                <p className="text-sm font-mono text-warm-700 mt-1">{selected.engagementId || '—'}</p>
+                <span className="text-[10px] font-bold text-warm-400 uppercase tracking-widest">
+                  Engagement
+                </span>
+                <p className="text-sm font-mono text-warm-700 mt-1">
+                  {selected.engagementId || '—'}
+                </p>
               </div>
               {selected.executedAt && (
                 <div>
-                  <span className="text-[10px] font-bold text-warm-400 uppercase tracking-widest">Executed</span>
+                  <span className="text-[10px] font-bold text-warm-400 uppercase tracking-widest">
+                    Executed
+                  </span>
                   <p className="text-sm text-warm-700 mt-1">{formatDate(selected.executedAt)}</p>
                 </div>
               )}
@@ -145,10 +182,14 @@ export default function Contracts() {
 
             {/* Signatures */}
             <div>
-              <h3 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-3">Signatures</h3>
+              <h3 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-3">
+                Signatures
+              </h3>
               <div className="grid sm:grid-cols-2 gap-3">
                 {/* Client signature */}
-                <div className={`rounded-xl border p-4 ${clientSig ? 'border-emerald-200 bg-emerald-50' : 'border-warm-200 bg-warm-50'}`}>
+                <div
+                  className={`rounded-xl border p-4 ${clientSig ? 'border-emerald-200 bg-emerald-50' : 'border-warm-200 bg-warm-50'}`}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     {clientSig ? (
                       <CheckCircle2 size={14} className="text-emerald-500" />
@@ -159,9 +200,12 @@ export default function Contracts() {
                   </div>
                   {clientSig ? (
                     <div>
-                      <p className="text-sm font-serif italic text-warm-900">{clientSig.evidence?.name || 'Signed'}</p>
+                      <p className="text-sm font-serif italic text-warm-900">
+                        {clientSig.evidence?.name || 'Signed'}
+                      </p>
                       <p className="text-[10px] text-warm-500 mt-1">
-                        {formatDate(clientSig.signedAt)} · {clientSig.rail === 'CLICK' ? 'Electronic Signature' : clientSig.rail}
+                        {formatDate(clientSig.signedAt)} ·{' '}
+                        {clientSig.rail === 'CLICK' ? 'Electronic Signature' : clientSig.rail}
                       </p>
                     </div>
                   ) : (
@@ -170,7 +214,9 @@ export default function Contracts() {
                 </div>
 
                 {/* StackFox signature */}
-                <div className={`rounded-xl border p-4 ${sfSig ? 'border-emerald-200 bg-emerald-50' : 'border-warm-200 bg-warm-50'}`}>
+                <div
+                  className={`rounded-xl border p-4 ${sfSig ? 'border-emerald-200 bg-emerald-50' : 'border-warm-200 bg-warm-50'}`}
+                >
                   <div className="flex items-center gap-2 mb-2">
                     {sfSig ? (
                       <CheckCircle2 size={14} className="text-emerald-500" />
@@ -194,13 +240,20 @@ export default function Contracts() {
             {/* Engagement link */}
             {selected.engagement && (
               <div className="bg-warm-50 rounded-xl p-4">
-                <h3 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-2">Linked Engagement</h3>
+                <h3 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-2">
+                  Linked Engagement
+                </h3>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-mono text-warm-700">{selected.engagement.id}</p>
-                    <p className="text-xs text-warm-500 mt-0.5">Model: {selected.engagement.model || '—'}</p>
+                    <p className="text-xs text-warm-500 mt-0.5">
+                      Model: {selected.engagement.model || '—'}
+                    </p>
                   </div>
-                  <Link to={`/app/client/engagement`} className="text-xs text-fox-500 font-semibold hover:text-fox-600 flex items-center gap-1">
+                  <Link
+                    to={`/app/client/engagement`}
+                    className="text-xs text-fox-500 font-semibold hover:text-fox-600 flex items-center gap-1"
+                  >
                     View <ArrowRight size={12} />
                   </Link>
                 </div>
@@ -218,7 +271,9 @@ export default function Contracts() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-warm-900">Contracts &amp; Agreements</h2>
-          <p className="text-sm text-warm-500">Legal documents for your engagements with StackFox.</p>
+          <p className="text-sm text-warm-500">
+            Legal documents for your engagements with StackFox.
+          </p>
         </div>
       </div>
 
@@ -230,10 +285,10 @@ export default function Contracts() {
         />
       ) : (
         <div className="space-y-3">
-          {contracts.map(c => {
+          {contracts.map((c) => {
             const typeLabel = CONTRACT_TYPE_LABELS[c.type] || c.type;
-            const clientSig = c.signatures?.find(s => s.side === 'CLIENT');
-            const sfSig = c.signatures?.find(s => s.side === 'STACKFOX');
+            const clientSig = c.signatures?.find((s) => s.side === 'CLIENT');
+            const sfSig = c.signatures?.find((s) => s.side === 'STACKFOX');
 
             return (
               <Link
@@ -242,11 +297,15 @@ export default function Contracts() {
                 className="bg-white rounded-[2rem] border border-warm-200 p-5 md:p-6 flex items-center justify-between hover:shadow-lg transition-shadow group block"
               >
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-                    c.status === 'EXECUTED' ? 'bg-emerald-50 text-emerald-600' :
-                    c.status === 'CLIENT_SIGNED' ? 'bg-blue-50 text-blue-600' :
-                    'bg-warm-100 text-warm-500'
-                  }`}>
+                  <div
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                      c.status === 'EXECUTED'
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : c.status === 'CLIENT_SIGNED'
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'bg-warm-100 text-warm-500'
+                    }`}
+                  >
                     <ScrollText size={20} />
                   </div>
                   <div className="min-w-0">
@@ -255,7 +314,9 @@ export default function Contracts() {
                       <ContractTypeTag type={c.type} />
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-warm-500">
-                      <span className="flex items-center gap-1"><Clock size={10} /> {formatDate(c.createdAt)}</span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={10} /> {formatDate(c.createdAt)}
+                      </span>
                       {c.engagementId && (
                         <>
                           <span className="text-warm-300">·</span>
@@ -265,11 +326,15 @@ export default function Contracts() {
                     </div>
                     {/* Signature status inline */}
                     <div className="flex items-center gap-3 mt-1.5">
-                      <span className={`text-[10px] flex items-center gap-1 ${clientSig ? 'text-emerald-600' : 'text-warm-400'}`}>
+                      <span
+                        className={`text-[10px] flex items-center gap-1 ${clientSig ? 'text-emerald-600' : 'text-warm-400'}`}
+                      >
                         {clientSig ? <CheckCircle2 size={10} /> : <Clock size={10} />}
                         Client {clientSig ? 'signed' : 'pending'}
                       </span>
-                      <span className={`text-[10px] flex items-center gap-1 ${sfSig ? 'text-emerald-600' : 'text-warm-400'}`}>
+                      <span
+                        className={`text-[10px] flex items-center gap-1 ${sfSig ? 'text-emerald-600' : 'text-warm-400'}`}
+                      >
                         {sfSig ? <CheckCircle2 size={10} /> : <Clock size={10} />}
                         StackFox {sfSig ? 'signed' : 'pending'}
                       </span>
@@ -278,7 +343,10 @@ export default function Contracts() {
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-4">
                   <ContractStatusBadge status={c.status} />
-                  <ArrowRight size={16} className="text-warm-300 group-hover:text-fox-500 transition-colors" />
+                  <ArrowRight
+                    size={16}
+                    className="text-warm-300 group-hover:text-fox-500 transition-colors"
+                  />
                 </div>
               </Link>
             );

@@ -36,7 +36,9 @@ export default function Footer() {
         {/* CTA Band */}
         <div className="py-14 md:py-20 border-b border-warm-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div>
-            <h3 className="text-2xl md:text-display-lg text-white mb-3">Ready to price your project?</h3>
+            <h3 className="text-2xl md:text-display-lg text-white mb-3">
+              Ready to price your project?
+            </h3>
             <p className="text-warm-300 max-w-md text-body-lg">
               Open the builder, add the pieces you need, and see the number in a couple of minutes.
             </p>
@@ -66,10 +68,16 @@ export default function Footer() {
               Smart Code, Swift Delivery. A premium product of Artwall Labs.
             </p>
             <div className="space-y-2.5 text-sm">
-              <a href="mailto:stackfox.tech@gmail.com" className="flex items-center gap-2 hover:text-fox-400 transition-colors">
+              <a
+                href="mailto:stackfox.tech@gmail.com"
+                className="flex items-center gap-2 hover:text-fox-400 transition-colors"
+              >
                 <Mail size={14} /> stackfox.tech@gmail.com
               </a>
-              <a href="tel:+918209395894" className="flex items-center gap-2 hover:text-fox-400 transition-colors">
+              <a
+                href="tel:+918209395894"
+                className="flex items-center gap-2 hover:text-fox-400 transition-colors"
+              >
                 <Phone size={14} /> +91 82093 95894
               </a>
               <p className="flex items-center gap-2">
@@ -85,7 +93,10 @@ export default function Footer() {
               <ul className="space-y-2.5">
                 {links.map((link) => (
                   <li key={link.href}>
-                    <Link to={link.href} className="text-sm text-warm-300 hover:text-fox-400 transition-colors">
+                    <Link
+                      to={link.href}
+                      className="text-sm text-warm-300 hover:text-fox-400 transition-colors"
+                    >
                       {link.label}
                     </Link>
                   </li>

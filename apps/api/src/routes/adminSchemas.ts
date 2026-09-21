@@ -120,8 +120,9 @@ export const CreateNotificationTemplateSchema = strictObject({
   ctaUrlTpl: z.string().max(500).optional(),
 });
 
-export const UpdateNotificationTemplateSchema =
-  CreateNotificationTemplateSchema.omit({ key: true }).partial();
+export const UpdateNotificationTemplateSchema = CreateNotificationTemplateSchema.omit({
+  key: true,
+}).partial();
 
 export const CreateComplianceItemSchema = strictObject({
   orgId: z.string().min(1).max(64),

@@ -55,7 +55,9 @@ export default function Roadmap() {
     <div className="max-w-4xl mx-auto px-6 py-16">
       <p className="text-sm font-semibold text-orange-600 mb-2">Public Roadmap</p>
       <h1 className="text-3xl font-bold mb-8">StackFox - What is next?</h1>
-      <p className="text-gray-600 mb-10 max-w-2xl">Our public Now / Next / Later board. Everything shipped, in progress, and on the horizon.</p>
+      <p className="text-gray-600 mb-10 max-w-2xl">
+        Our public Now / Next / Later board. Everything shipped, in progress, and on the horizon.
+      </p>
 
       <div className="space-y-10">
         {QUARTERS.map((q) => (
@@ -64,8 +66,18 @@ export default function Roadmap() {
             {q.items.map((item, i) => (
               <div key={i} className="flex items-center gap-3 py-1">
                 <span className={`w-2.5 h-2.5 rounded-full ${STATUS_COLOR[item.status]}`} />
-                <span className={item.status === 'done' ? 'line-through text-gray-500' : 'text-gray-800'}>{item.t}</span>
-                {item.status === 'inprogress' && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">In progress</span>}
+                <span
+                  className={
+                    item.status === 'done' ? 'line-through text-gray-500' : 'text-gray-800'
+                  }
+                >
+                  {item.t}
+                </span>
+                {item.status === 'inprogress' && (
+                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                    In progress
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -75,7 +87,12 @@ export default function Roadmap() {
       <div className="mt-12 bg-[#FAFAF8] rounded-2xl p-8 text-center">
         <h2 className="text-xl font-bold mb-2">Have an idea?</h2>
         <p className="text-gray-600 mb-4">Missing something? Tell us what you want to see next.</p>
-        <Link to="/contact" className="px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600">Request a Feature</Link>
+        <Link
+          to="/contact"
+          className="px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600"
+        >
+          Request a Feature
+        </Link>
       </div>
     </div>
   );

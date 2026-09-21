@@ -63,17 +63,61 @@ export function inr2(n: number): string {
   return `${n < 0 ? "-" : ""}${grouped}.${frac}`;
 }
 
-const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
-  "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
-const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+const ONES = [
+  "",
+  "One",
+  "Two",
+  "Three",
+  "Four",
+  "Five",
+  "Six",
+  "Seven",
+  "Eight",
+  "Nine",
+  "Ten",
+  "Eleven",
+  "Twelve",
+  "Thirteen",
+  "Fourteen",
+  "Fifteen",
+  "Sixteen",
+  "Seventeen",
+  "Eighteen",
+  "Nineteen",
+];
+const TENS = [
+  "",
+  "",
+  "Twenty",
+  "Thirty",
+  "Forty",
+  "Fifty",
+  "Sixty",
+  "Seventy",
+  "Eighty",
+  "Ninety",
+];
 
 function words(x: number): string {
   if (x < 20) return ONES[x];
   if (x < 100) return TENS[Math.floor(x / 10)] + (x % 10 ? " " + ONES[x % 10] : "");
-  if (x < 1000) return ONES[Math.floor(x / 100)] + " Hundred" + (x % 100 ? " " + words(x % 100) : "");
-  if (x < 100000) return words(Math.floor(x / 1000)) + " Thousand" + (x % 1000 ? " " + words(x % 1000) : "");
-  if (x < 10000000) return words(Math.floor(x / 100000)) + " Lakh" + (x % 100000 ? " " + words(x % 100000) : "");
-  return words(Math.floor(x / 10000000)) + " Crore" + (x % 10000000 ? " " + words(x % 10000000) : "");
+  if (x < 1000)
+    return ONES[Math.floor(x / 100)] + " Hundred" + (x % 100 ? " " + words(x % 100) : "");
+  if (x < 100000)
+    return (
+      words(Math.floor(x / 1000)) + " Thousand" + (x % 1000 ? " " + words(x % 1000) : "")
+    );
+  if (x < 10000000)
+    return (
+      words(Math.floor(x / 100000)) +
+      " Lakh" +
+      (x % 100000 ? " " + words(x % 100000) : "")
+    );
+  return (
+    words(Math.floor(x / 10000000)) +
+    " Crore" +
+    (x % 10000000 ? " " + words(x % 10000000) : "")
+  );
 }
 
 export function amountInWords(n: number): string {
@@ -112,9 +156,9 @@ export interface CompanyInvoiceLine {
   sacDesc: string;
   qty: number;
   unit: string;
-  rate: number;      // rupees
-  discount: number;  // rupees
-  amount: number;    // rupees, after discount
+  rate: number; // rupees
+  discount: number; // rupees
+  amount: number; // rupees, after discount
 }
 
 export interface CompanyInvoiceModel {
@@ -184,7 +228,11 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
     s: string,
     x: number,
     size = 8.5,
-    o: { bold?: boolean; color?: ReturnType<typeof rgb>; align?: "left" | "right" | "center" } = {},
+    o: {
+      bold?: boolean;
+      color?: ReturnType<typeof rgb>;
+      align?: "left" | "right" | "center";
+    } = {},
   ) => {
     const f: PDFFont = o.bold ? bold : font;
     const t = ansi(s);
@@ -195,7 +243,9 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
   };
   const rule = (color = RULE, thickness = 0.7) =>
     page.drawLine({ start: { x: MARGIN, y }, end: { x: RIGHT, y }, thickness, color });
-  const gap = (h: number) => { y -= h; };
+  const gap = (h: number) => {
+    y -= h;
+  };
   const ensure = (space: number) => {
     if (y - space < MARGIN + 30) {
       page = doc.addPage([PAGE_W, PAGE_H]);
@@ -216,7 +266,9 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
   text(`GSTIN: ${SUPPLIER.gstin}   PAN: ${SUPPLIER.pan}`, MARGIN, 7.5, { color: MUTED });
   text("Sec. 31 CGST  |  Rule 46", RIGHT, 7.5, { align: "right", color: MUTED });
   gap(9);
-  text(`State: ${SUPPLIER.stateName} (${SUPPLIER.stateCode})`, MARGIN, 7.5, { color: MUTED });
+  text(`State: ${SUPPLIER.stateName} (${SUPPLIER.stateCode})`, MARGIN, 7.5, {
+    color: MUTED,
+  });
   gap(10);
   rule(INK, 1.1);
   gap(14);
@@ -318,10 +370,18 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
 
   // ── Totals ────────────────────────────────────────────────────────────────
   const half = inv.gstRate / 2;
-  const totalRow = (label: string, value: string, o: { bold?: boolean; size?: number; color?: ReturnType<typeof rgb> } = {}) => {
+  const totalRow = (
+    label: string,
+    value: string,
+    o: { bold?: boolean; size?: number; color?: ReturnType<typeof rgb> } = {},
+  ) => {
     ensure(16);
     text(label, cx.rate, o.size ?? 8.5, { align: "right", bold: o.bold, color: o.color });
-    text(value, cx.amount, o.size ?? 8.5, { align: "right", bold: o.bold, color: o.color });
+    text(value, cx.amount, o.size ?? 8.5, {
+      align: "right",
+      bold: o.bold,
+      color: o.color,
+    });
     gap(o.bold ? 14 : 12);
   };
 
@@ -338,7 +398,9 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
   const paid = Math.max(0, inv.amountPaid ?? 0);
   if (paid > 0) {
     totalRow("Amount received", `Rs. ${inr2(paid)}`, { color: PAID });
-    totalRow("Balance due", `Rs. ${inr2(Math.max(0, round2(inv.payable - paid)))}`, { bold: true });
+    totalRow("Balance due", `Rs. ${inr2(Math.max(0, round2(inv.payable - paid)))}`, {
+      bold: true,
+    });
   }
 
   gap(4);
@@ -351,12 +413,23 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
   ensure(70);
   text("TAX BREAKUP BY SAC", MARGIN, 7, { bold: true, color: MUTED });
   gap(11);
-  const bx = { sac: MARGIN, desc: MARGIN + 60, taxable: MARGIN + 300, t1: MARGIN + 390, t2: MARGIN + 470, tax: RIGHT };
+  const bx = {
+    sac: MARGIN,
+    desc: MARGIN + 60,
+    taxable: MARGIN + 300,
+    t1: MARGIN + 390,
+    t2: MARGIN + 470,
+    tax: RIGHT,
+  };
   text("SAC", bx.sac, 7, { color: MUTED });
   text("Desc", bx.desc, 7, { color: MUTED });
   text("Taxable", bx.taxable, 7, { color: MUTED, align: "right" });
-  text(inv.isInterState ? `IGST@${inv.gstRate}%` : `CGST@${half}%`, bx.t1, 7, { color: MUTED, align: "right" });
-  if (!inv.isInterState) text(`SGST@${half}%`, bx.t2, 7, { color: MUTED, align: "right" });
+  text(inv.isInterState ? `IGST@${inv.gstRate}%` : `CGST@${half}%`, bx.t1, 7, {
+    color: MUTED,
+    align: "right",
+  });
+  if (!inv.isInterState)
+    text(`SGST@${half}%`, bx.t2, 7, { color: MUTED, align: "right" });
   text("Tax", bx.tax, 7, { color: MUTED, align: "right" });
   gap(4);
   rule();
@@ -402,7 +475,11 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
   const bankBottom = y;
 
   y = blockTop;
-  text(`FOR ${SUPPLIER.legalName}`, RIGHT, 7, { bold: true, color: MUTED, align: "right" });
+  text(`FOR ${SUPPLIER.legalName}`, RIGHT, 7, {
+    bold: true,
+    color: MUTED,
+    align: "right",
+  });
   gap(13);
   text("DIGITALLY SIGNED", RIGHT, 8, { align: "right", color: BRAND, bold: true });
   gap(12);
@@ -410,15 +487,23 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
   gap(10);
   text(SUPPLIER.signatory.title, RIGHT, 7.5, { align: "right", color: MUTED });
   gap(10);
-  text(`Date: ${fmtDate(inv.date)}   Place: ${SUPPLIER.place}`, RIGHT, 7.5, { align: "right", color: MUTED });
+  text(`Date: ${fmtDate(inv.date)}   Place: ${SUPPLIER.place}`, RIGHT, 7.5, {
+    align: "right",
+    color: MUTED,
+  });
   gap(9);
-  text("Digitally signed - IT Act 2000, Sec. 5", RIGHT, 7, { align: "right", color: MUTED });
+  text("Digitally signed - IT Act 2000, Sec. 5", RIGHT, 7, {
+    align: "right",
+    color: MUTED,
+  });
 
   y = Math.min(bankBottom, y) - 12;
 
   // ── Notes and terms ───────────────────────────────────────────────────────
   ensure(60);
-  text(`Notes: ${inv.notes ?? "Thank you for your business."}`, MARGIN, 7.5, { color: MUTED });
+  text(`Notes: ${inv.notes ?? "Thank you for your business."}`, MARGIN, 7.5, {
+    color: MUTED,
+  });
   gap(14);
   text("TERMS & CONDITIONS", MARGIN, 7, { bold: true, color: MUTED });
   gap(10);

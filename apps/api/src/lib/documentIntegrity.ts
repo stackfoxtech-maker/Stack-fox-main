@@ -19,13 +19,7 @@ import { getPresignedDownload } from "./storage";
  */
 
 export type DocumentType =
-  | "INVOICE"
-  | "CONTRACT"
-  | "QUOTE"
-  | "REPORT"
-  | "FILE"
-  | "ESTIMATE"
-  | "HANDOVER";
+  "INVOICE" | "CONTRACT" | "QUOTE" | "REPORT" | "FILE" | "ESTIMATE" | "HANDOVER";
 
 /**
  * Signed-URL lifetime.
@@ -88,9 +82,13 @@ export async function issueDownload(
     archive?: boolean;
   },
 ): Promise<string> {
-  const url = await getPresignedDownload(opts.storageKey, opts.expiresIn ?? DOWNLOAD_TTL_SEC, {
-    archive: opts.archive,
-  });
+  const url = await getPresignedDownload(
+    opts.storageKey,
+    opts.expiresIn ?? DOWNLOAD_TTL_SEC,
+    {
+      archive: opts.archive,
+    },
+  );
 
   try {
     await prisma.documentAccess.create({

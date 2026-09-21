@@ -79,7 +79,8 @@ export const email = z.string().email().max(320);
  * client bug or an attempt at mass assignment, and silently dropping it hides
  * both. Rejecting it surfaces the mismatch while the sender can still act.
  */
-export const strictObject = <T extends z.ZodRawShape>(shape: T) => z.object(shape).strict();
+export const strictObject = <T extends z.ZodRawShape>(shape: T) =>
+  z.object(shape).strict();
 
 /**
  * A password at registration.
@@ -127,7 +128,10 @@ export const pan = z
   .string()
   .trim()
   .toUpperCase()
-  .regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, "Not a valid PAN — expected 10 characters, e.g. AAPFU0939F");
+  .regex(
+    /^[A-Z]{5}[0-9]{4}[A-Z]$/,
+    "Not a valid PAN — expected 10 characters, e.g. AAPFU0939F",
+  );
 
 /**
  * A billing address, which is the GSTIN's fallback: when there is no GSTIN,

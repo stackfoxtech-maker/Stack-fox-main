@@ -46,7 +46,11 @@ export async function ticketRoutes(app: FastifyInstance) {
 
     await emitEvent({
       code: "TICKET_RAISED",
-      payload: { ticketId: ticket.id, category: ticket.category, priority: ticket.priority },
+      payload: {
+        ticketId: ticket.id,
+        category: ticket.category,
+        priority: ticket.priority,
+      },
       actor: req.user!.sub,
     });
 
@@ -102,7 +106,11 @@ export async function ticketRoutes(app: FastifyInstance) {
       await prisma.ticket.update({ where: { id }, data: { status: "REOPENED" } });
     }
 
-    await emitEvent({ code: "TICKET_REPLY_ADDED", payload: { ticketId: id }, actor: req.user!.sub });
+    await emitEvent({
+      code: "TICKET_REPLY_ADDED",
+      payload: { ticketId: id },
+      actor: req.user!.sub,
+    });
 
     return { data: { success: true } };
   });
@@ -121,7 +129,8 @@ export async function ticketRoutes(app: FastifyInstance) {
     // defects to every other client.
     if (scope !== null) {
       const allowed = await projectIdsInScope(scope);
-      if (q.projectId && !allowed!.includes(q.projectId)) return paginated([], 0, page, limit);
+      if (q.projectId && !allowed!.includes(q.projectId))
+        return paginated([], 0, page, limit);
       where.projectId = { in: q.projectId ? [q.projectId] : allowed! };
     } else if (q.projectId) {
       where.projectId = q.projectId;
@@ -131,7 +140,12 @@ export async function ticketRoutes(app: FastifyInstance) {
     if (q.severity) where.severity = q.severity;
 
     const [items, total] = await Promise.all([
-      prisma.ticket.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" } }),
+      prisma.ticket.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
       prisma.ticket.count({ where }),
     ]);
     return paginated(items, total, page, limit);
@@ -149,7 +163,10 @@ export async function ticketRoutes(app: FastifyInstance) {
       });
       if (!owned) return reply.code(404).send({ error: "Ticket not found" });
     }
-    const ticket = await prisma.ticket.findUnique({ where: { id }, include: { replies: true } });
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      include: { replies: true },
+    });
     if (!ticket) return reply.code(404).send({ error: "Ticket not found" });
     return ticket;
   });
@@ -195,7 +212,11 @@ export async function ticketRoutes(app: FastifyInstance) {
         where: { id },
         data: { status: "CLOSED", closedAt: new Date() },
       });
-      await emitEvent({ code: "TICKET_CLOSED", payload: { ticketId: id }, actor: req.user!.sub });
+      await emitEvent({
+        code: "TICKET_CLOSED",
+        payload: { ticketId: id },
+        actor: req.user!.sub,
+      });
       return updated;
     }
 
@@ -203,7 +224,11 @@ export async function ticketRoutes(app: FastifyInstance) {
       where: { id },
       data: { status: "REOPENED" },
     });
-    await emitEvent({ code: "TICKET_REOPENED", payload: { ticketId: id }, actor: req.user!.sub });
+    await emitEvent({
+      code: "TICKET_REOPENED",
+      payload: { ticketId: id },
+      actor: req.user!.sub,
+    });
     return updated;
   });
 
@@ -228,10 +253,17 @@ export async function ticketRoutes(app: FastifyInstance) {
     });
 
     if (ticket.status === "OPEN") {
-      await prisma.ticket.update({ where: { id }, data: { status: "ACKNOWLEDGED", acknowledgedAt: new Date() } });
+      await prisma.ticket.update({
+        where: { id },
+        data: { status: "ACKNOWLEDGED", acknowledgedAt: new Date() },
+      });
     }
 
-    await emitEvent({ code: "TICKET_REPLY_ADDED", payload: { ticketId: id }, actor: req.user!.sub });
+    await emitEvent({
+      code: "TICKET_REPLY_ADDED",
+      payload: { ticketId: id },
+      actor: req.user!.sub,
+    });
 
     return { success: true };
   });

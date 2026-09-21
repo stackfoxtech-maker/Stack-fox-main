@@ -35,14 +35,28 @@ const SAC = [
 ];
 
 const STATES = {
-  '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '19': 'West Bengal',
-  '24': 'Gujarat', '27': 'Maharashtra', '29': 'Karnataka', '32': 'Kerala',
-  '33': 'Tamil Nadu', '36': 'Telangana', '06': 'Haryana', '23': 'Madhya Pradesh',
-  '03': 'Punjab', '10': 'Bihar', '21': 'Odisha', '22': 'Chhattisgarh', '05': 'Uttarakhand',
+  '07': 'Delhi',
+  '08': 'Rajasthan',
+  '09': 'Uttar Pradesh',
+  19: 'West Bengal',
+  24: 'Gujarat',
+  27: 'Maharashtra',
+  29: 'Karnataka',
+  32: 'Kerala',
+  33: 'Tamil Nadu',
+  36: 'Telangana',
+  '06': 'Haryana',
+  23: 'Madhya Pradesh',
+  '03': 'Punjab',
+  10: 'Bihar',
+  21: 'Odisha',
+  22: 'Chhattisgarh',
+  '05': 'Uttarakhand',
 };
 
 const fINR = (n) =>
-  '₹' + (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  '₹' +
+  (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const inputCls =
   'w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500';
@@ -71,11 +85,34 @@ export default function GSTInvoice() {
   const [origInvoiceDate, setOrigInvoiceDate] = useState('');
   const [reason, setReason] = useState('');
 
-  const [from, setFrom] = useState({ name: '', gstin: '', pan: '', stateCode: '08', address: '', email: '' });
-  const [to, setTo] = useState({ name: '', gstin: '', pan: '', stateCode: '', city: '', address: '', email: '' });
+  const [from, setFrom] = useState({
+    name: '',
+    gstin: '',
+    pan: '',
+    stateCode: '08',
+    address: '',
+    email: '',
+  });
+  const [to, setTo] = useState({
+    name: '',
+    gstin: '',
+    pan: '',
+    stateCode: '',
+    city: '',
+    address: '',
+    email: '',
+  });
 
   const [lineItems, setLineItems] = useState([
-    { description: '', sacCode: '998314', qty: 1, unit: 'Nos', rate: 0, discount: 0, discountType: '%' },
+    {
+      description: '',
+      sacCode: '998314',
+      qty: 1,
+      unit: 'Nos',
+      rate: 0,
+      discount: 0,
+      discountType: '%',
+    },
   ]);
   const [bank, setBank] = useState({ name: '', branch: '', account: '', ifsc: '', upi: '' });
   const [notes, setNotes] = useState('Thank you for your business.');
@@ -88,7 +125,8 @@ export default function GSTInvoice() {
   const isCreditDebit = invType === 'credit' || invType === 'debit';
 
   const supplyPreview = useMemo(() => {
-    if (from.stateCode && to.stateCode && from.stateCode !== to.stateCode) return 'Inter-State — IGST';
+    if (from.stateCode && to.stateCode && from.stateCode !== to.stateCode)
+      return 'Inter-State — IGST';
     return 'Intra-State — CGST + SGST';
   }, [from.stateCode, to.stateCode]);
 
@@ -96,7 +134,10 @@ export default function GSTInvoice() {
     () =>
       lineItems.reduce((s, l) => {
         const gross = (Number(l.qty) || 0) * (Number(l.rate) || 0);
-        const off = l.discountType === '%' ? (gross * (Number(l.discount) || 0)) / 100 : Number(l.discount) || 0;
+        const off =
+          l.discountType === '%'
+            ? (gross * (Number(l.discount) || 0)) / 100
+            : Number(l.discount) || 0;
         return s + Math.max(0, gross - off);
       }, 0),
     [lineItems],
@@ -107,9 +148,18 @@ export default function GSTInvoice() {
   const addLine = () =>
     setLineItems((p) => [
       ...p,
-      { description: '', sacCode: '998314', qty: 1, unit: 'Nos', rate: 0, discount: 0, discountType: '%' },
+      {
+        description: '',
+        sacCode: '998314',
+        qty: 1,
+        unit: 'Nos',
+        rate: 0,
+        discount: 0,
+        discountType: '%',
+      },
     ]);
-  const removeLine = (i) => setLineItems((p) => (p.length > 1 ? p.filter((_, idx) => idx !== i) : p));
+  const removeLine = (i) =>
+    setLineItems((p) => (p.length > 1 ? p.filter((_, idx) => idx !== i) : p));
 
   const generate = async (e) => {
     e.preventDefault();
@@ -203,44 +253,89 @@ export default function GSTInvoice() {
           </div>
           <div className="grid md:grid-cols-4 gap-4">
             <Field label="Invoice number (auto if blank)">
-              <input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className={inputCls} />
+              <input
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                className={inputCls}
+              />
             </Field>
             <Field label="Invoice date">
-              <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className={inputCls} />
+              <input
+                type="date"
+                value={invoiceDate}
+                onChange={(e) => setInvoiceDate(e.target.value)}
+                className={inputCls}
+              />
             </Field>
             <Field label="Due date">
-              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputCls} />
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className={inputCls}
+              />
             </Field>
             <Field label="GST rate">
-              <select value={gstRate} onChange={(e) => setGstRate(Number(e.target.value))} className={inputCls}>
+              <select
+                value={gstRate}
+                onChange={(e) => setGstRate(Number(e.target.value))}
+                className={inputCls}
+              >
                 {GST_RATES.map((r) => (
-                  <option key={r} value={r}>{r}%</option>
+                  <option key={r} value={r}>
+                    {r}%
+                  </option>
                 ))}
               </select>
             </Field>
           </div>
           <div className="grid md:grid-cols-3 gap-4 mt-4">
             <Field label="PO / Reference">
-              <input value={poRef} onChange={(e) => setPoRef(e.target.value)} className={inputCls} />
+              <input
+                value={poRef}
+                onChange={(e) => setPoRef(e.target.value)}
+                className={inputCls}
+              />
             </Field>
             <Field label="E-Way Bill">
-              <input value={ewayBill} onChange={(e) => setEwayBill(e.target.value)} className={inputCls} />
+              <input
+                value={ewayBill}
+                onChange={(e) => setEwayBill(e.target.value)}
+                className={inputCls}
+              />
             </Field>
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mt-6">
-              <input type="checkbox" checked={reverseCharge} onChange={(e) => setReverseCharge(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={reverseCharge}
+                onChange={(e) => setReverseCharge(e.target.checked)}
+              />
               Reverse charge (Sec 9(3)/9(4))
             </label>
           </div>
           {isCreditDebit && (
             <div className="grid md:grid-cols-3 gap-4 mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
               <Field label="Original invoice no.">
-                <input value={origInvoiceNo} onChange={(e) => setOrigInvoiceNo(e.target.value)} className={inputCls} />
+                <input
+                  value={origInvoiceNo}
+                  onChange={(e) => setOrigInvoiceNo(e.target.value)}
+                  className={inputCls}
+                />
               </Field>
               <Field label="Original date">
-                <input type="date" value={origInvoiceDate} onChange={(e) => setOrigInvoiceDate(e.target.value)} className={inputCls} />
+                <input
+                  type="date"
+                  value={origInvoiceDate}
+                  onChange={(e) => setOrigInvoiceDate(e.target.value)}
+                  className={inputCls}
+                />
               </Field>
               <Field label="Reason">
-                <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} />
+                <input
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className={inputCls}
+                />
               </Field>
             </div>
           )}
@@ -257,36 +352,67 @@ export default function GSTInvoice() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
                   <Field label="Name">
-                    <input value={party.name} onChange={(e) => setParty({ ...party, name: e.target.value })} className={inputCls} />
+                    <input
+                      value={party.name}
+                      onChange={(e) => setParty({ ...party, name: e.target.value })}
+                      className={inputCls}
+                    />
                   </Field>
                 </div>
                 <Field label="GSTIN">
-                  <input value={party.gstin} onChange={(e) => setParty({ ...party, gstin: e.target.value })} placeholder="22AAAAA0000A1Z5" className={inputCls} />
+                  <input
+                    value={party.gstin}
+                    onChange={(e) => setParty({ ...party, gstin: e.target.value })}
+                    placeholder="22AAAAA0000A1Z5"
+                    className={inputCls}
+                  />
                 </Field>
                 <Field label="PAN">
-                  <input value={party.pan} onChange={(e) => setParty({ ...party, pan: e.target.value })} className={inputCls} />
+                  <input
+                    value={party.pan}
+                    onChange={(e) => setParty({ ...party, pan: e.target.value })}
+                    className={inputCls}
+                  />
                 </Field>
                 <Field label="State">
-                  <select value={party.stateCode} onChange={(e) => setParty({ ...party, stateCode: e.target.value })} className={inputCls}>
+                  <select
+                    value={party.stateCode}
+                    onChange={(e) => setParty({ ...party, stateCode: e.target.value })}
+                    className={inputCls}
+                  >
                     <option value="">— select —</option>
                     {Object.entries(STATES).map(([k, v]) => (
-                      <option key={k} value={k}>{k} — {v}</option>
+                      <option key={k} value={k}>
+                        {k} — {v}
+                      </option>
                     ))}
                   </select>
                 </Field>
                 {!isFrom && (
                   <Field label="City">
-                    <input value={party.city || ''} onChange={(e) => setParty({ ...party, city: e.target.value })} className={inputCls} />
+                    <input
+                      value={party.city || ''}
+                      onChange={(e) => setParty({ ...party, city: e.target.value })}
+                      className={inputCls}
+                    />
                   </Field>
                 )}
                 <div className="col-span-2">
                   <Field label="Address">
-                    <input value={party.address} onChange={(e) => setParty({ ...party, address: e.target.value })} className={inputCls} />
+                    <input
+                      value={party.address}
+                      onChange={(e) => setParty({ ...party, address: e.target.value })}
+                      className={inputCls}
+                    />
                   </Field>
                 </div>
                 <div className="col-span-2">
                   <Field label="Email">
-                    <input value={party.email} onChange={(e) => setParty({ ...party, email: e.target.value })} className={inputCls} />
+                    <input
+                      value={party.email}
+                      onChange={(e) => setParty({ ...party, email: e.target.value })}
+                      className={inputCls}
+                    />
                   </Field>
                 </div>
               </div>
@@ -302,7 +428,11 @@ export default function GSTInvoice() {
         <div className="bg-white border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold">Services / Goods</h3>
-            <button type="button" onClick={addLine} className="text-sm text-orange-600 font-semibold hover:underline">
+            <button
+              type="button"
+              onClick={addLine}
+              className="text-sm text-orange-600 font-semibold hover:underline"
+            >
               + Add line item
             </button>
           </div>
@@ -311,52 +441,94 @@ export default function GSTInvoice() {
               <div key={i} className="grid grid-cols-12 gap-2 items-end border-b pb-3">
                 <div className="col-span-12 md:col-span-4">
                   <Field label={`#${i + 1} Description`}>
-                    <input value={l.description} onChange={(e) => setLine(i, 'description', e.target.value)} className={inputCls} />
+                    <input
+                      value={l.description}
+                      onChange={(e) => setLine(i, 'description', e.target.value)}
+                      className={inputCls}
+                    />
                   </Field>
                 </div>
                 <div className="col-span-6 md:col-span-2">
                   <Field label="SAC/HSN">
-                    <select value={l.sacCode} onChange={(e) => setLine(i, 'sacCode', e.target.value)} className={inputCls}>
+                    <select
+                      value={l.sacCode}
+                      onChange={(e) => setLine(i, 'sacCode', e.target.value)}
+                      className={inputCls}
+                    >
                       {SAC.map(([c, d]) => (
-                        <option key={c} value={c}>{c} — {d}</option>
+                        <option key={c} value={c}>
+                          {c} — {d}
+                        </option>
                       ))}
                     </select>
                   </Field>
                 </div>
                 <div className="col-span-3 md:col-span-1">
                   <Field label="Qty">
-                    <input type="number" min="0" value={l.qty} onChange={(e) => setLine(i, 'qty', e.target.value)} className={inputCls} />
+                    <input
+                      type="number"
+                      min="0"
+                      value={l.qty}
+                      onChange={(e) => setLine(i, 'qty', e.target.value)}
+                      className={inputCls}
+                    />
                   </Field>
                 </div>
                 <div className="col-span-3 md:col-span-1">
                   <Field label="Unit">
-                    <select value={l.unit} onChange={(e) => setLine(i, 'unit', e.target.value)} className={inputCls}>
+                    <select
+                      value={l.unit}
+                      onChange={(e) => setLine(i, 'unit', e.target.value)}
+                      className={inputCls}
+                    >
                       {UNITS.map((u) => (
-                        <option key={u} value={u}>{u}</option>
+                        <option key={u} value={u}>
+                          {u}
+                        </option>
                       ))}
                     </select>
                   </Field>
                 </div>
                 <div className="col-span-4 md:col-span-1">
                   <Field label="Rate ₹">
-                    <input type="number" min="0" value={l.rate} onChange={(e) => setLine(i, 'rate', e.target.value)} className={inputCls} />
+                    <input
+                      type="number"
+                      min="0"
+                      value={l.rate}
+                      onChange={(e) => setLine(i, 'rate', e.target.value)}
+                      className={inputCls}
+                    />
                   </Field>
                 </div>
                 <div className="col-span-3 md:col-span-1">
                   <Field label="Disc">
-                    <input type="number" min="0" value={l.discount} onChange={(e) => setLine(i, 'discount', e.target.value)} className={inputCls} />
+                    <input
+                      type="number"
+                      min="0"
+                      value={l.discount}
+                      onChange={(e) => setLine(i, 'discount', e.target.value)}
+                      className={inputCls}
+                    />
                   </Field>
                 </div>
                 <div className="col-span-3 md:col-span-1">
                   <Field label="Type">
-                    <select value={l.discountType} onChange={(e) => setLine(i, 'discountType', e.target.value)} className={inputCls}>
+                    <select
+                      value={l.discountType}
+                      onChange={(e) => setLine(i, 'discountType', e.target.value)}
+                      className={inputCls}
+                    >
                       <option value="%">%</option>
                       <option value="flat">₹</option>
                     </select>
                   </Field>
                 </div>
                 <div className="col-span-12 md:col-span-12 flex justify-end">
-                  <button type="button" onClick={() => removeLine(i)} className="text-xs text-gray-400 hover:text-red-500">
+                  <button
+                    type="button"
+                    onClick={() => removeLine(i)}
+                    className="text-xs text-gray-400 hover:text-red-500"
+                  >
                     Remove
                   </button>
                 </div>
@@ -379,14 +551,23 @@ export default function GSTInvoice() {
                 ['upi', 'UPI'],
               ].map(([k, lbl]) => (
                 <Field key={k} label={lbl}>
-                  <input value={bank[k]} onChange={(e) => setBank({ ...bank, [k]: e.target.value })} className={inputCls} />
+                  <input
+                    value={bank[k]}
+                    onChange={(e) => setBank({ ...bank, [k]: e.target.value })}
+                    className={inputCls}
+                  />
                 </Field>
               ))}
             </div>
           </div>
           <div className="bg-white border rounded-2xl p-6">
             <h3 className="font-bold mb-3">Notes</h3>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={6} className={`${inputCls} resize-y`} />
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={6}
+              className={`${inputCls} resize-y`}
+            />
           </div>
         </div>
 
@@ -410,7 +591,10 @@ export default function GSTInvoice() {
               </p>
             </div>
             {pdf && (
-              <button onClick={downloadPdf} className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600">
+              <button
+                onClick={downloadPdf}
+                className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600"
+              >
                 ⬇ Download PDF
               </button>
             )}
@@ -442,7 +626,9 @@ export default function GSTInvoice() {
                     <td className="py-2">{i + 1}</td>
                     <td>{l.description || '—'}</td>
                     <td>{l.sacCode}</td>
-                    <td className="text-right">{l.qty} {l.unit}</td>
+                    <td className="text-right">
+                      {l.qty} {l.unit}
+                    </td>
                     <td className="text-right">{fINR(l.rate)}</td>
                     <td className="text-right font-semibold">{fINR(l.amount)}</td>
                   </tr>
@@ -454,10 +640,18 @@ export default function GSTInvoice() {
           <div className="flex justify-end">
             <div className="w-72 text-sm space-y-1">
               <Row l="Subtotal" v={fINR(result.subtotal)} />
-              {result.cgst > 0 && <Row l={`CGST @ ${result.effectiveGstRate / 2}%`} v={fINR(result.cgst)} />}
-              {result.sgst > 0 && <Row l={`SGST @ ${result.effectiveGstRate / 2}%`} v={fINR(result.sgst)} />}
-              {result.igst > 0 && <Row l={`IGST @ ${result.effectiveGstRate}%`} v={fINR(result.igst)} />}
-              {Math.abs(result.roundOff) > 0.001 && <Row l="Round off" v={result.roundOff.toFixed(2)} />}
+              {result.cgst > 0 && (
+                <Row l={`CGST @ ${result.effectiveGstRate / 2}%`} v={fINR(result.cgst)} />
+              )}
+              {result.sgst > 0 && (
+                <Row l={`SGST @ ${result.effectiveGstRate / 2}%`} v={fINR(result.sgst)} />
+              )}
+              {result.igst > 0 && (
+                <Row l={`IGST @ ${result.effectiveGstRate}%`} v={fINR(result.igst)} />
+              )}
+              {Math.abs(result.roundOff) > 0.001 && (
+                <Row l="Round off" v={result.roundOff.toFixed(2)} />
+              )}
               <div className="flex justify-between font-bold text-base bg-orange-500 text-white rounded-lg px-3 py-2 mt-2">
                 <span>Payable</span>
                 <span>{fINR(result.payable)}</span>
@@ -467,10 +661,16 @@ export default function GSTInvoice() {
           <p className="text-sm text-gray-600 mt-3 italic">{result.amountInWords}</p>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/builder" className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600">
+            <Link
+              to="/builder"
+              className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600"
+            >
               Build Your Website Too
             </Link>
-            <Link to="/catalog" className="px-5 py-2.5 border-2 border-orange-500 text-orange-600 rounded-xl font-semibold hover:bg-orange-50">
+            <Link
+              to="/catalog"
+              className="px-5 py-2.5 border-2 border-orange-500 text-orange-600 rounded-xl font-semibold hover:bg-orange-50"
+            >
               Browse Services
             </Link>
           </div>

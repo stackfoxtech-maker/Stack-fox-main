@@ -18,8 +18,29 @@ import { describe, it, expect } from 'vitest';
 // change to the store is a visible, deliberate change here too.
 const ADMIN = ['admin', 'ADMIN', 'SUPER_ADMIN'];
 const SALES = ['SALES'];
-const TEAM = ['team', 'TEAM', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS', 'FINANCE', 'SALES'];
-const CLIENT = ['client', 'CLIENT', 'CLIENT_ADMIN', 'CLIENT_PM', 'CLIENT_VIEWER', 'INDIVIDUAL_CLIENT', 'ORG_OWNER', 'REFERRER'];
+const TEAM = [
+  'team',
+  'TEAM',
+  'SE',
+  'SENIOR_PM',
+  'PM',
+  'DEVELOPER',
+  'QA',
+  'DESIGNER',
+  'DEVOPS',
+  'FINANCE',
+  'SALES',
+];
+const CLIENT = [
+  'client',
+  'CLIENT',
+  'CLIENT_ADMIN',
+  'CLIENT_PM',
+  'CLIENT_VIEWER',
+  'INDIVIDUAL_CLIENT',
+  'ORG_OWNER',
+  'REFERRER',
+];
 
 const isAdmin = (r) => ADMIN.includes(r);
 const isSales = (r) => SALES.includes(r);
@@ -35,18 +56,46 @@ function getDashboardPath(role) {
 // Mirrors of the routes.jsx guards.
 const GUARDS = {
   '/app/client': [...CLIENT, 'admin', 'ADMIN', 'SUPER_ADMIN'],
-  '/app/team': ['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS', 'FINANCE', 'SALES', 'ADMIN', 'SUPER_ADMIN'],
+  '/app/team': [
+    'team',
+    'admin',
+    'SE',
+    'SENIOR_PM',
+    'PM',
+    'DEVELOPER',
+    'QA',
+    'DESIGNER',
+    'DEVOPS',
+    'FINANCE',
+    'SALES',
+    'ADMIN',
+    'SUPER_ADMIN',
+  ],
   '/app/team/sales': ['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'SALES', 'ADMIN', 'SUPER_ADMIN'],
   '/app/admin': ['admin', 'ADMIN', 'SUPER_ADMIN'],
 };
 
 const INTERNAL_ROLES = [
-  'ADMIN', 'SUPER_ADMIN', 'SE', 'SENIOR_PM', 'PM',
-  'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS', 'FINANCE', 'SALES',
+  'ADMIN',
+  'SUPER_ADMIN',
+  'SE',
+  'SENIOR_PM',
+  'PM',
+  'DEVELOPER',
+  'QA',
+  'DESIGNER',
+  'DEVOPS',
+  'FINANCE',
+  'SALES',
 ];
 const CLIENT_ROLES = [
-  'INDIVIDUAL_CLIENT', 'ORG_OWNER', 'CLIENT_ADMIN',
-  'CLIENT_PM', 'CLIENT_VIEWER', 'CLIENT', 'REFERRER',
+  'INDIVIDUAL_CLIENT',
+  'ORG_OWNER',
+  'CLIENT_ADMIN',
+  'CLIENT_PM',
+  'CLIENT_VIEWER',
+  'CLIENT',
+  'REFERRER',
 ];
 
 describe('dashboard routing', () => {
@@ -81,8 +130,9 @@ describe('dashboard routing', () => {
 
   it('no internal role is treated as a client', () => {
     for (const role of INTERNAL_ROLES) {
-      expect(getDashboardPath(role), `${role} was routed to the client portal`)
-        .not.toBe('/app/client');
+      expect(getDashboardPath(role), `${role} was routed to the client portal`).not.toBe(
+        '/app/client',
+      );
     }
   });
 

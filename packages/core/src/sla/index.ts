@@ -2,7 +2,10 @@ export type Severity = "P1" | "P2" | "P3" | "P4";
 export type SlaMetric = "response" | "resolution";
 
 /** Targets are in minutes, measured from ticket creation. */
-export const SLA_TARGETS: Record<Severity, { responseMin: number; resolutionMin: number }> = {
+export const SLA_TARGETS: Record<
+  Severity,
+  { responseMin: number; resolutionMin: number }
+> = {
   P1: { responseMin: 30, resolutionMin: 240 },
   P2: { responseMin: 120, resolutionMin: 480 },
   P3: { responseMin: 480, resolutionMin: 2880 },

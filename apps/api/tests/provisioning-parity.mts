@@ -24,7 +24,8 @@ import {
 import { resolveGstType, splitGst } from "../src/lib/gst";
 
 const checks: Array<[string, boolean, string]> = [];
-const check = (label: string, pass: boolean, note = "") => checks.push([label, pass, note]);
+const check = (label: string, pass: boolean, note = "") =>
+  checks.push([label, pass, note]);
 
 const TIERS = ["STARTER", "GROWTH", "PREMIUM"];
 
@@ -60,8 +61,16 @@ check(
 // ── Contract sets ────────────────────────────────────────────────────────────
 for (const tier of TIERS) {
   const types = getContractTypes(tier);
-  check(`${tier} has contracts (${types.join(", ")})`, types.length > 0, "expect at least one");
-  check(`${tier} contract types are unique`, new Set(types).size === types.length, "duplicates");
+  check(
+    `${tier} has contracts (${types.join(", ")})`,
+    types.length > 0,
+    "expect at least one",
+  );
+  check(
+    `${tier} contract types are unique`,
+    new Set(types).size === types.length,
+    "duplicates",
+  );
 }
 check(
   `PREMIUM includes an NDA and a DPA`,

@@ -8,7 +8,7 @@ createWorker(QUEUE.whatsappCommerce, async (job) => {
   const { from, message, type, timestamp } = job.data;
 
   if (type === "text" || type === "interactive") {
-    const userMessage = typeof message === "string" ? message : message?.body ?? "";
+    const userMessage = typeof message === "string" ? message : (message?.body ?? "");
 
     // Use Gemini to understand intent
     const prompt = `You are a StackFox IT services assistant on WhatsApp. The user said: "${userMessage}"
@@ -21,7 +21,12 @@ Return as JSON: { intent, entities: { services: [], projectRef: null, ticketRef:
     try {
       parsed = JSON.parse(result);
     } catch {
-      parsed = { intent: "OTHER", entities: {}, suggestedReply: "I'd be happy to help! Could you tell me more about what you're looking for?" };
+      parsed = {
+        intent: "OTHER",
+        entities: {},
+        suggestedReply:
+          "I'd be happy to help! Could you tell me more about what you're looking for?",
+      };
     }
 
     // Store conversation

@@ -41,7 +41,10 @@ registerCron("sales-followup", async () => {
         })
         .catch((err) => log().error({ err }, "sales follow-up notify failed"));
     }
-    await prisma.followUp.update({ where: { id: f.id }, data: { reminderSentAt: new Date() } });
+    await prisma.followUp.update({
+      where: { id: f.id },
+      data: { reminderSentAt: new Date() },
+    });
   }
 
   if (due.length) log().info({ count: due.length }, "sales follow-ups reminded");

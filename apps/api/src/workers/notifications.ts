@@ -44,7 +44,10 @@ createWorker<NotifyJob>(QUEUE.notifications, async (job) => {
   }
 });
 
-async function getSubscribers(engagementId?: string, projectId?: string): Promise<string[]> {
+async function getSubscribers(
+  engagementId?: string,
+  projectId?: string,
+): Promise<string[]> {
   const userIds = new Set<string>();
 
   if (engagementId) {
@@ -80,18 +83,27 @@ function resolveChannels(code: string, prefs: Record<string, any>): string[] {
 }
 
 function formatTitle(code: string): string {
-  return code.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+  return code
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
 }
 
 function renderBody(code: string, payload?: Record<string, unknown>): string {
   if (!payload || Object.keys(payload).length === 0) return formatTitle(code);
-  return Object.entries(payload)
-    .filter(([, v]) => v !== null && v !== undefined && typeof v !== "object")
-    .map(([k, v]) => `${k}: ${v}`)
-    .join(" · ") || formatTitle(code);
+  return (
+    Object.entries(payload)
+      .filter(([, v]) => v !== null && v !== undefined && typeof v !== "object")
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(" · ") || formatTitle(code)
+  );
 }
 
-function resolveLink(tpl?: string | null, projectId?: string, engagementId?: string): string | null {
+function resolveLink(
+  tpl?: string | null,
+  projectId?: string,
+  engagementId?: string,
+): string | null {
   if (projectId) return `/app/client/projects/${projectId}`;
   if (engagementId) return `/app/client/engagements`;
   return tpl ?? null;

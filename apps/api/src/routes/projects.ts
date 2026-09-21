@@ -13,7 +13,12 @@ export async function projectRoutes(app: FastifyInstance) {
     const scope = await clientScope(req, reply);
     if (scope === undefined) return;
 
-    const { engId, status, page = "1", limit = "20" } = req.query as Record<string, string>;
+    const {
+      engId,
+      status,
+      page = "1",
+      limit = "20",
+    } = req.query as Record<string, string>;
     const where: any = {};
     if (scope !== null) where.engagement = { clientId: scope };
     if (engId) where.engagementId = engId;
@@ -67,7 +72,9 @@ export async function projectRoutes(app: FastifyInstance) {
     if (!project) return reply.code(404).send({ error: "Project not found" });
 
     if (!canTransition(project.status as any, status as any, PROJECT_TRANSITIONS)) {
-      return reply.code(409).send({ error: `Cannot transition from ${project.status} to ${status}` });
+      return reply
+        .code(409)
+        .send({ error: `Cannot transition from ${project.status} to ${status}` });
     }
 
     const updated = await prisma.project.update({ where: { id }, data: { status } });
@@ -79,7 +86,12 @@ export async function projectRoutes(app: FastifyInstance) {
       CANCELLED: "PROJECT_CANCELLED",
     };
     if (codeMap[status]) {
-      await emitEvent({ code: codeMap[status], payload: { projectId: id }, actor: req.user!.sub, projectId: id });
+      await emitEvent({
+        code: codeMap[status],
+        payload: { projectId: id },
+        actor: req.user!.sub,
+        projectId: id,
+      });
     }
 
     return updated;
@@ -94,7 +106,10 @@ export async function projectRoutes(app: FastifyInstance) {
     if (!(await assertProjectInScope(id, scope, reply))) return;
 
     const milestones = await prisma.milestone.findMany({
-      take: LIST_CAP, where: { projectId: id }, orderBy: { number: "asc" } });
+      take: LIST_CAP,
+      where: { projectId: id },
+      orderBy: { number: "asc" },
+    });
     return { data: milestones };
   });
 
@@ -179,7 +194,11 @@ export async function projectRoutes(app: FastifyInstance) {
         projectId: id,
       });
 
-      return { milestone, cr, message: "Revision exceeds included rounds. Change request created." };
+      return {
+        milestone,
+        cr,
+        message: "Revision exceeds included rounds. Change request created.",
+      };
     }
 
     const updated = await prisma.milestone.update({
@@ -280,7 +299,10 @@ export async function projectRoutes(app: FastifyInstance) {
     // G-041: if cost delta > 0, create invoice before approving
     const costDelta = Number(cr.costDelta ?? 0);
     if (costDelta > 0 && cr.projectId) {
-      const project = await prisma.project.findUnique({ where: { id: cr.projectId }, include: { engagement: true } });
+      const project = await prisma.project.findUnique({
+        where: { id: cr.projectId },
+        include: { engagement: true },
+      });
       if (project) {
         const invoice = await prisma.invoice.create({
           data: {
@@ -296,7 +318,10 @@ export async function projectRoutes(app: FastifyInstance) {
             status: "SENT",
           },
         });
-        await prisma.changeRequest.update({ where: { id: crId }, data: { invoiceId: invoice.id } });
+        await prisma.changeRequest.update({
+          where: { id: crId },
+          data: { invoiceId: invoice.id },
+        });
       }
     }
 
@@ -338,7 +363,9 @@ export async function projectRoutes(app: FastifyInstance) {
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return reply.code(404).send({ error: "Project not found" });
     if (!["COMPLETED", "CANCELLED"].includes(project.status)) {
-      return reply.code(409).send({ error: "Only completed/cancelled projects can be reactivated" });
+      return reply
+        .code(409)
+        .send({ error: "Only completed/cancelled projects can be reactivated" });
     }
 
     // Create micro-SOW contract

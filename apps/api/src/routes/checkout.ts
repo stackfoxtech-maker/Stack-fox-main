@@ -17,7 +17,11 @@ import {
 } from "../lib/checkoutSession";
 import { toJson } from "../lib/json";
 import { resolveGstType, splitGst } from "../lib/gst";
-import { getContractTypes, getMilestoneTemplates, paymentModeAmount } from "@stackfox/core";
+import {
+  getContractTypes,
+  getMilestoneTemplates,
+  paymentModeAmount,
+} from "@stackfox/core";
 import { parseBody } from "../lib/validate";
 import { StartCheckoutSchema, CompleteCheckoutSchema } from "./moneySchemas";
 
@@ -37,8 +41,15 @@ export async function checkoutRoutes(app: FastifyInstance) {
       return reply.code(409).send({ error: "Estimate is no longer active" });
     }
     if (new Date() > estimate.lockedUntil) {
-      await prisma.estimate.update({ where: { id: estimateId }, data: { status: "EXPIRED" } });
-      await emitEvent({ code: "ESTIMATE_EXPIRED", payload: { estimateId }, actor: "SYSTEM" });
+      await prisma.estimate.update({
+        where: { id: estimateId },
+        data: { status: "EXPIRED" },
+      });
+      await emitEvent({
+        code: "ESTIMATE_EXPIRED",
+        payload: { estimateId },
+        actor: "SYSTEM",
+      });
       return reply.code(410).send({ error: "Estimate has expired. Please regenerate." });
     }
 
@@ -50,9 +61,14 @@ export async function checkoutRoutes(app: FastifyInstance) {
       timelineMult: ws.timelineMult,
     });
     if (currentHash !== estimate.hash) {
-      await emitEvent({ code: "EST_010", payload: { estimateId, drift: true }, actor: "SYSTEM" });
+      await emitEvent({
+        code: "EST_010",
+        payload: { estimateId, drift: true },
+        actor: "SYSTEM",
+      });
       return reply.code(409).send({
-        error: "Workspace has changed since estimate was generated. Please refresh the estimate.",
+        error:
+          "Workspace has changed since estimate was generated. Please refresh the estimate.",
         code: "HASH_DRIFT",
       });
     }
@@ -153,7 +169,10 @@ export async function checkoutRoutes(app: FastifyInstance) {
   app.post("/checkout/:sid/sign", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { sid } = req.params as { sid: string };
-    const { rail, evidence } = req.body as { rail: string; evidence: Record<string, unknown> };
+    const { rail, evidence } = req.body as {
+      rail: string;
+      evidence: Record<string, unknown>;
+    };
 
     const session = await readSession(sid);
     if (!session) return reply.code(404).send({ error: "Session expired" });
@@ -232,7 +251,9 @@ export async function checkoutRoutes(app: FastifyInstance) {
         if (previous) return previous;
       }
 
-      const estimate = await prisma.estimate.findUnique({ where: { id: session.estimateId } });
+      const estimate = await prisma.estimate.findUnique({
+        where: { id: session.estimateId },
+      });
       if (!estimate) return reply.code(404).send({ error: "Estimate not found" });
 
       const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
@@ -268,7 +289,11 @@ export async function checkoutRoutes(app: FastifyInstance) {
       if (hasHandshake) {
         const valid =
           !!rzpOrderId &&
-          verifyRazorpaySignature(rzpOrderId, pay.razorpay_payment_id!, pay.razorpay_signature);
+          verifyRazorpaySignature(
+            rzpOrderId,
+            pay.razorpay_payment_id!,
+            pay.razorpay_signature,
+          );
         if (!valid) {
           return reply.code(400).send({ error: "Payment signature verification failed" });
         }
@@ -293,7 +318,8 @@ export async function checkoutRoutes(app: FastifyInstance) {
               orgId,
               estimateId: estimate.id,
               engagementId: engId,
-              projectName: (session.engagementDetails as any)?.projectName ?? "New Project",
+              projectName:
+                (session.engagementDetails as any)?.projectName ?? "New Project",
               primaryContact: { name: user.name, email: user.email, phone: user.phone },
               paymentMode: (session.paymentTerms as any)?.mode ?? "MILESTONE",
               clauseConfig: toJson(session.clauseSelections ?? {}),
@@ -418,19 +444,46 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
       for (const c of result.contracts) {
         await queues.docGen
-          .add("contract-pdf", { type: "contract", contractId: c.id, contractType: c.type })
+          .add("contract-pdf", {
+            type: "contract",
+            contractId: c.id,
+            contractType: c.type,
+          })
           .catch(() => {});
       }
       await queues.docGen
         .add("invoice-pdf", { type: "invoice", invoiceId: result.invoice.id })
         .catch(() => {});
 
-      await emitEvent({ code: "ESTIMATE_CONVERTED", payload: { estimateId: estimate.id }, actor: req.user!.sub });
-      await emitEvent({ code: "ORDER_PLACED", payload: { orderId: ordId, tier: session.tier }, actor: req.user!.sub });
-      await emitEvent({ code: "ENGAGEMENT_CREATED", payload: { engagementId: engId }, actor: req.user!.sub, engagementId: engId });
-      await emitEvent({ code: "INVOICE_CREATED", payload: { invoiceId: result.invoice.id }, actor: "SYSTEM" });
+      await emitEvent({
+        code: "ESTIMATE_CONVERTED",
+        payload: { estimateId: estimate.id },
+        actor: req.user!.sub,
+      });
+      await emitEvent({
+        code: "ORDER_PLACED",
+        payload: { orderId: ordId, tier: session.tier },
+        actor: req.user!.sub,
+      });
+      await emitEvent({
+        code: "ENGAGEMENT_CREATED",
+        payload: { engagementId: engId },
+        actor: req.user!.sub,
+        engagementId: engId,
+      });
+      await emitEvent({
+        code: "INVOICE_CREATED",
+        payload: { invoiceId: result.invoice.id },
+        actor: "SYSTEM",
+      });
       for (const p of result.projects) {
-        await emitEvent({ code: "PROJECT_CREATED", payload: { projectId: p.id }, actor: req.user!.sub, projectId: p.id, engagementId: engId });
+        await emitEvent({
+          code: "PROJECT_CREATED",
+          payload: { projectId: p.id },
+          actor: req.user!.sub,
+          projectId: p.id,
+          engagementId: engId,
+        });
       }
 
       if (payload.referralCode) {
@@ -445,7 +498,6 @@ export async function checkoutRoutes(app: FastifyInstance) {
       await cache.unlock(lockKey);
     }
   });
-
 
   // POST /checkout/express — Starter tier 3-field checkout
   app.post("/checkout/express", async (req, reply) => {
@@ -512,8 +564,6 @@ async function loadCompletedCheckout(orderId: string) {
   if (!engagement || !invoice) return null;
   return { order, engagement, projects, invoice };
 }
-
-
 
 async function getEstimateTotals(estimateId: string) {
   const est = await prisma.estimate.findUnique({ where: { id: estimateId } });

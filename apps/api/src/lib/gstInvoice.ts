@@ -13,12 +13,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 export type InvoiceType = "tax" | "proforma" | "credit" | "debit";
 export type SupplyType =
-  | "intra"
-  | "inter"
-  | "export_with"
-  | "export_without"
-  | "sez_with"
-  | "sez_without";
+  "intra" | "inter" | "export_with" | "export_without" | "sez_with" | "sez_without";
 
 export const INVOICE_TYPE_LABEL: Record<InvoiceType, string> = {
   tax: "TAX INVOICE",
@@ -36,14 +31,39 @@ const INVOICE_TYPE_PREFIX: Record<InvoiceType, string> = {
 
 /** Subset of the GST state codes — enough for place-of-supply display. */
 export const GST_STATES: Record<string, string> = {
-  "01": "Jammu & Kashmir", "02": "Himachal Pradesh", "03": "Punjab", "04": "Chandigarh",
-  "05": "Uttarakhand", "06": "Haryana", "07": "Delhi", "08": "Rajasthan",
-  "09": "Uttar Pradesh", "10": "Bihar", "11": "Sikkim", "12": "Arunachal Pradesh",
-  "13": "Nagaland", "14": "Manipur", "15": "Mizoram", "16": "Tripura", "17": "Meghalaya",
-  "18": "Assam", "19": "West Bengal", "20": "Jharkhand", "21": "Odisha", "22": "Chhattisgarh",
-  "23": "Madhya Pradesh", "24": "Gujarat", "27": "Maharashtra", "29": "Karnataka",
-  "30": "Goa", "32": "Kerala", "33": "Tamil Nadu", "34": "Puducherry", "36": "Telangana",
-  "37": "Andhra Pradesh", "38": "Ladakh",
+  "01": "Jammu & Kashmir",
+  "02": "Himachal Pradesh",
+  "03": "Punjab",
+  "04": "Chandigarh",
+  "05": "Uttarakhand",
+  "06": "Haryana",
+  "07": "Delhi",
+  "08": "Rajasthan",
+  "09": "Uttar Pradesh",
+  "10": "Bihar",
+  "11": "Sikkim",
+  "12": "Arunachal Pradesh",
+  "13": "Nagaland",
+  "14": "Manipur",
+  "15": "Mizoram",
+  "16": "Tripura",
+  "17": "Meghalaya",
+  "18": "Assam",
+  "19": "West Bengal",
+  "20": "Jharkhand",
+  "21": "Odisha",
+  "22": "Chhattisgarh",
+  "23": "Madhya Pradesh",
+  "24": "Gujarat",
+  "27": "Maharashtra",
+  "29": "Karnataka",
+  "30": "Goa",
+  "32": "Kerala",
+  "33": "Tamil Nadu",
+  "34": "Puducherry",
+  "36": "Telangana",
+  "37": "Andhra Pradesh",
+  "38": "Ladakh",
 };
 
 export const SAC_CODES: { code: string; desc: string }[] = [
@@ -188,15 +208,53 @@ const SUPPLY_LABEL: Record<SupplyType, string> = {
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 function cv(x: number): string {
-  const o = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
-    "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
-  const t = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const o = [
+    "",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
+  ];
+  const t = [
+    "",
+    "",
+    "Twenty",
+    "Thirty",
+    "Forty",
+    "Fifty",
+    "Sixty",
+    "Seventy",
+    "Eighty",
+    "Ninety",
+  ];
   if (x < 20) return o[x];
   if (x < 100) return t[Math.floor(x / 10)] + (x % 10 ? " " + o[x % 10] : "");
-  if (x < 1000) return o[Math.floor(x / 100)] + " Hundred" + (x % 100 ? " and " + cv(x % 100) : "");
-  if (x < 100000) return cv(Math.floor(x / 1000)) + " Thousand" + (x % 1000 ? " " + cv(x % 1000) : "");
-  if (x < 10000000) return cv(Math.floor(x / 100000)) + " Lakh" + (x % 100000 ? " " + cv(x % 100000) : "");
-  return cv(Math.floor(x / 10000000)) + " Crore" + (x % 10000000 ? " " + cv(x % 10000000) : "");
+  if (x < 1000)
+    return o[Math.floor(x / 100)] + " Hundred" + (x % 100 ? " and " + cv(x % 100) : "");
+  if (x < 100000)
+    return cv(Math.floor(x / 1000)) + " Thousand" + (x % 1000 ? " " + cv(x % 1000) : "");
+  if (x < 10000000)
+    return (
+      cv(Math.floor(x / 100000)) + " Lakh" + (x % 100000 ? " " + cv(x % 100000) : "")
+    );
+  return (
+    cv(Math.floor(x / 10000000)) + " Crore" + (x % 10000000 ? " " + cv(x % 10000000) : "")
+  );
 }
 
 /** 1234.5 -> "One Thousand Two Hundred and Thirty Four Rupees and Fifty Paise Only" */
@@ -238,7 +296,9 @@ export function computeInvoice(input: GstInvoiceInput): ComputedInvoice {
 
   const gstRate = Number(input.gstRate ?? 18);
   if (!VALID_GST_RATES.includes(gstRate)) {
-    warnings.push(`Unusual GST rate ${gstRate}% — expected one of ${VALID_GST_RATES.join(", ")}.`);
+    warnings.push(
+      `Unusual GST rate ${gstRate}% — expected one of ${VALID_GST_RATES.join(", ")}.`,
+    );
   }
 
   const supplyType = inferSupplyType(input);
@@ -251,10 +311,15 @@ export function computeInvoice(input: GstInvoiceInput): ComputedInvoice {
   const lines: ComputedLine[] = rawLines
     .map((l): ComputedLine => {
       const sacCode = (l.sacCode || "998314").trim();
-      const sacDesc = SAC_CODES.find((s) => s.code === sacCode)?.desc || "Professional Services";
+      const sacDesc =
+        SAC_CODES.find((s) => s.code === sacCode)?.desc || "Professional Services";
       const qty = Number(l.qty ?? 1) || 0;
       const rate =
-        l.rate != null ? Number(l.rate) || 0 : qty ? round2((Number(l.amount ?? 0) || 0) / qty) : 0;
+        l.rate != null
+          ? Number(l.rate) || 0
+          : qty
+            ? round2((Number(l.amount ?? 0) || 0) / qty)
+            : 0;
       return {
         description: (l.description ?? l.desc ?? "").trim(),
         sacCode,
@@ -308,25 +373,44 @@ export function computeInvoice(input: GstInvoiceInput): ComputedInvoice {
 
   // Validations that mirror common real-world invoice mistakes
   if (invoiceType === "tax" && input.from && !input.from.gstin) {
-    warnings.push("Supplier GSTIN is missing — a tax invoice is not valid for ITC without it.");
+    warnings.push(
+      "Supplier GSTIN is missing — a tax invoice is not valid for ITC without it.",
+    );
   }
-  if (isIGST && !isZeroRated && input.from?.stateCode && placeOfSupply &&
-      input.from.stateCode === placeOfSupply) {
-    warnings.push("Inter-State supply but place of supply equals supplier state — check supply type.");
+  if (
+    isIGST &&
+    !isZeroRated &&
+    input.from?.stateCode &&
+    placeOfSupply &&
+    input.from.stateCode === placeOfSupply
+  ) {
+    warnings.push(
+      "Inter-State supply but place of supply equals supplier state — check supply type.",
+    );
   }
-  if (isIntra && input.to?.stateCode && input.from?.stateCode &&
-      input.to.stateCode !== input.from.stateCode) {
-    warnings.push("Intra-State tax applied but recipient state differs from supplier — likely should be IGST.");
+  if (
+    isIntra &&
+    input.to?.stateCode &&
+    input.from?.stateCode &&
+    input.to.stateCode !== input.from.stateCode
+  ) {
+    warnings.push(
+      "Intra-State tax applied but recipient state differs from supplier — likely should be IGST.",
+    );
   }
   if ((invoiceType === "credit" || invoiceType === "debit") && !input.origInvoiceNo) {
-    warnings.push("Credit/Debit note is missing the original invoice reference (Sec. 34 CGST).");
+    warnings.push(
+      "Credit/Debit note is missing the original invoice reference (Sec. 34 CGST).",
+    );
   }
   if (isZeroRated && !input.lutRef) {
     warnings.push("Zero-rated supply under Bond/LUT but no LUT/Bond reference provided.");
   }
   for (const l of lines) {
-    if (l.qty <= 0) warnings.push(`Line "${l.description || l.sacCode}" has non-positive quantity.`);
-    if (l.rate < 0) warnings.push(`Line "${l.description || l.sacCode}" has a negative rate.`);
+    if (l.qty <= 0)
+      warnings.push(`Line "${l.description || l.sacCode}" has non-positive quantity.`);
+    if (l.rate < 0)
+      warnings.push(`Line "${l.description || l.sacCode}" has a negative rate.`);
   }
 
   const now = new Date();
@@ -409,9 +493,7 @@ function inr(n: number): string {
   const [w, f] = Math.abs(n).toFixed(2).split(".");
   const last3 = w.slice(-3);
   const rest = w.slice(0, -3);
-  const grouped = rest
-    ? rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + last3
-    : last3;
+  const grouped = rest ? rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + last3 : last3;
   return `${n < 0 ? "-" : ""}Rs ${grouped}.${f}`;
 }
 
@@ -431,7 +513,12 @@ export async function renderGstInvoicePdf(inv: ComputedInvoice): Promise<Buffer>
     s: string,
     x: number,
     size = 9,
-    opts: { bold?: boolean; color?: ReturnType<typeof rgb>; align?: "left" | "right" | "center"; width?: number } = {},
+    opts: {
+      bold?: boolean;
+      color?: ReturnType<typeof rgb>;
+      align?: "left" | "right" | "center";
+      width?: number;
+    } = {},
   ) => {
     const f = opts.bold ? bold : font;
     const text = ansi(s);
@@ -485,7 +572,12 @@ export async function renderGstInvoicePdf(inv: ComputedInvoice): Promise<Buffer>
     y -= 12;
     const lines = [
       p.address,
-      [p.city, GST_STATES[p.stateCode ?? ""] ? `${GST_STATES[p.stateCode ?? ""]} (${p.stateCode})` : p.stateCode]
+      [
+        p.city,
+        GST_STATES[p.stateCode ?? ""]
+          ? `${GST_STATES[p.stateCode ?? ""]} (${p.stateCode})`
+          : p.stateCode,
+      ]
         .filter(Boolean)
         .join(", "),
       p.phone ? `Ph: ${p.phone}` : "",
@@ -507,7 +599,10 @@ export async function renderGstInvoicePdf(inv: ComputedInvoice): Promise<Buffer>
   hr();
   y -= 12;
   const particulars: [string, string][] = [
-    [inv.invoiceTypeLabel.includes("NOTE") ? "Note No." : "Invoice No.", inv.invoiceNumber],
+    [
+      inv.invoiceTypeLabel.includes("NOTE") ? "Note No." : "Invoice No.",
+      inv.invoiceNumber,
+    ],
     ["Date", inv.invoiceDate],
     ...(inv.dueDate ? ([["Due", inv.dueDate]] as [string, string][]) : []),
     ["Place of Supply", `${inv.placeOfSupplyName} (${inv.placeOfSupply})`.trim()],
@@ -516,8 +611,12 @@ export async function renderGstInvoicePdf(inv: ComputedInvoice): Promise<Buffer>
     ...(inv.poRef ? ([["PO / Ref", inv.poRef]] as [string, string][]) : []),
     ...(inv.ewayBill ? ([["E-Way Bill", inv.ewayBill]] as [string, string][]) : []),
     ...(inv.lutRef ? ([["LUT / Bond", inv.lutRef]] as [string, string][]) : []),
-    ...(inv.origInvoiceNo ? ([["Orig. Invoice", inv.origInvoiceNo]] as [string, string][]) : []),
-    ...(inv.origInvoiceDate ? ([["Orig. Date", inv.origInvoiceDate]] as [string, string][]) : []),
+    ...(inv.origInvoiceNo
+      ? ([["Orig. Invoice", inv.origInvoiceNo]] as [string, string][])
+      : []),
+    ...(inv.origInvoiceDate
+      ? ([["Orig. Date", inv.origInvoiceDate]] as [string, string][])
+      : []),
     ...(inv.reason ? ([["Reason", inv.reason]] as [string, string][]) : []),
   ];
   for (let i = 0; i < particulars.length; i += 2) {
@@ -525,7 +624,10 @@ export async function renderGstInvoicePdf(inv: ComputedInvoice): Promise<Buffer>
     draw(`${particulars[i][0]}:`, MARGIN, 8.5, { color: BRAND, bold: true });
     draw(particulars[i][1], MARGIN + 90, 8.5);
     if (particulars[i + 1]) {
-      draw(`${particulars[i + 1][0]}:`, MARGIN + colW + 16, 8.5, { color: BRAND, bold: true });
+      draw(`${particulars[i + 1][0]}:`, MARGIN + colW + 16, 8.5, {
+        color: BRAND,
+        bold: true,
+      });
       draw(particulars[i + 1][1], MARGIN + colW + 16 + 90, 8.5);
     }
     y -= 12;
@@ -549,12 +651,14 @@ export async function renderGstInvoicePdf(inv: ComputedInvoice): Promise<Buffer>
     height: 16,
     color: BRAND,
   });
-  for (const c of cols) draw(c.label, c.x, 8, { bold: true, color: rgb(1, 1, 1), align: c.align });
+  for (const c of cols)
+    draw(c.label, c.x, 8, { bold: true, color: rgb(1, 1, 1), align: c.align });
   y -= 18;
   inv.lines.forEach((l, idx) => {
     ensure(16);
     draw(String(idx + 1), cols[0].x, 8.5);
-    const desc = l.description.length > 46 ? l.description.slice(0, 45) + "…" : l.description;
+    const desc =
+      l.description.length > 46 ? l.description.slice(0, 45) + "…" : l.description;
     draw(desc || "—", cols[1].x, 8.5);
     draw(l.sacCode, cols[2].x, 8.5);
     draw(`${l.qty} ${l.unit}`, cols[3].x, 8.5, { align: "right" });
@@ -578,12 +682,21 @@ export async function renderGstInvoicePdf(inv: ComputedInvoice): Promise<Buffer>
   // Totals
   const totalRows: [string, string][] = [
     ["Subtotal (Taxable)", inr(inv.subtotal)],
-    ...(inv.cgst ? ([[`CGST @ ${inv.effectiveGstRate / 2}%`, inr(inv.cgst)]] as [string, string][]) : []),
-    ...(inv.sgst ? ([[`SGST @ ${inv.effectiveGstRate / 2}%`, inr(inv.sgst)]] as [string, string][]) : []),
-    ...(inv.igst ? ([[`IGST @ ${inv.effectiveGstRate}%`, inr(inv.igst)]] as [string, string][]) : []),
+    ...(inv.cgst
+      ? ([[`CGST @ ${inv.effectiveGstRate / 2}%`, inr(inv.cgst)]] as [string, string][])
+      : []),
+    ...(inv.sgst
+      ? ([[`SGST @ ${inv.effectiveGstRate / 2}%`, inr(inv.sgst)]] as [string, string][])
+      : []),
+    ...(inv.igst
+      ? ([[`IGST @ ${inv.effectiveGstRate}%`, inr(inv.igst)]] as [string, string][])
+      : []),
     ...(inv.isZeroRated ? ([["GST", "Zero-rated"]] as [string, string][]) : []),
     ...(Math.abs(inv.roundOff) > 0.001
-      ? ([["Round Off", `${inv.roundOff >= 0 ? "+" : ""}${inv.roundOff.toFixed(2)}`]] as [string, string][])
+      ? ([["Round Off", `${inv.roundOff >= 0 ? "+" : ""}${inv.roundOff.toFixed(2)}`]] as [
+          string,
+          string,
+        ][])
       : []),
   ];
   const boxX = PAGE_W - MARGIN - 230;
@@ -596,12 +709,20 @@ export async function renderGstInvoicePdf(inv: ComputedInvoice): Promise<Buffer>
   ensure(20);
   page.drawRectangle({ x: boxX - 8, y: y - 5, width: 230 + 8, height: 17, color: BRAND });
   draw(
-    inv.invoiceType === "credit" ? "TOTAL CREDIT" : inv.invoiceType === "debit" ? "TOTAL DEBIT" : "PAYABLE",
+    inv.invoiceType === "credit"
+      ? "TOTAL CREDIT"
+      : inv.invoiceType === "debit"
+        ? "TOTAL DEBIT"
+        : "PAYABLE",
     boxX,
     9.5,
     { bold: true, color: rgb(1, 1, 1) },
   );
-  draw(inr(inv.payable), PAGE_W - MARGIN, 9.5, { align: "right", bold: true, color: rgb(1, 1, 1) });
+  draw(inr(inv.payable), PAGE_W - MARGIN, 9.5, {
+    align: "right",
+    bold: true,
+    color: rgb(1, 1, 1),
+  });
   y -= 20;
   ensure(14);
   draw("Amount in words: ", MARGIN, 8.5, { bold: true });
@@ -646,7 +767,10 @@ export async function renderGstInvoicePdf(inv: ComputedInvoice): Promise<Buffer>
     }
   }
   y = bankStartY;
-  draw(`For ${inv.from.name || "StackFox"}`, PAGE_W - MARGIN, 8, { align: "right", bold: true });
+  draw(`For ${inv.from.name || "StackFox"}`, PAGE_W - MARGIN, 8, {
+    align: "right",
+    bold: true,
+  });
   y -= 42;
   draw("Authorised Signatory", PAGE_W - MARGIN, 8, { align: "right", color: MUTED });
   y -= 16;

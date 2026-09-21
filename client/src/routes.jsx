@@ -87,10 +87,18 @@ const ClientMilestones = lazy(() => import('@app/client/Milestones'));
 const ClientReferrals = lazy(() => import('@app/client/Referrals'));
 const ClientWorkspace = lazy(() => import('@app/client/Workspace'));
 const ClientFeedback = lazy(() => import('@app/client/Feedback'));
-const ClientActivity = lazy(() => import('@app/client/ClientPanels').then((m) => ({ default: m.Activity })));
-const ClientChanges = lazy(() => import('@app/client/ClientPanels').then((m) => ({ default: m.Changes })));
-const ClientReports = lazy(() => import('@app/client/ClientPanels').then((m) => ({ default: m.Reports })));
-const ClientHandover = lazy(() => import('@app/client/ClientPanels').then((m) => ({ default: m.Handover })));
+const ClientActivity = lazy(() =>
+  import('@app/client/ClientPanels').then((m) => ({ default: m.Activity })),
+);
+const ClientChanges = lazy(() =>
+  import('@app/client/ClientPanels').then((m) => ({ default: m.Changes })),
+);
+const ClientReports = lazy(() =>
+  import('@app/client/ClientPanels').then((m) => ({ default: m.Reports })),
+);
+const ClientHandover = lazy(() =>
+  import('@app/client/ClientPanels').then((m) => ({ default: m.Handover })),
+);
 
 // Team dashboard
 const TeamLayout = lazy(() => import('@app/team/TeamLayout'));
@@ -103,12 +111,24 @@ const TeamCalendar = lazy(() => import('@app/team/Calendar'));
 const TeamReviews = lazy(() => import('@app/team/Reviews'));
 const TeamKnowledge = lazy(() => import('@app/team/Knowledge'));
 const TeamQueue = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.Queue })));
-const TeamSprints = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.Sprints })));
-const TeamResources = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.Resources })));
-const TeamQuality = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.Quality })));
-const TeamFinance = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.Finance })));
-const TeamClients = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.Clients })));
-const TeamAnalyticsDash = lazy(() => import('@app/team/PmDashboards').then((m) => ({ default: m.Analysis })));
+const TeamSprints = lazy(() =>
+  import('@app/team/PmDashboards').then((m) => ({ default: m.Sprints })),
+);
+const TeamResources = lazy(() =>
+  import('@app/team/PmDashboards').then((m) => ({ default: m.Resources })),
+);
+const TeamQuality = lazy(() =>
+  import('@app/team/PmDashboards').then((m) => ({ default: m.Quality })),
+);
+const TeamFinance = lazy(() =>
+  import('@app/team/PmDashboards').then((m) => ({ default: m.Finance })),
+);
+const TeamClients = lazy(() =>
+  import('@app/team/PmDashboards').then((m) => ({ default: m.Clients })),
+);
+const TeamAnalyticsDash = lazy(() =>
+  import('@app/team/PmDashboards').then((m) => ({ default: m.Analysis })),
+);
 const TeamSEQueue = lazy(() => import('@app/team/SEWorkspace'));
 
 // Salesperson Dashboard
@@ -144,10 +164,18 @@ const AdminRFPs = lazy(() => import('@app/admin/RFPs'));
 const AdminReferrals = lazy(() => import('@app/admin/Referrals'));
 const AdminReports = lazy(() => import('@app/admin/Reports'));
 const AdminFlags = lazy(() => import('@app/admin/Governance').then((m) => ({ default: m.Flags })));
-const AdminPricing = lazy(() => import('@app/admin/Governance').then((m) => ({ default: m.Pricing })));
-const AdminTemplates = lazy(() => import('@app/admin/Governance').then((m) => ({ default: m.Templates })));
-const AdminCompliance = lazy(() => import('@app/admin/Governance').then((m) => ({ default: m.Compliance })));
-const AdminScreening = lazy(() => import('@app/admin/Governance').then((m) => ({ default: m.Screening })));
+const AdminPricing = lazy(() =>
+  import('@app/admin/Governance').then((m) => ({ default: m.Pricing })),
+);
+const AdminTemplates = lazy(() =>
+  import('@app/admin/Governance').then((m) => ({ default: m.Templates })),
+);
+const AdminCompliance = lazy(() =>
+  import('@app/admin/Governance').then((m) => ({ default: m.Compliance })),
+);
+const AdminScreening = lazy(() =>
+  import('@app/admin/Governance').then((m) => ({ default: m.Screening })),
+);
 
 // ── Layout wrappers ─────────────────────────
 
@@ -284,7 +312,26 @@ export default function AppRoutes() {
       </Route>
 
       {/* Client dashboard */}
-      <Route path="app/client" element={<ProtectedRoute roles={['client', 'admin', 'CLIENT', 'CLIENT_ADMIN', 'CLIENT_PM', 'CLIENT_VIEWER', 'INDIVIDUAL_CLIENT', 'ORG_OWNER', 'REFERRER', 'ADMIN', 'SUPER_ADMIN']} />}>
+      <Route
+        path="app/client"
+        element={
+          <ProtectedRoute
+            roles={[
+              'client',
+              'admin',
+              'CLIENT',
+              'CLIENT_ADMIN',
+              'CLIENT_PM',
+              'CLIENT_VIEWER',
+              'INDIVIDUAL_CLIENT',
+              'ORG_OWNER',
+              'REFERRER',
+              'ADMIN',
+              'SUPER_ADMIN',
+            ]}
+          />
+        }
+      >
         <Route element={<ClientLayout />}>
           <Route index element={<ClientOverview />} />
           <Route path="projects" element={<ClientProjects />} />
@@ -317,7 +364,28 @@ export default function AppRoutes() {
       </Route>
 
       {/* Team dashboard */}
-      <Route path="app/team" element={<ProtectedRoute roles={['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS', 'FINANCE', 'SALES', 'ADMIN', 'SUPER_ADMIN']} />}>
+      <Route
+        path="app/team"
+        element={
+          <ProtectedRoute
+            roles={[
+              'team',
+              'admin',
+              'SE',
+              'SENIOR_PM',
+              'PM',
+              'DEVELOPER',
+              'QA',
+              'DESIGNER',
+              'DEVOPS',
+              'FINANCE',
+              'SALES',
+              'ADMIN',
+              'SUPER_ADMIN',
+            ]}
+          />
+        }
+      >
         <Route element={<TeamLayout />}>
           <Route index element={<TeamDashboard />} />
           <Route path="tasks" element={<TeamTasks />} />
@@ -341,7 +409,14 @@ export default function AppRoutes() {
       </Route>
 
       {/* Salesperson Dashboard */}
-      <Route path="app/team/sales" element={<ProtectedRoute roles={['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'SALES', 'ADMIN', 'SUPER_ADMIN']} />}>
+      <Route
+        path="app/team/sales"
+        element={
+          <ProtectedRoute
+            roles={['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'SALES', 'ADMIN', 'SUPER_ADMIN']}
+          />
+        }
+      >
         <Route element={<SalesLayout />}>
           <Route index element={<SalesDashboard />} />
           <Route path="leads" element={<SalesLeads />} />
@@ -357,7 +432,10 @@ export default function AppRoutes() {
       </Route>
 
       {/* Admin dashboard */}
-      <Route path="app/admin" element={<ProtectedRoute roles={['admin', 'ADMIN', 'SUPER_ADMIN']} />}>
+      <Route
+        path="app/admin"
+        element={<ProtectedRoute roles={['admin', 'ADMIN', 'SUPER_ADMIN']} />}
+      >
         <Route element={<AdminLayout />}>
           <Route index element={<AdminOverview />} />
           <Route path="catalog" element={<AdminCatalog />} />

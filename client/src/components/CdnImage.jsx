@@ -13,7 +13,15 @@ import { cdnImg, cdnSrcSet } from '@lib/img';
  * `w` sizes the default Cloudinary render; `width`/`height` are the intrinsic
  * ratio hint passed through to the <img> for layout stability.
  */
-export default function CdnImage({ name, w = 1200, widths, sizes, alt = '', eager = false, ...rest }) {
+export default function CdnImage({
+  name,
+  w = 1200,
+  widths,
+  sizes,
+  alt = '',
+  eager = false,
+  ...rest
+}) {
   const [failed, setFailed] = useState(false);
   return (
     <img

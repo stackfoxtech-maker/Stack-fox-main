@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react';
-import { FileText, PenTool, ShieldCheck, CheckCircle2, AlertTriangle, Lock, ChevronDown, ChevronUp, Scale } from 'lucide-react';
+import {
+  FileText,
+  PenTool,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  Lock,
+  ChevronDown,
+  ChevronUp,
+  Scale,
+} from 'lucide-react';
 import { formatINR } from '@lib/utils';
 import api from '@lib/api';
 
@@ -23,7 +33,8 @@ const CONTRACT_TYPE_LABELS = {
 const CONTRACT_CLAUSES = {
   SOW: {
     title: 'Statement of Work (SOW)',
-    preamble: 'This Statement of Work ("SOW") is entered into as of the Effective Date and defines the scope, deliverables, timelines, and commercial terms for the professional services engagement between StackFox Technologies ("Provider") and the undersigned client ("Client").',
+    preamble:
+      'This Statement of Work ("SOW") is entered into as of the Effective Date and defines the scope, deliverables, timelines, and commercial terms for the professional services engagement between StackFox Technologies ("Provider") and the undersigned client ("Client").',
     sections: [
       {
         heading: '1. Scope of Services',
@@ -69,7 +80,8 @@ const CONTRACT_CLAUSES = {
   },
   MSA: {
     title: 'Master Service Agreement (MSA)',
-    preamble: 'This Master Service Agreement ("MSA") establishes the overarching legal framework governing the business relationship between StackFox Technologies ("Provider") and the undersigned client ("Client") for all current and future engagements.',
+    preamble:
+      'This Master Service Agreement ("MSA") establishes the overarching legal framework governing the business relationship between StackFox Technologies ("Provider") and the undersigned client ("Client") for all current and future engagements.',
     sections: [
       {
         heading: '1. Relationship of Parties',
@@ -101,14 +113,14 @@ const CONTRACT_CLAUSES = {
         heading: '4. Limitation of Liability',
         clauses: [
           'TO THE MAXIMUM EXTENT PERMITTED BY LAW, NEITHER PARTY SHALL BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, REVENUE, DATA, OR BUSINESS OPPORTUNITY, REGARDLESS OF THE THEORY OF LIABILITY.',
-          'The Provider\'s total aggregate liability under this Agreement shall not exceed the total fees actually paid by the Client under the applicable SOW in the twelve (12) months preceding the claim.',
+          "The Provider's total aggregate liability under this Agreement shall not exceed the total fees actually paid by the Client under the applicable SOW in the twelve (12) months preceding the claim.",
           'These limitations shall not apply to: (a) breaches of confidentiality obligations; (b) willful misconduct or gross negligence; (c) infringement of intellectual property rights; or (d) obligations to indemnify third-party claims.',
         ],
       },
       {
         heading: '5. Termination',
         clauses: [
-          'Either party may terminate this Agreement for convenience upon thirty (30) days\' prior written notice. Upon such termination, the Client shall pay for all services rendered and expenses incurred through the effective date of termination.',
+          "Either party may terminate this Agreement for convenience upon thirty (30) days' prior written notice. Upon such termination, the Client shall pay for all services rendered and expenses incurred through the effective date of termination.",
           'Either party may terminate immediately upon written notice if the other party: (a) commits a material breach that remains uncured for fifteen (15) days after written notice; (b) becomes insolvent or files for bankruptcy; or (c) ceases to conduct business in the normal course.',
           'Upon termination, each party shall return or destroy all Confidential Information of the other party. The Provider shall deliver all completed work product and work-in-progress to the Client upon receipt of all outstanding payments.',
           'Sections relating to confidentiality, limitation of liability, indemnification, intellectual property, and dispute resolution shall survive termination.',
@@ -117,15 +129,15 @@ const CONTRACT_CLAUSES = {
       {
         heading: '6. Indemnification',
         clauses: [
-          'The Provider shall indemnify and hold harmless the Client from any third-party claims arising from: (a) the Provider\'s gross negligence or willful misconduct; (b) infringement of third-party intellectual property rights by the deliverables (excluding Client-provided materials).',
-          'The Client shall indemnify and hold harmless the Provider from any third-party claims arising from: (a) the Client\'s use of deliverables in a manner not contemplated by this Agreement; (b) materials, content, or data provided by the Client.',
+          "The Provider shall indemnify and hold harmless the Client from any third-party claims arising from: (a) the Provider's gross negligence or willful misconduct; (b) infringement of third-party intellectual property rights by the deliverables (excluding Client-provided materials).",
+          "The Client shall indemnify and hold harmless the Provider from any third-party claims arising from: (a) the Client's use of deliverables in a manner not contemplated by this Agreement; (b) materials, content, or data provided by the Client.",
         ],
       },
       {
         heading: '7. Non-Solicitation',
         clauses: [
           'During the term of this Agreement and for a period of twelve (12) months following termination, neither party shall directly or indirectly solicit, hire, or engage any employee, contractor, or consultant of the other party who was involved in the performance of services under this Agreement.',
-          'This restriction does not apply to general recruitment advertising not specifically targeted at the other party\'s personnel.',
+          "This restriction does not apply to general recruitment advertising not specifically targeted at the other party's personnel.",
         ],
       },
       {
@@ -141,7 +153,8 @@ const CONTRACT_CLAUSES = {
   },
   NDA: {
     title: 'Non-Disclosure Agreement (NDA)',
-    preamble: 'This Non-Disclosure Agreement ("NDA") is entered into to protect proprietary and confidential information exchanged between StackFox Technologies ("Provider") and the undersigned client ("Client") in connection with the evaluation and performance of professional services.',
+    preamble:
+      'This Non-Disclosure Agreement ("NDA") is entered into to protect proprietary and confidential information exchanged between StackFox Technologies ("Provider") and the undersigned client ("Client") in connection with the evaluation and performance of professional services.',
     sections: [
       {
         heading: '1. Definition of Confidential Information',
@@ -182,14 +195,15 @@ const CONTRACT_CLAUSES = {
         heading: '6. Remedies',
         clauses: [
           'The parties acknowledge that a breach of this NDA may cause irreparable harm for which monetary damages would be an inadequate remedy. Accordingly, the non-breaching party shall be entitled to seek injunctive or equitable relief in addition to any other remedies available at law.',
-          'The prevailing party in any action to enforce this NDA shall be entitled to recover reasonable attorneys\' fees and costs.',
+          "The prevailing party in any action to enforce this NDA shall be entitled to recover reasonable attorneys' fees and costs.",
         ],
       },
     ],
   },
   IP_WFH: {
     title: 'IP Assignment Deed (Work for Hire)',
-    preamble: 'This Intellectual Property Assignment Deed ("IP Deed") governs the ownership, assignment, and licensing of intellectual property created during the engagement between StackFox Technologies ("Provider") and the undersigned client ("Client").',
+    preamble:
+      'This Intellectual Property Assignment Deed ("IP Deed") governs the ownership, assignment, and licensing of intellectual property created during the engagement between StackFox Technologies ("Provider") and the undersigned client ("Client").',
     sections: [
       {
         heading: '1. Ownership & Assignment',
@@ -203,7 +217,7 @@ const CONTRACT_CLAUSES = {
         heading: '2. Provider Retained Rights',
         clauses: [
           'Notwithstanding the foregoing, the Provider retains all rights to: (a) pre-existing intellectual property, tools, libraries, and frameworks that existed prior to this engagement ("Provider Tools"); (b) general knowledge, skills, experience, and know-how gained during the engagement; (c) generic, non-client-specific components, patterns, and methodologies developed during the engagement ("Generic Components").',
-          'The Client is hereby granted a perpetual, royalty-free, non-exclusive license to use any Provider Tools and Generic Components incorporated into the Client Work Product, solely in connection with the Client\'s use of the deliverables.',
+          "The Client is hereby granted a perpetual, royalty-free, non-exclusive license to use any Provider Tools and Generic Components incorporated into the Client Work Product, solely in connection with the Client's use of the deliverables.",
         ],
       },
       {
@@ -223,14 +237,15 @@ const CONTRACT_CLAUSES = {
       {
         heading: '5. Portfolio & Reference Rights',
         clauses: [
-          'The Provider may use the Client\'s name and a general description of the project (without disclosing Confidential Information) in its portfolio, case studies, and marketing materials, unless the Client provides written objection within fourteen (14) days of project completion.',
+          "The Provider may use the Client's name and a general description of the project (without disclosing Confidential Information) in its portfolio, case studies, and marketing materials, unless the Client provides written objection within fourteen (14) days of project completion.",
         ],
       },
     ],
   },
   DPA: {
     title: 'Data Processing Agreement (DPA)',
-    preamble: 'This Data Processing Agreement ("DPA") is entered into in compliance with applicable data protection laws, including the Digital Personal Data Protection Act, 2023 ("DPDP Act") and, where applicable, the EU General Data Protection Regulation ("GDPR"). This DPA governs the processing of personal data by StackFox Technologies ("Processor") on behalf of the undersigned client ("Controller").',
+    preamble:
+      'This Data Processing Agreement ("DPA") is entered into in compliance with applicable data protection laws, including the Digital Personal Data Protection Act, 2023 ("DPDP Act") and, where applicable, the EU General Data Protection Regulation ("GDPR"). This DPA governs the processing of personal data by StackFox Technologies ("Processor") on behalf of the undersigned client ("Controller").',
     sections: [
       {
         heading: '1. Scope & Processing Instructions',
@@ -251,14 +266,14 @@ const CONTRACT_CLAUSES = {
         heading: '3. Sub-processors',
         clauses: [
           'The Processor shall not engage another processor ("Sub-processor") without prior written authorization of the Controller. The Processor shall maintain a current list of Sub-processors and notify the Controller of any intended changes.',
-          'Where the Processor engages a Sub-processor, it shall impose the same data protection obligations as set out in this DPA by way of a written agreement, and shall remain fully liable to the Controller for the performance of the Sub-processor\'s obligations.',
+          "Where the Processor engages a Sub-processor, it shall impose the same data protection obligations as set out in this DPA by way of a written agreement, and shall remain fully liable to the Controller for the performance of the Sub-processor's obligations.",
         ],
       },
       {
         heading: '4. Data Subject Rights',
         clauses: [
           'The Processor shall assist the Controller in responding to requests from data subjects exercising their rights under applicable data protection law (including rights of access, rectification, erasure, portability, and objection).',
-          'The Processor shall promptly notify the Controller if it receives a request directly from a data subject and shall not respond to such request except on the Controller\'s instructions.',
+          "The Processor shall promptly notify the Controller if it receives a request directly from a data subject and shall not respond to such request except on the Controller's instructions.",
         ],
       },
       {
@@ -271,7 +286,7 @@ const CONTRACT_CLAUSES = {
       {
         heading: '6. Data Retention & Deletion',
         clauses: [
-          'Upon termination of the engagement or upon the Controller\'s request, the Processor shall, at the Controller\'s election, return all personal data or securely delete all personal data and certify such deletion in writing, unless applicable law requires retention.',
+          "Upon termination of the engagement or upon the Controller's request, the Processor shall, at the Controller's election, return all personal data or securely delete all personal data and certify such deletion in writing, unless applicable law requires retention.",
           'The Processor shall delete or anonymize personal data that is no longer necessary for the purpose for which it was collected within thirty (30) days.',
         ],
       },
@@ -279,14 +294,15 @@ const CONTRACT_CLAUSES = {
         heading: '7. Audit Rights',
         clauses: [
           'The Processor shall make available to the Controller all information necessary to demonstrate compliance with this DPA and shall allow for and contribute to audits, including inspections, conducted by the Controller or a third-party auditor mandated by the Controller.',
-          'Audits shall be conducted with reasonable notice (at least fourteen (14) days) during normal business hours and shall not unreasonably interfere with the Processor\'s business operations.',
+          "Audits shall be conducted with reasonable notice (at least fourteen (14) days) during normal business hours and shall not unreasonably interfere with the Processor's business operations.",
         ],
       },
     ],
   },
   MICRO_SOW: {
     title: 'Micro Statement of Work',
-    preamble: 'This Micro Statement of Work ("Micro SOW") defines the scope and terms for the selected Starter-tier services to be delivered by StackFox Technologies ("Provider") to the undersigned client ("Client"). This is a simplified agreement suitable for smaller engagements.',
+    preamble:
+      'This Micro Statement of Work ("Micro SOW") defines the scope and terms for the selected Starter-tier services to be delivered by StackFox Technologies ("Provider") to the undersigned client ("Client"). This is a simplified agreement suitable for smaller engagements.',
     sections: [
       {
         heading: '1. Services & Delivery',
@@ -320,7 +336,7 @@ const CONTRACT_CLAUSES = {
       {
         heading: '5. Limitation of Liability',
         clauses: [
-          'The Provider\'s total liability under this Micro SOW shall not exceed the total fees paid by the Client. Neither party shall be liable for indirect, incidental, or consequential damages.',
+          "The Provider's total liability under this Micro SOW shall not exceed the total fees paid by the Client. Neither party shall be liable for indirect, incidental, or consequential damages.",
         ],
       },
       {
@@ -340,15 +356,19 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
   const [expandedTypes, setExpandedTypes] = useState({});
   const [saving, setSaving] = useState(false);
 
-  const contractTypes = tier === 'STARTER' ? ['MICRO_SOW']
-    : tier === 'GROWTH' ? ['SOW', 'MSA']
-    : ['SOW', 'MSA', 'NDA', 'IP_WFH', 'DPA'];
+  const contractTypes =
+    tier === 'STARTER'
+      ? ['MICRO_SOW']
+      : tier === 'GROWTH'
+        ? ['SOW', 'MSA']
+        : ['SOW', 'MSA', 'NDA', 'IP_WFH', 'DPA'];
 
   const toggleType = (type) => {
     setExpandedTypes((prev) => ({ ...prev, [type]: !prev[type] }));
   };
 
-  const canSign = signature.trim().length >= 3 && agreed.terms && agreed.accuracy && agreed.services;
+  const canSign =
+    signature.trim().length >= 3 && agreed.terms && agreed.accuracy && agreed.services;
 
   const handleSign = async () => {
     if (!canSign) return;
@@ -398,13 +418,17 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
           </p>
           <div className="flex flex-wrap justify-center gap-2 mt-3 mb-4">
             {contractTypes.map((t) => (
-              <span key={t} className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full">
+              <span
+                key={t}
+                className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full"
+              >
                 <CheckCircle2 size={10} /> {CONTRACT_TYPE_LABELS[t] || t}
               </span>
             ))}
           </div>
           <p className="text-xs text-warm-400">
-            A copy will be sent to {account.email || 'your email'} and {STACKFOX.email} upon payment confirmation.
+            A copy will be sent to {account.email || 'your email'} and {STACKFOX.email} upon payment
+            confirmation.
           </p>
           <div className="mt-4 inline-flex items-center gap-1.5 text-[10px] font-mono text-warm-400 bg-warm-50 px-3 py-1.5 rounded-full">
             <Lock size={10} /> Digitally recorded · {new Date().toISOString()}
@@ -420,7 +444,9 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
         <Scale size={18} className="text-fox-500" /> Review &amp; Sign Legal Agreements
       </h2>
       <p className="text-xs text-warm-500">
-        Please review all {contractTypes.length} contract document{contractTypes.length > 1 ? 's' : ''} below before signing. These form a legally binding agreement between you and {STACKFOX.name}.
+        Please review all {contractTypes.length} contract document
+        {contractTypes.length > 1 ? 's' : ''} below before signing. These form a legally binding
+        agreement between you and {STACKFOX.name}.
       </p>
 
       {/* Contract header */}
@@ -428,7 +454,9 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
         <div className="bg-warm-50 px-5 py-3 border-b border-warm-100">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-bold text-warm-400 uppercase tracking-widest">Legal Document Suite</div>
+              <div className="text-[10px] font-bold text-warm-400 uppercase tracking-widest">
+                Legal Document Suite
+              </div>
               <div className="text-xs text-warm-600 mt-0.5 flex flex-wrap gap-2">
                 {contractTypes.map((t) => (
                   <span key={t} className="inline-flex items-center gap-1">
@@ -440,7 +468,11 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
             <div className="text-right">
               <div className="text-[10px] font-mono text-warm-400">{quote.quoteNumber}</div>
               <div className="text-[10px] text-warm-400">
-                {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {new Date().toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
               </div>
             </div>
           </div>
@@ -451,11 +483,16 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
             <div>
               <h3 className="text-base font-bold text-warm-900">Service Agreement</h3>
               <p className="text-xs text-warm-500 mt-0.5">
-                Between <span className="font-semibold text-warm-700">{STACKFOX.legal}</span> ("Provider") and <span className="font-semibold text-warm-700">{account.name || 'the Client'}</span> ("Client")
+                Between <span className="font-semibold text-warm-700">{STACKFOX.legal}</span>{' '}
+                ("Provider") and{' '}
+                <span className="font-semibold text-warm-700">{account.name || 'the Client'}</span>{' '}
+                ("Client")
               </p>
             </div>
             <div className="text-right text-[11px] text-warm-500 shrink-0">
-              <div className="flex items-center gap-1 justify-end"><ShieldCheck size={10} className="text-fox-500" /> Legally Binding</div>
+              <div className="flex items-center gap-1 justify-end">
+                <ShieldCheck size={10} className="text-fox-500" /> Legally Binding
+              </div>
               <div className="mt-0.5">GSTIN: {STACKFOX.gstin}</div>
             </div>
           </div>
@@ -477,7 +514,11 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
                       <FileText size={14} className="text-fox-500" />
                       <span className="text-sm font-bold text-warm-900">{doc.title}</span>
                     </div>
-                    {isExpanded ? <ChevronUp size={16} className="text-warm-400" /> : <ChevronDown size={16} className="text-warm-400" />}
+                    {isExpanded ? (
+                      <ChevronUp size={16} className="text-warm-400" />
+                    ) : (
+                      <ChevronDown size={16} className="text-warm-400" />
+                    )}
                   </button>
 
                   {isExpanded && (
@@ -486,10 +527,15 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
 
                       {doc.sections.map((section, si) => (
                         <div key={si}>
-                          <h4 className="text-xs font-bold text-warm-800 mb-1.5">{section.heading}</h4>
+                          <h4 className="text-xs font-bold text-warm-800 mb-1.5">
+                            {section.heading}
+                          </h4>
                           <div className="space-y-1.5">
                             {section.clauses.map((clause, ci) => (
-                              <p key={ci} className="text-[11px] text-warm-600 leading-relaxed pl-3 border-l-2 border-warm-200">
+                              <p
+                                key={ci}
+                                className="text-[11px] text-warm-600 leading-relaxed pl-3 border-l-2 border-warm-200"
+                              >
                                 {clause}
                               </p>
                             ))}
@@ -511,15 +557,22 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
           <AlertTriangle size={12} /> Service Acknowledgement
         </div>
         <p className="text-[11px] text-amber-800 mb-3">
-          I confirm and authorize StackFox Technologies to deliver the following services under the terms described above:
+          I confirm and authorize StackFox Technologies to deliver the following services under the
+          terms described above:
         </p>
         <div className="space-y-2">
           {quote.items.map((item, i) => (
-            <div key={i} className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
+            <div
+              key={i}
+              className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2"
+            >
               <span className="text-xs text-amber-900 font-medium">
-                {item.name} {item.quantity > 1 && <span className="text-amber-600">(x{item.quantity})</span>}
+                {item.name}{' '}
+                {item.quantity > 1 && <span className="text-amber-600">(x{item.quantity})</span>}
               </span>
-              <span className="text-xs font-mono text-amber-700">{formatINR(item.price * item.quantity)}</span>
+              <span className="text-xs font-mono text-amber-700">
+                {formatINR(item.price * item.quantity)}
+              </span>
             </div>
           ))}
         </div>
@@ -534,7 +587,10 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
             onChange={() => setAgreed({ ...agreed, services: !agreed.services })}
             className="mt-0.5 w-4 h-4 accent-fox-500"
           />
-          <span className="text-xs text-amber-900">I authorize the delivery of all listed services and acknowledge the total contract value.</span>
+          <span className="text-xs text-amber-900">
+            I authorize the delivery of all listed services and acknowledge the total contract
+            value.
+          </span>
         </label>
       </div>
 
@@ -544,7 +600,9 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
           <PenTool size={16} className="text-fox-500" /> Digital Signature
         </h3>
         <p className="text-xs text-warm-500">
-          By typing your full legal name below, you acknowledge that this constitutes a legally binding electronic signature under the Information Technology Act, 2000 and applicable Indian law.
+          By typing your full legal name below, you acknowledge that this constitutes a legally
+          binding electronic signature under the Information Technology Act, 2000 and applicable
+          Indian law.
         </p>
         <input
           value={signature}
@@ -555,19 +613,31 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
         {signature.trim() && (
           <div className="flex items-center justify-between">
             <p className="text-xs text-warm-500">
-              Signature: <span className="font-serif text-lg text-warm-900 italic">{signature}</span>
+              Signature:{' '}
+              <span className="font-serif text-lg text-warm-900 italic">{signature}</span>
             </p>
-            <span className="text-[10px] text-warm-400 font-mono">{new Date().toLocaleDateString('en-IN')}</span>
+            <span className="text-[10px] text-warm-400 font-mono">
+              {new Date().toLocaleDateString('en-IN')}
+            </span>
           </div>
         )}
       </div>
 
       {/* Legal Agreements */}
       <div className="bg-white rounded-2xl border border-warm-200 p-5 space-y-3">
-        <h3 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-2">Legal Acknowledgements</h3>
+        <h3 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-2">
+          Legal Acknowledgements
+        </h3>
         {[
-          { key: 'terms', label: `I have read, understood, and agree to all terms and conditions in the ${contractTypes.length} contract document${contractTypes.length > 1 ? 's' : ''} listed above, including the clauses on limitation of liability, indemnification, confidentiality, and intellectual property.` },
-          { key: 'accuracy', label: 'I confirm that all information provided during this checkout process is accurate and complete, and I understand that any material misrepresentation may void these agreements.' },
+          {
+            key: 'terms',
+            label: `I have read, understood, and agree to all terms and conditions in the ${contractTypes.length} contract document${contractTypes.length > 1 ? 's' : ''} listed above, including the clauses on limitation of liability, indemnification, confidentiality, and intellectual property.`,
+          },
+          {
+            key: 'accuracy',
+            label:
+              'I confirm that all information provided during this checkout process is accurate and complete, and I understand that any material misrepresentation may void these agreements.',
+          },
         ].map((item) => (
           <label key={item.key} className="flex items-start gap-3 cursor-pointer">
             <input
@@ -599,7 +669,9 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
           }`}
         >
           <PenTool size={16} />
-          {saving ? 'Signing...' : `Sign ${contractTypes.length} Document${contractTypes.length > 1 ? 's' : ''}`}
+          {saving
+            ? 'Signing...'
+            : `Sign ${contractTypes.length} Document${contractTypes.length > 1 ? 's' : ''}`}
         </button>
       </div>
     </div>

@@ -37,20 +37,28 @@ export async function paymentRoutes(app: FastifyInstance) {
         ? 0
         : Math.max(0, Number(invoice.grandTotal) - Number(invoice.amountPaid ?? 0));
     if (balance < MIN_AMOUNT_PAISE) {
-      return reply.code(400).send({ message: `Nothing to pay, or amount below minimum (${MIN_AMOUNT_PAISE} paise)` });
+      return reply.code(400).send({
+        message: `Nothing to pay, or amount below minimum (${MIN_AMOUNT_PAISE} paise)`,
+      });
     }
 
     let order;
     try {
-      order = await createRazorpayOrder(balance, "INR", `inv_${invoice.id}`, { invoiceId: invoice.id });
+      order = await createRazorpayOrder(balance, "INR", `inv_${invoice.id}`, {
+        invoiceId: invoice.id,
+      });
     } catch (err: any) {
       // The Razorpay SDK throws { statusCode, error: { code, description } } —
       // not a plain Error — so the real reason lives in err.error.description,
       // not err.message (which is usually undefined for these).
       const description: string | undefined = err?.error?.description ?? err?.message;
       const statusCode: number | undefined = err?.statusCode;
-      req.log.error({ razorpayError: err?.error ?? err, statusCode }, "Razorpay order creation failed");
-      const authFailure = statusCode === 401 || /key_id|key_secret|auth/i.test(description ?? "");
+      req.log.error(
+        { razorpayError: err?.error ?? err, statusCode },
+        "Razorpay order creation failed",
+      );
+      const authFailure =
+        statusCode === 401 || /key_id|key_secret|auth/i.test(description ?? "");
       return reply
         .code(authFailure ? 401 : 500)
         .send({ message: description ?? "Failed to create Razorpay order" });
@@ -82,9 +90,14 @@ export async function paymentRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
     const verified = parseBody(req, reply, VerifyPaymentSchema);
     if (!verified) return;
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId } = verified;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId } =
+      verified;
 
-    const valid = verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+    const valid = verifyRazorpaySignature(
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    );
     if (!valid) {
       return reply.code(400).send({ message: "Signature verification failed" });
     }
@@ -104,7 +117,9 @@ export async function paymentRoutes(app: FastifyInstance) {
     // the invoice update and the INVOICE_PAID event were not — so a replay fanned
     // a duplicate event out to notifications and every subscribed webhook.
     if (invoice.status === "PAID" && invoice.utr === razorpay_payment_id) {
-      return { data: { success: true, invoiceId: invoice.id, status: "paid", replayed: true } };
+      return {
+        data: { success: true, invoiceId: invoice.id, status: "paid", replayed: true },
+      };
     }
 
     // This flow always creates an order for the full outstanding balance (see
@@ -112,7 +127,10 @@ export async function paymentRoutes(app: FastifyInstance) {
     // rev-rec entry must reflect what was actually charged in this transaction,
     // not the grand total, or an invoice part-paid by bank transfer first is
     // double-counted in the ledger.
-    const charged = Math.max(0, Number(invoice.grandTotal) - Number(invoice.amountPaid ?? 0));
+    const charged = Math.max(
+      0,
+      Number(invoice.grandTotal) - Number(invoice.amountPaid ?? 0),
+    );
 
     const updated = await prisma.invoice.update({
       where: { id: invoice.id },
@@ -133,7 +151,11 @@ export async function paymentRoutes(app: FastifyInstance) {
 
     await emitEvent({
       code: "INVOICE_PAID",
-      payload: { invoiceId: invoice.id, gateway: "razorpay", razorpayPaymentId: razorpay_payment_id },
+      payload: {
+        invoiceId: invoice.id,
+        gateway: "razorpay",
+        razorpayPaymentId: razorpay_payment_id,
+      },
       actor: "system",
       engagementId: updated.engagementId ?? undefined,
     });

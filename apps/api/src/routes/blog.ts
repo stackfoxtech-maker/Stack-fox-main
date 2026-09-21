@@ -69,7 +69,12 @@ export async function blogRoutes(app: FastifyInstance) {
     }
 
     const [posts, total] = await Promise.all([
-      prisma.blogPost.findMany({ where, orderBy: { publishedAt: "desc" }, skip, take: limit }),
+      prisma.blogPost.findMany({
+        where,
+        orderBy: { publishedAt: "desc" },
+        skip,
+        take: limit,
+      }),
       prisma.blogPost.count({ where }),
     ]);
 
@@ -104,7 +109,12 @@ export async function blogRoutes(app: FastifyInstance) {
     if (q.status && q.status !== "all") where.status = q.status;
 
     const [posts, total] = await Promise.all([
-      prisma.blogPost.findMany({ where, orderBy: { publishedAt: "desc" }, skip, take: limit }),
+      prisma.blogPost.findMany({
+        where,
+        orderBy: { publishedAt: "desc" },
+        skip,
+        take: limit,
+      }),
       prisma.blogPost.count({ where }),
     ]);
     return paginated(posts.map(serialize), total, page, limit);
@@ -112,7 +122,9 @@ export async function blogRoutes(app: FastifyInstance) {
 
   app.get("/blog/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const post = await prisma.blogPost.findFirst({ where: { OR: [{ id }, { slug: id }] } });
+    const post = await prisma.blogPost.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+    });
     if (!post) return reply.code(404).send({ error: "Post not found" });
 
     // Unpublished drafts are visible to staff only.
@@ -187,7 +199,9 @@ export async function blogRoutes(app: FastifyInstance) {
         status,
         author: body.author?.trim() || null,
         coverImage: body.coverImage?.trim() || null,
-        tags: Array.isArray(body.tags) ? body.tags.filter((t: unknown) => typeof t === "string") : [],
+        tags: Array.isArray(body.tags)
+          ? body.tags.filter((t: unknown) => typeof t === "string")
+          : [],
         publishedAt: body.publishedAt ? new Date(body.publishedAt) : new Date(),
       },
     });
@@ -211,15 +225,21 @@ export async function blogRoutes(app: FastifyInstance) {
         data.slug = await uniqueSlug(body.slug || body.title, id);
       }
     }
-    if (typeof body.slug === "string" && body.slug.trim() && body.slug !== existing.slug) {
+    if (
+      typeof body.slug === "string" &&
+      body.slug.trim() &&
+      body.slug !== existing.slug
+    ) {
       data.slug = await uniqueSlug(body.slug, id);
     }
     if (typeof body.content === "string") data.content = sanitizeHtml(body.content);
-    if (typeof body.excerpt === "string") data.excerpt = sanitizeHtml(body.excerpt.trim());
+    if (typeof body.excerpt === "string")
+      data.excerpt = sanitizeHtml(body.excerpt.trim());
     if (typeof body.category === "string") data.category = body.category.trim();
     if (typeof body.featured === "boolean") data.featured = body.featured;
     if (typeof body.author === "string") data.author = body.author.trim() || null;
-    if (typeof body.coverImage === "string") data.coverImage = body.coverImage.trim() || null;
+    if (typeof body.coverImage === "string")
+      data.coverImage = body.coverImage.trim() || null;
     if (Array.isArray(body.tags)) {
       data.tags = body.tags.filter((t: unknown) => typeof t === "string");
     }
@@ -309,7 +329,9 @@ Return JSON with: title, excerpt (under 160 characters), content (800-1200 words
         },
       });
 
-      return ok(serialize(post), { message: "Draft created — review it before publishing." });
+      return ok(serialize(post), {
+        message: "Draft created — review it before publishing.",
+      });
     },
   );
 }

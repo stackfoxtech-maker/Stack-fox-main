@@ -38,7 +38,9 @@ export function recipientStateCode(org: OrgLike): string | null {
   const name = asString(addr.state).trim().toLowerCase();
   if (name) {
     if (CODE_BY_NAME[name]) return CODE_BY_NAME[name];
-    const hit = Object.keys(CODE_BY_NAME).find((n) => name.startsWith(n) || n.startsWith(name));
+    const hit = Object.keys(CODE_BY_NAME).find(
+      (n) => name.startsWith(n) || n.startsWith(name),
+    );
     if (hit) return CODE_BY_NAME[hit];
   }
   return null;

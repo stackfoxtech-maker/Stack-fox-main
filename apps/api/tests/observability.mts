@@ -15,7 +15,8 @@ import { REQ_ID_FIELD, stampReqId } from "../src/lib/queue";
 import { shouldAlert } from "../src/workers/healthAlert";
 
 const checks: Array<[string, boolean, string]> = [];
-const check = (label: string, pass: boolean, note = "") => checks.push([label, pass, note]);
+const check = (label: string, pass: boolean, note = "") =>
+  checks.push([label, pass, note]);
 
 // ── Inbound id handling ──────────────────────────────────────────────────────
 //
@@ -23,8 +24,14 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
 // unbounded caller-controlled string would be a log-injection and
 // header-splitting vector. Accept only something that looks like an id.
 {
-  check("a well-formed inbound id is accepted", normaliseReqId("abc-123_ID.9") === "abc-123_ID.9");
-  check("surrounding whitespace is trimmed", normaliseReqId("  abc-12345  ") === "abc-12345");
+  check(
+    "a well-formed inbound id is accepted",
+    normaliseReqId("abc-123_ID.9") === "abc-123_ID.9",
+  );
+  check(
+    "surrounding whitespace is trimmed",
+    normaliseReqId("  abc-12345  ") === "abc-12345",
+  );
   check("a too-short id is rejected", normaliseReqId("short") === null);
   check("a 129-character id is rejected", normaliseReqId("a".repeat(129)) === null);
   check(
@@ -126,7 +133,10 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
     });
   });
   app.get("/missing", async () => {
-    throw new Prisma.PrismaClientKnownRequestError("…", { code: "P2025", clientVersion: "5" });
+    throw new Prisma.PrismaClientKnownRequestError("…", {
+      code: "P2025",
+      clientVersion: "5",
+    });
   });
 
   const boom = await app.inject({ method: "GET", url: "/boom" });
@@ -152,7 +162,11 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
   check("a 4xx carries the request id", refused.json().requestId === "req-test-abcdefgh");
 
   const dupe = await app.inject({ method: "GET", url: "/dupe" });
-  check("a unique-constraint violation is a 409, not a 500", dupe.statusCode === 409, `got ${dupe.statusCode}`);
+  check(
+    "a unique-constraint violation is a 409, not a 500",
+    dupe.statusCode === 409,
+    `got ${dupe.statusCode}`,
+  );
   check(
     "the colliding field is named",
     String(dupe.json().error).includes("email"),
@@ -160,7 +174,11 @@ const check = (label: string, pass: boolean, note = "") => checks.push([label, p
   );
 
   const missing = await app.inject({ method: "GET", url: "/missing" });
-  check("a missing record is a 404, not a 500", missing.statusCode === 404, `got ${missing.statusCode}`);
+  check(
+    "a missing record is a 404, not a 500",
+    missing.statusCode === 404,
+    `got ${missing.statusCode}`,
+  );
 
   const notFound = await app.inject({ method: "GET", url: "/no-such-route" });
   check("an unknown route is a 404 with an id", notFound.statusCode === 404);

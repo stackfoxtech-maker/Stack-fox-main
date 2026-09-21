@@ -33,9 +33,12 @@ function fail(message: string): never {
 
 if (!EMAIL) fail("MASTER_ADMIN_EMAIL is not set.");
 if (!PASSWORD) fail("MASTER_ADMIN_PASSWORD is not set.");
-if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(EMAIL)) fail(`"${EMAIL}" is not a valid email address.`);
+if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(EMAIL))
+  fail(`"${EMAIL}" is not a valid email address.`);
 if (PASSWORD.length < 12) {
-  fail("MASTER_ADMIN_PASSWORD must be at least 12 characters. This account can see every tenant.");
+  fail(
+    "MASTER_ADMIN_PASSWORD must be at least 12 characters. This account can see every tenant.",
+  );
 }
 
 const passwordHash = await hashPassword(PASSWORD);

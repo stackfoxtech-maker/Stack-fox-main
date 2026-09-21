@@ -73,7 +73,10 @@ try {
 } catch {
   threw = true;
 }
-check("dispatchCron ignores an unknown job name without throwing", !threw && probeRuns === 1);
+check(
+  "dispatchCron ignores an unknown job name without throwing",
+  !threw && probeRuns === 1,
+);
 
 // ── 3. duplicate registration is rejected ───────────────────────────────────
 let dupThrew = false;
@@ -101,17 +104,19 @@ for (const k of RETIRED) {
   check(`QUEUE no longer defines "${k}"`, !queueKeys.includes(k));
 }
 check('QUEUE defines "cron"', queueKeys.includes("cron"));
-check(
-  "QUEUE has 11 entries (10 direct + cron)",
-  queueKeys.length === 11,
-);
+check("QUEUE has 11 entries (10 direct + cron)", queueKeys.length === 11);
 
 // ── 5. cron patterns are well-formed 5-field expressions ────────────────────
 // Re-derive the patterns from the module's own source so a typo is caught.
 const here = dirname(fileURLToPath(import.meta.url));
 const schedulerSrc = readFileSync(resolve(here, "../src/lib/scheduler.ts"), "utf8");
-const patternMatches = [...schedulerSrc.matchAll(/pattern:\s*"([^"]+)"/g)].map((m) => m[1]);
-check(`found ${scheduled.length} cron patterns in scheduler.ts`, patternMatches.length === 10);
+const patternMatches = [...schedulerSrc.matchAll(/pattern:\s*"([^"]+)"/g)].map(
+  (m) => m[1],
+);
+check(
+  `found ${scheduled.length} cron patterns in scheduler.ts`,
+  patternMatches.length === 10,
+);
 for (const p of patternMatches) {
   const fields = p.trim().split(/\s+/);
   check(`pattern "${p}" has 5 fields`, fields.length === 5);

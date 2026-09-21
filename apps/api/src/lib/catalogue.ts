@@ -30,7 +30,15 @@ export interface CatalogueItem {
 }
 
 interface RawCatalogue {
-  services?: Array<{ id: string; name: string; price: number; catId?: string; unit?: string; est?: string; lay?: string }>;
+  services?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    catId?: string;
+    unit?: string;
+    est?: string;
+    lay?: string;
+  }>;
   packages?: Array<{ id: string; name: string; price: number }>;
   industryBundles?: Array<{ id: string; name: string; price: number }>;
   addons?: Array<{ id: string; name: string; price: number; desc?: string }>;

@@ -37,7 +37,10 @@ import {
 export const phone = z
   .string()
   .trim()
-  .regex(/^\+?[1-9]\d{7,14}$/, "Enter a phone number in international format, e.g. +919876543210");
+  .regex(
+    /^\+?[1-9]\d{7,14}$/,
+    "Enter a phone number in international format, e.g. +919876543210",
+  );
 
 /** A single-use token from a reset or verification link. */
 const linkToken = z.string().trim().min(16).max(256);
@@ -86,7 +89,10 @@ export const SendOtpSchema = strictObject({
 });
 
 /** Six digits. Bounding it keeps a long string out of the comparison path. */
-const otpCode = z.string().trim().regex(/^\d{4,8}$/, "Enter the numeric code from your message");
+const otpCode = z
+  .string()
+  .trim()
+  .regex(/^\d{4,8}$/, "Enter the numeric code from your message");
 
 export const VerifyOtpSchema = strictObject({
   email: email.optional(),

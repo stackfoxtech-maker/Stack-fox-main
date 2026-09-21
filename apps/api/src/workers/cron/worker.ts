@@ -14,8 +14,5 @@ export function startCronWorker(): void {
   if (started) return;
   started = true;
   createWorker(QUEUE.cron, dispatchCron);
-  log().info(
-    { schedules: registeredCronIds() },
-    "cron dispatcher draining schedules",
-  );
+  log().info({ schedules: registeredCronIds() }, "cron dispatcher draining schedules");
 }

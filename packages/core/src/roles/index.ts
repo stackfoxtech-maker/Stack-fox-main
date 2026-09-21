@@ -88,18 +88,25 @@ export const FINANCE_ROLES = ["ADMIN", "SUPER_ADMIN", "FINANCE"] as const;
 
 /** Reading financial reports — wider than acting on them. */
 export const FINANCE_VIEW_ROLES = [
-  "ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM",
+  "ADMIN",
+  "SUPER_ADMIN",
+  "FINANCE",
+  "SENIOR_PM",
+  "PM",
 ] as const;
 
 /** Leads, proposals, follow-ups, the sales workspace. */
 export const SALES_ROLES = [
-  "ADMIN", "SUPER_ADMIN", "SALES", "SENIOR_PM", "SE", "PM",
+  "ADMIN",
+  "SUPER_ADMIN",
+  "SALES",
+  "SENIOR_PM",
+  "SE",
+  "PM",
 ] as const;
 
 /** Production credential vault: who may store or destroy client secrets. */
-export const VAULT_ROLES = [
-  "ADMIN", "SUPER_ADMIN", "PM", "SENIOR_PM", "DEVOPS",
-] as const;
+export const VAULT_ROLES = ["ADMIN", "SUPER_ADMIN", "PM", "SENIOR_PM", "DEVOPS"] as const;
 
 /** Every internal role. Use when the only question is staff vs client. */
 export const STAFF_ROLES = INTERNAL_ROLES;
@@ -115,7 +122,9 @@ export function isAdminRole(role: string | undefined | null): boolean {
  * client router — a role that resolves to a dashboard its guard rejects is a
  * redirect loop, so these must agree.
  */
-export function dashboardForRole(role: string | undefined | null): "admin" | "sales" | "team" | "client" {
+export function dashboardForRole(
+  role: string | undefined | null,
+): "admin" | "sales" | "team" | "client" {
   const r = normalise(role ?? "");
   if (isAdminRole(r)) return "admin";
   if (r === "SALES") return "sales";

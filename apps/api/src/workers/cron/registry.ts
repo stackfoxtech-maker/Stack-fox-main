@@ -32,7 +32,9 @@ const handlers = new Map<string, CronHandler>();
  */
 export function registerCron(id: string, handler: CronHandler): void {
   if (handlers.has(id)) {
-    throw new Error(`[cron] duplicate handler id "${id}" — two workers claim the same schedule`);
+    throw new Error(
+      `[cron] duplicate handler id "${id}" — two workers claim the same schedule`,
+    );
   }
   handlers.set(id, handler);
 }

@@ -164,25 +164,38 @@ export const objectionKeys = [
 ];
 
 export const genericObjections = {
-  expensive: "I understand. Instead of looking only at the initial cost, it can help to evaluate what the digital system is designed to do for your business—such as improving credibility, making enquiries easier to capture and supporting your marketing.",
-  noNeed: "You may not need a website just for having one. The real question is whether your business could benefit from a stronger digital presence, clearer information, easier enquiries and a central destination for your marketing.",
-  hasInstagram: "That's great. We are not replacing Instagram. Your website can work together with Instagram. When someone becomes interested through a post or advertisement, they can visit your professional website and take the next step.",
-  hasWebsite: "That's great. An existing website can often be improved. We can review what you currently have and suggest enhancements that can help improve performance, user experience and lead generation.",
-  noCustomers: "No responsible agency can guarantee a specific number of customers because results depend on many factors. What we can build is a strong digital foundation designed to improve your ability to get discovered, explain your services clearly and convert interested visitors into enquiries.",
-  guaranteeRanking: "No responsible agency can guarantee a specific Google ranking because search results depend on many factors. What we can do is build a strong SEO foundation that improves your opportunity to be discovered for relevant searches.",
-  guaranteeCustomers: "No responsible agency can guarantee a specific number of customers because results depend on many factors. What we can build is a strong digital foundation designed to improve your ability to get discovered, explain your services clearly and convert interested visitors into enquiries.",
-  noSEO: "SEO means structuring and improving your website so search engines can better understand your business and its services. When potential customers search for relevant services, a strong SEO foundation can improve your opportunity to be discovered. We handle the technical part—you just need to focus on running your business.",
-  thinkAbout: "Of course. I can send you a simple overview on WhatsApp so you can review it whenever convenient. Would that be helpful?",
-  sendWhatsApp: "Absolutely. I will send you a simple overview with key benefits and examples. You can review it at your convenience.",
+  expensive:
+    'I understand. Instead of looking only at the initial cost, it can help to evaluate what the digital system is designed to do for your business—such as improving credibility, making enquiries easier to capture and supporting your marketing.',
+  noNeed:
+    'You may not need a website just for having one. The real question is whether your business could benefit from a stronger digital presence, clearer information, easier enquiries and a central destination for your marketing.',
+  hasInstagram:
+    "That's great. We are not replacing Instagram. Your website can work together with Instagram. When someone becomes interested through a post or advertisement, they can visit your professional website and take the next step.",
+  hasWebsite:
+    "That's great. An existing website can often be improved. We can review what you currently have and suggest enhancements that can help improve performance, user experience and lead generation.",
+  noCustomers:
+    'No responsible agency can guarantee a specific number of customers because results depend on many factors. What we can build is a strong digital foundation designed to improve your ability to get discovered, explain your services clearly and convert interested visitors into enquiries.',
+  guaranteeRanking:
+    'No responsible agency can guarantee a specific Google ranking because search results depend on many factors. What we can do is build a strong SEO foundation that improves your opportunity to be discovered for relevant searches.',
+  guaranteeCustomers:
+    'No responsible agency can guarantee a specific number of customers because results depend on many factors. What we can build is a strong digital foundation designed to improve your ability to get discovered, explain your services clearly and convert interested visitors into enquiries.',
+  noSEO:
+    'SEO means structuring and improving your website so search engines can better understand your business and its services. When potential customers search for relevant services, a strong SEO foundation can improve your opportunity to be discovered. We handle the technical part—you just need to focus on running your business.',
+  thinkAbout:
+    'Of course. I can send you a simple overview on WhatsApp so you can review it whenever convenient. Would that be helpful?',
+  sendWhatsApp:
+    'Absolutely. I will send you a simple overview with key benefits and examples. You can review it at your convenience.',
 };
 
 export const knowledgeTopics = [
   {
     id: 'what-is-website',
     title: 'What is a website?',
-    simpleExplanation: 'A website is your business\'s digital address. Just like a physical shop has an address, a website is where customers can find you on the internet.',
-    whatToTellClient: 'A website is your 24/7 digital salesperson. It works while you sleep, answers customer questions, and helps people understand your business before they contact you.',
-    example: 'If someone searches for "best gym in Patna" at 11 PM, your website can still be there to introduce your gym, show your facilities, and provide your contact details.',
+    simpleExplanation:
+      "A website is your business's digital address. Just like a physical shop has an address, a website is where customers can find you on the internet.",
+    whatToTellClient:
+      'A website is your 24/7 digital salesperson. It works while you sleep, answers customer questions, and helps people understand your business before they contact you.',
+    example:
+      'If someone searches for "best gym in Patna" at 11 PM, your website can still be there to introduce your gym, show your facilities, and provide your contact details.',
     commonQuestions: [
       'Do I really need a website if I have Instagram?',
       'How much does a website cost?',
@@ -192,9 +205,12 @@ export const knowledgeTopics = [
   {
     id: 'how-website-helps',
     title: 'How does a website help business?',
-    simpleExplanation: 'A website builds trust, provides information, collects enquiries, and acts as a central destination for all your marketing efforts.',
-    whatToTellClient: 'A website is an investment that helps customers trust you, understand what you offer, and easily contact you. It also makes your marketing campaigns more effective.',
-    example: 'When you run an Instagram ad, instead of sending people to Instagram where they might get distracted, you send them to your website where they can learn more and contact you.',
+    simpleExplanation:
+      'A website builds trust, provides information, collects enquiries, and acts as a central destination for all your marketing efforts.',
+    whatToTellClient:
+      'A website is an investment that helps customers trust you, understand what you offer, and easily contact you. It also makes your marketing campaigns more effective.',
+    example:
+      'When you run an Instagram ad, instead of sending people to Instagram where they might get distracted, you send them to your website where they can learn more and contact you.',
     commonQuestions: [
       'Will a website actually bring me more customers?',
       'Can I manage the website myself?',
@@ -204,9 +220,12 @@ export const knowledgeTopics = [
   {
     id: 'what-is-seo',
     title: 'What is SEO?',
-    simpleExplanation: 'SEO (Search Engine Optimization) means improving your website so that search engines like Google can better understand your business and show it to people searching for your services.',
-    whatToTellClient: 'SEO helps your website appear when potential customers search for services like yours on Google. It is about making your website more visible to people who are already looking for what you offer.',
-    example: 'If someone searches "best restaurant near me", good SEO helps your restaurant website appear in the results, making it easier for that person to find and visit you.',
+    simpleExplanation:
+      'SEO (Search Engine Optimization) means improving your website so that search engines like Google can better understand your business and show it to people searching for your services.',
+    whatToTellClient:
+      'SEO helps your website appear when potential customers search for services like yours on Google. It is about making your website more visible to people who are already looking for what you offer.',
+    example:
+      'If someone searches "best restaurant near me", good SEO helps your restaurant website appear in the results, making it easier for that person to find and visit you.',
     commonQuestions: [
       'How long does SEO take to show results?',
       'Can you guarantee #1 ranking on Google?',
@@ -216,9 +235,12 @@ export const knowledgeTopics = [
   {
     id: 'what-is-local-seo',
     title: 'What is Local SEO?',
-    simpleExplanation: 'Local SEO focuses on helping your business appear in local search results—when people search for services near them or in your city.',
-    whatToTellClient: 'Local SEO is especially important for businesses that serve customers in a specific area. It helps people in your city find you when they search for services you offer.',
-    example: 'A dentist in Patna wants to appear when someone searches "dentist near me" or "dental clinic in Patna". Local SEO makes this more likely.',
+    simpleExplanation:
+      'Local SEO focuses on helping your business appear in local search results—when people search for services near them or in your city.',
+    whatToTellClient:
+      'Local SEO is especially important for businesses that serve customers in a specific area. It helps people in your city find you when they search for services you offer.',
+    example:
+      'A dentist in Patna wants to appear when someone searches "dentist near me" or "dental clinic in Patna". Local SEO makes this more likely.',
     commonQuestions: [
       'What is Google Business Profile?',
       'How does Google Maps help my business?',
@@ -228,9 +250,12 @@ export const knowledgeTopics = [
   {
     id: 'what-is-aeo',
     title: 'What is AEO?',
-    simpleExplanation: 'AEO (Answer Engine Optimization) means structuring your business information so that modern search and AI systems can clearly understand what you offer and provide accurate answers to user queries.',
-    whatToTellClient: 'AEO prepares your business information for the future of search. As more people use AI-powered search to ask questions, having clear, well-structured information about your services helps your business be better understood.',
-    example: 'When someone asks an AI assistant "find a good gym near me with personal training", well-structured information about your gym, trainers, and programs helps AI systems understand what you offer.',
+    simpleExplanation:
+      'AEO (Answer Engine Optimization) means structuring your business information so that modern search and AI systems can clearly understand what you offer and provide accurate answers to user queries.',
+    whatToTellClient:
+      'AEO prepares your business information for the future of search. As more people use AI-powered search to ask questions, having clear, well-structured information about your services helps your business be better understood.',
+    example:
+      'When someone asks an AI assistant "find a good gym near me with personal training", well-structured information about your gym, trainers, and programs helps AI systems understand what you offer.',
     commonQuestions: [
       'Is AEO different from SEO?',
       'Do I need both SEO and AEO?',
@@ -240,9 +265,12 @@ export const knowledgeTopics = [
   {
     id: 'what-is-lead-generation',
     title: 'What is lead generation?',
-    simpleExplanation: 'Lead generation means attracting potential customers and collecting their contact information so you can follow up and convert them into paying customers.',
-    whatToTellClient: 'Lead generation is the process of attracting people who are interested in your services and making it easy for them to contact you. Your website can do this 24/7 through contact forms, enquiry forms, and booking requests.',
-    example: 'A gym website with a "Book a Free Trial" form generates leads by collecting names and phone numbers of people interested in joining.',
+    simpleExplanation:
+      'Lead generation means attracting potential customers and collecting their contact information so you can follow up and convert them into paying customers.',
+    whatToTellClient:
+      'Lead generation is the process of attracting people who are interested in your services and making it easy for them to contact you. Your website can do this 24/7 through contact forms, enquiry forms, and booking requests.',
+    example:
+      'A gym website with a "Book a Free Trial" form generates leads by collecting names and phone numbers of people interested in joining.',
     commonQuestions: [
       'How do I get more leads?',
       'What is a good lead?',
@@ -252,9 +280,12 @@ export const knowledgeTopics = [
   {
     id: 'what-is-landing-page',
     title: 'What is a landing page?',
-    simpleExplanation: 'A landing page is a standalone web page designed specifically for a marketing campaign. It has one goal: to convert visitors into leads or customers.',
-    whatToTellClient: 'A landing page is like a focused sales conversation. When you run an ad or promotion, the landing page gives visitors exactly what they need to take the next step—no distractions, just one clear action.',
-    example: 'If you run a Facebook ad for a "50% off first month" gym offer, the landing page shows the offer, explains the benefits, and has a "Claim Offer" button.',
+    simpleExplanation:
+      'A landing page is a standalone web page designed specifically for a marketing campaign. It has one goal: to convert visitors into leads or customers.',
+    whatToTellClient:
+      'A landing page is like a focused sales conversation. When you run an ad or promotion, the landing page gives visitors exactly what they need to take the next step—no distractions, just one clear action.',
+    example:
+      'If you run a Facebook ad for a "50% off first month" gym offer, the landing page shows the offer, explains the benefits, and has a "Claim Offer" button.',
     commonQuestions: [
       'Do I need a separate landing page for each campaign?',
       'What makes a good landing page?',
@@ -264,9 +295,12 @@ export const knowledgeTopics = [
   {
     id: 'how-google-ads-works',
     title: 'How does Google Ads work?',
-    simpleExplanation: 'Google Ads lets you show your business to people who are actively searching for your services. You pay only when someone clicks your ad.',
-    whatToTellClient: 'Google Ads puts your business in front of people who are already looking for what you offer. When someone searches for your service, your ad can appear at the top, and you pay only when they click to visit your website.',
-    example: 'A restaurant can run Google Ads so that when someone searches "best restaurant in Patna", their ad appears, driving hungry customers directly to their website or menu.',
+    simpleExplanation:
+      'Google Ads lets you show your business to people who are actively searching for your services. You pay only when someone clicks your ad.',
+    whatToTellClient:
+      'Google Ads puts your business in front of people who are already looking for what you offer. When someone searches for your service, your ad can appear at the top, and you pay only when they click to visit your website.',
+    example:
+      'A restaurant can run Google Ads so that when someone searches "best restaurant in Patna", their ad appears, driving hungry customers directly to their website or menu.',
     commonQuestions: [
       'How much does Google Ads cost?',
       'Is Google Ads better than social media ads?',
@@ -276,9 +310,12 @@ export const knowledgeTopics = [
   {
     id: 'instagram-marketing',
     title: 'How does Instagram marketing connect with a website?',
-    simpleExplanation: 'Instagram creates awareness and interest, while your website converts that interest into action—enquiries, bookings, or purchases.',
-    whatToTellClient: 'Think of Instagram as the invitation and your website as the venue. Instagram grabs attention with visuals, but your website is where customers get all the information they need and take the next step.',
-    example: 'You post a photo of your new menu on Instagram. When someone clicks the link in your bio, they land on your website where they can see the full menu, check prices, and make a reservation.',
+    simpleExplanation:
+      'Instagram creates awareness and interest, while your website converts that interest into action—enquiries, bookings, or purchases.',
+    whatToTellClient:
+      'Think of Instagram as the invitation and your website as the venue. Instagram grabs attention with visuals, but your website is where customers get all the information they need and take the next step.',
+    example:
+      'You post a photo of your new menu on Instagram. When someone clicks the link in your bio, they land on your website where they can see the full menu, check prices, and make a reservation.',
     commonQuestions: [
       'Should I post my website link on Instagram?',
       'How do I drive Instagram followers to my website?',
@@ -293,15 +330,37 @@ export const knowledgeTopics = [
 
 const templates = {
   health: {
-    ids: ['clinic','hospital','dental','dermatology','physiotherapy','diagnostic','pharmacy','eye-clinic','veterinary','wellness'],
+    ids: [
+      'clinic',
+      'hospital',
+      'dental',
+      'dermatology',
+      'physiotherapy',
+      'diagnostic',
+      'pharmacy',
+      'eye-clinic',
+      'veterinary',
+      'wellness',
+    ],
     label: {
-      clinic:'Clinic', hospital:'Hospital', dental:'Dental Clinic', dermatology:'Dermatology Clinic',
-      physiotherapy:'Physiotherapy Clinic', diagnostic:'Diagnostic Center', pharmacy:'Pharmacy',
-      'eye-clinic':'Eye Clinic', veterinary:'Veterinary Clinic', wellness:'Wellness Center'
+      clinic: 'Clinic',
+      hospital: 'Hospital',
+      dental: 'Dental Clinic',
+      dermatology: 'Dermatology Clinic',
+      physiotherapy: 'Physiotherapy Clinic',
+      diagnostic: 'Diagnostic Center',
+      pharmacy: 'Pharmacy',
+      'eye-clinic': 'Eye Clinic',
+      veterinary: 'Veterinary Clinic',
+      wellness: 'Wellness Center',
     },
-    businessUnderstanding: (id, name, city) => name
-      ? name + ' is trusted by patients who research online before booking an appointment. We build a fast, professional website for your clinic in ' + (city || 'your city') + ' with online booking, local SEO, and WhatsApp integration — so patients can find you on Google, book appointments 24/7, and trust your expertise before they ever call. That is the difference between being chosen and being forgotten.'
-      : 'Patients research doctors, treatments and clinics online before making an appointment. A professional website builds instant trust and makes it easy for patients to find you, book appointments, and understand your services — even at 2 AM.',
+    businessUnderstanding: (id, name, city) =>
+      name
+        ? name +
+          ' is trusted by patients who research online before booking an appointment. We build a fast, professional website for your clinic in ' +
+          (city || 'your city') +
+          ' with online booking, local SEO, and WhatsApp integration — so patients can find you on Google, book appointments 24/7, and trust your expertise before they ever call. That is the difference between being chosen and being forgotten.'
+        : 'Patients research doctors, treatments and clinics online before making an appointment. A professional website builds instant trust and makes it easy for patients to find you, book appointments, and understand your services — even at 2 AM.',
     commonProblems: [
       'Patients cannot find your clinic on Google or Maps when they search nearby.',
       'Phone lines are busy and appointment calls get missed during clinic hours.',
@@ -333,7 +392,9 @@ const templates = {
       'Track which marketing channel brings the most patients.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when patients search for "' + (templates.health.label[id] || 'clinic') + ' near me" in your city.',
+      'Appear when patients search for "' +
+        (templates.health.label[id] || 'clinic') +
+        ' near me" in your city.',
       'Rank for conditions and treatments you specialize in.',
       'Local SEO puts your clinic on Google Maps with directions and contact info.',
       'Show up in "best [treatment] in ' + (city || 'your city') + '" searches.',
@@ -358,20 +419,43 @@ const templates = {
       'Emergency contact & visiting hours display',
       'Mobile-first design for patients on phones',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'trusted by patients who research online before booking an appointment. We build a fast, professional website for your clinic in ' + (city || 'your city') + ' with online booking, local SEO, and WhatsApp integration — so patients can find you on Google, book appointments 24/7, and trust your expertise before they ever call. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.health.label[id] || 'clinic').toLowerCase() + 's — designed to help you get found on Google and capture appointment enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.health.label[id] || 'clinic').toLowerCase() + 's like yours — designed to help get you found on Google and capture appointment enquiries on WhatsApp.' + (city ? ' We work with clinics in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'trusted by patients who research online before booking an appointment. We build a fast, professional website for your clinic in ' +
+      (city || 'your city') +
+      ' with online booking, local SEO, and WhatsApp integration — so patients can find you on Google, book appointments 24/7, and trust your expertise before they ever call. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.health.label[id] || 'clinic').toLowerCase() +
+      's — designed to help you get found on Google and capture appointment enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.health.label[id] || 'clinic').toLowerCase() +
+      's like yours — designed to help get you found on Google and capture appointment enquiries on WhatsApp.' +
+      (city ? ' We work with clinics in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For a clinic, think of it this way: one new patient per month from the website can cover the investment. Patients who find you online are already looking for your services — the website just makes it easy for them to book.",
-      noNeed: "You may not need a website just for having one. But ask yourself: when a patient searches for your specialty in your city, will they find you or your competitor? A website ensures they find you.",
-      hasInstagram: "That's great. Instagram is perfect for sharing health tips and updates. But when a patient sees your post and wants to book, they need a professional place to take the next step. Your website becomes that trusted destination.",
-      hasWebsite: "That's great. Many clinic websites are outdated or not optimized for patients. We can review yours and suggest improvements that help you get more appointments and rank better on Google.",
-      noCustomers: "We cannot guarantee a specific number of patients, but what we build is a system where patients actively searching for your services can find you, learn about your expertise, and book an appointment — 24/7 without you picking up the phone.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is build a strong SEO foundation — optimized Google Business Profile, local citations, and on-page SEO — that improves your chances of being discovered by patients in your area.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert interested patients into booked appointments.",
-      noSEO: "SEO simply means making sure Google understands your clinic, your specialties, and your location. When patients search for services you offer, good SEO helps you appear in the results. We handle the technical work — you focus on your patients.",
-      thinkAbout: "Of course. I can send you a simple overview with examples from other clinics and how it helped them get more appointments. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, a quick cost estimate, and examples of how other clinics use their website to get more patients. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For a clinic, think of it this way: one new patient per month from the website can cover the investment. Patients who find you online are already looking for your services — the website just makes it easy for them to book.',
+      noNeed:
+        'You may not need a website just for having one. But ask yourself: when a patient searches for your specialty in your city, will they find you or your competitor? A website ensures they find you.',
+      hasInstagram:
+        "That's great. Instagram is perfect for sharing health tips and updates. But when a patient sees your post and wants to book, they need a professional place to take the next step. Your website becomes that trusted destination.",
+      hasWebsite:
+        "That's great. Many clinic websites are outdated or not optimized for patients. We can review yours and suggest improvements that help you get more appointments and rank better on Google.",
+      noCustomers:
+        'We cannot guarantee a specific number of patients, but what we build is a system where patients actively searching for your services can find you, learn about your expertise, and book an appointment — 24/7 without you picking up the phone.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is build a strong SEO foundation — optimized Google Business Profile, local citations, and on-page SEO — that improves your chances of being discovered by patients in your area.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert interested patients into booked appointments.',
+      noSEO:
+        'SEO simply means making sure Google understands your clinic, your specialties, and your location. When patients search for services you offer, good SEO helps you appear in the results. We handle the technical work — you focus on your patients.',
+      thinkAbout:
+        'Of course. I can send you a simple overview with examples from other clinics and how it helped them get more appointments. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, a quick cost estimate, and examples of how other clinics use their website to get more patients. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do patients currently book appointments with you?',
@@ -385,20 +469,51 @@ const templates = {
       'Follow up with patient booking statistics and ROI examples.',
       'Offer a free Google Business Profile audit as a next step.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.health.label[id] || 'clinic').toLowerCase() + 's see a 25-40% increase in new patient bookings within 3 months of launching a professional website with online booking.',
-    quickWin: (id) => 'Add a prominent "Book Appointment" button on your homepage. Even without a full booking system, this alone can increase appointment enquiries by 20% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.health.label[id] || 'clinic').toLowerCase() +
+      's see a 25-40% increase in new patient bookings within 3 months of launching a professional website with online booking.',
+    quickWin: (id) =>
+      'Add a prominent "Book Appointment" button on your homepage. Even without a full booking system, this alone can increase appointment enquiries by 20% within the first month.',
   },
   food: {
-    ids: ['restaurant','cafe','bakery','cloud-kitchen','fast-food','fine-dining','hotel','resort','homestay','banquet','catering','event-venue'],
+    ids: [
+      'restaurant',
+      'cafe',
+      'bakery',
+      'cloud-kitchen',
+      'fast-food',
+      'fine-dining',
+      'hotel',
+      'resort',
+      'homestay',
+      'banquet',
+      'catering',
+      'event-venue',
+    ],
     label: {
-      restaurant:'Restaurant', cafe:'Cafe', bakery:'Bakery', 'cloud-kitchen':'Cloud Kitchen',
-      'fast-food':'Fast Food Restaurant', 'fine-dining':'Fine Dining Restaurant', hotel:'Hotel',
-      resort:'Resort', homestay:'Homestay', banquet:'Banquet Hall', catering:'Catering Service',
-      'event-venue':'Event Venue'
+      restaurant: 'Restaurant',
+      cafe: 'Cafe',
+      bakery: 'Bakery',
+      'cloud-kitchen': 'Cloud Kitchen',
+      'fast-food': 'Fast Food Restaurant',
+      'fine-dining': 'Fine Dining Restaurant',
+      hotel: 'Hotel',
+      resort: 'Resort',
+      homestay: 'Homestay',
+      banquet: 'Banquet Hall',
+      catering: 'Catering Service',
+      'event-venue': 'Event Venue',
     },
-    businessUnderstanding: (id, name, city) => name
-      ? name + ' is the kind of place customers want to find before they arrive — menu, photos, prices, and table booking all in one place. We build a beautiful, fast website for your ' + (city || '') + (city ? ' ' : '') + (name || 'restaurant') + ' with online booking, menu display, and local SEO — so hungry customers find you on Google, browse your menu, and book a table without picking up the phone. That is the difference between being chosen and being forgotten.'
-      : 'Customers decide where to eat or stay by checking menus, photos, and reviews online. A website turns hungry searchers into table bookings, orders, and loyal customers — all before they even walk in.',
+    businessUnderstanding: (id, name, city) =>
+      name
+        ? name +
+          ' is the kind of place customers want to find before they arrive — menu, photos, prices, and table booking all in one place. We build a beautiful, fast website for your ' +
+          (city || '') +
+          (city ? ' ' : '') +
+          (name || 'restaurant') +
+          ' with online booking, menu display, and local SEO — so hungry customers find you on Google, browse your menu, and book a table without picking up the phone. That is the difference between being chosen and being forgotten.'
+        : 'Customers decide where to eat or stay by checking menus, photos, and reviews online. A website turns hungry searchers into table bookings, orders, and loyal customers — all before they even walk in.',
     commonProblems: [
       'Customers cannot find your menu, prices, or contact details easily online.',
       'Table booking calls come during busy hours and get missed.',
@@ -430,7 +545,11 @@ const templates = {
       'Collect customer emails for birthday discounts and re-engagement.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when customers search for "best ' + (templates.food.label[id] || 'restaurant').toLowerCase() + ' in ' + (city || 'your city') + '".',
+      'Appear when customers search for "best ' +
+        (templates.food.label[id] || 'restaurant').toLowerCase() +
+        ' in ' +
+        (city || 'your city') +
+        '".',
       'Rank for specific dishes, cuisines, and dining experiences you offer.',
       'Google Maps integration with photos, reviews, and directions.',
       'Show up for "late night restaurant", "family restaurant", "cafe near me" searches.',
@@ -455,20 +574,45 @@ const templates = {
       'Special offers and events section',
       'Mobile-first design for on-the-go customers',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of place customers want to find before they arrive — menu, photos, prices, and table booking all in one place. We build a beautiful, fast website for your ' + (city || '') + (city ? ' ' : '') + (name || 'restaurant') + ' with online booking, menu display, and local SEO — so hungry customers find you on Google, browse your menu, and book a table without picking up the phone. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.food.label[id] || 'restaurant').toLowerCase() + 's — designed to help you get found on Google and capture table bookings.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.food.label[id] || 'restaurant').toLowerCase() + 's like yours — with full menu display and online table booking.' + (city ? ' We work with great places in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of place customers want to find before they arrive — menu, photos, prices, and table booking all in one place. We build a beautiful, fast website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'restaurant') +
+      ' with online booking, menu display, and local SEO — so hungry customers find you on Google, browse your menu, and book a table without picking up the phone. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.food.label[id] || 'restaurant').toLowerCase() +
+      's — designed to help you get found on Google and capture table bookings.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.food.label[id] || 'restaurant').toLowerCase() +
+      's like yours — with full menu display and online table booking.' +
+      (city ? ' We work with great places in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For a restaurant, think of it this way: one extra table booking per day from the website can generate thousands in monthly revenue. The website pays for itself many times over.",
-      noNeed: "You may not need a website just for having one. But when someone searches 'best restaurant near me' at 8 PM, will they find your menu and book a table — or find your competitor's? A website ensures they choose you.",
-      hasInstagram: "Instagram is great for food photos and stories. But when a customer sees your post and wants to book, they need your menu, prices, and a booking form. Your website becomes the place where Instagram interest turns into actual table bookings.",
-      hasWebsite: "Many restaurant websites are slow, not mobile-friendly, or lack online booking. We can review yours and make it a powerful booking tool that works on phones and ranks on Google.",
-      noCustomers: "We cannot guarantee a specific number of customers. What we build is a system where hungry people searching for your cuisine can find your menu, see your ambiance, and book a table — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize your Google Business Profile, add structured menu data, and build local citations so your restaurant has the best chance of appearing for hungry searchers.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert food lovers into table bookings.",
-      noSEO: "SEO for restaurants means making sure Google understands your cuisine, location, menu, and ambiance. When people search 'best Italian restaurant nearby', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample restaurant website with online booking and examples of how other restaurants increased their table bookings. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other restaurants. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For a restaurant, think of it this way: one extra table booking per day from the website can generate thousands in monthly revenue. The website pays for itself many times over.',
+      noNeed:
+        "You may not need a website just for having one. But when someone searches 'best restaurant near me' at 8 PM, will they find your menu and book a table — or find your competitor's? A website ensures they choose you.",
+      hasInstagram:
+        'Instagram is great for food photos and stories. But when a customer sees your post and wants to book, they need your menu, prices, and a booking form. Your website becomes the place where Instagram interest turns into actual table bookings.',
+      hasWebsite:
+        'Many restaurant websites are slow, not mobile-friendly, or lack online booking. We can review yours and make it a powerful booking tool that works on phones and ranks on Google.',
+      noCustomers:
+        'We cannot guarantee a specific number of customers. What we build is a system where hungry people searching for your cuisine can find your menu, see your ambiance, and book a table — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize your Google Business Profile, add structured menu data, and build local citations so your restaurant has the best chance of appearing for hungry searchers.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert food lovers into table bookings.',
+      noSEO:
+        "SEO for restaurants means making sure Google understands your cuisine, location, menu, and ambiance. When people search 'best Italian restaurant nearby', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample restaurant website with online booking and examples of how other restaurants increased their table bookings. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other restaurants. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do customers currently book tables at your restaurant?',
@@ -482,17 +626,45 @@ const templates = {
       'Follow up with table booking statistics and commission savings from direct orders.',
       'Offer a free Google Business Profile audit and menu optimization tips.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.food.label[id] || 'restaurant').toLowerCase() + 's see a 20-35% increase in table bookings within 2 months of adding online booking to their website.',
-    quickWin: (id) => 'Add a "Book a Table" button on your homepage and Instagram bio link. Even a simple WhatsApp-based booking can increase table reservations by 15% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.food.label[id] || 'restaurant').toLowerCase() +
+      's see a 20-35% increase in table bookings within 2 months of adding online booking to their website.',
+    quickWin: (id) =>
+      'Add a "Book a Table" button on your homepage and Instagram bio link. Even a simple WhatsApp-based booking can increase table reservations by 15% within the first month.',
   },
   fitness: {
-    ids: ['gym','fitness','yoga','dance','trainer','sports','martial-arts','spa','salon','beauty'],
+    ids: [
+      'gym',
+      'fitness',
+      'yoga',
+      'dance',
+      'trainer',
+      'sports',
+      'martial-arts',
+      'spa',
+      'salon',
+      'beauty',
+    ],
     label: {
-      gym:'Gym', fitness:'Fitness Center', yoga:'Yoga Studio', dance:'Dance Studio',
-      trainer:'Personal Trainer', sports:'Sports Academy', 'martial-arts':'Martial Arts Academy',
-      spa:'Spa', salon:'Salon', beauty:'Beauty Parlour'
+      gym: 'Gym',
+      fitness: 'Fitness Center',
+      yoga: 'Yoga Studio',
+      dance: 'Dance Studio',
+      trainer: 'Personal Trainer',
+      sports: 'Sports Academy',
+      'martial-arts': 'Martial Arts Academy',
+      spa: 'Spa',
+      salon: 'Salon',
+      beauty: 'Beauty Parlour',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of gym or studio clients want to join — but they need to see your facilities, trainers, and results before they commit. We build a dynamic website for your ' + (city || '') + (city ? ' ' : '') + (name || 'fitness business') + ' with class schedules, trial booking, and local SEO — so potential clients find you on Google, book a free trial, and join your community. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of gym or studio clients want to join — but they need to see your facilities, trainers, and results before they commit. We build a dynamic website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'fitness business') +
+      ' with class schedules, trial booking, and local SEO — so potential clients find you on Google, book a free trial, and join your community. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'Potential clients cannot find your gym, studio, or class schedule on Google.',
       'Enquiries come through Instagram DMs and get lost or forgotten.',
@@ -524,7 +696,9 @@ const templates = {
       'Promote seasonal offers and membership discounts from one place.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when people search for "best gym in ' + (city || 'your city') + '" or "fitness studio near me".',
+      'Appear when people search for "best gym in ' +
+        (city || 'your city') +
+        '" or "fitness studio near me".',
       'Rank for specific classes: yoga, CrossFit, Zumba, personal training.',
       'Local SEO puts you on Google Maps with reviews and directions.',
       'Show up for fitness-related searches in your neighborhood.',
@@ -549,20 +723,45 @@ const templates = {
       'WhatsApp chat for instant membership queries',
       'Mobile-first design for on-the-go clients',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of gym or studio clients want to join — but they need to see your facilities, trainers, and results before they commit. We build a dynamic website for your ' + (city || '') + (city ? ' ' : '') + (name || 'fitness business') + ' with class schedules, trial booking, and local SEO — so potential clients find you on Google, book a free trial, and join your community. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.fitness.label[id] || 'gym').toLowerCase() + 's — designed to help you get found on Google and capture trial bookings.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.fitness.label[id] || 'gym').toLowerCase() + 's like yours — with online trial booking and class schedules.' + (city ? ' We work with fitness businesses in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of gym or studio clients want to join — but they need to see your facilities, trainers, and results before they commit. We build a dynamic website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'fitness business') +
+      ' with class schedules, trial booking, and local SEO — so potential clients find you on Google, book a free trial, and join your community. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.fitness.label[id] || 'gym').toLowerCase() +
+      's — designed to help you get found on Google and capture trial bookings.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.fitness.label[id] || 'gym').toLowerCase() +
+      's like yours — with online trial booking and class schedules.' +
+      (city ? ' We work with fitness businesses in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For a gym or fitness studio, think of it this way: one new membership per month from the website can cover the investment. People searching for 'gym near me' are already ready to join — the website just makes it easy.",
-      noNeed: "You may not need a website just for having one. But when someone searches 'best gym near me' at 7 PM, will they find your class schedule, trainers, and trial booking — or your competitor's? A website ensures they choose you.",
-      hasInstagram: "Instagram is great for workout videos and motivation. But when a potential client sees your post and wants to join, they need your schedule, pricing, and a booking form. Your website becomes the place where Instagram interest turns into actual memberships.",
-      hasWebsite: "Many gym websites are outdated or just show photos. We build dynamic websites with live class schedules, online booking, and membership management — turning your website into a 24/7 sales tool.",
-      noCustomers: "We cannot guarantee a specific number of members. What we build is a system where people actively searching for fitness solutions can find your gym, see your trainers and results, and book a trial — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for fitness-related searches in your area, build your Google Business Profile with reviews, and ensure your website loads fast on mobile.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert fitness-seekers into trial bookings.",
-      noSEO: "SEO for gyms means making sure Google understands your location, classes, trainers, and membership options. When people search 'best gym near me', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample gym website with online trial booking and examples of how other gyms increased their memberships. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other gyms and studios. You can review it at your convenience.",
+      expensive:
+        "I understand the concern. For a gym or fitness studio, think of it this way: one new membership per month from the website can cover the investment. People searching for 'gym near me' are already ready to join — the website just makes it easy.",
+      noNeed:
+        "You may not need a website just for having one. But when someone searches 'best gym near me' at 7 PM, will they find your class schedule, trainers, and trial booking — or your competitor's? A website ensures they choose you.",
+      hasInstagram:
+        'Instagram is great for workout videos and motivation. But when a potential client sees your post and wants to join, they need your schedule, pricing, and a booking form. Your website becomes the place where Instagram interest turns into actual memberships.',
+      hasWebsite:
+        'Many gym websites are outdated or just show photos. We build dynamic websites with live class schedules, online booking, and membership management — turning your website into a 24/7 sales tool.',
+      noCustomers:
+        'We cannot guarantee a specific number of members. What we build is a system where people actively searching for fitness solutions can find your gym, see your trainers and results, and book a trial — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for fitness-related searches in your area, build your Google Business Profile with reviews, and ensure your website loads fast on mobile.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert fitness-seekers into trial bookings.',
+      noSEO:
+        "SEO for gyms means making sure Google understands your location, classes, trainers, and membership options. When people search 'best gym near me', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample gym website with online trial booking and examples of how other gyms increased their memberships. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other gyms and studios. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do people currently join your gym or studio?',
@@ -576,17 +775,41 @@ const templates = {
       'Follow up with membership statistics and ROI examples.',
       'Offer a free Google Business Profile audit for local fitness searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.fitness.label[id] || 'gym').toLowerCase() + 's see a 25-35% increase in trial bookings within 2 months of adding online booking to their website.',
-    quickWin: (id) => 'Add a "Book Free Trial" button on your homepage and Instagram bio. Even a simple WhatsApp-based booking can increase trial bookings by 15% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.fitness.label[id] || 'gym').toLowerCase() +
+      's see a 25-35% increase in trial bookings within 2 months of adding online booking to their website.',
+    quickWin: (id) =>
+      'Add a "Book Free Trial" button on your homepage and Instagram bio. Even a simple WhatsApp-based booking can increase trial bookings by 15% within the first month.',
   },
   realEstate: {
-    ids: ['real-estate','property-dealer','developer','builder','construction','interior','architect','property-consultant'],
+    ids: [
+      'real-estate',
+      'property-dealer',
+      'developer',
+      'builder',
+      'construction',
+      'interior',
+      'architect',
+      'property-consultant',
+    ],
     label: {
-      'real-estate':'Real Estate Agency', 'property-dealer':'Property Dealer', developer:'Real Estate Developer',
-      builder:'Builder', construction:'Construction Company', interior:'Interior Designer',
-      architect:'Architect', 'property-consultant':'Property Consultant'
+      'real-estate': 'Real Estate Agency',
+      'property-dealer': 'Property Dealer',
+      developer: 'Real Estate Developer',
+      builder: 'Builder',
+      construction: 'Construction Company',
+      interior: 'Interior Designer',
+      architect: 'Architect',
+      'property-consultant': 'Property Consultant',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of property business serious buyers research before they invest. We build a professional, trust-building website for your ' + (city || '') + (city ? ' ' : '') + (name || 'real estate business') + ' with property listings, virtual tours, and local SEO — so buyers find you on Google, explore your properties, and contact you for site visits. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of property business serious buyers research before they invest. We build a professional, trust-building website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'real estate business') +
+      ' with property listings, virtual tours, and local SEO — so buyers find you on Google, explore your properties, and contact you for site visits. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'Serious buyers cannot find your property listings or contact details online.',
       'Property enquiries come through multiple channels and get mixed up.',
@@ -618,7 +841,9 @@ const templates = {
       'Track which marketing channel brings the most qualified buyers.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when buyers search for "properties in ' + (city || 'your city') + '" or "real estate near me".',
+      'Appear when buyers search for "properties in ' +
+        (city || 'your city') +
+        '" or "real estate near me".',
       'Rank for specific property types: 2BHK flats, villas, commercial spaces, plots.',
       'Local SEO puts your agency on Google Maps with property locations.',
       'Show up for investment and home-buying queries in your area.',
@@ -643,20 +868,43 @@ const templates = {
       'Agent profile and team showcase',
       'Mobile-first design for on-the-go property hunters',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of property business serious buyers research before they invest. We build a professional, trust-building website for your ' + (city || '') + (city ? ' ' : '') + (name || 'real estate business') + ' with property listings, virtual tours, and local SEO — so buyers find you on Google, explore your properties, and contact you for site visits. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.realEstate.label[id] || 'real estate agency').toLowerCase() + 's — designed to help you get found on Google and capture serious buyer enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.realEstate.label[id] || 'real estate agency').toLowerCase() + 's like yours — with property listings and online enquiry forms.' + (city ? ' We work with property businesses in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of property business serious buyers research before they invest. We build a professional, trust-building website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'real estate business') +
+      ' with property listings, virtual tours, and local SEO — so buyers find you on Google, explore your properties, and contact you for site visits. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.realEstate.label[id] || 'real estate agency').toLowerCase() +
+      's — designed to help you get found on Google and capture serious buyer enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.realEstate.label[id] || 'real estate agency').toLowerCase() +
+      's like yours — with property listings and online enquiry forms.' +
+      (city ? ' We work with property businesses in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For real estate, think of it this way: one extra property sale from a website lead can generate lakhs in commission. The website pays for itself many times over with just one closed deal.",
+      expensive:
+        'I understand the concern. For real estate, think of it this way: one extra property sale from a website lead can generate lakhs in commission. The website pays for itself many times over with just one closed deal.',
       noNeed: `You may not need a website just for having one. But when someone searches '2BHK flats in ${city || 'your city'}' at 10 PM, will they find your listings — or your competitor's? A website ensures you capture that serious buyer.`,
-      hasInstagram: "Instagram is great for property photos and reels. But when a serious buyer sees your post and wants details, they need your full listing, price, and a contact form. Your website becomes the place where Instagram interest turns into site visit bookings.",
-      hasWebsite: "Many real estate websites are just brochure sites with no lead capture. We build websites with advanced search, enquiry forms, and lead tracking — turning your website into a serious buyer generation machine.",
-      noCustomers: "We cannot guarantee a specific number of buyers. What we build is a system where people actively searching for properties can find your listings, explore details, and request a site visit — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for property-related searches in your area, build your Google Business Profile with property photos, and create location-based landing pages.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert property seekers into serious buyer enquiries.",
+      hasInstagram:
+        'Instagram is great for property photos and reels. But when a serious buyer sees your post and wants details, they need your full listing, price, and a contact form. Your website becomes the place where Instagram interest turns into site visit bookings.',
+      hasWebsite:
+        'Many real estate websites are just brochure sites with no lead capture. We build websites with advanced search, enquiry forms, and lead tracking — turning your website into a serious buyer generation machine.',
+      noCustomers:
+        'We cannot guarantee a specific number of buyers. What we build is a system where people actively searching for properties can find your listings, explore details, and request a site visit — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for property-related searches in your area, build your Google Business Profile with property photos, and create location-based landing pages.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert property seekers into serious buyer enquiries.',
       noSEO: `SEO for real estate means making sure Google understands your properties, locations, prices, and specialties. When people search 'flats in ${city || 'your city'}', good SEO helps you appear. We handle the technical part.`,
-      thinkAbout: "Of course. I can send you a sample real estate website with property listings and examples of how other agencies increased their buyer enquiries. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other real estate agencies. You can review it at your convenience.",
+      thinkAbout:
+        'Of course. I can send you a sample real estate website with property listings and examples of how other agencies increased their buyer enquiries. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other real estate agencies. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do serious buyers currently find your properties?',
@@ -670,17 +918,43 @@ const templates = {
       'Follow up with buyer enquiry statistics and ROI examples from other agencies.',
       'Offer a free Google Business Profile audit for property searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.realEstate.label[id] || 'real estate agency').toLowerCase() + 's see a 20-30% increase in serious buyer enquiries within 3 months of launching a professional property website.',
-    quickWin: (id) => 'Add a "View Properties" or "Schedule Site Visit" button on your homepage. Even without a full listing system, this alone can increase buyer enquiries by 20% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.realEstate.label[id] || 'real estate agency').toLowerCase() +
+      's see a 20-30% increase in serious buyer enquiries within 3 months of launching a professional property website.',
+    quickWin: (id) =>
+      'Add a "View Properties" or "Schedule Site Visit" button on your homepage. Even without a full listing system, this alone can increase buyer enquiries by 20% within the first month.',
   },
   education: {
-    ids: ['school','college','coaching','tuition','online-course','training','computer-institute','language','music'],
+    ids: [
+      'school',
+      'college',
+      'coaching',
+      'tuition',
+      'online-course',
+      'training',
+      'computer-institute',
+      'language',
+      'music',
+    ],
     label: {
-      school:'School', college:'College', coaching:'Coaching Institute', tuition:'Tuition Center',
-      'online-course':'Online Course Provider', training:'Training Institute',
-      'computer-institute':'Computer Institute', language:'Language Institute', music:'Music Academy'
+      school: 'School',
+      college: 'College',
+      coaching: 'Coaching Institute',
+      tuition: 'Tuition Center',
+      'online-course': 'Online Course Provider',
+      training: 'Training Institute',
+      'computer-institute': 'Computer Institute',
+      language: 'Language Institute',
+      music: 'Music Academy',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of institute students and parents research before enrolling. We build a professional website for your ' + (city || '') + (city ? ' ' : '') + (name || 'institute') + ' with course details, faculty profiles, and online admission forms — so students and parents find you on Google, understand your offerings, and enrol online. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of institute students and parents research before enrolling. We build a professional website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'institute') +
+      ' with course details, faculty profiles, and online admission forms — so students and parents find you on Google, understand your offerings, and enrol online. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'Students and parents cannot find your institute, courses, or admission details online.',
       'Admission enquiries come through phone calls and get missed during class hours.',
@@ -712,7 +986,13 @@ const templates = {
       'Track which marketing channel brings the most admissions.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when students search for "' + (templates.education.label[id] || 'coaching institute') + ' near me" or "best ' + (templates.education.label[id] || 'institute').toLowerCase() + ' in ' + (city || 'your city') + '".',
+      'Appear when students search for "' +
+        (templates.education.label[id] || 'coaching institute') +
+        ' near me" or "best ' +
+        (templates.education.label[id] || 'institute').toLowerCase() +
+        ' in ' +
+        (city || 'your city') +
+        '".',
       'Rank for specific courses and subjects you teach.',
       'Local SEO puts your institute on Google Maps with directions and reviews.',
       'Show up for education and admission-related searches in your area.',
@@ -737,20 +1017,45 @@ const templates = {
       'WhatsApp chat for instant admission queries',
       'Mobile-first design for students and parents on phones',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of institute students and parents research before enrolling. We build a professional website for your ' + (city || '') + (city ? ' ' : '') + (name || 'institute') + ' with course details, faculty profiles, and online admission forms — so students and parents find you on Google, understand your offerings, and enrol online. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.education.label[id] || 'coaching institute').toLowerCase() + 's — designed to help you get found on Google and capture admission enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.education.label[id] || 'coaching institute').toLowerCase() + 's like yours — with course details and online admission forms.' + (city ? ' We work with institutes in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of institute students and parents research before enrolling. We build a professional website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'institute') +
+      ' with course details, faculty profiles, and online admission forms — so students and parents find you on Google, understand your offerings, and enrol online. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.education.label[id] || 'coaching institute').toLowerCase() +
+      's — designed to help you get found on Google and capture admission enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.education.label[id] || 'coaching institute').toLowerCase() +
+      's like yours — with course details and online admission forms.' +
+      (city ? ' We work with institutes in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For an institute, think of it this way: one extra student enrolment per month from the website can cover the investment. Parents searching for quality education are already looking — the website just makes it easy for them to choose you.",
-      noNeed: "You may not need a website just for having one. But when a parent searches 'best coaching for JEE in ' + (city || 'your city') + '\\' at 9 PM, will they find your faculty, results, and admission process — or your competitor\\'s? A website ensures they choose you.",
-      hasInstagram: "That\\'s great. Instagram is perfect for sharing results and updates. But when a parent sees your post and wants to know more, they need your full course details, faculty info, and admission form. Your website becomes the trusted place where Instagram interest turns into actual enquiries.",
-      hasWebsite: "Many institute websites are outdated or lack admission forms. We build modern websites with live course details, faculty profiles, online enquiry forms, and admission tracking — turning your website into a 24/7 admission tool.",
-      noCustomers: "We cannot guarantee a specific number of students. What we build is a system where parents actively searching for quality education can find your institute, learn about your faculty and results, and submit an admission enquiry — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for education-related searches in your area, build your Google Business Profile with results and photos, and create course-specific landing pages.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert education-seekers into admission enquiries.",
-      noSEO: "SEO for institutes means making sure Google understands your courses, faculty, results, and location. When parents search 'best ' + (templates.education.label[id] || 'coaching') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample institute website with admission forms and examples of how other institutes increased their enrolments. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other institutes. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For an institute, think of it this way: one extra student enrolment per month from the website can cover the investment. Parents searching for quality education are already looking — the website just makes it easy for them to choose you.',
+      noNeed:
+        "You may not need a website just for having one. But when a parent searches 'best coaching for JEE in ' + (city || 'your city') + '\\' at 9 PM, will they find your faculty, results, and admission process — or your competitor\\'s? A website ensures they choose you.",
+      hasInstagram:
+        "That\\'s great. Instagram is perfect for sharing results and updates. But when a parent sees your post and wants to know more, they need your full course details, faculty info, and admission form. Your website becomes the trusted place where Instagram interest turns into actual enquiries.",
+      hasWebsite:
+        'Many institute websites are outdated or lack admission forms. We build modern websites with live course details, faculty profiles, online enquiry forms, and admission tracking — turning your website into a 24/7 admission tool.',
+      noCustomers:
+        'We cannot guarantee a specific number of students. What we build is a system where parents actively searching for quality education can find your institute, learn about your faculty and results, and submit an admission enquiry — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for education-related searches in your area, build your Google Business Profile with results and photos, and create course-specific landing pages.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert education-seekers into admission enquiries.',
+      noSEO:
+        "SEO for institutes means making sure Google understands your courses, faculty, results, and location. When parents search 'best ' + (templates.education.label[id] || 'coaching') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample institute website with admission forms and examples of how other institutes increased their enrolments. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other institutes. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do students and parents currently find and enrol in your institute?',
@@ -764,17 +1069,43 @@ const templates = {
       'Follow up with admission statistics and ROI examples from other institutes.',
       'Offer a free Google Business Profile audit for education searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.education.label[id] || 'coaching institute').toLowerCase() + 's see a 20-30% increase in admission enquiries within 2 months of adding online enquiry forms and local SEO to their website.',
-    quickWin: (id) => 'Add a "Download Brochure" or "Enquire Now" button on your homepage. Even a simple WhatsApp-based enquiry form can increase admission enquiries by 15% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.education.label[id] || 'coaching institute').toLowerCase() +
+      's see a 20-30% increase in admission enquiries within 2 months of adding online enquiry forms and local SEO to their website.',
+    quickWin: (id) =>
+      'Add a "Download Brochure" or "Enquire Now" button on your homepage. Even a simple WhatsApp-based enquiry form can increase admission enquiries by 15% within the first month.',
   },
   professional: {
-    ids: ['lawyer','law-firm','ca','tax','financial','insurance','consultant','hr-consultant','recruitment'],
+    ids: [
+      'lawyer',
+      'law-firm',
+      'ca',
+      'tax',
+      'financial',
+      'insurance',
+      'consultant',
+      'hr-consultant',
+      'recruitment',
+    ],
     label: {
-      lawyer:'Lawyer', 'law-firm':'Law Firm', ca:'Chartered Accountant', tax:'Tax Consultant',
-      financial:'Financial Advisor', insurance:'Insurance Agent', consultant:'Business Consultant',
-      'hr-consultant':'HR Consultant', recruitment:'Recruitment Agency'
+      lawyer: 'Lawyer',
+      'law-firm': 'Law Firm',
+      ca: 'Chartered Accountant',
+      tax: 'Tax Consultant',
+      financial: 'Financial Advisor',
+      insurance: 'Insurance Agent',
+      consultant: 'Business Consultant',
+      'hr-consultant': 'HR Consultant',
+      recruitment: 'Recruitment Agency',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of professional service serious clients research before they hire. We build a professional, trust-building website for your ' + (city || '') + (city ? ' ' : '') + (name || 'professional practice') + ' with service details, credentials, and contact forms — so clients find you on Google, understand your expertise, and reach out for consultation. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of professional service serious clients research before they hire. We build a professional, trust-building website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'professional practice') +
+      ' with service details, credentials, and contact forms — so clients find you on Google, understand your expertise, and reach out for consultation. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'Potential clients cannot find your practice, services, or credentials online.',
       'Client enquiries come through multiple channels and get lost.',
@@ -806,13 +1137,19 @@ const templates = {
       'Track which marketing channel brings the most qualified clients.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when clients search for "' + (templates.professional.label[id] || 'professional service') + ' in ' + (city || 'your city') + '".',
+      'Appear when clients search for "' +
+        (templates.professional.label[id] || 'professional service') +
+        ' in ' +
+        (city || 'your city') +
+        '".',
       'Rank for specific services and specializations you offer.',
       'Local SEO puts your practice on Google Maps with directions and contact info.',
       'Show up for professional service queries in your area.',
     ],
     aeoBenefits: [
-      'AI assistants can recommend your practice when asked "best ' + (templates.professional.label[id] || 'professional') + ' nearby".',
+      'AI assistants can recommend your practice when asked "best ' +
+        (templates.professional.label[id] || 'professional') +
+        ' nearby".',
       'Structured service and credential data helps answer engines provide accurate recommendations.',
       'Be the suggested answer for professional service queries.',
     ],
@@ -831,20 +1168,45 @@ const templates = {
       'WhatsApp chat for instant consultation queries',
       'Mobile-first design for busy professionals on the go',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of professional service serious clients research before they hire. We build a professional, trust-building website for your ' + (city || '') + (city ? ' ' : '') + (name || 'professional practice') + ' with service details, credentials, and contact forms — so clients find you on Google, understand your expertise, and reach out for consultation. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.professional.label[id] || 'professional service').toLowerCase() + 's — designed to help you get found on Google and capture consultation enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.professional.label[id] || 'professional service').toLowerCase() + 's like yours — with service details and online consultation booking.' + (city ? ' We work with professionals in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of professional service serious clients research before they hire. We build a professional, trust-building website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'professional practice') +
+      ' with service details, credentials, and contact forms — so clients find you on Google, understand your expertise, and reach out for consultation. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.professional.label[id] || 'professional service').toLowerCase() +
+      's — designed to help you get found on Google and capture consultation enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.professional.label[id] || 'professional service').toLowerCase() +
+      's like yours — with service details and online consultation booking.' +
+      (city ? ' We work with professionals in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For a professional practice, think of it this way: one new client per month from the website can cover the investment. Serious clients searching for your service are already ready to hire — the website just makes it easy for them to choose you.",
-      noNeed: "You may not need a website just for having one. But when someone searches 'best CA in ' + (city || 'your city') + '\\' or \\'lawyer near me\\', will they find your credentials and services — or your competitor\\'s? A website ensures they choose you.",
-      hasInstagram: "That\\'s great. Instagram is great for sharing professional tips and updates. But when a serious client sees your post and wants to hire you, they need your full service details, credentials, and a contact form. Your website becomes the trusted place where Instagram interest turns into actual client enquiries.",
-      hasWebsite: "Many professional websites are outdated or lack lead capture. We build modern websites with service pages, credentials, case studies, and consultation booking — turning your website into a 24/7 client acquisition tool.",
-      noCustomers: "We cannot guarantee a specific number of clients. What we build is a system where people actively searching for professional services can find your practice, understand your expertise, and request a consultation — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for professional service searches in your area, build your Google Business Profile with credentials, and create service-specific landing pages.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert service-seekers into consultation enquiries.",
-      noSEO: "SEO for professionals means making sure Google understands your services, credentials, location, and specializations. When people search 'best ' + (templates.professional.label[id] || 'professional') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample professional website with consultation forms and examples of how other professionals increased their client base. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other professionals. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For a professional practice, think of it this way: one new client per month from the website can cover the investment. Serious clients searching for your service are already ready to hire — the website just makes it easy for them to choose you.',
+      noNeed:
+        "You may not need a website just for having one. But when someone searches 'best CA in ' + (city || 'your city') + '\\' or \\'lawyer near me\\', will they find your credentials and services — or your competitor\\'s? A website ensures they choose you.",
+      hasInstagram:
+        "That\\'s great. Instagram is great for sharing professional tips and updates. But when a serious client sees your post and wants to hire you, they need your full service details, credentials, and a contact form. Your website becomes the trusted place where Instagram interest turns into actual client enquiries.",
+      hasWebsite:
+        'Many professional websites are outdated or lack lead capture. We build modern websites with service pages, credentials, case studies, and consultation booking — turning your website into a 24/7 client acquisition tool.',
+      noCustomers:
+        'We cannot guarantee a specific number of clients. What we build is a system where people actively searching for professional services can find your practice, understand your expertise, and request a consultation — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for professional service searches in your area, build your Google Business Profile with credentials, and create service-specific landing pages.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert service-seekers into consultation enquiries.',
+      noSEO:
+        "SEO for professionals means making sure Google understands your services, credentials, location, and specializations. When people search 'best ' + (templates.professional.label[id] || 'professional') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample professional website with consultation forms and examples of how other professionals increased their client base. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other professionals. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do serious clients currently find and hire you?',
@@ -858,16 +1220,43 @@ const templates = {
       'Follow up with client acquisition statistics and ROI examples.',
       'Offer a free Google Business Profile audit for professional service searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.professional.label[id] || 'professional practice').toLowerCase() + 's see a 20-30% increase in consultation enquiries within 3 months of adding a professional website with online booking.',
-    quickWin: (id) => 'Add a "Book Consultation" or "Request Callback" button on your homepage. Even without a full booking system, this alone can increase consultation enquiries by 20% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.professional.label[id] || 'professional practice').toLowerCase() +
+      's see a 20-30% increase in consultation enquiries within 3 months of adding a professional website with online booking.',
+    quickWin: (id) =>
+      'Add a "Book Consultation" or "Request Callback" button on your homepage. Even without a full booking system, this alone can increase consultation enquiries by 20% within the first month.',
   },
   retail: {
-    ids: ['clothing','boutique','jewellery','furniture','electronics','mobile','gift','grocery','ecommerce'],
+    ids: [
+      'clothing',
+      'boutique',
+      'jewellery',
+      'furniture',
+      'electronics',
+      'mobile',
+      'gift',
+      'grocery',
+      'ecommerce',
+    ],
     label: {
-      clothing:'Clothing Store', boutique:'Boutique', jewellery:'Jewellery Store', furniture:'Furniture Store',
-      electronics:'Electronics Store', mobile:'Mobile Store', gift:'Gift Shop', grocery:'Grocery Store', ecommerce:'Ecommerce Brand'
+      clothing: 'Clothing Store',
+      boutique: 'Boutique',
+      jewellery: 'Jewellery Store',
+      furniture: 'Furniture Store',
+      electronics: 'Electronics Store',
+      mobile: 'Mobile Store',
+      gift: 'Gift Shop',
+      grocery: 'Grocery Store',
+      ecommerce: 'Ecommerce Brand',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of retail store shoppers research before they buy. We build a beautiful product website for your ' + (city || '') + (city ? ' ' : '') + (name || 'retail store') + ' with product catalog, pricing, and online ordering — so shoppers find you on Google, browse your products, and buy online or visit your store. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of retail store shoppers research before they buy. We build a beautiful product website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'retail store') +
+      ' with product catalog, pricing, and online ordering — so shoppers find you on Google, browse your products, and buy online or visit your store. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'Shoppers cannot find your store, products, or prices easily online.',
       'Product enquiries come through Instagram DMs and get lost.',
@@ -899,13 +1288,19 @@ const templates = {
       'Collect customer emails for re-engagement and loyalty programs.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when shoppers search for "' + (templates.retail.label[id] || 'store') + ' in ' + (city || 'your city') + '".',
+      'Appear when shoppers search for "' +
+        (templates.retail.label[id] || 'store') +
+        ' in ' +
+        (city || 'your city') +
+        '".',
       'Rank for specific products and brands you sell.',
       'Google Maps integration with photos, reviews, and directions.',
       'Show up for shopping and product-related searches in your area.',
     ],
     aeoBenefits: [
-      'AI assistants can recommend your store when asked "best ' + (templates.retail.label[id] || 'store') + ' nearby".',
+      'AI assistants can recommend your store when asked "best ' +
+        (templates.retail.label[id] || 'store') +
+        ' nearby".',
       'Structured product data helps answer engines provide accurate recommendations.',
       'Be the suggested answer for shopping queries in your area.',
     ],
@@ -924,25 +1319,50 @@ const templates = {
       'Customer review and testimonial display',
       'Mobile-first design for on-the-go shoppers',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of retail store shoppers research before they buy. We build a beautiful product website for your ' + (city || '') + (city ? ' ' : '') + (name || 'retail store') + ' with product catalog, pricing, and online ordering — so shoppers find you on Google, browse your products, and buy online or visit your store. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.retail.label[id] || 'store').toLowerCase() + 's — designed to help you get found on Google and capture product enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.retail.label[id] || 'store').toLowerCase() + 's like yours — with product catalog and online ordering.' + (city ? ' We work with retailers in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of retail store shoppers research before they buy. We build a beautiful product website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'retail store') +
+      ' with product catalog, pricing, and online ordering — so shoppers find you on Google, browse your products, and buy online or visit your store. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.retail.label[id] || 'store').toLowerCase() +
+      's — designed to help you get found on Google and capture product enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.retail.label[id] || 'store').toLowerCase() +
+      's like yours — with product catalog and online ordering.' +
+      (city ? ' We work with retailers in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For a retail store, think of it this way: one extra sale per day from the website can generate significant revenue. Shoppers who find you online are already ready to buy — the website just makes it easy for them to choose you.",
-      noNeed: "You may not need a website just for having one. But when someone searches 'best ' + (templates.retail.label[id] || 'store') + ' in ' + (city || 'your city') + '\\' at 7 PM, will they find your products and prices — or your competitor\\'s? A website ensures they choose you.",
-      hasInstagram: "Instagram is great for product photos and stories. But when a shopper sees your product and wants to buy, they need your full catalog, prices, and an ordering option. Your website becomes the place where Instagram interest turns into actual sales.",
-      hasWebsite: "Many retail websites are slow or lack online ordering. We build fast, mobile-friendly websites with product catalogs, WhatsApp ordering, and lead capture — turning your website into a 24/7 sales tool.",
-      noCustomers: "We cannot guarantee a specific number of customers. What we build is a system where shoppers actively searching for your products can find your store, browse your catalog, and place an order — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for product-related searches in your area, build your Google Business Profile with product photos, and create product-specific landing pages.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert shoppers into buyers.",
-      noSEO: "SEO for retail means making sure Google understands your products, prices, location, and specializations. When people search 'best ' + (templates.retail.label[id] || 'products') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample retail website with product catalog and examples of how other stores increased their sales. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other retailers. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For a retail store, think of it this way: one extra sale per day from the website can generate significant revenue. Shoppers who find you online are already ready to buy — the website just makes it easy for them to choose you.',
+      noNeed:
+        "You may not need a website just for having one. But when someone searches 'best ' + (templates.retail.label[id] || 'store') + ' in ' + (city || 'your city') + '\\' at 7 PM, will they find your products and prices — or your competitor\\'s? A website ensures they choose you.",
+      hasInstagram:
+        'Instagram is great for product photos and stories. But when a shopper sees your product and wants to buy, they need your full catalog, prices, and an ordering option. Your website becomes the place where Instagram interest turns into actual sales.',
+      hasWebsite:
+        'Many retail websites are slow or lack online ordering. We build fast, mobile-friendly websites with product catalogs, WhatsApp ordering, and lead capture — turning your website into a 24/7 sales tool.',
+      noCustomers:
+        'We cannot guarantee a specific number of customers. What we build is a system where shoppers actively searching for your products can find your store, browse your catalog, and place an order — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for product-related searches in your area, build your Google Business Profile with product photos, and create product-specific landing pages.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert shoppers into buyers.',
+      noSEO:
+        "SEO for retail means making sure Google understands your products, prices, location, and specializations. When people search 'best ' + (templates.retail.label[id] || 'products') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample retail website with product catalog and examples of how other stores increased their sales. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other retailers. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do shoppers currently find and buy from your store?',
       'How many product enquiries do you get from Instagram or Google each week?',
-      'Do you ever lose sales because customers can\'t find your prices or availability online?',
+      "Do you ever lose sales because customers can't find your prices or availability online?",
       'What would it mean if shoppers could browse your products and order online at midnight?',
       'If we showed you a sample retail website with online ordering, would you like to see how it works?',
     ],
@@ -951,17 +1371,41 @@ const templates = {
       'Follow up with sales statistics and ROI examples from other retailers.',
       'Offer a free Google Business Profile audit for product searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.retail.label[id] || 'store').toLowerCase() + 's see a 15-25% increase in product enquiries within 2 months of adding a product catalog and online ordering to their website.',
-    quickWin: (id) => 'Add a "View Products" or "Order on WhatsApp" button on your homepage and Instagram bio. Even a simple WhatsApp-based ordering system can increase product enquiries by 15% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.retail.label[id] || 'store').toLowerCase() +
+      's see a 15-25% increase in product enquiries within 2 months of adding a product catalog and online ordering to their website.',
+    quickWin: (id) =>
+      'Add a "View Products" or "Order on WhatsApp" button on your homepage and Instagram bio. Even a simple WhatsApp-based ordering system can increase product enquiries by 15% within the first month.',
   },
   automotive: {
-    ids: ['car-dealer','used-car','bike-dealer','car-rental','travel-rental','auto-repair','car-service','car-detailing'],
+    ids: [
+      'car-dealer',
+      'used-car',
+      'bike-dealer',
+      'car-rental',
+      'travel-rental',
+      'auto-repair',
+      'car-service',
+      'car-detailing',
+    ],
     label: {
-      'car-dealer':'Car Dealership', 'used-car':'Used Car Dealer', 'bike-dealer':'Bike Dealer',
-      'car-rental':'Car Rental', 'travel-rental':'Travel Vehicle Rental',
-      'auto-repair':'Auto Repair Shop', 'car-service':'Car Service Center', 'car-detailing':'Car Detailing'
+      'car-dealer': 'Car Dealership',
+      'used-car': 'Used Car Dealer',
+      'bike-dealer': 'Bike Dealer',
+      'car-rental': 'Car Rental',
+      'travel-rental': 'Travel Vehicle Rental',
+      'auto-repair': 'Auto Repair Shop',
+      'car-service': 'Car Service Center',
+      'car-detailing': 'Car Detailing',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of automotive business serious customers research before they buy or book. We build a professional website for your ' + (city || '') + (city ? ' ' : '') + (name || 'automotive business') + ' with vehicle listings, service details, and booking forms — so customers find you on Google, explore your offerings, and book your services. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of automotive business serious customers research before they buy or book. We build a professional website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'automotive business') +
+      ' with vehicle listings, service details, and booking forms — so customers find you on Google, explore your offerings, and book your services. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'Customers cannot find your vehicles, services, or contact details online.',
       'Service bookings come through phone calls and get missed during busy hours.',
@@ -993,13 +1437,19 @@ const templates = {
       'Track which marketing channel brings the most qualified leads.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when customers search for "' + (templates.automotive.label[id] || 'car dealer') + ' in ' + (city || 'your city') + '".',
+      'Appear when customers search for "' +
+        (templates.automotive.label[id] || 'car dealer') +
+        ' in ' +
+        (city || 'your city') +
+        '".',
       'Rank for specific vehicles, services, and brands you offer.',
       'Google Maps integration with directions, photos, and contact info.',
       'Show up for automotive-related searches in your area.',
     ],
     aeoBenefits: [
-      'AI assistants can recommend your business when asked "best ' + (templates.automotive.label[id] || 'automotive service') + ' nearby".',
+      'AI assistants can recommend your business when asked "best ' +
+        (templates.automotive.label[id] || 'automotive service') +
+        ' nearby".',
       'Structured vehicle and service data helps answer engines provide accurate recommendations.',
       'Be the suggested answer for automotive queries in your area.',
     ],
@@ -1018,20 +1468,45 @@ const templates = {
       'WhatsApp chat for instant service inquiries',
       'Mobile-first design for on-the-go customers',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of automotive business serious customers research before they buy or book. We build a professional website for your ' + (city || '') + (city ? ' ' : '') + (name || 'automotive business') + ' with vehicle listings, service details, and booking forms — so customers find you on Google, explore your offerings, and book your services. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.automotive.label[id] || 'car dealer').toLowerCase() + 's — designed to help you get found on Google and capture vehicle and service enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.automotive.label[id] || 'car dealer').toLowerCase() + 's like yours — with vehicle listings and online service booking.' + (city ? ' We work with automotive businesses in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of automotive business serious customers research before they buy or book. We build a professional website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'automotive business') +
+      ' with vehicle listings, service details, and booking forms — so customers find you on Google, explore your offerings, and book your services. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.automotive.label[id] || 'car dealer').toLowerCase() +
+      's — designed to help you get found on Google and capture vehicle and service enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.automotive.label[id] || 'car dealer').toLowerCase() +
+      's like yours — with vehicle listings and online service booking.' +
+      (city ? ' We work with automotive businesses in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For an automotive business, think of it this way: one extra vehicle sale or service booking per month from the website can cover the investment. Customers searching for cars or services are already ready to buy — the website just makes it easy.",
-      noNeed: "You may not need a website just for having one. But when someone searches 'best car dealer in ' + (city || 'your city') + '\\' at 7 PM, will they find your inventory and services — or your competitor\\'s? A website ensures they choose you.",
-      hasInstagram: "Instagram is great for vehicle photos and service videos. But when a customer sees your post and wants to buy or book, they need your full inventory, prices, and a booking form. Your website becomes the place where Instagram interest turns into actual sales and bookings.",
-      hasWebsite: "Many automotive websites are outdated or just show photos. We build modern websites with live inventory, service booking, EMI calculators, and lead tracking — turning your website into a 24/7 sales tool.",
-      noCustomers: "We cannot guarantee a specific number of customers. What we build is a system where people actively searching for vehicles or services can find your business, explore your offerings, and book an appointment — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for automotive searches in your area, build your Google Business Profile with vehicle photos, and create inventory-specific landing pages.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert automotive-seekers into sales and bookings.",
-      noSEO: "SEO for automotive means making sure Google understands your inventory, services, prices, and location. When people search 'best ' + (templates.automotive.label[id] || 'car dealer') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample automotive website with vehicle listings and examples of how other dealers increased their sales. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other automotive businesses. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For an automotive business, think of it this way: one extra vehicle sale or service booking per month from the website can cover the investment. Customers searching for cars or services are already ready to buy — the website just makes it easy.',
+      noNeed:
+        "You may not need a website just for having one. But when someone searches 'best car dealer in ' + (city || 'your city') + '\\' at 7 PM, will they find your inventory and services — or your competitor\\'s? A website ensures they choose you.",
+      hasInstagram:
+        'Instagram is great for vehicle photos and service videos. But when a customer sees your post and wants to buy or book, they need your full inventory, prices, and a booking form. Your website becomes the place where Instagram interest turns into actual sales and bookings.',
+      hasWebsite:
+        'Many automotive websites are outdated or just show photos. We build modern websites with live inventory, service booking, EMI calculators, and lead tracking — turning your website into a 24/7 sales tool.',
+      noCustomers:
+        'We cannot guarantee a specific number of customers. What we build is a system where people actively searching for vehicles or services can find your business, explore your offerings, and book an appointment — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for automotive searches in your area, build your Google Business Profile with vehicle photos, and create inventory-specific landing pages.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert automotive-seekers into sales and bookings.',
+      noSEO:
+        "SEO for automotive means making sure Google understands your inventory, services, prices, and location. When people search 'best ' + (templates.automotive.label[id] || 'car dealer') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample automotive website with vehicle listings and examples of how other dealers increased their sales. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other automotive businesses. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do customers currently find and buy from your business?',
@@ -1045,16 +1520,29 @@ const templates = {
       'Follow up with sales statistics and ROI examples from other dealers.',
       'Offer a free Google Business Profile audit for automotive searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.automotive.label[id] || 'car dealer').toLowerCase() + 's see a 15-25% increase in vehicle and service enquiries within 2 months of adding a professional website with online booking.',
-    quickWin: (id) => 'Add a "View Inventory" or "Book Service" button on your homepage and Google Business Profile. Even a simple WhatsApp-based booking can increase enquiries by 15% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.automotive.label[id] || 'car dealer').toLowerCase() +
+      's see a 15-25% increase in vehicle and service enquiries within 2 months of adding a professional website with online booking.',
+    quickWin: (id) =>
+      'Add a "View Inventory" or "Book Service" button on your homepage and Google Business Profile. Even a simple WhatsApp-based booking can increase enquiries by 15% within the first month.',
   },
   travel: {
-    ids: ['travel-agency','tour-operator','taxi','adventure','visa'],
+    ids: ['travel-agency', 'tour-operator', 'taxi', 'adventure', 'visa'],
     label: {
-      'travel-agency':'Travel Agency', 'tour-operator':'Tour Operator', taxi:'Taxi Service',
-      adventure:'Adventure Travel Company', visa:'Visa Consultant'
+      'travel-agency': 'Travel Agency',
+      'tour-operator': 'Tour Operator',
+      taxi: 'Taxi Service',
+      adventure: 'Adventure Travel Company',
+      visa: 'Visa Consultant',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of travel business serious travellers research before they book. We build a beautiful, inspiring website for your ' + (city || '') + (city ? ' ' : '') + (name || 'travel business') + ' with tour packages, itineraries, and booking forms — so travellers find you on Google, explore your destinations, and book their trip. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of travel business serious travellers research before they book. We build a beautiful, inspiring website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'travel business') +
+      ' with tour packages, itineraries, and booking forms — so travellers find you on Google, explore your destinations, and book their trip. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'Travellers cannot find your packages, prices, or contact details easily online.',
       'Booking enquiries come through multiple channels and get lost.',
@@ -1086,7 +1574,11 @@ const templates = {
       'Track which marketing channel brings the most bookings.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when travellers search for "' + (templates.travel.label[id] || 'travel agency') + ' in ' + (city || 'your city') + '".',
+      'Appear when travellers search for "' +
+        (templates.travel.label[id] || 'travel agency') +
+        ' in ' +
+        (city || 'your city') +
+        '".',
       'Rank for specific destinations and tour packages you offer.',
       'Google Maps integration with destination photos and travel routes.',
       'Show up for travel and holiday-related searches in your area.',
@@ -1111,20 +1603,45 @@ const templates = {
       'WhatsApp chat for instant booking queries',
       'Mobile-first design for on-the-go travellers',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of travel business serious travellers research before they book. We build a beautiful, inspiring website for your ' + (city || '') + (city ? ' ' : '') + (name || 'travel business') + ' with tour packages, itineraries, and booking forms — so travellers find you on Google, explore your destinations, and book their trip. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.travel.label[id] || 'travel agency').toLowerCase() + 's — designed to help you get found on Google and capture booking enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.travel.label[id] || 'travel agency').toLowerCase() + 's like yours — with tour packages and online booking.' + (city ? ' We work with travel businesses in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of travel business serious travellers research before they book. We build a beautiful, inspiring website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'travel business') +
+      ' with tour packages, itineraries, and booking forms — so travellers find you on Google, explore your destinations, and book their trip. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.travel.label[id] || 'travel agency').toLowerCase() +
+      's — designed to help you get found on Google and capture booking enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.travel.label[id] || 'travel agency').toLowerCase() +
+      's like yours — with tour packages and online booking.' +
+      (city ? ' We work with travel businesses in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For a travel business, think of it this way: one extra tour booking per month from the website can cover the investment. Travellers searching for holidays are already ready to book — the website just makes it easy for them to choose you.",
-      noNeed: "You may not need a website just for having one. But when someone searches 'best travel agency in ' + (city || 'your city') + '\\' or \\'Goa tour packages\\', will they find your packages and bookings — or your competitor\\'s? A website ensures they choose you.",
-      hasInstagram: "Instagram is great for destination photos and reels. But when a traveller sees your post and wants to book, they need your full package details, prices, and a booking form. Your website becomes the place where Instagram interest turns into actual bookings.",
-      hasWebsite: "Many travel websites are outdated or just show photos. We build modern websites with live tour packages, online booking, and itinerary management — turning your website into a 24/7 booking tool.",
-      noCustomers: "We cannot guarantee a specific number of customers. What we build is a system where travellers actively searching for holidays can find your packages, explore itineraries, and book a tour — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for travel-related searches in your area, build your Google Business Profile with destination photos, and create package-specific landing pages.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert travel-seekers into booking enquiries.",
-      noSEO: "SEO for travel means making sure Google understands your destinations, packages, prices, and specialties. When people search 'best ' + (templates.travel.label[id] || 'travel agency') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample travel website with tour packages and examples of how other agencies increased their bookings. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other travel agencies. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For a travel business, think of it this way: one extra tour booking per month from the website can cover the investment. Travellers searching for holidays are already ready to book — the website just makes it easy for them to choose you.',
+      noNeed:
+        "You may not need a website just for having one. But when someone searches 'best travel agency in ' + (city || 'your city') + '\\' or \\'Goa tour packages\\', will they find your packages and bookings — or your competitor\\'s? A website ensures they choose you.",
+      hasInstagram:
+        'Instagram is great for destination photos and reels. But when a traveller sees your post and wants to book, they need your full package details, prices, and a booking form. Your website becomes the place where Instagram interest turns into actual bookings.',
+      hasWebsite:
+        'Many travel websites are outdated or just show photos. We build modern websites with live tour packages, online booking, and itinerary management — turning your website into a 24/7 booking tool.',
+      noCustomers:
+        'We cannot guarantee a specific number of customers. What we build is a system where travellers actively searching for holidays can find your packages, explore itineraries, and book a tour — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for travel-related searches in your area, build your Google Business Profile with destination photos, and create package-specific landing pages.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert travel-seekers into booking enquiries.',
+      noSEO:
+        "SEO for travel means making sure Google understands your destinations, packages, prices, and specialties. When people search 'best ' + (templates.travel.label[id] || 'travel agency') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample travel website with tour packages and examples of how other agencies increased their bookings. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other travel agencies. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do travellers currently find and book with your agency?',
@@ -1138,16 +1655,39 @@ const templates = {
       'Follow up with booking statistics and ROI examples from other agencies.',
       'Offer a free Google Business Profile audit for travel searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.travel.label[id] || 'travel agency').toLowerCase() + 's see a 20-30% increase in booking enquiries within 2 months of adding a professional website with online booking.',
-    quickWin: (id) => 'Add a "View Packages" or "Enquire Now" button on your homepage and Instagram bio. Even a simple WhatsApp-based booking enquiry can increase bookings by 15% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.travel.label[id] || 'travel agency').toLowerCase() +
+      's see a 20-30% increase in booking enquiries within 2 months of adding a professional website with online booking.',
+    quickWin: (id) =>
+      'Add a "View Packages" or "Enquire Now" button on your homepage and Instagram bio. Even a simple WhatsApp-based booking enquiry can increase bookings by 15% within the first month.',
   },
   creative: {
-    ids: ['photographer','videographer','wedding-planner','event-planner','dj','decorator','production'],
+    ids: [
+      'photographer',
+      'videographer',
+      'wedding-planner',
+      'event-planner',
+      'dj',
+      'decorator',
+      'production',
+    ],
     label: {
-      photographer:'Photographer', videographer:'Videographer', 'wedding-planner':'Wedding Planner',
-      'event-planner':'Event Planner', dj:'DJ', decorator:'Decorator', production:'Production Company'
+      photographer: 'Photographer',
+      videographer: 'Videographer',
+      'wedding-planner': 'Wedding Planner',
+      'event-planner': 'Event Planner',
+      dj: 'DJ',
+      decorator: 'Decorator',
+      production: 'Production Company',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of creative professional serious clients research before they book. We build a stunning portfolio website for your ' + (city || '') + (city ? ' ' : '') + (name || 'creative business') + ' with portfolio gallery, pricing, and booking forms — so clients find you on Google, see your work, and book your services. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of creative professional serious clients research before they book. We build a stunning portfolio website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'creative business') +
+      ' with portfolio gallery, pricing, and booking forms — so clients find you on Google, see your work, and book your services. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'Potential clients cannot find your portfolio, services, or pricing online.',
       'Booking enquiries come through Instagram DMs and get lost.',
@@ -1179,7 +1719,11 @@ const templates = {
       'Track which marketing channel brings the most bookings.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when clients search for "' + (templates.creative.label[id] || 'creative professional') + ' in ' + (city || 'your city') + '".',
+      'Appear when clients search for "' +
+        (templates.creative.label[id] || 'creative professional') +
+        ' in ' +
+        (city || 'your city') +
+        '".',
       'Rank for specific services and specializations you offer.',
       'Google Maps integration with portfolio photos and contact info.',
       'Show up for creative and event-related searches in your area.',
@@ -1204,20 +1748,45 @@ const templates = {
       'WhatsApp chat for instant booking queries',
       'Mobile-first design for clients on the go',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of creative professional serious clients research before they book. We build a stunning portfolio website for your ' + (city || '') + (city ? ' ' : '') + (name || 'creative business') + ' with portfolio gallery, pricing, and booking forms — so clients find you on Google, see your work, and book your services. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.creative.label[id] || 'creative professional').toLowerCase() + 's — designed to help you get found on Google and capture booking enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.creative.label[id] || 'creative professional').toLowerCase() + 's like yours — with portfolio gallery and online booking.' + (city ? ' We work with creatives in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of creative professional serious clients research before they book. We build a stunning portfolio website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'creative business') +
+      ' with portfolio gallery, pricing, and booking forms — so clients find you on Google, see your work, and book your services. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.creative.label[id] || 'creative professional').toLowerCase() +
+      's — designed to help you get found on Google and capture booking enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.creative.label[id] || 'creative professional').toLowerCase() +
+      's like yours — with portfolio gallery and online booking.' +
+      (city ? ' We work with creatives in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For a creative professional, think of it this way: one extra booking per month from the website can cover the investment. Clients searching for your creative service are already ready to book — the website just makes it easy for them to choose you.",
-      noNeed: "You may not need a website just for having one. But when someone searches 'best wedding photographer in ' + (city || 'your city') + '\\' or \\'event planner near me\\', will they find your portfolio and pricing — or your competitor\\'s? A website ensures they choose you.",
-      hasInstagram: "Instagram is great for sharing your latest work. But when a potential client sees your post and wants to book, they need your full portfolio, pricing, and availability. Your website becomes the trusted place where Instagram interest turns into actual bookings.",
-      hasWebsite: "Many creative websites are just image galleries with no booking system. We build modern websites with stunning portfolios, service packages, online booking, and lead tracking — turning your website into a 24/7 booking tool.",
-      noCustomers: "We cannot guarantee a specific number of clients. What we build is a system where people actively searching for creative services can find your portfolio, understand your style, and request a booking — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for creative service searches in your area, build your Google Business Profile with portfolio photos, and create service-specific landing pages.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert creative-seekers into booking enquiries.",
-      noSEO: "SEO for creatives means making sure Google understands your services, portfolio, location, and style. When people search 'best ' + (templates.creative.label[id] || 'creative professional') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample creative portfolio website with booking forms and examples of how other creatives increased their bookings. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other creative professionals. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For a creative professional, think of it this way: one extra booking per month from the website can cover the investment. Clients searching for your creative service are already ready to book — the website just makes it easy for them to choose you.',
+      noNeed:
+        "You may not need a website just for having one. But when someone searches 'best wedding photographer in ' + (city || 'your city') + '\\' or \\'event planner near me\\', will they find your portfolio and pricing — or your competitor\\'s? A website ensures they choose you.",
+      hasInstagram:
+        'Instagram is great for sharing your latest work. But when a potential client sees your post and wants to book, they need your full portfolio, pricing, and availability. Your website becomes the trusted place where Instagram interest turns into actual bookings.',
+      hasWebsite:
+        'Many creative websites are just image galleries with no booking system. We build modern websites with stunning portfolios, service packages, online booking, and lead tracking — turning your website into a 24/7 booking tool.',
+      noCustomers:
+        'We cannot guarantee a specific number of clients. What we build is a system where people actively searching for creative services can find your portfolio, understand your style, and request a booking — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for creative service searches in your area, build your Google Business Profile with portfolio photos, and create service-specific landing pages.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert creative-seekers into booking enquiries.',
+      noSEO:
+        "SEO for creatives means making sure Google understands your services, portfolio, location, and style. When people search 'best ' + (templates.creative.label[id] || 'creative professional') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample creative portfolio website with booking forms and examples of how other creatives increased their bookings. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other creative professionals. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do serious clients currently find and book your services?',
@@ -1231,17 +1800,41 @@ const templates = {
       'Follow up with booking statistics and ROI examples from other creatives.',
       'Offer a free Google Business Profile audit for creative service searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.creative.label[id] || 'creative professional').toLowerCase() + 's see a 20-35% increase in booking enquiries within 2 months of adding a portfolio website with online booking.',
-    quickWin: (id) => 'Add a "Book Now" or "View Portfolio" button on your homepage and Instagram bio. Even a simple WhatsApp-based booking enquiry can increase bookings by 15% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.creative.label[id] || 'creative professional').toLowerCase() +
+      's see a 20-35% increase in booking enquiries within 2 months of adding a portfolio website with online booking.',
+    quickWin: (id) =>
+      'Add a "Book Now" or "View Portfolio" button on your homepage and Instagram bio. Even a simple WhatsApp-based booking enquiry can increase bookings by 15% within the first month.',
   },
   homeServices: {
-    ids: ['electrician','plumber','cleaning','pest','security','packers','repair','maintenance'],
+    ids: [
+      'electrician',
+      'plumber',
+      'cleaning',
+      'pest',
+      'security',
+      'packers',
+      'repair',
+      'maintenance',
+    ],
     label: {
-      electrician:'Electrician Service', plumber:'Plumber Service', cleaning:'Cleaning Service',
-      pest:'Pest Control', security:'Security Service', packers:'Packers and Movers',
-      repair:'Repair Service', maintenance:'Home Maintenance Company'
+      electrician: 'Electrician Service',
+      plumber: 'Plumber Service',
+      cleaning: 'Cleaning Service',
+      pest: 'Pest Control',
+      security: 'Security Service',
+      packers: 'Packers and Movers',
+      repair: 'Repair Service',
+      maintenance: 'Home Maintenance Company',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of home service customers research when they need help urgently. We build a professional website for your ' + (city || '') + (city ? ' ' : '') + (name || 'home service business') + ' with service catalog, pricing, and booking forms — so customers find you on Google, understand your services, and book you instantly. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of home service customers research when they need help urgently. We build a professional website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'home service business') +
+      ' with service catalog, pricing, and booking forms — so customers find you on Google, understand your services, and book you instantly. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'Customers cannot find your services, pricing, or contact details online when they need help.',
       'Service bookings come through phone calls and get missed during work hours.',
@@ -1273,7 +1866,11 @@ const templates = {
       'Track which marketing channel brings the most bookings.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when customers search for "' + (templates.homeServices.label[id] || 'home service') + ' in ' + (city || 'your city') + '".',
+      'Appear when customers search for "' +
+        (templates.homeServices.label[id] || 'home service') +
+        ' in ' +
+        (city || 'your city') +
+        '".',
       'Rank for specific services and emergency needs you handle.',
       'Google Maps integration with service areas, reviews, and contact info.',
       'Show up for urgent home service searches in your area.',
@@ -1298,20 +1895,45 @@ const templates = {
       'WhatsApp chat for instant service requests',
       'Mobile-first design for on-the-go customers',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of home service customers research when they need help urgently. We build a professional website for your ' + (city || '') + (city ? ' ' : '') + (name || 'home service business') + ' with service catalog, pricing, and booking forms — so customers find you on Google, understand your services, and book you instantly. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.homeServices.label[id] || 'home service').toLowerCase() + 's — designed to help you get found on Google and capture service bookings.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.homeServices.label[id] || 'home service').toLowerCase() + 's like yours — with service catalog and online booking.' + (city ? ' We work with service providers in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of home service customers research when they need help urgently. We build a professional website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'home service business') +
+      ' with service catalog, pricing, and booking forms — so customers find you on Google, understand your services, and book you instantly. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.homeServices.label[id] || 'home service').toLowerCase() +
+      's — designed to help you get found on Google and capture service bookings.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.homeServices.label[id] || 'home service').toLowerCase() +
+      's like yours — with service catalog and online booking.' +
+      (city ? ' We work with service providers in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For a home service business, think of it this way: one extra service booking per day from the website can generate significant revenue. Customers searching for home services are already ready to book — the website just makes it easy.",
-      noNeed: "You may not need a website just for having one. But when someone searches 'best plumber near me' or 'electrician in ' + (city || 'your city') + '\\' at 8 PM, will they find your services and contact details — or your competitor\\'s? A website ensures they choose you.",
-      hasInstagram: "Instagram is great for sharing service photos and tips. But when a customer needs urgent help and sees your post, they need your full service details, pricing, and a booking option. Your website becomes the trusted place where Instagram interest turns into actual bookings.",
-      hasWebsite: "Many home service websites are outdated or just show a list of services. We build modern websites with service catalogs, online booking, emergency contact forms, and lead tracking — turning your website into a 24/7 booking tool.",
-      noCustomers: "We cannot guarantee a specific number of customers. What we build is a system where people actively searching for home services can find your business, understand your offerings, and book a service — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for home service searches in your area, build your Google Business Profile with service photos, and create service-specific landing pages.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert service-seekers into bookings.",
-      noSEO: "SEO for home services means making sure Google understands your services, service areas, pricing, and availability. When people search 'best ' + (templates.homeServices.label[id] || 'home service') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample home service website with booking forms and examples of how other service providers increased their bookings. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other home service providers. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For a home service business, think of it this way: one extra service booking per day from the website can generate significant revenue. Customers searching for home services are already ready to book — the website just makes it easy.',
+      noNeed:
+        "You may not need a website just for having one. But when someone searches 'best plumber near me' or 'electrician in ' + (city || 'your city') + '\\' at 8 PM, will they find your services and contact details — or your competitor\\'s? A website ensures they choose you.",
+      hasInstagram:
+        'Instagram is great for sharing service photos and tips. But when a customer needs urgent help and sees your post, they need your full service details, pricing, and a booking option. Your website becomes the trusted place where Instagram interest turns into actual bookings.',
+      hasWebsite:
+        'Many home service websites are outdated or just show a list of services. We build modern websites with service catalogs, online booking, emergency contact forms, and lead tracking — turning your website into a 24/7 booking tool.',
+      noCustomers:
+        'We cannot guarantee a specific number of customers. What we build is a system where people actively searching for home services can find your business, understand your offerings, and book a service — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for home service searches in your area, build your Google Business Profile with service photos, and create service-specific landing pages.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert service-seekers into bookings.',
+      noSEO:
+        "SEO for home services means making sure Google understands your services, service areas, pricing, and availability. When people search 'best ' + (templates.homeServices.label[id] || 'home service') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample home service website with booking forms and examples of how other service providers increased their bookings. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other home service providers. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do customers currently find and book your services?',
@@ -1325,17 +1947,43 @@ const templates = {
       'Follow up with booking statistics and ROI examples from other providers.',
       'Offer a free Google Business Profile audit for home service searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.homeServices.label[id] || 'home service').toLowerCase() + 's see a 20-30% increase in service bookings within 2 months of adding a professional website with online booking.',
-    quickWin: (id) => 'Add a "Book Now" or "Request Quote" button on your homepage and Google Business Profile. Even a simple WhatsApp-based booking can increase service enquiries by 15% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.homeServices.label[id] || 'home service').toLowerCase() +
+      's see a 20-30% increase in service bookings within 2 months of adding a professional website with online booking.',
+    quickWin: (id) =>
+      'Add a "Book Now" or "Request Quote" button on your homepage and Google Business Profile. Even a simple WhatsApp-based booking can increase service enquiries by 15% within the first month.',
   },
   industrial: {
-    ids: ['manufacturer','distributor','wholesaler','b2b','logistics','transport','import-export','software','it-company'],
+    ids: [
+      'manufacturer',
+      'distributor',
+      'wholesaler',
+      'b2b',
+      'logistics',
+      'transport',
+      'import-export',
+      'software',
+      'it-company',
+    ],
     label: {
-      manufacturer:'Manufacturer', distributor:'Distributor', wholesaler:'Wholesaler',
-      b2b:'B2B Company', logistics:'Logistics Company', transport:'Transport Company',
-      'import-export':'Import Export Company', software:'Software Company', 'it-company':'IT Company'
+      manufacturer: 'Manufacturer',
+      distributor: 'Distributor',
+      wholesaler: 'Wholesaler',
+      b2b: 'B2B Company',
+      logistics: 'Logistics Company',
+      transport: 'Transport Company',
+      'import-export': 'Import Export Company',
+      software: 'Software Company',
+      'it-company': 'IT Company',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of business serious clients and partners research before they engage. We build a professional B2B website for your ' + (city || '') + (city ? ' ' : '') + (name || 'business') + ' with product catalog, company profile, and enquiry forms — so clients find you on Google, understand your capabilities, and reach out for business. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of business serious clients and partners research before they engage. We build a professional B2B website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'business') +
+      ' with product catalog, company profile, and enquiry forms — so clients find you on Google, understand your capabilities, and reach out for business. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'Potential clients and partners cannot find your company, products, or capabilities online.',
       'Business enquiries come through multiple channels and get lost.',
@@ -1367,13 +2015,19 @@ const templates = {
       'Track which marketing channel brings the most qualified leads.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when clients search for "' + (templates.industrial.label[id] || 'company') + ' in ' + (city || 'your city') + '".',
+      'Appear when clients search for "' +
+        (templates.industrial.label[id] || 'company') +
+        ' in ' +
+        (city || 'your city') +
+        '".',
       'Rank for specific products, services, and industries you serve.',
       'Google Maps integration with office location and contact info.',
       'Show up for B2B and industrial-related searches in your area.',
     ],
     aeoBenefits: [
-      'AI assistants can recommend your company when asked "best ' + (templates.industrial.label[id] || 'company') + ' for bulk orders".',
+      'AI assistants can recommend your company when asked "best ' +
+        (templates.industrial.label[id] || 'company') +
+        ' for bulk orders".',
       'Structured product and company data helps answer engines provide accurate B2B recommendations.',
       'Be the suggested answer for industrial and B2B queries.',
     ],
@@ -1392,20 +2046,45 @@ const templates = {
       'WhatsApp and email integration for instant responses',
       'Mobile-first design for business professionals on the go',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of business serious clients and partners research before they engage. We build a professional B2B website for your ' + (city || '') + (city ? ' ' : '') + (name || 'business') + ' with product catalog, company profile, and enquiry forms — so clients find you on Google, understand your capabilities, and reach out for business. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.industrial.label[id] || 'company').toLowerCase() + 's — designed to help you get found on Google and capture B2B enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.industrial.label[id] || 'company').toLowerCase() + 's like yours — with product catalog and business enquiry forms.' + (city ? ' We work with businesses in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of business serious clients and partners research before they engage. We build a professional B2B website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'business') +
+      ' with product catalog, company profile, and enquiry forms — so clients find you on Google, understand your capabilities, and reach out for business. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.industrial.label[id] || 'company').toLowerCase() +
+      's — designed to help you get found on Google and capture B2B enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.industrial.label[id] || 'company').toLowerCase() +
+      's like yours — with product catalog and business enquiry forms.' +
+      (city ? ' We work with businesses in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For a B2B business, think of it this way: one extra bulk order or partnership per quarter from the website can cover the investment. Serious clients searching for your products are already ready to buy — the website just makes it easy for them to choose you.",
-      noNeed: "You may not need a website just for having one. But when a procurement manager searches 'bulk ' + (templates.industrial.label[id] || 'products') + ' supplier in ' + (city || 'India') + '\\', will they find your company profile and product catalog — or your competitor\\'s? A website ensures they choose you.",
-      hasInstagram: "Instagram is great for product showcases and company updates. But when a serious B2B client sees your post and wants to enquire, they need your full product catalog, pricing, and company details. Your website becomes the professional place where Instagram interest turns into actual business enquiries.",
-      hasWebsite: "Many B2B websites are outdated or just show a static brochure. We build modern websites with dynamic product catalogs, RFQ forms, lead tracking, and company profiles — turning your website into a 24/7 B2B lead generation machine.",
-      noCustomers: "We cannot guarantee a specific number of clients. What we build is a system where businesses actively searching for your products can find your company, explore your catalog, and submit an RFQ — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for B2B and industrial searches, build your Google Business Profile with company details, and create product-specific landing pages.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert B2B-seekers into qualified leads.",
-      noSEO: "SEO for B2B means making sure Google understands your products, industries, certifications, and location. When clients search 'best ' + (templates.industrial.label[id] || 'company') + ' for bulk orders in ' + (city || 'India') + '\\', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample B2B website with product catalog and examples of how other companies increased their leads. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other B2B companies. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For a B2B business, think of it this way: one extra bulk order or partnership per quarter from the website can cover the investment. Serious clients searching for your products are already ready to buy — the website just makes it easy for them to choose you.',
+      noNeed:
+        "You may not need a website just for having one. But when a procurement manager searches 'bulk ' + (templates.industrial.label[id] || 'products') + ' supplier in ' + (city || 'India') + '\\', will they find your company profile and product catalog — or your competitor\\'s? A website ensures they choose you.",
+      hasInstagram:
+        'Instagram is great for product showcases and company updates. But when a serious B2B client sees your post and wants to enquire, they need your full product catalog, pricing, and company details. Your website becomes the professional place where Instagram interest turns into actual business enquiries.',
+      hasWebsite:
+        'Many B2B websites are outdated or just show a static brochure. We build modern websites with dynamic product catalogs, RFQ forms, lead tracking, and company profiles — turning your website into a 24/7 B2B lead generation machine.',
+      noCustomers:
+        'We cannot guarantee a specific number of clients. What we build is a system where businesses actively searching for your products can find your company, explore your catalog, and submit an RFQ — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for B2B and industrial searches, build your Google Business Profile with company details, and create product-specific landing pages.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert B2B-seekers into qualified leads.',
+      noSEO:
+        "SEO for B2B means making sure Google understands your products, industries, certifications, and location. When clients search 'best ' + (templates.industrial.label[id] || 'company') + ' for bulk orders in ' + (city || 'India') + '\\', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample B2B website with product catalog and examples of how other companies increased their leads. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other B2B companies. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do serious clients currently find and engage with your business?',
@@ -1419,16 +2098,31 @@ const templates = {
       'Follow up with lead generation statistics and ROI examples from other companies.',
       'Offer a free Google Business Profile audit for B2B searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.industrial.label[id] || 'company').toLowerCase() + 's see a 15-25% increase in qualified B2B enquiries within 3 months of adding a professional website with product catalog and RFQ forms.',
-    quickWin: (id) => 'Add a "Request Quote" or "Download Catalog" button on your homepage and LinkedIn profile. Even a simple enquiry form can increase B2B leads by 15% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.industrial.label[id] || 'company').toLowerCase() +
+      's see a 15-25% increase in qualified B2B enquiries within 3 months of adding a professional website with product catalog and RFQ forms.',
+    quickWin: (id) =>
+      'Add a "Request Quote" or "Download Catalog" button on your homepage and LinkedIn profile. Even a simple enquiry form can increase B2B leads by 15% within the first month.',
   },
   other: {
-    ids: ['ngo','religious','political','freelancer','influencer','creator','startup'],
+    ids: ['ngo', 'religious', 'political', 'freelancer', 'influencer', 'creator', 'startup'],
     label: {
-      ngo:'NGO', religious:'Religious Organization', political:'Political Campaign Service',
-      freelancer:'Freelancer', influencer:'Influencer', creator:'Creator', startup:'Startup'
+      ngo: 'NGO',
+      religious: 'Religious Organization',
+      political: 'Political Campaign Service',
+      freelancer: 'Freelancer',
+      influencer: 'Influencer',
+      creator: 'Creator',
+      startup: 'Startup',
     },
-    businessUnderstanding: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of organization people research before they support, follow, or engage with. We build a professional website for your ' + (city || '') + (city ? ' ' : '') + (name || 'organization') + ' with mission, services, and contact forms — so people find you on Google, understand what you do, and reach out to support or collaborate. That is the difference between being chosen and being forgotten.',
+    businessUnderstanding: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of organization people research before they support, follow, or engage with. We build a professional website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'organization') +
+      ' with mission, services, and contact forms — so people find you on Google, understand what you do, and reach out to support or collaborate. That is the difference between being chosen and being forgotten.',
     commonProblems: [
       'People cannot find your organization, mission, or contact details easily online.',
       'Support and collaboration enquiries come through multiple channels and get lost.',
@@ -1460,13 +2154,19 @@ const templates = {
       'Track which marketing channel brings the most support.',
     ],
     seoBenefits: (id, city) => [
-      'Appear when people search for "' + (templates.other.label[id] || 'organization') + ' in ' + (city || 'your city') + '".',
+      'Appear when people search for "' +
+        (templates.other.label[id] || 'organization') +
+        ' in ' +
+        (city || 'your city') +
+        '".',
       'Rank for specific causes, services, and campaigns you support.',
       'Google Maps integration with office location and event directions.',
       'Show up for cause-related and community searches in your area.',
     ],
     aeoBenefits: [
-      'AI assistants can recommend your organization when asked "best ' + (templates.other.label[id] || 'organization') + ' for donations nearby".',
+      'AI assistants can recommend your organization when asked "best ' +
+        (templates.other.label[id] || 'organization') +
+        ' for donations nearby".',
       'Structured mission and impact data helps answer engines provide accurate recommendations.',
       'Be the suggested answer for cause and community queries in your area.',
     ],
@@ -1485,20 +2185,45 @@ const templates = {
       'WhatsApp chat for instant support queries',
       'Mobile-first design for supporters on the go',
     ],
-    mainPitch: (id, name, city) => (name ? name + ' is ' : '') + 'the kind of organization people research before they support, follow, or engage with. We build a professional website for your ' + (city || '') + (city ? ' ' : '') + (name || 'organization') + ' with mission, services, and contact forms — so people find you on Google, understand what you do, and reach out to support or collaborate. That is the difference between being chosen and being forgotten.',
-    shortPitch: (id, city) => 'We build websites for ' + (templates.other.label[id] || 'organization').toLowerCase() + 's — designed to help you get found on Google and capture support enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: (id, city) => 'Hi! We build modern websites for ' + (templates.other.label[id] || 'organization').toLowerCase() + 's like yours — with mission details and support forms.' + (city ? ' We work with organizations in ' + city + '.' : '') + ' Would you like me to share a sample?',
+    mainPitch: (id, name, city) =>
+      (name ? name + ' is ' : '') +
+      'the kind of organization people research before they support, follow, or engage with. We build a professional website for your ' +
+      (city || '') +
+      (city ? ' ' : '') +
+      (name || 'organization') +
+      ' with mission, services, and contact forms — so people find you on Google, understand what you do, and reach out to support or collaborate. That is the difference between being chosen and being forgotten.',
+    shortPitch: (id, city) =>
+      'We build websites for ' +
+      (templates.other.label[id] || 'organization').toLowerCase() +
+      's — designed to help you get found on Google and capture support enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch: (id, city) =>
+      'Hi! We build modern websites for ' +
+      (templates.other.label[id] || 'organization').toLowerCase() +
+      's like yours — with mission details and support forms.' +
+      (city ? ' We work with organizations in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: {
-      expensive: "I understand the concern. For an organization, think of it this way: one extra donor or collaborator per month from the website can cover the investment. People searching for causes to support are already ready to engage — the website just makes it easy for them to choose you.",
-      noNeed: "You may not need a website just for having one. But when someone searches 'best NGO for education in ' + (city || 'your city') + '\\', will they find your mission and impact — or another organization\\'s? A website ensures they choose you.",
-      hasInstagram: "Instagram is great for sharing impact stories and updates. But when a supporter sees your post and wants to contribute, they need your full mission, impact data, and a donation form. Your website becomes the trusted place where Instagram interest turns into actual support.",
-      hasWebsite: "Many organization websites are outdated or lack donation/collaboration forms. We build modern websites with mission pages, impact stories, online forms, and lead tracking — turning your website into a 24/7 support tool.",
-      noCustomers: "We cannot guarantee a specific number of supporters. What we build is a system where people actively searching for causes to support can find your organization, understand your impact, and reach out to donate or collaborate — 24/7.",
-      guaranteeRanking: "No responsible agency guarantees specific Google rankings. What we do is optimize for cause-related searches in your area, build your Google Business Profile with impact stories, and create campaign-specific landing pages.",
-      guaranteeCustomers: "No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert cause-seekers into supporters.",
-      noSEO: "SEO for organizations means making sure Google understands your mission, causes, impact, and location. When people search 'best ' + (templates.other.label[id] || 'organization') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
-      thinkAbout: "Of course. I can send you a sample organization website with donation forms and examples of how other NGOs increased their support. Would that be helpful?",
-      sendWhatsApp: "Absolutely. I will send you a sample website link, cost estimate, and examples from other organizations. You can review it at your convenience.",
+      expensive:
+        'I understand the concern. For an organization, think of it this way: one extra donor or collaborator per month from the website can cover the investment. People searching for causes to support are already ready to engage — the website just makes it easy for them to choose you.',
+      noNeed:
+        "You may not need a website just for having one. But when someone searches 'best NGO for education in ' + (city || 'your city') + '\\', will they find your mission and impact — or another organization\\'s? A website ensures they choose you.",
+      hasInstagram:
+        'Instagram is great for sharing impact stories and updates. But when a supporter sees your post and wants to contribute, they need your full mission, impact data, and a donation form. Your website becomes the trusted place where Instagram interest turns into actual support.',
+      hasWebsite:
+        'Many organization websites are outdated or lack donation/collaboration forms. We build modern websites with mission pages, impact stories, online forms, and lead tracking — turning your website into a 24/7 support tool.',
+      noCustomers:
+        'We cannot guarantee a specific number of supporters. What we build is a system where people actively searching for causes to support can find your organization, understand your impact, and reach out to donate or collaborate — 24/7.',
+      guaranteeRanking:
+        'No responsible agency guarantees specific Google rankings. What we do is optimize for cause-related searches in your area, build your Google Business Profile with impact stories, and create campaign-specific landing pages.',
+      guaranteeCustomers:
+        'No responsible agency guarantees specific customer numbers. What we build is a strong digital foundation designed to improve your discoverability and convert cause-seekers into supporters.',
+      noSEO:
+        "SEO for organizations means making sure Google understands your mission, causes, impact, and location. When people search 'best ' + (templates.other.label[id] || 'organization') + ' in ' + (city || 'your city') + '\\', good SEO helps you appear. We handle the technical part.",
+      thinkAbout:
+        'Of course. I can send you a sample organization website with donation forms and examples of how other NGOs increased their support. Would that be helpful?',
+      sendWhatsApp:
+        'Absolutely. I will send you a sample website link, cost estimate, and examples from other organizations. You can review it at your convenience.',
     },
     closingQuestions: [
       'How do supporters currently find and engage with your organization?',
@@ -1512,8 +2237,12 @@ const templates = {
       'Follow up with support statistics and ROI examples from other organizations.',
       'Offer a free Google Business Profile audit for cause-related searches.',
     ],
-    roiProjection: (id) => 'Most ' + (templates.other.label[id] || 'organization').toLowerCase() + 's see a 20-30% increase in support enquiries within 3 months of adding a professional website with online forms.',
-    quickWin: (id) => 'Add a "Support Us" or "Donate" button on your homepage and social media profiles. Even a simple WhatsApp-based enquiry form can increase support by 15% within the first month.',
+    roiProjection: (id) =>
+      'Most ' +
+      (templates.other.label[id] || 'organization').toLowerCase() +
+      's see a 20-30% increase in support enquiries within 3 months of adding a professional website with online forms.',
+    quickWin: (id) =>
+      'Add a "Support Us" or "Donate" button on your homepage and social media profiles. Even a simple WhatsApp-based enquiry form can increase support by 15% within the first month.',
   },
 };
 
@@ -1521,8 +2250,16 @@ function buildGenericPitch(category, name, city, situations, goal) {
   const cat = category.name.toLowerCase();
   return {
     businessUnderstanding: name
-      ? name + ' is the kind of business customers research online before they visit. We build a fast, trustworthy website for your ' + (city || '') + (city ? ' ' : '') + name + ' with enquiry forms, local SEO, and WhatsApp integration — so you capture enquiries that arrive 24/7 through a professional storefront. That is the difference between being chosen and being forgotten.'
-      : category.name + ' customers research online before they visit. We help ' + cat + ' businesses turn search interest into enquiries, bookings and revenue — a website that works like a 24/7 sales person.',
+      ? name +
+        ' is the kind of business customers research online before they visit. We build a fast, trustworthy website for your ' +
+        (city || '') +
+        (city ? ' ' : '') +
+        name +
+        ' with enquiry forms, local SEO, and WhatsApp integration — so you capture enquiries that arrive 24/7 through a professional storefront. That is the difference between being chosen and being forgotten.'
+      : category.name +
+        ' customers research online before they visit. We help ' +
+        cat +
+        ' businesses turn search interest into enquiries, bookings and revenue — a website that works like a 24/7 sales person.',
     commonProblems: [
       'No easy way for customers to find you on Google.',
       'Enquiries get lost in phone calls and personal message threads.',
@@ -1575,10 +2312,26 @@ function buildGenericPitch(category, name, city, situations, goal) {
       'Speed and security optimisation',
     ],
     mainPitch: name
-      ? name + ' is the kind of business customers research online before they visit. We build a fast, trustworthy website for your ' + (city || '') + (city ? ' ' : '') + name + ' with enquiry forms, local SEO, and WhatsApp integration — so you capture enquiries that arrive 24/7 through a professional storefront. That is the difference between being chosen and being forgotten.'
-      : 'Businesses like yours live on referrals — but customers research online before they call. We build a fast, trustworthy website for ' + cat + ' models, with enquiry forms, local SEO and WhatsApp lessons, so you capture enquiries that arrive 24/7 through a professional storefront. That is the difference between being chosen and being forgotten.',
-    shortPitch: 'We build websites for ' + cat + ' and nearby local businesses — designed to help you get found on Google and capture enquiries.' + (city ? ' Serving ' + city + '.' : ''),
-    whatsappPitch: 'Hi! We build modern websites for ' + cat + ' businesses like yours — designed to help get you found on Google and capture enquiries on WhatsApp.' + (city ? ' We work with businesses in ' + city + '.' : '') + ' Would you like me to share a sample?',
+      ? name +
+        ' is the kind of business customers research online before they visit. We build a fast, trustworthy website for your ' +
+        (city || '') +
+        (city ? ' ' : '') +
+        name +
+        ' with enquiry forms, local SEO, and WhatsApp integration — so you capture enquiries that arrive 24/7 through a professional storefront. That is the difference between being chosen and being forgotten.'
+      : 'Businesses like yours live on referrals — but customers research online before they call. We build a fast, trustworthy website for ' +
+        cat +
+        ' models, with enquiry forms, local SEO and WhatsApp lessons, so you capture enquiries that arrive 24/7 through a professional storefront. That is the difference between being chosen and being forgotten.',
+    shortPitch:
+      'We build websites for ' +
+      cat +
+      ' and nearby local businesses — designed to help you get found on Google and capture enquiries.' +
+      (city ? ' Serving ' + city + '.' : ''),
+    whatsappPitch:
+      'Hi! We build modern websites for ' +
+      cat +
+      ' businesses like yours — designed to help get you found on Google and capture enquiries on WhatsApp.' +
+      (city ? ' We work with businesses in ' + city + '.' : '') +
+      ' Would you like me to share a sample?',
     objections: genericObjections,
     closingQuestions: [
       'What brings you the most customers today?',
@@ -1591,8 +2344,12 @@ function buildGenericPitch(category, name, city, situations, goal) {
       'Follow up in 2-3 days with a tailored proposal.',
       'Keep the door open with a WhatsApp reminder.',
     ],
-    roiProjection: () => 'Most ' + cat + 's see a 15-25% increase in enquiries within 2-3 months of launching a professional website with online enquiry forms.',
-    quickWin: () => 'Add a prominent enquiry form or WhatsApp button on your homepage. Even a simple contact form can increase enquiries by 15% within the first month.',
+    roiProjection: () =>
+      'Most ' +
+      cat +
+      's see a 15-25% increase in enquiries within 2-3 months of launching a professional website with online enquiry forms.',
+    quickWin: () =>
+      'Add a prominent enquiry form or WhatsApp button on your homepage. Even a simple contact form can increase enquiries by 15% within the first month.',
   };
 }
 
@@ -1602,7 +2359,9 @@ function getPitch(categoryId, options) {
   var city = options.city || '';
   var situations = options.situations || [];
   var goal = options.goal || '';
-  var category = businessCategories.find(function(c) { return c.id === categoryId; });
+  var category = businessCategories.find(function (c) {
+    return c.id === categoryId;
+  });
   if (!category) return null;
   var template = null;
   var templateName = '';
@@ -1619,26 +2378,99 @@ function getPitch(categoryId, options) {
   var label = template.label[categoryId] || category.name;
   var f = String.prototype.replace;
   var pitch = {
-    businessUnderstanding: typeof template.businessUnderstanding === 'function' ? template.businessUnderstanding(categoryId, name, city) : template.businessUnderstanding,
+    businessUnderstanding:
+      typeof template.businessUnderstanding === 'function'
+        ? template.businessUnderstanding(categoryId, name, city)
+        : template.businessUnderstanding,
     commonProblems: template.commonProblems || [],
     digitalOpportunities: template.digitalOpportunities || [],
     websiteBenefits: template.websiteBenefits || [],
     managementBenefits: template.managementBenefits || [],
     marketingBenefits: template.marketingBenefits || [],
-    seoBenefits: typeof template.seoBenefits === 'function' ? template.seoBenefits(categoryId, city) : (template.seoBenefits || []),
+    seoBenefits:
+      typeof template.seoBenefits === 'function'
+        ? template.seoBenefits(categoryId, city)
+        : template.seoBenefits || [],
     aeoBenefits: template.aeoBenefits || [],
     leadGenBenefits: template.leadGenBenefits || [],
     recommendedFeatures: template.recommendedFeatures || [],
-    mainPitch: typeof template.mainPitch === 'function' ? template.mainPitch(categoryId, name, city) : template.mainPitch,
-    shortPitch: typeof template.shortPitch === 'function' ? template.shortPitch(categoryId, city) : template.shortPitch,
-    whatsappPitch: typeof template.whatsappPitch === 'function' ? template.whatsappPitch(categoryId, city) : template.whatsappPitch,
+    mainPitch:
+      typeof template.mainPitch === 'function'
+        ? template.mainPitch(categoryId, name, city)
+        : template.mainPitch,
+    shortPitch:
+      typeof template.shortPitch === 'function'
+        ? template.shortPitch(categoryId, city)
+        : template.shortPitch,
+    whatsappPitch:
+      typeof template.whatsappPitch === 'function'
+        ? template.whatsappPitch(categoryId, city)
+        : template.whatsappPitch,
     objections: template.objections || genericObjections,
     closingQuestions: template.closingQuestions || [],
     followUpStrategy: template.followUpStrategy || [],
-    roiProjection: typeof template.roiProjection === 'function' ? template.roiProjection(categoryId) : '',
+    roiProjection:
+      typeof template.roiProjection === 'function' ? template.roiProjection(categoryId) : '',
     quickWin: typeof template.quickWin === 'function' ? template.quickWin(categoryId) : '',
-    caseStudy: (name ? name + ' ' : '') + 'in ' + (city || 'a nearby city') + ' launched a professional website with online booking and saw a ' + (templateName === 'health' ? '35%' : templateName === 'food' ? '28%' : templateName === 'fitness' ? '30%' : templateName === 'realEstate' ? '25%' : templateName === 'education' ? '22%' : templateName === 'professional' ? '24%' : templateName === 'retail' ? '18%' : templateName === 'automotive' ? '20%' : templateName === 'travel' ? '26%' : templateName === 'creative' ? '32%' : templateName === 'homeServices' ? '22%' : templateName === 'industrial' ? '19%' : '21%') + ' increase in ' + (templateName === 'health' ? 'patient bookings' : templateName === 'food' ? 'table bookings' : templateName === 'fitness' ? 'trial bookings' : templateName === 'realEstate' ? 'buyer enquiries' : templateName === 'education' ? 'admission enquiries' : templateName === 'professional' ? 'consultation enquiries' : templateName === 'retail' ? 'product enquiries' : templateName === 'automotive' ? 'service bookings' : templateName === 'travel' ? 'booking enquiries' : templateName === 'creative' ? 'client bookings' : templateName === 'homeServices' ? 'service bookings' : templateName === 'industrial' ? 'B2B leads' : 'enquiries') + ' within 2 months.',
-    competitorAdvantage: 'While competitors rely on traditional marketing, word-of-mouth, or outdated online presence, your website puts you on Google Maps, shows your expertise, and lets customers engage 24/7 — giving you a professional edge that converts.',
+    caseStudy:
+      (name ? name + ' ' : '') +
+      'in ' +
+      (city || 'a nearby city') +
+      ' launched a professional website with online booking and saw a ' +
+      (templateName === 'health'
+        ? '35%'
+        : templateName === 'food'
+          ? '28%'
+          : templateName === 'fitness'
+            ? '30%'
+            : templateName === 'realEstate'
+              ? '25%'
+              : templateName === 'education'
+                ? '22%'
+                : templateName === 'professional'
+                  ? '24%'
+                  : templateName === 'retail'
+                    ? '18%'
+                    : templateName === 'automotive'
+                      ? '20%'
+                      : templateName === 'travel'
+                        ? '26%'
+                        : templateName === 'creative'
+                          ? '32%'
+                          : templateName === 'homeServices'
+                            ? '22%'
+                            : templateName === 'industrial'
+                              ? '19%'
+                              : '21%') +
+      ' increase in ' +
+      (templateName === 'health'
+        ? 'patient bookings'
+        : templateName === 'food'
+          ? 'table bookings'
+          : templateName === 'fitness'
+            ? 'trial bookings'
+            : templateName === 'realEstate'
+              ? 'buyer enquiries'
+              : templateName === 'education'
+                ? 'admission enquiries'
+                : templateName === 'professional'
+                  ? 'consultation enquiries'
+                  : templateName === 'retail'
+                    ? 'product enquiries'
+                    : templateName === 'automotive'
+                      ? 'service bookings'
+                      : templateName === 'travel'
+                        ? 'booking enquiries'
+                        : templateName === 'creative'
+                          ? 'client bookings'
+                          : templateName === 'homeServices'
+                            ? 'service bookings'
+                            : templateName === 'industrial'
+                              ? 'B2B leads'
+                              : 'enquiries') +
+      ' within 2 months.',
+    competitorAdvantage:
+      'While competitors rely on traditional marketing, word-of-mouth, or outdated online presence, your website puts you on Google Maps, shows your expertise, and lets customers engage 24/7 — giving you a professional edge that converts.',
     selectedSituations: situations,
     selectedGoal: goal,
     categoryId: categoryId,
@@ -1652,5 +2484,7 @@ function getPitch(categoryId, options) {
 /** Map of known category id -> usable pitch */
 export { getPitch };
 export const pitchLibrary = Object.fromEntries(
-  businessCategories.map(function(c) { return [c.id, getPitch(c.id)]; })
+  businessCategories.map(function (c) {
+    return [c.id, getPitch(c.id)];
+  }),
 );

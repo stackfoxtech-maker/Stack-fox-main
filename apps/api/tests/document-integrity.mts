@@ -24,7 +24,8 @@ const stamp = Date.now();
 const storageEnv = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY);
 
 const checks: Array<[string, boolean, string]> = [];
-const check = (label: string, pass: boolean, note = "") => checks.push([label, pass, note]);
+const check = (label: string, pass: boolean, note = "") =>
+  checks.push([label, pass, note]);
 
 // ── Signed URLs must be short-lived ──────────────────────────────────────────
 check(
@@ -44,14 +45,22 @@ const digest = await recordDocument({
   bytes,
   storageKey: `invoices/${docId}.pdf`,
 });
-check(`recordDocument returns the content hash`, digest === expected, `${digest} vs ${expected}`);
+check(
+  `recordDocument returns the content hash`,
+  digest === expected,
+  `${digest} vs ${expected}`,
+);
 
 const entry = await prisma.documentLedger.findFirst({
   where: { documentType: "INVOICE", documentId: docId },
 });
 check(`ledger row written`, Boolean(entry), "expect a row");
 check(`ledger stores the hash`, entry?.sha256 === expected, `got ${entry?.sha256}`);
-check(`ledger stores the size`, entry?.sizeBytes === bytes.length, `got ${entry?.sizeBytes}`);
+check(
+  `ledger stores the size`,
+  entry?.sizeBytes === bytes.length,
+  `got ${entry?.sizeBytes}`,
+);
 
 // ── Regeneration appends, never overwrites ───────────────────────────────────
 const bytes2 = Buffer.from(`invoice bytes ${stamp} REGENERATED`, "utf8");

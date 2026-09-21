@@ -8,7 +8,13 @@ export async function eventRoutes(app: FastifyInstance) {
     const scope = await clientScope(req, reply);
     if (scope === undefined) return;
 
-    const { engId, projectId, code, page = "1", limit = "50" } = req.query as Record<string, string>;
+    const {
+      engId,
+      projectId,
+      code,
+      page = "1",
+      limit = "50",
+    } = req.query as Record<string, string>;
     const where: any = {};
 
     // The activity feed is the most sensitive read in the portal: events carry

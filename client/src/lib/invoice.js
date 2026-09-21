@@ -39,20 +39,48 @@ const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 /** "₹2,50,000.00" — Indian grouping, always 2 decimals (invoice convention). */
 export const inr2 = (n) =>
-  '₹' + new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
+  '₹' +
+  new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+    n || 0,
+  );
 
 // ── Amount in words (Indian: lakh / crore) ─────────────────────────────────
-const ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
-  'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+const ONES = [
+  '',
+  'One',
+  'Two',
+  'Three',
+  'Four',
+  'Five',
+  'Six',
+  'Seven',
+  'Eight',
+  'Nine',
+  'Ten',
+  'Eleven',
+  'Twelve',
+  'Thirteen',
+  'Fourteen',
+  'Fifteen',
+  'Sixteen',
+  'Seventeen',
+  'Eighteen',
+  'Nineteen',
+];
 const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
 function words(x) {
   if (x < 20) return ONES[x];
   if (x < 100) return TENS[Math.floor(x / 10)] + (x % 10 ? ' ' + ONES[x % 10] : '');
-  if (x < 1000) return ONES[Math.floor(x / 100)] + ' Hundred' + (x % 100 ? ' ' + words(x % 100) : '');
-  if (x < 100000) return words(Math.floor(x / 1000)) + ' Thousand' + (x % 1000 ? ' ' + words(x % 1000) : '');
-  if (x < 10000000) return words(Math.floor(x / 100000)) + ' Lakh' + (x % 100000 ? ' ' + words(x % 100000) : '');
-  return words(Math.floor(x / 10000000)) + ' Crore' + (x % 10000000 ? ' ' + words(x % 10000000) : '');
+  if (x < 1000)
+    return ONES[Math.floor(x / 100)] + ' Hundred' + (x % 100 ? ' ' + words(x % 100) : '');
+  if (x < 100000)
+    return words(Math.floor(x / 1000)) + ' Thousand' + (x % 1000 ? ' ' + words(x % 1000) : '');
+  if (x < 10000000)
+    return words(Math.floor(x / 100000)) + ' Lakh' + (x % 100000 ? ' ' + words(x % 100000) : '');
+  return (
+    words(Math.floor(x / 10000000)) + ' Crore' + (x % 10000000 ? ' ' + words(x % 10000000) : '')
+  );
 }
 
 export function amountInWords(n) {
@@ -160,7 +188,7 @@ export function buildInvoice(items = [], client = {}, opts = {}) {
       phone: client.phone || '',
       gstin: client.gstin || '',
       address: client.address || '',
-      stateName: isInterState ? (client.stateName || '') : SUPPLIER.stateName,
+      stateName: isInterState ? client.stateName || '' : SUPPLIER.stateName,
       stateCode: buyerState,
     },
     lines,

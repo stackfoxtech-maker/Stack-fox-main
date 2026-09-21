@@ -60,7 +60,11 @@ async function buildChecklist(projectId: string, orgId: string | null) {
       done: milestones.length > 0 && approved === milestones.length,
       detail: `${approved}/${milestones.length} approved`,
     },
-    { ...DEFAULT_CHECKLIST[2], done: credentials > 0, detail: `${credentials} system(s)` },
+    {
+      ...DEFAULT_CHECKLIST[2],
+      done: credentials > 0,
+      detail: `${credentials} system(s)`,
+    },
     { ...DEFAULT_CHECKLIST[3], done: files > 0, detail: null },
     {
       ...DEFAULT_CHECKLIST[4],
@@ -195,7 +199,9 @@ export async function handoverRoutes(app: FastifyInstance) {
     const { projectId, fileId } = req.params as { projectId: string; fileId: string };
     if (!(await assertProjectInScope(projectId, scope, reply))) return;
     if (!isStorageConfigured()) {
-      return reply.code(503).send({ error: "File storage is not configured on this environment." });
+      return reply
+        .code(503)
+        .send({ error: "File storage is not configured on this environment." });
     }
 
     const file = await prisma.file.findFirst({ where: { id: fileId, projectId } });
@@ -216,53 +222,57 @@ export async function handoverRoutes(app: FastifyInstance) {
    * access log — handing over production access is exactly the kind of event
    * that needs an audit trail.
    */
-  app.post("/handover/:projectId/credentials/:credentialId/reveal", async (req, reply) => {
-    const scope = await clientWriteScope(req, reply);
-    if (scope === undefined) return;
+  app.post(
+    "/handover/:projectId/credentials/:credentialId/reveal",
+    async (req, reply) => {
+      const scope = await clientWriteScope(req, reply);
+      if (scope === undefined) return;
 
-    const { projectId, credentialId } = req.params as {
-      projectId: string;
-      credentialId: string;
-    };
-    if (!(await assertProjectInScope(projectId, scope, reply))) return;
+      const { projectId, credentialId } = req.params as {
+        projectId: string;
+        credentialId: string;
+      };
+      if (!(await assertProjectInScope(projectId, scope, reply))) return;
 
-    const entry = await prisma.credentialVault.findFirst({
-      where: { id: credentialId, projectId },
-    });
-    if (!entry) return reply.code(404).send({ error: "Credential not found" });
-
-    let secret: unknown;
-    try {
-      secret = JSON.parse(decryptSecret(entry.encryptedBlob));
-    } catch (err) {
-      req.log.error({ err, credentialId }, "Credential could not be decrypted");
-      return reply.code(500).send({
-        error: "This credential could not be decrypted. Please contact your project manager.",
+      const entry = await prisma.credentialVault.findFirst({
+        where: { id: credentialId, projectId },
       });
-    }
+      if (!entry) return reply.code(404).send({ error: "Credential not found" });
 
-    const log = Array.isArray(entry.accessLog) ? [...entry.accessLog] : [];
-    log.push({
-      by: req.user!.sub,
-      at: new Date().toISOString(),
-      ip: req.ip,
-      userAgent: req.headers["user-agent"] ?? null,
-    });
+      let secret: unknown;
+      try {
+        secret = JSON.parse(decryptSecret(entry.encryptedBlob));
+      } catch (err) {
+        req.log.error({ err, credentialId }, "Credential could not be decrypted");
+        return reply.code(500).send({
+          error:
+            "This credential could not be decrypted. Please contact your project manager.",
+        });
+      }
 
-    await prisma.credentialVault.update({
-      where: { id: credentialId },
-      data: { accessedAt: new Date(), accessLog: toJson(log) },
-    });
+      const log = Array.isArray(entry.accessLog) ? [...entry.accessLog] : [];
+      log.push({
+        by: req.user!.sub,
+        at: new Date().toISOString(),
+        ip: req.ip,
+        userAgent: req.headers["user-agent"] ?? null,
+      });
 
-    await emitEvent({
-      code: "CREDENTIAL_ACCESSED",
-      payload: { credentialId, systemName: entry.systemName },
-      actor: req.user!.sub,
-      projectId,
-    });
+      await prisma.credentialVault.update({
+        where: { id: credentialId },
+        data: { accessedAt: new Date(), accessLog: toJson(log) },
+      });
 
-    return ok({ id: entry.id, systemName: entry.systemName, credentials: secret });
-  });
+      await emitEvent({
+        code: "CREDENTIAL_ACCESSED",
+        payload: { credentialId, systemName: entry.systemName },
+        actor: req.user!.sub,
+        projectId,
+      });
+
+      return ok({ id: entry.id, systemName: entry.systemName, credentials: secret });
+    },
+  );
 
   /**
    * Client sign-off. This is the moment the warranty clock starts, so the
@@ -288,7 +298,9 @@ export async function handoverRoutes(app: FastifyInstance) {
 
     const existing = await prisma.handover.findUnique({ where: { projectId } });
     if (existing?.acceptedAt) {
-      return reply.code(409).send({ message: "This handover has already been accepted." });
+      return reply
+        .code(409)
+        .send({ message: "This handover has already been accepted." });
     }
 
     const now = new Date();

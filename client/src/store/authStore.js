@@ -205,12 +205,17 @@ const useAuthStore = create((set, get) => ({
       // telling the user "check your email" then would strand them.
       const status = err.response?.status;
       if (status === 502 || status === 503) {
-        const msg = err.response?.data?.message || 'We could not send the reset email. Please try again shortly.';
+        const msg =
+          err.response?.data?.message ||
+          'We could not send the reset email. Please try again shortly.';
         toast.error(msg);
         return { success: false, message: msg };
       }
       toast.error('We could not send the reset email. Please try again shortly.');
-      return { success: false, message: 'We could not send the reset email. Please try again shortly.' };
+      return {
+        success: false,
+        message: 'We could not send the reset email. Please try again shortly.',
+      };
     } finally {
       set({ isLoading: false });
     }
@@ -258,11 +263,30 @@ const useAuthStore = create((set, get) => ({
   isAdmin: () => ['admin', 'ADMIN', 'SUPER_ADMIN'].includes(get().user?.role),
   isSales: () => ['SALES'].includes(get().user?.role),
   isTeam: () =>
-    ['team', 'TEAM', 'SE', 'SENIOR_PM', 'PM', 'DEVELOPER', 'QA', 'DESIGNER', 'DEVOPS', 'FINANCE', 'SALES']
-      .includes(get().user?.role),
+    [
+      'team',
+      'TEAM',
+      'SE',
+      'SENIOR_PM',
+      'PM',
+      'DEVELOPER',
+      'QA',
+      'DESIGNER',
+      'DEVOPS',
+      'FINANCE',
+      'SALES',
+    ].includes(get().user?.role),
   isClient: () =>
-    ['client', 'CLIENT', 'CLIENT_ADMIN', 'CLIENT_PM', 'CLIENT_VIEWER', 'INDIVIDUAL_CLIENT', 'ORG_OWNER', 'REFERRER']
-      .includes(get().user?.role),
+    [
+      'client',
+      'CLIENT',
+      'CLIENT_ADMIN',
+      'CLIENT_PM',
+      'CLIENT_VIEWER',
+      'INDIVIDUAL_CLIENT',
+      'ORG_OWNER',
+      'REFERRER',
+    ].includes(get().user?.role),
 
   // Single source of truth for "which dashboard does this role land on".
   // Every path returned here must be admitted by that route's own guard in

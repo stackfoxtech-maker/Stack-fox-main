@@ -28,7 +28,10 @@ import { PrismaClient } from "@prisma/client";
  */
 function bigIntsToNumbers<T>(value: T): T {
   if (typeof value === "bigint") {
-    if (value > BigInt(Number.MAX_SAFE_INTEGER) || value < BigInt(Number.MIN_SAFE_INTEGER)) {
+    if (
+      value > BigInt(Number.MAX_SAFE_INTEGER) ||
+      value < BigInt(Number.MIN_SAFE_INTEGER)
+    ) {
       throw new Error(
         `Value ${value} exceeds the safe integer range and cannot be converted ` +
           "without losing precision. If this is money, the amount is implausible; " +
@@ -61,10 +64,7 @@ const globalForPrisma = globalThis as unknown as { prisma: ExtendedPrismaClient 
 
 function createClient() {
   return new PrismaClient({
-    log:
-      process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
-        : ["error"],
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   }).$extends({
     name: "bigint-to-number",
     query: {

@@ -1,6 +1,20 @@
 import {
-  LayoutDashboard, CheckSquare, FolderKanban, User, Clock, Calendar, Star,
-  BookOpen, Inbox, Kanban, Cpu, Bug, IndianRupee, Users, BarChart3, Sparkles,
+  LayoutDashboard,
+  CheckSquare,
+  FolderKanban,
+  User,
+  Clock,
+  Calendar,
+  Star,
+  BookOpen,
+  Inbox,
+  Kanban,
+  Cpu,
+  Bug,
+  IndianRupee,
+  Users,
+  BarChart3,
+  Sparkles,
 } from 'lucide-react';
 import DashboardShell from '@app/DashboardShell';
 

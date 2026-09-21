@@ -16,7 +16,8 @@ import { generateApiKey } from "../src/lib/apiKey";
 const BASE = process.env.TEST_API_URL ?? "http://localhost:4000";
 
 const checks: Array<[string, boolean, string]> = [];
-const check = (label: string, pass: boolean, note = "") => checks.push([label, pass, note]);
+const check = (label: string, pass: boolean, note = "") =>
+  checks.push([label, pass, note]);
 
 const tag = Date.now().toString(36);
 
@@ -69,7 +70,12 @@ await prisma.apiKey.createMany({
       scopes: ["read"],
       revokedAt: new Date(),
     },
-    { orgId: orgA.id, prefix: keyWrite.prefix, keyHash: keyWrite.hash, scopes: ["read", "write"] },
+    {
+      orgId: orgA.id,
+      prefix: keyWrite.prefix,
+      keyHash: keyWrite.hash,
+      scopes: ["read", "write"],
+    },
   ],
 });
 
@@ -87,7 +93,11 @@ try {
     );
 
     const wrong = await v1("/v1/engagements", generateApiKey().key);
-    check("a well-formed but unissued key is rejected", wrong.status === 401, `got ${wrong.status}`);
+    check(
+      "a well-formed but unissued key is rejected",
+      wrong.status === 401,
+      `got ${wrong.status}`,
+    );
 
     const revoked = await v1("/v1/engagements", keyRevoked.key);
     check("a revoked key is rejected", revoked.status === 401, `got ${revoked.status}`);
@@ -104,7 +114,11 @@ try {
     check("a valid key is accepted", good.status === 200, `got ${good.status}`);
 
     const health = await v1("/v1/health");
-    check("/v1/health needs no key", health.status === 200, "a monitor has no credential");
+    check(
+      "/v1/health needs no key",
+      health.status === 200,
+      "a monitor has no credential",
+    );
   }
 
   // ── Tenancy: the org comes from the key ───────────────────────────────────
@@ -135,13 +149,20 @@ try {
     );
 
     const own = await v1(`/v1/engagements/${engA.id}`, keyA.key);
-    check("the key's own engagement is readable by id", own.status === 200, `got ${own.status}`);
+    check(
+      "the key's own engagement is readable by id",
+      own.status === 200,
+      `got ${own.status}`,
+    );
 
     // Same question from the other side, so a pass cannot be an artefact of
     // one org happening to be empty.
     const listB = await v1("/v1/engagements", keyB.key);
     const idsB = (listB.body as Array<{ id: string }>).map((e) => e.id);
-    check("the second tenant sees only its own", idsB.includes(engB.id) && !idsB.includes(engA.id));
+    check(
+      "the second tenant sees only its own",
+      idsB.includes(engB.id) && !idsB.includes(engA.id),
+    );
   }
 
   // ── Scopes ────────────────────────────────────────────────────────────────
@@ -171,7 +192,11 @@ try {
       method: "POST",
       body: JSON.stringify({ url: "http://localhost:4000/admin" }),
     });
-    check("a loopback webhook is refused", loopback.status === 400, `got ${loopback.status}`);
+    check(
+      "a loopback webhook is refused",
+      loopback.status === 400,
+      `got ${loopback.status}`,
+    );
 
     const orgIdInBody = await v1("/v1/webhooks", keyWrite.key, {
       method: "POST",
@@ -188,7 +213,11 @@ try {
   {
     for (const path of ["/v1/projects", "/v1/invoices", "/v1/tickets", "/v1/events"]) {
       const res = await v1(path, keyA.key);
-      check(`${path} answers 200 for a valid key`, res.status === 200, `got ${res.status}`);
+      check(
+        `${path} answers 200 for a valid key`,
+        res.status === 200,
+        `got ${res.status}`,
+      );
       check(
         `${path} ignores a forged ?orgId`,
         (await v1(`${path}?orgId=${orgB.id}`, keyA.key)).status === 200,
@@ -205,7 +234,11 @@ try {
       `got ${services.status} — it filtered on three fields that do not exist`,
     );
     const filtered = await v1("/v1/services?category=Web&limit=5", keyA.key);
-    check("/v1/services accepts its filters", filtered.status === 200, `got ${filtered.status}`);
+    check(
+      "/v1/services accepts its filters",
+      filtered.status === 200,
+      `got ${filtered.status}`,
+    );
   }
 
   // ── lastUsed is recorded ──────────────────────────────────────────────────
@@ -214,12 +247,18 @@ try {
     // The write is fire-and-forget, so give it a moment.
     await new Promise((r) => setTimeout(r, 400));
     const row = await prisma.apiKey.findUnique({ where: { keyHash: keyA.hash } });
-    check("a used key records lastUsed", row?.lastUsed != null, "the key list shows when each was last seen");
+    check(
+      "a used key records lastUsed",
+      row?.lastUsed != null,
+      "the key list shows when each was last seen",
+    );
   }
 } finally {
   // Clean up in dependency order.
   await prisma.apiKey.deleteMany({ where: { orgId: { in: [orgA.id, orgB.id] } } });
-  await prisma.webhookEndpoint.deleteMany({ where: { orgId: { in: [orgA.id, orgB.id] } } });
+  await prisma.webhookEndpoint.deleteMany({
+    where: { orgId: { in: [orgA.id, orgB.id] } },
+  });
   await prisma.engagement.deleteMany({ where: { id: { in: [engA.id, engB.id] } } });
   await prisma.org.deleteMany({ where: { id: { in: [orgA.id, orgB.id] } } });
   await prisma.$disconnect();

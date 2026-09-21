@@ -7,7 +7,6 @@ import { isCredentialEncryptionConfigured } from "../lib/crypto";
 import { redis } from "../lib/redis";
 import { CATALOGUE_ROLES } from "@stackfox/core";
 
-
 /**
  * Environment and feature-flag settings for the admin dashboard.
  *
@@ -22,7 +21,10 @@ export async function settingsRoutes(app: FastifyInstance) {
 
     const [flags, redisUp] = await Promise.all([
       prisma.flag.findMany({ orderBy: { id: "asc" } }).catch(() => []),
-      redis.ping().then(() => true).catch(() => false),
+      redis
+        .ping()
+        .then(() => true)
+        .catch(() => false),
     ]);
 
     return ok({
@@ -36,8 +38,12 @@ export async function settingsRoutes(app: FastifyInstance) {
         razorpay: { configured: Boolean(process.env.RAZORPAY_KEY_ID?.trim()) },
         stripe: { configured: Boolean(process.env.STRIPE_SECRET_KEY?.trim()) },
         gemini: { configured: Boolean(process.env.GEMINI_API_KEY?.trim()) },
-        email: { configured: Boolean(process.env.RESEND_API_KEY ?? process.env.SMTP_HOST) },
-        sms: { configured: Boolean(process.env.MSG91_AUTH_KEY ?? process.env.WHATSAPP_BSP_URL) },
+        email: {
+          configured: Boolean(process.env.RESEND_API_KEY ?? process.env.SMTP_HOST),
+        },
+        sms: {
+          configured: Boolean(process.env.MSG91_AUTH_KEY ?? process.env.WHATSAPP_BSP_URL),
+        },
         credentialVault: { configured: isCredentialEncryptionConfigured() },
       },
       featureFlags: flags.map((f) => ({

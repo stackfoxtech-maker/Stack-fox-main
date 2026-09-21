@@ -32,7 +32,8 @@ const BASE = "http://localhost:4000";
 const stamp = Date.now();
 
 const checks: Array<[string, boolean, string]> = [];
-const check = (label: string, pass: boolean, note = "") => checks.push([label, pass, note]);
+const check = (label: string, pass: boolean, note = "") =>
+  checks.push([label, pass, note]);
 
 async function call(method: string, path: string, token?: string, body?: unknown) {
   const res = await fetch(`${BASE}${path}`, {

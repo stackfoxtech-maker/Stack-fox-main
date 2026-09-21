@@ -63,7 +63,10 @@ export async function buildInvoicePdf(
   const paid =
     invoice.status === "PAID"
       ? Number(invoice.grandTotal)
-      : Math.min(Math.max(0, Number(invoice.amountPaid ?? 0)), Number(invoice.grandTotal));
+      : Math.min(
+          Math.max(0, Number(invoice.amountPaid ?? 0)),
+          Number(invoice.grandTotal),
+        );
   const rate = invoice.gstRate ?? 18;
   const isInterState = invoice.gstType === "IGST";
 
@@ -126,7 +129,9 @@ export async function buildInvoicePdf(
       gstin: invoice.org?.gstin ?? undefined,
       address: addressLine || undefined,
       stateName: isInterState ? undefined : SUPPLIER.stateName,
-      stateCode: invoice.org?.gstin?.slice(0, 2) || (isInterState ? undefined : SUPPLIER.stateCode),
+      stateCode:
+        invoice.org?.gstin?.slice(0, 2) ||
+        (isInterState ? undefined : SUPPLIER.stateCode),
     },
     lines,
     subtotal: P(invoice.subtotal),

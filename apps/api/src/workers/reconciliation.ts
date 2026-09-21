@@ -18,7 +18,10 @@ registerCron("invoice-reconcile", async () => {
 
     await emitEvent({
       code: "INVOICE_OVERDUE",
-      payload: { invoiceId: inv.id, daysPastDue: Math.floor((Date.now() - inv.createdAt.getTime()) / 86400000) },
+      payload: {
+        invoiceId: inv.id,
+        daysPastDue: Math.floor((Date.now() - inv.createdAt.getTime()) / 86400000),
+      },
       actor: "system",
       engagementId: inv.engagementId ?? undefined,
     });

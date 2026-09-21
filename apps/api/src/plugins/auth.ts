@@ -99,7 +99,10 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
     const header = req.headers.authorization;
     if (!header?.startsWith("Bearer ")) {
       if (req.url.includes("/cart") || req.url.includes("/auth/me")) {
-        req.log.warn({ url: req.url, hasAuth: !!header }, "No Bearer token on protected route");
+        req.log.warn(
+          { url: req.url, hasAuth: !!header },
+          "No Bearer token on protected route",
+        );
       }
       return;
     }
@@ -120,7 +123,10 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
           return;
         }
       } catch (err: any) {
-        req.log.warn({ err: err.message }, "Token denylist unavailable; falling back to session epoch");
+        req.log.warn(
+          { err: err.message },
+          "Token denylist unavailable; falling back to session epoch",
+        );
       }
 
       // Session-epoch check. Unlike the Redis denylist this is backed by the
@@ -153,7 +159,11 @@ export function requireAuth(req: FastifyRequest, reply: FastifyReply) {
   return true;
 }
 
-export function requireRole(req: FastifyRequest, reply: FastifyReply, roles: readonly string[]) {
+export function requireRole(
+  req: FastifyRequest,
+  reply: FastifyReply,
+  roles: readonly string[],
+) {
   if (!requireAuth(req, reply)) return false;
   if (!roles.includes(req.user!.role)) {
     reply.code(403).send({ error: "Insufficient permissions" });
@@ -174,7 +184,10 @@ export function requireRole(req: FastifyRequest, reply: FastifyReply, roles: rea
  * unknown from revoked would confirm to an attacker that a key they hold was
  * real, so the detail goes to the log and not to the response.
  */
-export async function requireApiKey(req: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+export async function requireApiKey(
+  req: FastifyRequest,
+  reply: FastifyReply,
+): Promise<boolean> {
   const result = await verifyApiKey(req.headers["x-api-key"]);
 
   if (!result.ok) {

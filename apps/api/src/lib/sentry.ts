@@ -58,13 +58,17 @@ export function sentryEnabled(): boolean {
  * line can be lined up. Never throws: a failure to report an error must not
  * become a second error.
  */
-export function captureException(err: unknown, context: Record<string, unknown> = {}): void {
+export function captureException(
+  err: unknown,
+  context: Record<string, unknown> = {},
+): void {
   if (!enabled) return;
   try {
     const reqId = currentReqId();
     Sentry.withScope((scope) => {
       if (reqId) scope.setTag("reqId", reqId);
-      for (const [key, value] of Object.entries(context)) scope.setTag(key, String(value));
+      for (const [key, value] of Object.entries(context))
+        scope.setTag(key, String(value));
       Sentry.captureException(err);
     });
   } catch {

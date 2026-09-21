@@ -67,7 +67,8 @@ export async function reviewRoutes(app: FastifyInstance) {
         projectName: projectName.get(a.projectId) ?? a.projectId,
         revieweeId: a.assigneeId,
         revieweeName: person.get(a.assigneeId)!.name,
-        revieweeRole: person.get(a.assigneeId)!.designation ?? person.get(a.assigneeId)!.role,
+        revieweeRole:
+          person.get(a.assigneeId)!.designation ?? person.get(a.assigneeId)!.role,
         period,
       }));
 
@@ -101,7 +102,8 @@ export async function reviewRoutes(app: FastifyInstance) {
     }
 
     const reviewee = await prisma.user.findUnique({ where: { id: revieweeId } });
-    if (!reviewee) return reply.code(404).send({ message: "That person no longer exists." });
+    if (!reviewee)
+      return reply.code(404).send({ message: "That person no longer exists." });
 
     const resolvedPeriod = period || String(new Date().getFullYear());
     const existing = await prisma.review.findFirst({
