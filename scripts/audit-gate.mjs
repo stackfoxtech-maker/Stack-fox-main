@@ -20,23 +20,6 @@ const FAIL_AT = ["high", "critical"];
 
 const ACCEPTED = [
   {
-    module: "fastify",
-    reason: "Fixed in fastify 5; the 4->5 migration is tracked separately.",
-    until: "2026-12-31",
-  },
-  {
-    module: "find-my-way",
-    reason:
-      "Fixed in find-my-way 9.7, but fastify 4 pins ^8.0.0, so this cannot " +
-      "move before the fastify 5 migration.",
-    until: "2026-12-31",
-  },
-  {
-    module: "fast-uri",
-    reason: "Transitive under fastify 4; resolves with the fastify 5 migration.",
-    until: "2026-12-31",
-  },
-  {
     module: "js-yaml",
     reason:
       "Transitive under @changesets/cli. Build tooling only — never present " +
@@ -44,6 +27,18 @@ const ACCEPTED = [
     until: "2026-12-31",
   },
 ];
+
+// Resolved 2026-09-21 by the Fastify 4 -> 5 upgrade, and removed from the list
+// above rather than left to expire:
+//
+//   fastify       GHSA-jx2c-rxcm-jvmq, a body-validation bypass via a tab
+//                 character in Content-Type. Fixed in fastify 5.
+//   find-my-way   Fixed in 9.7; fastify 4 pinned ^8.0.0, so it could not move
+//                 until fastify did.
+//   fast-uri      Transitive under ajv. Pinned to ^3.1.6 with a pnpm override
+//                 — a patch bump inside the same major.
+//
+// That took the workspace from 12 high/critical advisories to 2.
 
 const npmMode = process.argv.includes("--npm");
 const cmd = npmMode ? "npm" : "pnpm";
