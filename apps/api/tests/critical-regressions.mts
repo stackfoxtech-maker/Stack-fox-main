@@ -27,6 +27,13 @@ import { createRequire } from "node:module";
 import { prisma } from "@stackfox/prisma";
 import { hashPassword } from "@stackfox/prisma/prisma/seed-helpers";
 import { signToken, signRefreshToken } from "../src/plugins/auth";
+import {
+  ADMIN_ROLES,
+  CATALOGUE_ROLES,
+  DELIVERY_ROLES,
+  FINANCE_ROLES,
+  VAULT_ROLES,
+} from "@stackfox/core";
 
 const BASE = "http://localhost:4000";
 const stamp = Date.now();
@@ -242,6 +249,59 @@ async function call(method: string, path: string, token?: string, body?: unknown
     !/^\s*(await\s+)?backfillPaidQuotes\s*\(/m.test(serverSrc),
     "it remains exported for deliberate operator use, but boot must not run it",
   );
+}
+
+// ── SUPER_ADMIN must keep the access main granted it ────────────────────────
+//
+// `main` shipped ea32a0f, "allow SUPER_ADMIN role to access admin dashboard",
+// which added SUPER_ADMIN inline to five route guards. This branch had already
+// replaced those inline lists with shared constants in packages/core, so the
+// two collided in seven files and the conflict was resolved in favour of the
+// constants.
+//
+// That resolution is only correct if the constants grant *at least* what those
+// inline lists did. It was checked by hand at the time, which is exactly the
+// kind of check that rots -- narrowing one constant later would silently lock
+// the master-admin account out of whole route groups, and the account with the
+// most access is the one least likely to be covered by anyone's manual test.
+//
+// So the equivalence is pinned here. The literals below are what ea32a0f
+// actually wrote; if a constant stops covering one, this fails.
+{
+  const fromMain: Array<[string, readonly string[], string[]]> = [
+    [
+      "CATALOGUE_ROLES (admin, feedback, projectInquiries)",
+      CATALOGUE_ROLES,
+      ["ADMIN", "SUPER_ADMIN", "SE", "SENIOR_PM"],
+    ],
+    ["ADMIN_ROLES (jobs, finance close)", ADMIN_ROLES, ["ADMIN", "SUPER_ADMIN"]],
+    ["FINANCE_ROLES (finance)", FINANCE_ROLES, ["ADMIN", "SUPER_ADMIN", "FINANCE"]],
+  ];
+
+  for (const [label, actual, required] of fromMain) {
+    const missing = required.filter((r) => !(actual as readonly string[]).includes(r));
+    check(
+      `${label} still grants every role ea32a0f listed`,
+      missing.length === 0,
+      missing.length ? `missing ${missing.join(", ")} — this is a lockout` : "",
+    );
+  }
+
+  // The specific role the merge was about, across every constant that gates an
+  // internal surface.
+  for (const [name, roles] of Object.entries({
+    ADMIN_ROLES,
+    CATALOGUE_ROLES,
+    DELIVERY_ROLES,
+    FINANCE_ROLES,
+    VAULT_ROLES,
+  })) {
+    check(
+      `${name} includes SUPER_ADMIN`,
+      (roles as readonly string[]).includes("SUPER_ADMIN"),
+      "the master-admin seeder assigns SUPER_ADMIN; a constant without it is a lockout",
+    );
+  }
 }
 
 // ── Report ───────────────────────────────────────────────────────────────────
