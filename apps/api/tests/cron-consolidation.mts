@@ -12,33 +12,81 @@
  * Loads env + the worker modules (which pulls in lib/queue and therefore a
  * Redis connection), like the other suites. Does NOT need the HTTP API.
  *
+ * ── Why the registry is loaded from dist/ ───────────────────────────────────
+ *
+ * The schedule-to-handler assertions require that the registry the worker
+ * modules write to is the SAME module instance this file reads from. That is
+ * not guaranteed across the module boundary here: this file is `.mts`, so ESM,
+ * while apps/api/src compiles as CommonJS ("module": "CommonJS"). Whether the
+ * two end up sharing one instance depends on how the runtime bridges CJS and
+ * ESM, and it differs by Node version — on Node 22 they share, on Node 20 they
+ * did not, and the registry read here came back with zero handlers while the
+ * worker modules had populated their own copy.
+ *
+ * Node 20 is the version that matters: Dockerfile.server is node:20-slim, so
+ * that is what production runs, and CI pins 20 to match. A local Node 22 pass
+ * was therefore false confidence, not a green light.
+ *
+ * Loading through dist/ removes the question. It is all CommonJS, one module
+ * system, one registry instance — and it is the artifact the container
+ * actually executes (`node dist/workers/index.js`), so this now checks the
+ * thing that ships rather than a transpiled-on-the-fly approximation.
+ *
+ * Requires a build first; CI builds before running the suites.
+ *
+ *   pnpm --filter @stackfox/api build
  *   pnpm --filter @stackfox/api exec tsx tests/cron-consolidation.mts
  */
 import "../src/env";
 
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 
-import { SCHEDULE_IDS } from "../src/lib/scheduler";
-import {
-  registerCron,
-  dispatchCron,
-  registeredCronIds,
-} from "../src/workers/cron/registry";
 import { QUEUE } from "../src/lib/queue";
 
-// Importing each handler module runs its registerCron() call.
-import "../src/workers/slaCron";
-import "../src/workers/reconciliation";
-import "../src/workers/dunning";
-import "../src/workers/renewalScanner";
-import "../src/workers/harvestReminder";
-import "../src/workers/timesheetCompiler";
-import "../src/workers/archiveRetention";
-import "../src/workers/softex";
-import "../src/workers/salesFollowup";
-import "../src/workers/healthAlert";
+const requireCjs = createRequire(import.meta.url);
+const distDir = resolve(dirname(fileURLToPath(import.meta.url)), "../dist");
+
+if (!existsSync(resolve(distDir, "workers/cron/registry.js"))) {
+  console.log(
+    "\nFAIL  dist/ is missing — run `pnpm --filter @stackfox/api build` first.\n" +
+      "      This suite checks the built artifact on purpose; see the header.\n",
+  );
+  process.exit(1);
+}
+
+type CronRegistry = {
+  registerCron: (id: string, handler: () => Promise<void>) => void;
+  dispatchCron: (job: unknown) => Promise<void>;
+  registeredCronIds: () => string[];
+};
+
+const { registerCron, dispatchCron, registeredCronIds } = requireCjs(
+  resolve(distDir, "workers/cron/registry.js"),
+) as CronRegistry;
+
+const { SCHEDULE_IDS } = requireCjs(resolve(distDir, "lib/scheduler.js")) as {
+  SCHEDULE_IDS: readonly string[];
+};
+
+// Requiring each handler module runs its registerCron() call, into the same
+// CommonJS registry instance destructured above.
+for (const m of [
+  "slaCron",
+  "reconciliation",
+  "dunning",
+  "renewalScanner",
+  "harvestReminder",
+  "timesheetCompiler",
+  "archiveRetention",
+  "softex",
+  "salesFollowup",
+  "healthAlert",
+]) {
+  requireCjs(resolve(distDir, `workers/${m}.js`));
+}
 
 const checks: Array<[string, boolean]> = [];
 const check = (label: string, ok: boolean) => checks.push([label, ok]);
@@ -63,13 +111,13 @@ let probeRuns = 0;
 registerCron("__probe__", async () => {
   probeRuns++;
 });
-await dispatchCron({ name: "__probe__", data: {} } as any);
+await dispatchCron({ name: "__probe__", data: {} });
 check("dispatchCron invokes the handler for a known job name", probeRuns === 1);
 
 // wrong name must not run the probe and must not throw
 let threw = false;
 try {
-  await dispatchCron({ name: "__does_not_exist__", data: {} } as any);
+  await dispatchCron({ name: "__does_not_exist__", data: {} });
 } catch {
   threw = true;
 }

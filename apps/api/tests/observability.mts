@@ -11,8 +11,47 @@ import Fastify from "fastify";
 import { Prisma } from "@stackfox/prisma";
 import { registerErrorHandler } from "../src/lib/errorHandler";
 import { currentReqId, newReqId, normaliseReqId, runWithReqId } from "../src/lib/logger";
-import { REQ_ID_FIELD, stampReqId } from "../src/lib/queue";
+import { REQ_ID_FIELD } from "../src/lib/queue";
 import { shouldAlert } from "../src/workers/healthAlert";
+import { createRequire } from "module";
+import { existsSync } from "fs";
+import { resolve, dirname as pathDirname } from "path";
+import { fileURLToPath as toPath } from "url";
+
+/**
+ * stampReqId and runWithReqId are loaded from dist/ for the job-payload check
+ * below, and they have to come from there *together*.
+ *
+ * stampReqId reads the AsyncLocalStorage owned by lib/logger. The propagation
+ * it performs is only observable if the logger instance holding the store is
+ * the same one runWithReqId set it on. Across this file's boundary that is not
+ * guaranteed: this suite is `.mts` (ESM) while apps/api/src compiles as
+ * CommonJS, so lib/logger can be instantiated twice — once for the ESM import
+ * here, once for the CommonJS require inside lib/queue — each with its own
+ * AsyncLocalStorage and therefore no shared context.
+ *
+ * Whether that happens depends on the Node version. It does not on Node 22; it
+ * does on Node 20, where this check failed with no id stamped. Node 20 is the
+ * one that counts — Dockerfile.server is node:20-slim and CI pins 20 to match
+ * production — so the local Node 22 pass was false confidence.
+ *
+ * Requiring both from dist/ puts them in one CommonJS graph with one store,
+ * which is also exactly how the container runs them.
+ */
+const requireCjs = createRequire(import.meta.url);
+const distDir = resolve(pathDirname(toPath(import.meta.url)), "../dist");
+const distReady = existsSync(resolve(distDir, "lib/queue.js"));
+const distQueue = distReady
+  ? (requireCjs(resolve(distDir, "lib/queue.js")) as {
+      REQ_ID_FIELD: string;
+      stampReqId: (data: unknown) => unknown;
+    })
+  : null;
+const distLogger = distReady
+  ? (requireCjs(resolve(distDir, "lib/logger.js")) as {
+      runWithReqId: <T>(id: string, ctx: object, fn: () => T) => T;
+    })
+  : null;
 
 const checks: Array<[string, boolean, string]> = [];
 const check = (label: string, pass: boolean, note = "") =>
@@ -85,25 +124,46 @@ const check = (label: string, pass: boolean, note = "") =>
 }
 
 // ── The id reaches a job payload ─────────────────────────────────────────────
-{
-  const stamped = (await runWithReqId("req-job-9999", {}, () =>
+//
+// Both halves come from dist/ so they share one AsyncLocalStorage — see the
+// note beside the requires at the top of this file.
+if (!distQueue || !distLogger) {
+  check(
+    "dist/ is built so the job-payload propagation can be checked",
+    false,
+    "run `pnpm --filter @stackfox/api build` first",
+  );
+} else {
+  const { stampReqId } = distQueue;
+  const { runWithReqId: runWithReqIdCjs } = distLogger;
+
+  const stamped = runWithReqIdCjs("req-job-9999", {}, () =>
     stampReqId({ type: "invoice", invoiceId: "INV-1" }),
-  )) as Record<string, unknown>;
+  ) as Record<string, unknown>;
   check(
     "a job queued inside a request carries its id",
-    stamped[REQ_ID_FIELD] === "req-job-9999",
+    stamped[distQueue.REQ_ID_FIELD] === "req-job-9999",
     "this is the link between an API log line and a worker log line",
   );
   check("the original payload is preserved", stamped.invoiceId === "INV-1");
 
   check(
     "a job queued outside a request is untouched",
-    (stampReqId({ a: 1 }) as Record<string, unknown>)[REQ_ID_FIELD] === undefined,
+    (stampReqId({ a: 1 }) as Record<string, unknown>)[distQueue.REQ_ID_FIELD] ===
+      undefined,
     "a cron schedule has no request; the worker mints an id instead",
   );
   check(
     "a non-object payload is passed through unchanged",
     stampReqId("plain") === "plain" && stampReqId(null) === null,
+  );
+
+  // The field name must agree between the source the API imports and the
+  // built copy the worker runs, or a stamped id would be written under one
+  // key and read under another.
+  check(
+    `REQ_ID_FIELD agrees between src and dist ("${REQ_ID_FIELD}")`,
+    REQ_ID_FIELD === distQueue.REQ_ID_FIELD,
   );
 }
 
