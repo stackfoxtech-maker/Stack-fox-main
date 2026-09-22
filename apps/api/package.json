@@ -32,7 +32,9 @@
     "test:regressions": "tsx tests/critical-regressions.mts",
     "test:catalogue": "tsx tests/catalogue-cache.mts",
     "test:transactions": "tsx tests/transactions.mts",
-    "test:quote-pricing": "tsx tests/quote-pricing.mts"
+    "test:quote-pricing": "tsx tests/quote-pricing.mts",
+    "docs:api": "tsx scripts/generate-openapi.mts",
+    "docs:api:check": "tsx scripts/generate-openapi.mts --check"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
@@ -64,6 +66,7 @@
     "@types/node": "^22",
     "@types/sanitize-html": "^2.13.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "zod-to-json-schema": "^3.25.2"
   }
 }

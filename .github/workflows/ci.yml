@@ -53,6 +53,13 @@ jobs:
       - name: API ↔ client contract
         run: node scripts/check-api-contract.mjs
 
+      # docs/openapi.json and docs/API.md are generated from the routes and the
+      # zod schemas. Gating on them means a new endpoint cannot ship
+      # undocumented: the generator reruns here and the job fails if the
+      # committed files no longer match the code.
+      - name: API docs are in sync
+        run: pnpm --filter @stackfox/api docs:api:check
+
       - name: Catalogue is a single source
         run: |
           test ! -f client/src/data/stackfox-data.json \

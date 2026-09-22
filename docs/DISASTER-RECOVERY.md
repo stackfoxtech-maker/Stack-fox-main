@@ -7,36 +7,44 @@ A backup that has never been restored is a hypothesis. The timings in
 
 ---
 
-## ⚠️ Step 0: confirm where production Postgres lives
+## Where production actually runs
 
-**This has to be answered before the rest of the document is true.**
+Confirmed 2026-09-22 against the Railway project `stackfox` (services:
+`stackfox-api`, `Redis`) and the production variable list.
 
-`.env.example` carries a commented-out Supabase pooler connection string, and
-Supabase is definitely used for object storage. Whether production Postgres is
-_also_ Supabase, or a Railway Postgres service, is set in Railway's environment
-variables and is not visible in this repository.
+| Layer          | Provider                             | Notes                                                                                                           |
+| -------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| API + workers  | **Railway** — service `stackfox-api` | `Dockerfile.server`; `WORKERS_INLINE` unset, so workers run in the API process                                  |
+| Postgres       | **Supabase**                         | Pooled connection, `aws-0-ap-northeast-2.pooler.supabase.com:6543`, `pgbouncer=true`. **Not** Railway Postgres. |
+| Redis          | **Railway** — service `Redis`        | BullMQ queues and the rate limiter                                                                              |
+| Object storage | **Supabase Storage**                 | `SUPABASE_STORAGE_BUCKET` and `SUPABASE_WORM_BUCKET`                                                            |
+| Client         | **Vercel**                           | `client/vercel.json`                                                                                            |
 
-The two have different backup products, different retention and different
-restore mechanics, so:
+The consequence that matters: **Postgres backups are Supabase's product, not
+Railway's.** A restore is driven from the Supabase dashboard or via
+`pg_dump`/`pg_restore` against the Supabase connection string. Railway's own
+backup features are irrelevant to the data of record.
 
-```bash
-railway variables | grep -i database_url
-```
+### Still to fill in — one dashboard lookup
 
-Record the answer here, with the date checked:
+These are visible only in the Supabase project settings, and the RPO below is
+a target until they are recorded:
 
-|                                  |                                |
-| -------------------------------- | ------------------------------ |
-| Postgres host                    | **UNCONFIRMED — fill this in** |
-| Plan / tier                      | **UNCONFIRMED**                |
-| Automated backup frequency       | **UNCONFIRMED**                |
-| Retention window                 | **UNCONFIRMED**                |
-| Point-in-time recovery available | **UNCONFIRMED**                |
-| Last verified                    | —                              |
+|                                  |                 |
+| -------------------------------- | --------------- |
+| Supabase plan / tier             | **UNCONFIRMED** |
+| Automated backup frequency       | **UNCONFIRMED** |
+| Retention window                 | **UNCONFIRMED** |
+| Point-in-time recovery available | **UNCONFIRMED** |
+| Last verified                    | —               |
 
-Neither provider takes automated backups on its free tier. If the answer is
-"free tier", the honest RPO is **"everything since the last manual dump"**, and
-the rest of this document describes a procedure with no automated input.
+Supabase takes **no automated backups on the free tier**. If that is the plan,
+the honest RPO is "everything since the last manual dump", and the procedure
+below has no automated input — a scheduled `pg_dump` becomes the first thing to
+add rather than an optional extra.
+
+Point-in-time recovery is the specific feature that makes the 1-hour RPO below
+achievable. Daily snapshots do not.
 
 ---
 
@@ -55,10 +63,10 @@ the rest of this document describes a procedure with no automated input.
 
 **RPO — how much data we accept losing.**
 
-|          | Target     | Met today?                                                                                            |
-| -------- | ---------- | ----------------------------------------------------------------------------------------------------- |
-| Postgres | **1 hour** | Depends entirely on Step 0. Point-in-time recovery meets it; daily snapshots do not (worst case 24h). |
-| Storage  | 24 hours   | Supabase bucket backup cadence — confirm with Step 0                                                  |
+|          | Target     | Met today?                                                                                              |
+| -------- | ---------- | ------------------------------------------------------------------------------------------------------- |
+| Postgres | **1 hour** | Depends on the Supabase plan. Point-in-time recovery meets it; daily snapshots do not (worst case 24h). |
+| Storage  | 24 hours   | Supabase bucket backup cadence — confirm on the plan                                                    |
 
 One hour is chosen because that is roughly the window in which losing writes is
 recoverable by hand: an invoice or two re-issued, a signature re-collected. A
@@ -117,8 +125,9 @@ A full backup → restore → boot cycle, run end to end.
 **What this rehearsal did not cover**, and must before it can be called
 complete:
 
-- A restore from a _provider snapshot_, rather than from a dump we took
-  ourselves. That is the path a real disaster uses, and it depends on Step 0.
+- A restore from a _Supabase snapshot_, rather than from a dump we took
+  ourselves. That is the path a real disaster uses, and it depends on the plan
+  tier above.
 - A storage bucket restore.
 - A restore at production data volume.
 
@@ -128,9 +137,11 @@ complete:
 
 ### Who
 
-Anyone with the Railway project owner role and database credentials. In
-practice today that is one person, which is itself a risk — a second person
-should hold the access, or the restore cannot happen while they are asleep.
+A restore needs **both**: Supabase project access (the snapshot and the
+database) and Railway project access (to re-point `DATABASE_URL` and
+redeploy). In practice today one person holds both, which is itself the risk —
+a second person should hold them, or the restore cannot happen while the first
+is asleep.
 
 ### 1. Decide: restore or repair
 
@@ -259,8 +270,10 @@ the loss survivable rather than to persist it.
 
 Stated here rather than discovered during an incident:
 
-1. **Step 0 is unanswered.** Until the provider, tier and retention are
-   confirmed, the RPO above is a target and not a fact.
+1. **The Supabase plan tier is unrecorded.** The providers are confirmed —
+   Postgres and storage on Supabase, API and Redis on Railway — but until the
+   backup frequency, retention window and whether PITR is enabled are written
+   down, the RPO above is a target and not a fact.
 2. **No provider-snapshot restore has been rehearsed** — only a dump/restore
    cycle we drove ourselves.
 3. **No storage-bucket restore has been rehearsed.**
