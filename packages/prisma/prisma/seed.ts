@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { config } from "dotenv";
 import { resolve } from "path";
-import { createHash } from "crypto";
+import { requireSeedPassword, upsertStaffUser } from "./seed-helpers";
 
 config({ path: resolve(__dirname, "../../..", ".env") });
 
@@ -144,12 +144,14 @@ async function seed() {
             sortOrder: idx,
           },
         });
-      })
+      }),
     );
   }
 
   // ── 2. Bundles (from packages + industryBundles) ─────
-  console.log(`  → ${data.packages.length} packages + ${data.industryBundles.length} industry bundles...`);
+  console.log(
+    `  → ${data.packages.length} packages + ${data.industryBundles.length} industry bundles...`,
+  );
   for (const pkg of data.packages) {
     await prisma.bundle.upsert({
       where: { id: pkg.id },
@@ -227,61 +229,44 @@ async function seed() {
   }
 
   // ── 4. Admin user ─────────────────────────────────
+  // A fresh database has no users, so nothing can reach the admin panel to
+  // create the first one. This is the way in — but the password comes from the
+  // environment and is never defaulted. See seed-helpers.ts for why.
   console.log("  → Admin user...");
-  // The original seed left the ADMIN account without a password, so a freshly
-  // seeded instance had no way to sign in — the admin panel was unreachable.
-  // We now set a real credential from ADMIN_PASSWORD (default documented below).
-  // The digest is the legacy SHA-256 form on purpose: verifyPassword() still
-  // accepts it, and silently upgrades the row to scrypt on the first login.
-  const adminPassword = process.env.ADMIN_PASSWORD || "Admin@Stackfox2025";
-  const adminPasswordHash = createHash("sha256").update(adminPassword).digest("hex");
-  await prisma.user.upsert({
-    where: { email: "admin@stackfox.tech" },
-    update: {
-      role: "ADMIN",
-      // Only overwrite a stored password if it was never set (or it is a plain
-      // placeholder) so an existing deploy that already set one keeps it.
-      authData: {
-        provider: "email",
-        verified: true,
-        passwordHash: adminPasswordHash,
-      },
-    },
-    create: {
-      name: "StackFox Admin",
-      email: "admin@stackfox.tech",
-      role: "ADMIN",
-      authData: { provider: "email", verified: true, passwordHash: adminPasswordHash },
-    },
-  });
+  const adminPassword = requireSeedPassword("ADMIN_PASSWORD");
+  const adminResult = await upsertStaffUser(
+    prisma,
+    { name: "StackFox Admin", email: "admin@stackfox.tech", role: "ADMIN" },
+    adminPassword,
+    { resetPassword: process.env.SEED_RESET_PASSWORDS === "true" },
+  );
+  console.log(`    admin@stackfox.tech — ${adminResult}`);
 
   // ── 5. Demo sales team users ───────────────────────
-  console.log("  → Demo sales team users...");
-  const salesPassword = process.env.SALES_PASSWORD || "Sales@Stackfox2025";
-  const salesPasswordHash = createHash("sha256").update(salesPassword).digest("hex");
-  const demoSalesUsers = [
-    { name: "Sales Executive", email: "sales@stackfox.tech", role: "SE" },
-    { name: "Senior Sales Manager", email: "sales.lead@stackfox.tech", role: "SENIOR_PM" },
-    { name: "Sales Manager", email: "sales.manager@stackfox.tech", role: "SALES" },
-  ];
-  for (const u of demoSalesUsers) {
-    await prisma.user.upsert({
-      where: { email: u.email },
-      update: {
-        role: u.role,
-        authData: {
-          provider: "email",
-          verified: true,
-          passwordHash: salesPasswordHash,
-        },
+  // Opt-in. These are demo accounts; creating them in a real environment adds
+  // three privileged logins nobody asked for.
+  if (process.env.SEED_DEMO_USERS === "true") {
+    console.log("  → Demo sales team users...");
+    const salesPassword = requireSeedPassword("SALES_PASSWORD");
+    const demoSalesUsers = [
+      { name: "Sales Executive", email: "sales@stackfox.tech", role: "SE" },
+      {
+        name: "Senior Sales Manager",
+        email: "sales.lead@stackfox.tech",
+        role: "SENIOR_PM",
       },
-      create: {
-        name: u.name,
-        email: u.email,
-        role: u.role,
-        authData: { provider: "email", verified: true, passwordHash: salesPasswordHash },
-      },
-    });
+      { name: "Sales Manager", email: "sales.manager@stackfox.tech", role: "SALES" },
+    ];
+    for (const u of demoSalesUsers) {
+      const result = await upsertStaffUser(prisma, u, salesPassword, {
+        resetPassword: process.env.SEED_RESET_PASSWORDS === "true",
+      });
+      console.log(`    ${u.email} — ${result}`);
+    }
+  } else {
+    console.log(
+      "  → Demo sales team users skipped (set SEED_DEMO_USERS=true to create them)",
+    );
   }
 
   // ── 6. Feature flags ──────────────────────────────
@@ -316,7 +301,8 @@ async function seed() {
     {
       title: "Why we publish every price",
       category: "Philosophy",
-      excerpt: "Agencies hide pricing behind a sales call. Here is why StackFox does the opposite.",
+      excerpt:
+        "Agencies hide pricing behind a sales call. Here is why StackFox does the opposite.",
       content:
         "Most software agencies treat pricing as a negotiation. You describe your project, sit through two or three calls, and eventually receive a number you cannot sanity-check. We think that is backwards. Every one of our 240+ service pieces has a public price. You can assemble a plan, see the total — GST included — and only talk to us when the shape of it looks right.",
     },
@@ -353,7 +339,13 @@ async function seed() {
     const slug = slugify(p.title); // 5 hand-picked, distinct titles
     await prisma.blogPost.upsert({
       where: { slug },
-      update: { title: p.title, excerpt: p.excerpt, content: p.content, category: p.category, status: "PUBLISHED" },
+      update: {
+        title: p.title,
+        excerpt: p.excerpt,
+        content: p.content,
+        category: p.category,
+        status: "PUBLISHED",
+      },
       create: {
         title: p.title,
         slug,
@@ -377,7 +369,7 @@ async function seed() {
 function generateFeatureNames(
   serviceName: string,
   catId: string,
-  count: number
+  count: number,
 ): string[] {
   const templates: Record<string, string[]> = {
     "web-dev": [

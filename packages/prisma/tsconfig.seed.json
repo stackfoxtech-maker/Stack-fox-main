@@ -1,0 +1,11 @@
+{
+  "extends": "@stackfox/tsconfig/node.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "resolveJsonModule": true
+  },
+  "include": ["prisma/**/*.ts"]
+}

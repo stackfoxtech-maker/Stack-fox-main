@@ -3,16 +3,27 @@ import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
 import { verifyRazorpayWebhookSignature, getStripe } from "../lib/payments";
-import { recordInvoicePayment } from "../lib/billing";
+import { enqueuePaymentSideEffects, recordInvoicePaymentRows } from "../lib/billing";
 import { clientScope } from "../lib/scope";
-import { pageParams } from "../lib/http";
-import { getPresignedDownload, isStorageConfigured } from "../lib/storage";
+import { LIST_CAP, pageParams } from "../lib/http";
+import { isStorageConfigured } from "../lib/storage";
 import { buildInvoicePdf } from "../lib/documents";
 import { requireRole } from "../plugins/auth";
+import { ADMIN_ROLES, FINANCE_ROLES, FINANCE_VIEW_ROLES } from "@stackfox/core";
+import { issueDownload } from "../lib/documentIntegrity";
+import { parseBody } from "../lib/validate";
+import { RecordUtrSchema, UpdateInvoiceStatusSchema } from "./financeSchemas";
 
 const VALID_GST_RATES = [0, 5, 12, 18, 28];
 const INVOICE_STATUSES = [
-  "DRAFT", "SENT", "VIEWED", "PAID", "PARTIALLY_PAID", "OVERDUE", "CANCELLED", "DISPUTED",
+  "DRAFT",
+  "SENT",
+  "VIEWED",
+  "PAID",
+  "PARTIALLY_PAID",
+  "OVERDUE",
+  "CANCELLED",
+  "DISPUTED",
 ];
 /** Statuses that represent a live receivable (issued, not settled or void). */
 const OPEN_RECEIVABLE = ["SENT", "VIEWED", "OVERDUE", "PARTIALLY_PAID", "DISPUTED"];
@@ -131,7 +142,13 @@ export async function financeRoutes(app: FastifyInstance) {
     try {
       const key = invoice.fileKey ?? (await buildInvoicePdf(invoice.id));
       if (!key) return reply.code(404).send({ error: "Invoice not found" });
-      return { url: await getPresignedDownload(key, 900) };
+      return {
+        url: await issueDownload(req, {
+          documentType: "INVOICE",
+          documentId: invoice.id,
+          storageKey: key,
+        }),
+      };
     } catch (err) {
       req.log.error({ err, invoiceId: id }, "invoice pdf download failed");
       return reply.code(500).send({ error: "Could not prepare the invoice PDF." });
@@ -144,13 +161,15 @@ export async function financeRoutes(app: FastifyInstance) {
   // vs IGST inter-State) and a validated `gstRate`, not a hardcoded 18% IGST —
   // an intra-State invoice created here used to book all its tax as IGST.
   app.post("/invoices", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE"])) return;
+    if (!requireRole(req, reply, FINANCE_ROLES)) return;
     const body = (req.body ?? {}) as Record<string, any>;
 
     if (!body.orgId) return reply.code(400).send({ error: "orgId is required" });
 
     const subtotal = Math.max(0, Math.round(Number(body.subtotal) || 0));
-    const gstRate = VALID_GST_RATES.includes(Number(body.gstRate)) ? Number(body.gstRate) : 18;
+    const gstRate = VALID_GST_RATES.includes(Number(body.gstRate))
+      ? Number(body.gstRate)
+      : 18;
     const gstType = body.gstType === "CGST_SGST" ? "CGST_SGST" : "IGST";
 
     const taxTotal = Math.round((subtotal * gstRate) / 100);
@@ -204,16 +223,11 @@ export async function financeRoutes(app: FastifyInstance) {
   // client token. Supports partial settlement via `amount` (paise); without it
   // the remaining balance is assumed paid.
   app.patch("/invoices/:id/utr", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE"])) return;
+    if (!requireRole(req, reply, FINANCE_ROLES)) return;
     const { id } = req.params as { id: string };
-    const { utr, paidAt, amount } = req.body as {
-      utr?: string;
-      paidAt?: string;
-      amount?: number;
-    };
-    if (!utr || !String(utr).trim()) {
-      return reply.code(400).send({ error: "utr is required" });
-    }
+    const body = parseBody(req, reply, RecordUtrSchema);
+    if (!body) return;
+    const { utr, paidAt, amount } = body;
 
     const existing = await prisma.invoice.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: "Invoice not found" });
@@ -222,32 +236,47 @@ export async function financeRoutes(app: FastifyInstance) {
       return reply.code(409).send({ error: "Invoice is cancelled" });
     }
 
-    const balance = Math.max(0, existing.grandTotal - (existing.amountPaid ?? 0));
+    const existingTotal = Number(existing.grandTotal);
+    const existingPaid = Number(existing.amountPaid ?? 0);
+    const balance = Math.max(0, existingTotal - existingPaid);
     const applied =
-      amount != null ? Math.min(balance, Math.max(0, Math.round(Number(amount)))) : balance;
-    const newPaid = Math.min(existing.grandTotal, (existing.amountPaid ?? 0) + applied);
-    const fullyPaid = newPaid >= existing.grandTotal;
+      amount != null
+        ? Math.min(balance, Math.max(0, Math.round(Number(amount))))
+        : balance;
+    const newPaid = Math.min(existingTotal, existingPaid + applied);
+    const fullyPaid = newPaid >= existingTotal;
 
-    const updated = await prisma.invoice.update({
-      where: { id },
-      data: {
-        utr: String(utr).trim(),
-        amountPaid: newPaid,
-        status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
-        paidAt: fullyPaid
-          ? existing.paidAt ?? (paidAt ? new Date(paidAt) : new Date())
-          : null,
-      },
+    // The invoice flip and the Payment row are one fact. Recorded separately,
+    // a failure between them left an invoice marked PAID with no payment
+    // behind it — the books disagreeing with themselves.
+    const { updated, fx } = await prisma.$transaction(async (tx) => {
+      const updated = await tx.invoice.update({
+        where: { id },
+        data: {
+          utr: String(utr).trim(),
+          amountPaid: newPaid,
+          status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
+          paidAt: fullyPaid
+            ? (existing.paidAt ?? (paidAt ? new Date(paidAt) : new Date()))
+            : null,
+        },
+      });
+
+      // Idempotent on `gatewayPaymentId`, so re-recording the same UTR is a
+      // no-op rather than a duplicate Payment row.
+      const fx = await recordInvoicePaymentRows(tx, updated, {
+        gateway: "BANK_TRANSFER",
+        gatewayPaymentId: `utr:${String(utr).trim()}`,
+        method: "bank_transfer",
+        amount: applied,
+      });
+
+      return { updated, fx };
     });
 
-    // Idempotent on `gatewayPaymentId`, so re-recording the same UTR is a no-op
-    // rather than a duplicate Payment row.
-    await recordInvoicePayment(updated, {
-      gateway: "BANK_TRANSFER",
-      gatewayPaymentId: `utr:${String(utr).trim()}`,
-      method: "bank_transfer",
-      amount: applied,
-    });
+    // After commit, never inside: a rolled-back transaction that had already
+    // enqueued would leave a worker acting on an invoice that is not paid.
+    await enqueuePaymentSideEffects(fx);
 
     await emitEvent({
       code: fullyPaid ? "INVOICE_PAID" : "INVOICE_PARTIALLY_PAID",
@@ -261,13 +290,18 @@ export async function financeRoutes(app: FastifyInstance) {
 
   // PATCH /invoices/:id/status — admin-only workflow transition.
   app.patch("/invoices/:id/status", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN"])) return;
+    if (!requireRole(req, reply, ADMIN_ROLES)) return;
     const { id } = req.params as { id: string };
-    const { status } = req.body as { status?: string };
+    const body = parseBody(req, reply, UpdateInvoiceStatusSchema);
+    if (!body) return;
+    const { status } = body;
 
     // Accept the lowercase display form ("partially-paid") or the stored form
     // ("PARTIALLY_PAID") — the admin UI renders the lowercased variant.
-    const normalized = String(status ?? "").trim().toUpperCase().replace(/-/g, "_");
+    const normalized = String(status ?? "")
+      .trim()
+      .toUpperCase()
+      .replace(/-/g, "_");
     if (!INVOICE_STATUSES.includes(normalized)) {
       return reply.code(400).send({
         error: `Invalid status. Allowed: ${INVOICE_STATUSES.join(", ").toLowerCase()}`,
@@ -277,22 +311,33 @@ export async function financeRoutes(app: FastifyInstance) {
     const existing = await prisma.invoice.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: "Invoice not found" });
 
-    const updated = await prisma.invoice.update({
-      where: { id },
-      data: {
-        status: normalized,
-        ...(normalized === "PAID"
-          ? {
-              paidAt: existing.paidAt ?? new Date(),
-              amountPaid: existing.grandTotal,
-            }
-          : {}),
-      },
+    const becomingPaid = normalized === "PAID" && existing.status !== "PAID";
+
+    const { updated, fx } = await prisma.$transaction(async (tx) => {
+      const updated = await tx.invoice.update({
+        where: { id },
+        data: {
+          status: normalized,
+          ...(normalized === "PAID"
+            ? {
+                paidAt: existing.paidAt ?? new Date(),
+                amountPaid: existing.grandTotal,
+              }
+            : {}),
+        },
+      });
+
+      const fx = becomingPaid
+        ? await recordInvoicePaymentRows(tx, updated, {
+            gateway: "BANK_TRANSFER",
+            method: "manual",
+          })
+        : null;
+
+      return { updated, fx };
     });
 
-    if (normalized === "PAID" && existing.status !== "PAID") {
-      await recordInvoicePayment(updated, { gateway: "BANK_TRANSFER", method: "manual" });
-    }
+    if (fx) await enqueuePaymentSideEffects(fx);
 
     await emitEvent({
       code: "INVOICE_STATUS_CHANGED",
@@ -311,25 +356,35 @@ export async function financeRoutes(app: FastifyInstance) {
   async function applyGatewayPayment(
     invoiceId: string,
     capturedPaise: number,
-    facts: Parameters<typeof recordInvoicePayment>[1],
+    facts: Parameters<typeof recordInvoicePaymentRows>[2],
   ) {
     const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
     if (!invoice || invoice.status === "PAID" || invoice.status === "CANCELLED") return;
 
     const captured = Math.max(0, Math.round(capturedPaise) || 0);
-    const newPaid = Math.min(invoice.grandTotal, (invoice.amountPaid ?? 0) + captured);
-    const fullyPaid = newPaid >= invoice.grandTotal;
+    const grandTotal = Number(invoice.grandTotal);
+    const newPaid = Math.min(grandTotal, Number(invoice.amountPaid ?? 0) + captured);
+    const fullyPaid = newPaid >= grandTotal;
 
-    const updated = await prisma.invoice.update({
-      where: { id: invoice.id },
-      data: {
-        amountPaid: newPaid,
-        status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
-        paidAt: fullyPaid ? new Date() : null,
-      },
+    const { updated, fx } = await prisma.$transaction(async (tx) => {
+      const updated = await tx.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          amountPaid: newPaid,
+          status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
+          paidAt: fullyPaid ? new Date() : null,
+        },
+      });
+
+      const fx = await recordInvoicePaymentRows(tx, updated, {
+        ...facts,
+        amount: captured || undefined,
+      });
+
+      return { updated, fx };
     });
 
-    await recordInvoicePayment(updated, { ...facts, amount: captured || undefined });
+    await enqueuePaymentSideEffects(fx);
 
     await emitEvent({
       code: fullyPaid ? "INVOICE_PAID" : "INVOICE_PARTIALLY_PAID",
@@ -342,7 +397,9 @@ export async function financeRoutes(app: FastifyInstance) {
   // Razorpay webhook
   app.post("/webhooks/razorpay", async (req, reply) => {
     if (!process.env.RAZORPAY_WEBHOOK_SECRET) {
-      req.log.error("RAZORPAY_WEBHOOK_SECRET not set — Razorpay webhooks cannot be verified");
+      req.log.error(
+        "RAZORPAY_WEBHOOK_SECRET not set — Razorpay webhooks cannot be verified",
+      );
       return reply.code(503).send({ error: "Webhook verification not configured" });
     }
 
@@ -358,6 +415,11 @@ export async function financeRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: "Invalid signature" });
     }
 
+    // Deliberately unvalidated, and the last `req.body as any` in the routes
+    // along with the Stripe one below. The body is signature-verified against
+    // the raw bytes immediately above, and the shape is Razorpay's to change,
+    // not ours to declare. A strict schema here would reject a legitimate
+    // provider change and silently drop a real payment notification.
     const payload = req.body as any;
     const eventType = payload.event;
     const entity = payload.payload?.payment?.entity;
@@ -383,18 +445,25 @@ export async function financeRoutes(app: FastifyInstance) {
         where: { razorpayOrderId: rzpOrderId },
       });
       if (order) {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { status: "PAID", paidAt: new Date() },
-        });
+        // The order flip and the Payment row go together: an order marked PAID
+        // with no payment behind it is the same books-disagree problem as the
+        // invoice paths above.
+        const recorded = await prisma.$transaction(async (tx) => {
+          await tx.order.update({
+            where: { id: order.id },
+            data: { status: "PAID", paidAt: new Date() },
+          });
 
-        // Retried webhooks are common — guard the manual Payment insert so a
-        // second delivery does not create a duplicate row.
-        const already = await prisma.payment.findFirst({
-          where: { gatewayPaymentId: entity.id },
-        });
-        if (!already) {
-          await prisma.payment.create({
+          // Retried webhooks are common — guard the insert so a second
+          // delivery does not create a duplicate row. Inside the transaction
+          // the check and the insert cannot interleave with a concurrent
+          // delivery of the same event.
+          const already = await tx.payment.findFirst({
+            where: { gatewayPaymentId: entity.id },
+          });
+          if (already) return false;
+
+          await tx.payment.create({
             data: {
               orderId: order.id,
               gateway: "RAZORPAY",
@@ -407,7 +476,12 @@ export async function financeRoutes(app: FastifyInstance) {
               metadata: entity,
             },
           });
+          return true;
+        });
 
+        // After commit. Emitted inside, a rolled-back transaction would still
+        // have announced a payment that no longer exists.
+        if (recorded) {
           await emitEvent({
             code: "PAYMENT_CAPTURED",
             payload: { orderId: order.id, paymentId: entity.id, amount: entity.amount },
@@ -441,6 +515,8 @@ export async function financeRoutes(app: FastifyInstance) {
     const sigHeader = req.headers["stripe-signature"] as string | undefined;
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
     const rawBody = (req as any).rawBody as string | undefined;
+    // Same reasoning as the Razorpay handler: verified first, and the shape
+    // belongs to Stripe.
     let event = req.body as any;
 
     if (secret && sigHeader && rawBody) {
@@ -486,16 +562,26 @@ export async function financeRoutes(app: FastifyInstance) {
   // day after it was issued. Amounts are the outstanding balance, and every
   // open-receivable status is counted (partial and disputed included).
   app.get("/finance/ar-aging", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM"])) return;
+    if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
     const invoices = await prisma.invoice.findMany({
       where: { status: { in: OPEN_RECEIVABLE } },
       orderBy: { createdAt: "asc" },
     });
 
     const now = Date.now();
-    const buckets = { current: 0, d30: 0, d60: 0, d90: 0, d90plus: 0, totalOutstanding: 0 };
+    const buckets = {
+      current: 0,
+      d30: 0,
+      d60: 0,
+      d90: 0,
+      d90plus: 0,
+      totalOutstanding: 0,
+    };
     for (const inv of invoices) {
-      const outstanding = Math.max(0, (inv.grandTotal ?? 0) - (inv.amountPaid ?? 0));
+      const outstanding = Math.max(
+        0,
+        Number(inv.grandTotal ?? 0) - Number(inv.amountPaid ?? 0),
+      );
       if (outstanding === 0) continue;
       buckets.totalOutstanding += outstanding;
       const anchor = (inv.dueDate ?? inv.createdAt).getTime();
@@ -511,13 +597,13 @@ export async function financeRoutes(app: FastifyInstance) {
 
   // WIP summary
   app.get("/finance/wip", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM"])) return;
+    if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
     return prisma.wipLedger.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
   });
 
   // Rev-rec summary
   app.get("/finance/rev-rec", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM"])) return;
+    if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
     return prisma.revrecLedger.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
   });
 
@@ -529,7 +615,7 @@ export async function financeRoutes(app: FastifyInstance) {
   // UTC-hosted server does not shift invoices between months. Rows are split
   // into B2B (recipient has a GSTIN) and B2CS.
   app.get("/finance/gstr1", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "FINANCE", "SENIOR_PM", "PM"])) return;
+    if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
     const { month, year } = req.query as { month?: string; year?: string };
     const m = parseInt(String(month ?? ""), 10);
     const y = parseInt(String(year ?? ""), 10);
@@ -541,9 +627,12 @@ export async function financeRoutes(app: FastifyInstance) {
     const endDate = new Date(Date.UTC(y, m, 1)); // exclusive
 
     const invoices = await prisma.invoice.findMany({
+      take: LIST_CAP,
       where: {
         createdAt: { gte: startDate, lt: endDate },
-        status: { in: ["SENT", "VIEWED", "PARTIALLY_PAID", "PAID", "OVERDUE", "DISPUTED"] },
+        status: {
+          in: ["SENT", "VIEWED", "PARTIALLY_PAID", "PAID", "OVERDUE", "DISPUTED"],
+        },
       },
       include: { org: true },
     });

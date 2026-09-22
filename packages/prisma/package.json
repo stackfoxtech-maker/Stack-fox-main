@@ -12,17 +12,20 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:quick-seed": "tsx prisma/quick-seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.seed.json",
+    "db:drift": "prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --shadow-database-url $SHADOW_DATABASE_URL --exit-code"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0"
   },
   "devDependencies": {
+    "@stackfox/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "dotenv": "^17.4.2",
     "prisma": "^5.20.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.5.0",
-    "@types/node": "^20.0.0",
-    "@stackfox/tsconfig": "workspace:*"
+    "typescript": "^5.5.0"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

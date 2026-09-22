@@ -4,11 +4,15 @@ import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
 import { requireRole } from "../plugins/auth";
+import { SALES_ROLES } from "@stackfox/core";
+import { parseBody } from "../lib/validate";
+import { CreateRfpSchema, RfpDecisionSchema, RfpOutcomeSchema } from "./crmSchemas";
+import { CreateSdnNoteSchema } from "./opsSchemas";
 
 export async function rfpRoutes(app: FastifyInstance) {
   app.get("/rfps", async (req, reply) => {
     // RFPs are StackFox's own bid pipeline, not client-facing.
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SALES", "SENIOR_PM", "SE"])) return;
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const { status, orgId } = req.query as Record<string, string>;
     const where: any = {};
     if (status) where.status = status;
@@ -22,7 +26,8 @@ export async function rfpRoutes(app: FastifyInstance) {
 
   app.post("/rfps", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const body = req.body as any;
+    const body = parseBody(req, reply, CreateRfpSchema);
+    if (!body) return;
     return prisma.rfp.create({
       data: {
         orgId: body.orgId,
@@ -40,7 +45,10 @@ export async function rfpRoutes(app: FastifyInstance) {
   app.patch("/rfps/:id/decision", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { decision, reason } = req.body as { decision: string; reason?: string };
+    // `decision` was written straight into `status` with no check at all.
+    const decBody = parseBody(req, reply, RfpDecisionSchema);
+    if (!decBody) return;
+    const { decision, reason } = decBody;
     return prisma.rfp.update({
       where: { id },
       data: { status: decision, decisionNote: reason },
@@ -65,7 +73,9 @@ export async function rfpRoutes(app: FastifyInstance) {
   app.patch("/rfps/:id/outcome", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { outcome } = req.body as { outcome: string };
+    const outBody = parseBody(req, reply, RfpOutcomeSchema);
+    if (!outBody) return;
+    const { outcome } = outBody;
     return prisma.rfp.update({
       where: { id },
       data: { status: outcome },
@@ -75,7 +85,8 @@ export async function rfpRoutes(app: FastifyInstance) {
   app.post("/rfps/:id/sdns", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const body = req.body as any;
+    const body = parseBody(req, reply, CreateSdnNoteSchema);
+    if (!body) return;
     return prisma.sdnNote.create({
       data: {
         rfpId: id,
@@ -87,7 +98,7 @@ export async function rfpRoutes(app: FastifyInstance) {
   });
 
   app.get("/rfps/:id/sdns", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SALES", "SENIOR_PM", "SE"])) return;
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const { id } = req.params as { id: string };
     return prisma.sdnNote.findMany({
       where: { rfpId: id },

@@ -1,4 +1,5 @@
 import { GST_STATES } from "./gstInvoice";
+import { asString } from "./json";
 
 /**
  * Place-of-supply resolution for StackFox-issued invoices.
@@ -31,13 +32,15 @@ export function recipientStateCode(org: OrgLike): string | null {
   if (/^\d{2}/.test(gstin)) return gstin.slice(0, 2);
 
   const addr = (org?.billingAddress ?? {}) as Record<string, unknown>;
-  const code = String(addr.stateCode ?? addr.state_code ?? "").trim();
+  const code = asString(addr.stateCode ?? addr.state_code).trim();
   if (/^\d{2}$/.test(code)) return code;
 
-  const name = String(addr.state ?? "").trim().toLowerCase();
+  const name = asString(addr.state).trim().toLowerCase();
   if (name) {
     if (CODE_BY_NAME[name]) return CODE_BY_NAME[name];
-    const hit = Object.keys(CODE_BY_NAME).find((n) => name.startsWith(n) || n.startsWith(name));
+    const hit = Object.keys(CODE_BY_NAME).find(
+      (n) => name.startsWith(n) || n.startsWith(name),
+    );
     if (hit) return CODE_BY_NAME[hit];
   }
   return null;

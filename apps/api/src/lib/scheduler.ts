@@ -1,5 +1,6 @@
 import { queues } from "./queue";
 import { redis } from "./redis";
+import { log } from "./logger";
 
 /**
  * Periodic-job registration.
@@ -32,6 +33,12 @@ interface Schedule {
 }
 
 const SCHEDULES: Schedule[] = [
+  // Dependency check. Five minutes is a compromise: tight enough that a Redis
+  // outage is noticed before a working day's worth of OTPs have failed, loose
+  // enough that it is not itself a meaningful load. It only alerts on a change
+  // of state, so the interval does not set the notification rate.
+  { id: "health-alert", pattern: "*/5 * * * *" },
+
   // SLA response-target breaches — needs to be tight or the first-response
   // clock is meaningless.
   { id: "sla-sweep", pattern: "*/15 * * * *" },
@@ -76,9 +83,9 @@ export async function registerSchedules(): Promise<void> {
       { name: s.id, data: s.data ?? {} },
     );
   }
-  console.log(
-    `[scheduler] ${SCHEDULES.length} periodic jobs on 'cron' queue (tz=${TZ}): ` +
-      SCHEDULES.map((s) => s.id).join(", "),
+  log().info(
+    { count: SCHEDULES.length, tz: TZ, schedules: SCHEDULES.map((s) => s.id) },
+    "periodic jobs registered on the cron queue",
   );
 }
 
@@ -113,7 +120,7 @@ export async function pruneStaleSchedulers(): Promise<void> {
   for (const sched of existing) {
     if (sched?.key && !wanted.has(sched.key)) {
       await cron.removeJobScheduler(sched.key).catch(() => {});
-      console.log(`[scheduler] removed stale schedule ${sched.key}`);
+      log().info({ key: sched.key }, "removed stale schedule");
     }
   }
 
@@ -141,7 +148,11 @@ async function cleanupRetiredQueues(): Promise<void> {
       }
     } while (cursor !== "0");
   }
-  if (removed) console.log(`[scheduler] cleared ${removed} keys from ${RETIRED_QUEUES.length} retired queues`);
+  if (removed)
+    log().info(
+      { removed, queues: RETIRED_QUEUES.length },
+      "cleared keys from retired queues",
+    );
 
   await redis.set(MARKER, new Date().toISOString()).catch(() => {});
 }

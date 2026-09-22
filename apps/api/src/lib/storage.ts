@@ -55,18 +55,25 @@ export async function uploadFile(
 export async function getPresignedDownload(
   key: string,
   expiresIn = 3600,
+  opts: { archive?: boolean } = {},
 ): Promise<string> {
   // `download: true` forces Content-Disposition: attachment on the signed
   // response. Content-Type at upload time is browser-controlled (Supabase
   // binds it at PUT, not at signing — see getPresignedUpload below), so an
   // uploaded HTML/SVG file opened directly would otherwise render inline
   // instead of downloading — a stored-XSS path through file sharing.
+  // The archive bucket was previously write-only: this function always read
+  // BUCKET, so nothing in the API could retrieve the copy the system calls the
+  // contract of record. Reading it is an audited, staff-only action -- see
+  // routes/contracts.ts#/contracts/:id/archive.
   const { data, error } = await supabase()
-    .storage.from(BUCKET)
+    .storage.from(opts.archive ? WORM_BUCKET : BUCKET)
     .createSignedUrl(key, expiresIn, { download: true });
 
   if (error || !data) {
-    throw new Error(`Could not sign download for ${key}: ${error?.message ?? "no url returned"}`);
+    throw new Error(
+      `Could not sign download for ${key}: ${error?.message ?? "no url returned"}`,
+    );
   }
   return data.signedUrl;
 }
@@ -86,7 +93,9 @@ export async function getPresignedUpload(
     .createSignedUploadUrl(key);
 
   if (error || !data) {
-    throw new Error(`Could not sign upload for ${key}: ${error?.message ?? "no url returned"}`);
+    throw new Error(
+      `Could not sign upload for ${key}: ${error?.message ?? "no url returned"}`,
+    );
   }
   return { url: data.signedUrl, token: data.token };
 }
@@ -103,9 +112,20 @@ export async function copyToWorm(key: string, body: Buffer): Promise<string> {
   return wormKey;
 }
 
-/** Streams an object back into the API process (PDF regeneration, WORM copies). */
-export async function downloadFile(key: string): Promise<Buffer> {
-  const { data, error } = await supabase().storage.from(BUCKET).download(key);
+/**
+ * Streams an object back into the API process.
+ *
+ * Used by document verification, which re-reads the stored bytes and compares
+ * their hash against the ledger. An earlier cleanup removed this as
+ * zero-caller; it now has one, and it can read the archive bucket too.
+ */
+export async function downloadFromStorage(
+  key: string,
+  opts: { archive?: boolean } = {},
+): Promise<Buffer> {
+  const { data, error } = await supabase()
+    .storage.from(opts.archive ? WORM_BUCKET : BUCKET)
+    .download(key);
   if (error || !data) {
     throw new Error(`Storage download failed for ${key}: ${error?.message ?? "no data"}`);
   }

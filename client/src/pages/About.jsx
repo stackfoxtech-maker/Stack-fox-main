@@ -50,16 +50,30 @@ export default function About() {
           <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
             <Reveal className="lg:col-span-6">
               <span className="eyebrow mb-5">About StackFox</span>
-              <h1 className="text-warm-900" style={{ fontSize: 'clamp(2.35rem, 5.5vw, 3.5rem)', lineHeight: 1.06, letterSpacing: '-0.025em' }}>
+              <h1
+                className="text-warm-900"
+                style={{
+                  fontSize: 'clamp(2.35rem, 5.5vw, 3.5rem)',
+                  lineHeight: 1.06,
+                  letterSpacing: '-0.025em',
+                }}
+              >
                 India's first Amazon-style IT services consultancy.
               </h1>
               <p className="mt-5 max-w-lg text-body-lg text-warm-600">
-                Browse, configure, purchase, and deploy IT services from a single place.
-                No proposals. No ambiguity. Just technology, shipped.
+                Browse, configure, purchase, and deploy IT services from a single place. No
+                proposals. No ambiguity. Just technology, shipped.
               </p>
               <div className="mt-8 flex flex-wrap gap-2">
-                {['Technology arm of Artwall Labs', 'Independent consultancy', 'E2E platform delivery', 'Est. 2026'].map((t) => (
-                  <span key={t} className="badge-fx badge-neutral">{t}</span>
+                {[
+                  'Technology arm of Artwall Labs',
+                  'Independent consultancy',
+                  'E2E platform delivery',
+                  'Est. 2026',
+                ].map((t) => (
+                  <span key={t} className="badge-fx badge-neutral">
+                    {t}
+                  </span>
                 ))}
               </div>
             </Reveal>
@@ -67,10 +81,15 @@ export default function About() {
             <Reveal variant="fade" delay={0.1} className="lg:col-span-6">
               <div className="img-frame aspect-[4/3]">
                 <CdnImage
-                  name="about-workspace" w={900} widths={[480, 720, 900, 1200]} eager
+                  name="about-workspace"
+                  w={900}
+                  widths={[480, 720, 900, 1200]}
+                  eager
                   sizes="(min-width: 1024px) 45vw, 100vw"
-                  width={1200} height={900}
-                  alt="The StackFox studio in the late afternoon" />
+                  width={1200}
+                  height={900}
+                  alt="The StackFox studio in the late afternoon"
+                />
               </div>
             </Reveal>
           </div>
@@ -91,19 +110,43 @@ export default function About() {
             <div className="rounded-lg border border-warm-200 bg-warm-50 p-7">
               <div className="eyebrow mb-5">The problem</div>
               <div className="space-y-4">
-                <ProblemItem title="Opaque pricing" desc="You can't find out what a website or app costs without sitting through multiple calls and proposals." />
-                <ProblemItem title="Endless cycles" desc="Getting a quote takes days or weeks. Most businesses give up before they even start." />
-                <ProblemItem title="Fragmented delivery" desc="Design from one place, code from another. No single owner or accountability." />
-                <ProblemItem title="No product thinking" desc="Most agencies sell hours, not outcomes. You buy time — not a working product." />
+                <ProblemItem
+                  title="Opaque pricing"
+                  desc="You can't find out what a website or app costs without sitting through multiple calls and proposals."
+                />
+                <ProblemItem
+                  title="Endless cycles"
+                  desc="Getting a quote takes days or weeks. Most businesses give up before they even start."
+                />
+                <ProblemItem
+                  title="Fragmented delivery"
+                  desc="Design from one place, code from another. No single owner or accountability."
+                />
+                <ProblemItem
+                  title="No product thinking"
+                  desc="Most agencies sell hours, not outcomes. You buy time — not a working product."
+                />
               </div>
             </div>
             <div className="rounded-lg border border-fox-200 bg-white p-7 shadow-md">
               <div className="eyebrow mb-5">How StackFox solves it</div>
               <div className="space-y-4">
-                <ProblemItem title="Instant transparent pricing" desc="240+ services with configurable scope. See the price before you talk to anyone." />
-                <ProblemItem title="End-to-end delivery" desc="From requirement to deployment to support — one team, one platform, one invoice." />
-                <ProblemItem title="Amazon-style shopping" desc="Browse categories, add to cart, configure specs — like buying a product." />
-                <ProblemItem title="Outcome-first consultancy" desc="We scope, build, ship, and stand behind working products. Strategy to deployment." />
+                <ProblemItem
+                  title="Instant transparent pricing"
+                  desc="240+ services with configurable scope. See the price before you talk to anyone."
+                />
+                <ProblemItem
+                  title="End-to-end delivery"
+                  desc="From requirement to deployment to support — one team, one platform, one invoice."
+                />
+                <ProblemItem
+                  title="Amazon-style shopping"
+                  desc="Browse categories, add to cart, configure specs — like buying a product."
+                />
+                <ProblemItem
+                  title="Outcome-first consultancy"
+                  desc="We scope, build, ship, and stand behind working products. Strategy to deployment."
+                />
               </div>
             </div>
           </Reveal>
@@ -111,22 +154,28 @@ export default function About() {
           <Reveal className="space-y-8 lg:col-span-7">
             <div className="img-frame aspect-[16/10]">
               <CdnImage
-                name="studio-collab" w={1200} widths={[560, 800, 1200, 1600]}
+                name="studio-collab"
+                w={1200}
+                widths={[560, 800, 1200, 1600]}
                 sizes="(min-width: 1024px) 58vw, 100vw"
-                width={1400} height={875}
-                alt="The StackFox team working through a project plan" />
+                width={1400}
+                height={875}
+                alt="The StackFox team working through a project plan"
+              />
             </div>
             <p className="text-body-lg leading-relaxed text-warm-700">
               India's IT services industry is worth $250B+ — but buying technology as a business
               still feels like the early 2000s. There's no transparency, no standardisation, and no
-              platform that lets you simply <strong className="text-warm-900">shop for technology</strong> the
-              way you shop for everything else.
+              platform that lets you simply{' '}
+              <strong className="text-warm-900">shop for technology</strong> the way you shop for
+              everything else.
             </p>
             <p className="text-body-md leading-relaxed text-warm-600">
               <span className="font-semibold text-fox-600">StackFox</span> was built inside{' '}
-              <span className="font-semibold text-warm-900">Artwall Labs</span> to solve exactly this.
-              We started by building all the technology for Artwall's own products — and realised the
-              engineering system we'd created could serve any business, not just our parent company.
+              <span className="font-semibold text-warm-900">Artwall Labs</span> to solve exactly
+              this. We started by building all the technology for Artwall's own products — and
+              realised the engineering system we'd created could serve any business, not just our
+              parent company.
             </p>
             <div className="flex items-start gap-4 rounded-lg border border-sage-200 bg-sage-50 p-6">
               <Zap size={22} className="mt-0.5 shrink-0 text-sage-600" />
@@ -161,8 +210,12 @@ export default function About() {
               A creative-technology company building platforms for India's art and creator economy —
               marketplace infrastructure, exhibition systems, and creator networks.
             </p>
-            <a href="https://artwalllabs.com" target="_blank" rel="noreferrer"
-              className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-medium text-fox-600 hover:text-fox-700">
+            <a
+              href="https://artwalllabs.com"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-medium text-fox-600 hover:text-fox-700"
+            >
               artwalllabs.com <ExternalLink size={13} />
             </a>
           </Reveal>
@@ -175,11 +228,16 @@ export default function About() {
               categories. End-to-end delivery — from requirement to production.
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2">
-              {['Web & Mobile', 'AI & Automation', 'DevOps & Cloud', 'Design & Backend'].map((item) => (
-                <div key={item} className="rounded-sm border border-warm-200 bg-warm-50 p-2.5 text-center text-body-sm font-medium text-warm-800">
-                  {item}
-                </div>
-              ))}
+              {['Web & Mobile', 'AI & Automation', 'DevOps & Cloud', 'Design & Backend'].map(
+                (item) => (
+                  <div
+                    key={item}
+                    className="rounded-sm border border-warm-200 bg-warm-50 p-2.5 text-center text-body-sm font-medium text-warm-800"
+                  >
+                    {item}
+                  </div>
+                ),
+              )}
             </div>
           </Reveal>
         </div>
@@ -196,14 +254,30 @@ export default function About() {
         </Reveal>
 
         <Reveal className="mt-12 max-w-2xl">
-          <RoadmapStep phase="Phase 1 · Done" title="Technology arm of Artwall Labs"
-            desc="Built internally as the dedicated IT unit. All Artwall technology — fraud engine, escrow, AI curation — engineered by the StackFox team." status="done" />
-          <RoadmapStep phase="Phase 2 · Done" title="Independent consultancy & marketplace"
-            desc="Own client base, own pipeline, 240+ services live on the platform. Operating independently with structural backing from Artwall Labs." status="done" />
-          <RoadmapStep phase="Phase 3 · Now" title="Platform scale & market presence"
-            desc="Expanding to 300+ services, growing the delivery team, establishing StackFox as the default for IT service procurement in India." status="now" />
-          <RoadmapStep phase="Phase 4 · Near future" title="StackFox by Artwall Labs — formal subsidiary"
-            desc="Incorporation as a subsidiary. Independent entity, own P&L, funding optionality — retaining the parent group identity." status="soon" />
+          <RoadmapStep
+            phase="Phase 1 · Done"
+            title="Technology arm of Artwall Labs"
+            desc="Built internally as the dedicated IT unit. All Artwall technology — fraud engine, escrow, AI curation — engineered by the StackFox team."
+            status="done"
+          />
+          <RoadmapStep
+            phase="Phase 2 · Done"
+            title="Independent consultancy & marketplace"
+            desc="Own client base, own pipeline, 240+ services live on the platform. Operating independently with structural backing from Artwall Labs."
+            status="done"
+          />
+          <RoadmapStep
+            phase="Phase 3 · Now"
+            title="Platform scale & market presence"
+            desc="Expanding to 300+ services, growing the delivery team, establishing StackFox as the default for IT service procurement in India."
+            status="now"
+          />
+          <RoadmapStep
+            phase="Phase 4 · Near future"
+            title="StackFox by Artwall Labs — formal subsidiary"
+            desc="Incorporation as a subsidiary. Independent entity, own P&L, funding optionality — retaining the parent group identity."
+            status="soon"
+          />
         </Reveal>
       </Section>
 
@@ -215,8 +289,13 @@ export default function About() {
             Browse the catalog, configure your services, and get a professional quote in minutes.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link to="/catalog" className="btn-fox px-8 text-base">Browse catalog <ArrowRight size={16} /></Link>
-            <Link to="/contact" className="btn-outline border-white/25 bg-transparent px-8 text-base text-white hover:border-white/50">
+            <Link to="/catalog" className="btn-fox px-8 text-base">
+              Browse catalog <ArrowRight size={16} />
+            </Link>
+            <Link
+              to="/contact"
+              className="btn-outline border-white/25 bg-transparent px-8 text-base text-white hover:border-white/50"
+            >
               Contact sales
             </Link>
           </div>

@@ -1,18 +1,22 @@
 import { useState } from 'react';
-import { MessageSquare, Search, Copy, RotateCcw, ChevronRight } from 'lucide-react';
-import { Button, Input, Badge } from '@components/ui/Primitives';
-import { objectionKeys, genericObjections, businessCategories, pitchLibrary } from '@data/salesPitchLibrary';
-import { toast } from 'react-hot-toast';
+import { MessageSquare, Search, Copy, ChevronRight } from 'lucide-react';
+import { Button, Badge } from '@components/ui/Primitives';
+import {
+  objectionKeys,
+  genericObjections,
+  businessCategories,
+  pitchLibrary,
+} from '@data/salesPitchLibrary';
 
 const topObjectionsByCategory = {
-  'gym': ['expensive', 'noNeed', 'hasInstagram'],
-  'restaurant': ['expensive', 'hasInstagram', 'noNeed'],
-  'cafe': ['expensive', 'hasInstagram', 'noNeed'],
-  'hospital': ['expensive', 'noNeed', 'hasWebsite'],
-  'clinic': ['expensive', 'noNeed', 'hasInstagram'],
-  'hotel': ['expensive', 'noNeed', 'hasWebsite'],
+  gym: ['expensive', 'noNeed', 'hasInstagram'],
+  restaurant: ['expensive', 'hasInstagram', 'noNeed'],
+  cafe: ['expensive', 'hasInstagram', 'noNeed'],
+  hospital: ['expensive', 'noNeed', 'hasWebsite'],
+  clinic: ['expensive', 'noNeed', 'hasInstagram'],
+  hotel: ['expensive', 'noNeed', 'hasWebsite'],
   'real-estate': ['expensive', 'noNeed', 'noCustomers'],
-  'school': ['expensive', 'noNeed', 'hasInstagram'],
+  school: ['expensive', 'noNeed', 'hasInstagram'],
   'car-dealer': ['expensive', 'noNeed', 'hasWebsite'],
 };
 
@@ -38,26 +42,35 @@ export default function Objections() {
       noCustomers: 'Share case study of similar business that increased enquiries by 35%.',
       guaranteeRanking: 'Explain SEO process and show current rankings of similar businesses.',
       guaranteeCustomers: 'Focus on digital foundation and long-term growth strategy.',
-      noSEO: 'Simplify: "SEO means Google can find you easier. We handle the tech, you run your business."',
+      noSEO:
+        'Simplify: "SEO means Google can find you easier. We handle the tech, you run your business."',
       thinkAbout: 'Send a sample website link and follow up in 2-3 days.',
       sendWhatsApp: 'Send a WhatsApp message with website samples and pricing.',
     };
     return nextSteps[key] || 'Follow up with a personalized sample for their business.';
   };
 
-  const filtered = objectionKeys.filter(o => {
+  const filtered = objectionKeys.filter((o) => {
     if (!search) return true;
-    return o.label.toLowerCase().includes(search.toLowerCase()) || getResponse(o.id).toLowerCase().includes(search.toLowerCase());
+    return (
+      o.label.toLowerCase().includes(search.toLowerCase()) ||
+      getResponse(o.id).toLowerCase().includes(search.toLowerCase())
+    );
   });
 
-  const topObjections = selectedCategory && topObjectionsByCategory[selectedCategory]
-    ? objectionKeys.filter(o => topObjectionsByCategory[selectedCategory].includes(o.id))
-    : [];
+  const topObjections =
+    selectedCategory && topObjectionsByCategory[selectedCategory]
+      ? objectionKeys.filter((o) => topObjectionsByCategory[selectedCategory].includes(o.id))
+      : [];
 
-  const objectionsToShow = practiceMode ? (topObjections.length > 0 ? topObjections : filtered) : filtered;
+  const objectionsToShow = practiceMode
+    ? topObjections.length > 0
+      ? topObjections
+      : filtered
+    : filtered;
 
   const toggleFlip = (id) => {
-    setFlipped(prev => ({ ...prev, [id]: !prev[id] }));
+    setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
@@ -70,24 +83,45 @@ export default function Objections() {
       <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1.5">Filter by Category (Optional)</label>
-            <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="input-fx">
+            <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              Filter by Category (Optional)
+            </label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="input-fx"
+            >
               <option value="">All Categories</option>
-              {businessCategories.map((cat) => <option key={cat.id} value={cat.id}>{cat.group} — {cat.name}</option>)}
+              {businessCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.group} — {cat.name}
+                </option>
+              ))}
             </select>
           </div>
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search objections..." className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-warm-200 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500/30" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search objections..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-warm-200 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500/30"
+            />
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant={practiceMode ? 'primary' : 'secondary'} onClick={() => setPracticeMode(!practiceMode)}>
+          <Button
+            variant={practiceMode ? 'primary' : 'secondary'}
+            onClick={() => setPracticeMode(!practiceMode)}
+          >
             {practiceMode ? 'Exit Practice Mode' : 'Practice Mode'}
           </Button>
           {practiceMode && topObjections.length > 0 && (
-            <span className="text-xs text-warm-500">Showing top {topObjections.length} objections for {businessCategories.find(c => c.id === selectedCategory)?.name}</span>
+            <span className="text-xs text-warm-500">
+              Showing top {topObjections.length} objections for{' '}
+              {businessCategories.find((c) => c.id === selectedCategory)?.name}
+            </span>
           )}
         </div>
       </div>
@@ -99,7 +133,11 @@ export default function Objections() {
 
           if (practiceMode) {
             return (
-              <div key={obj.id} onClick={() => toggleFlip(obj.id)} className="bg-white rounded-2xl border border-warm-200 p-5 hover:shadow-sm transition cursor-pointer min-h-[160px] flex flex-col">
+              <div
+                key={obj.id}
+                onClick={() => toggleFlip(obj.id)}
+                className="bg-white rounded-2xl border border-warm-200 p-5 hover:shadow-sm transition cursor-pointer min-h-[160px] flex flex-col"
+              >
                 <div className="flex items-start gap-3 mb-3">
                   <div className="p-2 rounded-xl bg-warning-50 text-warning-600 flex-shrink-0">
                     <MessageSquare size={18} />
@@ -123,9 +161,17 @@ export default function Objections() {
                   )}
                 </div>
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="text-xs text-warm-400">{isFlipped ? 'Click to hide' : 'Click to reveal'}</span>
+                  <span className="text-xs text-warm-400">
+                    {isFlipped ? 'Click to hide' : 'Click to reveal'}
+                  </span>
                   {isFlipped && (
-                    <button onClick={(e) => { e.stopPropagation(); copyToClipboard(response); }} className="text-xs text-fox-500 hover:text-fox-700 flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyToClipboard(response);
+                      }}
+                      className="text-xs text-fox-500 hover:text-fox-700 flex items-center gap-1"
+                    >
                       <Copy size={12} /> Copy
                     </button>
                   )}
@@ -135,7 +181,10 @@ export default function Objections() {
           }
 
           return (
-            <div key={obj.id} className="bg-white rounded-2xl border border-warm-200 p-5 hover:shadow-sm transition">
+            <div
+              key={obj.id}
+              className="bg-white rounded-2xl border border-warm-200 p-5 hover:shadow-sm transition"
+            >
               <div className="flex items-start gap-3 mb-3">
                 <div className="p-2 rounded-xl bg-warning-50 text-warning-600 flex-shrink-0">
                   <MessageSquare size={18} />
@@ -148,7 +197,10 @@ export default function Objections() {
               <div className="pl-11">
                 <p className="text-sm text-warm-600 leading-relaxed">{response}</p>
                 <div className="mt-3 flex items-center justify-between">
-                  <button onClick={() => copyToClipboard(response)} className="flex items-center gap-1 text-xs text-fox-500 hover:text-fox-700 transition">
+                  <button
+                    onClick={() => copyToClipboard(response)}
+                    className="flex items-center gap-1 text-xs text-fox-500 hover:text-fox-700 transition"
+                  >
                     <Copy size={12} /> Copy response
                   </button>
                   <div className="flex items-center gap-1 text-xs text-warm-400">

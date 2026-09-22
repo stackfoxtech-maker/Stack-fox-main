@@ -1,0 +1,34 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Advisories land between pushes, so re-scan the default branch weekly
+    # rather than only when someone happens to open a pull request.
+    - cron: "0 3 * * 1"
+
+jobs:
+  analyze:
+    name: analyze
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # security-extended adds the injection and hardcoded-credential
+          # queries, which is the point of running this at all.
+          queries: security-extended
+
+      # The default autobuild step is for compiled languages. This repository
+      # is TypeScript, so CodeQL reads the sources directly.
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

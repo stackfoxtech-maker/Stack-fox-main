@@ -19,7 +19,10 @@ export const useScrollReveal = (options = {}) => {
           observer.unobserve(el); // Only trigger once
         }
       },
-      { threshold: options.threshold || 0.1, rootMargin: options.rootMargin || '0px 0px -50px 0px' }
+      {
+        threshold: options.threshold || 0.1,
+        rootMargin: options.rootMargin || '0px 0px -50px 0px',
+      },
     );
 
     observer.observe(el);
@@ -96,7 +99,9 @@ export const usePageTitle = (title) => {
   useEffect(() => {
     const prev = document.title;
     document.title = title ? `${title} — StackFox` : 'StackFox — Smart Code, Swift Delivery';
-    return () => { document.title = prev; };
+    return () => {
+      document.title = prev;
+    };
   }, [title]);
 };
 
@@ -114,14 +119,18 @@ export const useCountUp = (end, { duration = 700, decimals = 0, startDelay = 0 }
   const [value, setValue] = useState(end);
 
   useEffect(() => {
-    const reduce = typeof window !== 'undefined'
-      && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const reduce =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const a = from.current;
     const b = end;
     from.current = b;
     const delay = firstRun.current ? startDelay : 0;
     firstRun.current = false;
-    if (reduce || a === b) { setValue(b); return; }
+    if (reduce || a === b) {
+      setValue(b);
+      return;
+    }
 
     let raf;
     let startTs;
@@ -133,8 +142,13 @@ export const useCountUp = (end, { duration = 700, decimals = 0, startDelay = 0 }
       setValue(decimals ? +next.toFixed(decimals) : Math.round(next));
       if (t < 1) raf = requestAnimationFrame(tick);
     };
-    const timer = setTimeout(() => { raf = requestAnimationFrame(tick); }, delay);
-    return () => { clearTimeout(timer); cancelAnimationFrame(raf); };
+    const timer = setTimeout(() => {
+      raf = requestAnimationFrame(tick);
+    }, delay);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(raf);
+    };
   }, [end, duration, decimals, startDelay]);
 
   return { ref, value };

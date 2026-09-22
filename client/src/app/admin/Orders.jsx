@@ -1,6 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Mail, MessageSquare, ExternalLink, ChevronDown, ChevronUp, User, ScrollText, FileText, ShieldCheck, PenTool, Clock, CheckCircle2, AlertTriangle, Download} from 'lucide-react';
+import {
+  ShoppingBag,
+  Mail,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
+  User,
+  ScrollText,
+  PenTool,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  Download,
+} from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
@@ -8,11 +21,19 @@ import api from '@lib/api';
 import toast from 'react-hot-toast';
 
 const CONTRACT_TYPE_LABELS = {
-  SOW: 'Statement of Work', MSA: 'Master Service Agreement', NDA: 'Non-Disclosure Agreement',
-  IP_WFH: 'IP Assignment', DPA: 'Data Processing Agreement', MICRO_SOW: 'Micro SOW',
+  SOW: 'Statement of Work',
+  MSA: 'Master Service Agreement',
+  NDA: 'Non-Disclosure Agreement',
+  IP_WFH: 'IP Assignment',
+  DPA: 'Data Processing Agreement',
+  MICRO_SOW: 'Micro SOW',
 };
 const CONTRACT_STATUS = {
-  DRAFT: 'warning', CLIENT_SIGNED: 'info', EXECUTED: 'success', AMENDED: 'info', TERMINATED: 'danger',
+  DRAFT: 'warning',
+  CLIENT_SIGNED: 'info',
+  EXECUTED: 'success',
+  AMENDED: 'info',
+  TERMINATED: 'danger',
 };
 
 const STATUS_TO_VARIANT = {
@@ -48,7 +69,8 @@ export default function Orders() {
     setError(null);
     if (tab === 'contracts') {
       setContractPage(1);
-      api.get('/contracts')
+      api
+        .get('/contracts')
         .then((r) => setItems(r.data.data || []))
         .catch((err) => {
           setError(err?.response?.data?.error || 'Failed to load contracts');
@@ -57,7 +79,8 @@ export default function Orders() {
         .finally(() => setLoading(false));
       return;
     }
-    api.get(tab === 'quotes' ? '/quotes' : '/invoices', { params: { page: 1, limit: 20 } })
+    api
+      .get(tab === 'quotes' ? '/quotes' : '/invoices', { params: { page: 1, limit: 20 } })
       .then((r) => {
         setItems(r.data.data || []);
         const pagination = r.data.meta?.pagination;
@@ -77,7 +100,8 @@ export default function Orders() {
   const fetchPage = (page) => {
     setLoading(true);
     setError(null);
-    api.get(tab === 'quotes' ? '/quotes' : '/invoices', { params: { page, limit: 20 } })
+    api
+      .get(tab === 'quotes' ? '/quotes' : '/invoices', { params: { page, limit: 20 } })
       .then((r) => {
         setItems(r.data.data || []);
         const pagination = r.data.meta?.pagination;
@@ -107,26 +131,36 @@ export default function Orders() {
         fetchPage(meta.page);
       }
     } catch (err) {
-      toast.error(err?.response?.data?.error || err?.response?.data?.message || 'Failed to update status');
+      toast.error(
+        err?.response?.data?.error || err?.response?.data?.message || 'Failed to update status',
+      );
     }
   };
 
   const contactUser = (email, phone, name, quoteNum) => {
     const msg = `Hi ${name}, this is about your quote ${quoteNum} on StackFox...`;
     if (phone) {
-      window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+      window.open(
+        `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`,
+        '_blank',
+      );
     } else {
-      window.open(`mailto:${email}?subject=Regarding your quote ${quoteNum}&body=${encodeURIComponent(msg)}`, '_blank');
+      window.open(
+        `mailto:${email}?subject=Regarding your quote ${quoteNum}&body=${encodeURIComponent(msg)}`,
+        '_blank',
+      );
     }
   };
 
-  const contactMethodLabel = (email, phone) => phone ? 'Contact via WhatsApp' : email ? 'Contact via Email' : 'No contact method';
+  const contactMethodLabel = (email, phone) =>
+    phone ? 'Contact via WhatsApp' : email ? 'Contact via Email' : 'No contact method';
 
-  const statusOptions = tab === 'quotes'
-    ? ['draft', 'reviewing', 'approved', 'invoiced', 'cancelled']
-    : tab === 'invoices'
-    ? ['draft', 'sent', 'viewed', 'partially-paid', 'paid', 'overdue', 'cancelled']
-    : ['draft', 'client-signed', 'executed', 'amended', 'terminated'];
+  const statusOptions =
+    tab === 'quotes'
+      ? ['draft', 'reviewing', 'approved', 'invoiced', 'cancelled']
+      : tab === 'invoices'
+        ? ['draft', 'sent', 'viewed', 'partially-paid', 'paid', 'overdue', 'cancelled']
+        : ['draft', 'client-signed', 'executed', 'amended', 'terminated'];
 
   const contractStart = (contractPage - 1) * CONTRACT_PAGE_SIZE;
   const contractEnd = contractStart + CONTRACT_PAGE_SIZE;
@@ -138,7 +172,9 @@ export default function Orders() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-warm-900">Orders & Billing</h2>
-          <p className="text-sm text-warm-500">Manage client quotes, invoices, contracts, and payment tracking.</p>
+          <p className="text-sm text-warm-500">
+            Manage client quotes, invoices, contracts, and payment tracking.
+          </p>
         </div>
       </div>
 
@@ -157,47 +193,78 @@ export default function Orders() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <div className="flex justify-center py-20">
+          <Spinner size="lg" />
+        </div>
       ) : error ? (
         <div className="bg-danger-50 border border-danger-200 rounded-2xl p-6 flex items-start gap-3">
           <AlertTriangle className="text-danger-600 mt-0.5" size={20} />
           <div>
             <p className="font-bold text-danger-800 text-sm">Failed to load {tab}</p>
             <p className="text-sm text-danger-700 mt-1">{error}</p>
-            <button onClick={fetchItems} className="mt-3 text-xs font-bold text-danger-800 underline">Retry</button>
+            <button
+              onClick={fetchItems}
+              className="mt-3 text-xs font-bold text-danger-800 underline"
+            >
+              Retry
+            </button>
           </div>
         </div>
       ) : tab === 'contracts' ? (
         <div className="space-y-3">
           {paginatedContracts.map((c) => {
-            const clientSig = c.signatures?.find(s => s.side === 'CLIENT');
-            const sfSig = c.signatures?.find(s => s.side === 'STACKFOX');
+            const clientSig = c.signatures?.find((s) => s.side === 'CLIENT');
+            const sfSig = c.signatures?.find((s) => s.side === 'STACKFOX');
             return (
-              <div key={c._id} className="bg-white rounded-[2rem] border border-warm-200 p-5 md:p-6">
+              <div
+                key={c._id}
+                className="bg-white rounded-[2rem] border border-warm-200 p-5 md:p-6"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                      c.status === 'EXECUTED' ? 'bg-emerald-50 text-emerald-600' :
-                      c.status === 'CLIENT_SIGNED' ? 'bg-blue-50 text-blue-600' :
-                      'bg-warm-100 text-warm-500'
-                    }`}>
+                    <div
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                        c.status === 'EXECUTED'
+                          ? 'bg-emerald-50 text-emerald-600'
+                          : c.status === 'CLIENT_SIGNED'
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'bg-warm-100 text-warm-500'
+                      }`}
+                    >
                       <ScrollText size={20} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-bold text-warm-900 text-sm">{CONTRACT_TYPE_LABELS[c.type] || c.type}</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-fox-50 text-fox-700 uppercase">{c.type}</span>
+                        <span className="font-bold text-warm-900 text-sm">
+                          {CONTRACT_TYPE_LABELS[c.type] || c.type}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-fox-50 text-fox-700 uppercase">
+                          {c.type}
+                        </span>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-warm-500">
-                        <span className="flex items-center gap-1"><Clock size={10} /> {formatDate(c.createdAt)}</span>
-                        {c.engagementId && <><span className="text-warm-300">·</span><span className="font-mono">{c.engagementId}</span></>}
+                        <span className="flex items-center gap-1">
+                          <Clock size={10} /> {formatDate(c.createdAt)}
+                        </span>
+                        {c.engagementId && (
+                          <>
+                            <span className="text-warm-300">·</span>
+                            <span className="font-mono">{c.engagementId}</span>
+                          </>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className={`text-[10px] flex items-center gap-1 ${clientSig ? 'text-emerald-600' : 'text-warm-400'}`}>
-                          {clientSig ? <CheckCircle2 size={10} /> : <Clock size={10} />} Client {clientSig ? 'signed' : 'pending'}
+                        <span
+                          className={`text-[10px] flex items-center gap-1 ${clientSig ? 'text-emerald-600' : 'text-warm-400'}`}
+                        >
+                          {clientSig ? <CheckCircle2 size={10} /> : <Clock size={10} />} Client{' '}
+                          {clientSig ? 'signed' : 'pending'}
                         </span>
-                        <span className={`text-[10px] flex items-center gap-1 ${sfSig ? 'text-emerald-600' : 'text-warm-400'}`}>
-                          {sfSig ? <CheckCircle2 size={10} /> : <Clock size={10} />} StackFox {sfSig ? 'signed' : 'pending'}
+                        <span
+                          className={`text-[10px] flex items-center gap-1 ${sfSig ? 'text-emerald-600' : 'text-warm-400'}`}
+                        >
+                          {sfSig ? <CheckCircle2 size={10} /> : <Clock size={10} />} StackFox{' '}
+                          {sfSig ? 'signed' : 'pending'}
                         </span>
                       </div>
                     </div>
@@ -206,26 +273,38 @@ export default function Orders() {
                     <Badge variant={CONTRACT_STATUS[c.status] || 'warning'}>{c.status}</Badge>
                     {/* Always offered: the API builds the PDF on request when the
                         document worker never produced one. */}
-                    <Button variant="outline" size="sm" className="rounded-xl gap-1.5 text-xs" onClick={async () => {
-                      try {
-                        const { data } = await api.get(`/contracts/${c._id}/pdf`);
-                        window.open(data.url, '_blank', 'noopener');
-                      } catch (err) {
-                        toast.error(err?.response?.data?.error || 'Could not open the contract PDF.');
-                      }
-                    }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl gap-1.5 text-xs"
+                      onClick={async () => {
+                        try {
+                          const { data } = await api.get(`/contracts/${c._id}/pdf`);
+                          window.open(data.url, '_blank', 'noopener');
+                        } catch (err) {
+                          toast.error(
+                            err?.response?.data?.error || 'Could not open the contract PDF.',
+                          );
+                        }
+                      }}
+                    >
                       <Download size={12} /> PDF
                     </Button>
                     {c.status === 'CLIENT_SIGNED' && (
-                      <Button variant="primary" size="sm" className="rounded-xl gap-1.5 text-xs" onClick={async () => {
-                        try {
-                          await api.post(`/contracts/${c._id}/countersign`);
-                          toast.success('Contract countersigned');
-                          fetchItems();
-                        } catch (err) {
-                          toast.error(err?.response?.data?.error || 'Failed to countersign');
-                        }
-                      }}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="rounded-xl gap-1.5 text-xs"
+                        onClick={async () => {
+                          try {
+                            await api.post(`/contracts/${c._id}/countersign`);
+                            toast.success('Contract countersigned');
+                            fetchItems();
+                          } catch (err) {
+                            toast.error(err?.response?.data?.error || 'Failed to countersign');
+                          }
+                        }}
+                      >
                         <PenTool size={12} /> Countersign
                       </Button>
                     )}
@@ -236,24 +315,48 @@ export default function Orders() {
           })}
           {items.length > CONTRACT_PAGE_SIZE && (
             <div className="flex items-center justify-between pt-2">
-              <p className="text-xs text-warm-500">Showing {contractStart + 1}-{Math.min(contractEnd, items.length)} of {items.length}</p>
+              <p className="text-xs text-warm-500">
+                Showing {contractStart + 1}-{Math.min(contractEnd, items.length)} of {items.length}
+              </p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={contractPage <= 1} onClick={() => setContractPage(p => p - 1)}>Prev</Button>
-                <span className="text-xs text-warm-500 self-center">{contractPage} / {contractTotalPages}</span>
-                <Button variant="outline" size="sm" disabled={contractPage >= contractTotalPages} onClick={() => setContractPage(p => p + 1)}>Next</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={contractPage <= 1}
+                  onClick={() => setContractPage((p) => p - 1)}
+                >
+                  Prev
+                </Button>
+                <span className="text-xs text-warm-500 self-center">
+                  {contractPage} / {contractTotalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={contractPage >= contractTotalPages}
+                  onClick={() => setContractPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
               </div>
             </div>
           )}
         </div>
       ) : items.length === 0 ? (
-        <EmptyState icon={tab === 'contracts' ? ScrollText : ShoppingBag} title={`No ${tab} found`} description={`Check back later for new ${tab}.`} />
+        <EmptyState
+          icon={tab === 'contracts' ? ScrollText : ShoppingBag}
+          title={`No ${tab} found`}
+          description={`Check back later for new ${tab}.`}
+        />
       ) : (
         <div className="space-y-4">
           {items.map((item) => (
             <div
               key={item._id}
               className={`bg-white rounded-[2rem] border transition-all duration-300 ${
-                expandedId === item._id ? 'border-fox-200 shadow-xl ring-1 ring-fox-100' : 'border-warm-200 hover:border-warm-300'
+                expandedId === item._id
+                  ? 'border-fox-200 shadow-xl ring-1 ring-fox-100'
+                  : 'border-warm-200 hover:border-warm-300'
               }`}
             >
               <div className="p-6">
@@ -264,8 +367,12 @@ export default function Orders() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-warm-900">{item.quoteNumber || item.invoiceNumber}</h3>
-                        <Badge variant={statusBadgeVariant(item.status)}>{capitalize(item.status)}</Badge>
+                        <h3 className="font-bold text-warm-900">
+                          {item.quoteNumber || item.invoiceNumber}
+                        </h3>
+                        <Badge variant={statusBadgeVariant(item.status)}>
+                          {capitalize(item.status)}
+                        </Badge>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-warm-500">
                         <span className="flex items-center gap-1 font-semibold text-warm-700">
@@ -279,8 +386,12 @@ export default function Orders() {
 
                   <div className="flex items-center gap-3">
                     <div className="text-right mr-4">
-                      <div className="text-xs text-warm-400 font-bold uppercase tracking-widest">Total Amount</div>
-                      <div className="font-mono text-xl font-black text-warm-900">{formatINR(tab === 'quotes' ? item.total : (item.grandTotal ?? item.total))}</div>
+                      <div className="text-xs text-warm-400 font-bold uppercase tracking-widest">
+                        Total Amount
+                      </div>
+                      <div className="font-mono text-xl font-black text-warm-900">
+                        {formatINR(tab === 'quotes' ? item.total : (item.grandTotal ?? item.total))}
+                      </div>
                     </div>
 
                     <div className="flex gap-2">
@@ -288,7 +399,14 @@ export default function Orders() {
                         variant="outline"
                         size="sm"
                         className="rounded-xl border-warm-200"
-                        onClick={() => contactUser(item.client?.email, item.client?.phone, item.client?.name, item.quoteNumber || item.invoiceNumber)}
+                        onClick={() =>
+                          contactUser(
+                            item.client?.email,
+                            item.client?.phone,
+                            item.client?.name,
+                            item.quoteNumber || item.invoiceNumber,
+                          )
+                        }
                       >
                         <MessageSquare size={14} className="text-emerald-500" />
                       </Button>
@@ -298,7 +416,11 @@ export default function Orders() {
                         className="rounded-xl border-warm-200"
                         onClick={() => setExpandedId(expandedId === item._id ? null : item._id)}
                       >
-                        {expandedId === item._id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        {expandedId === item._id ? (
+                          <ChevronUp size={16} />
+                        ) : (
+                          <ChevronDown size={16} />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -308,15 +430,24 @@ export default function Orders() {
                   <div className="mt-8 pt-6 border-t border-warm-100 animate-slide-up">
                     <div className="grid md:grid-cols-2 gap-8">
                       <div>
-                        <h4 className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-4">Itemized Breakdown</h4>
+                        <h4 className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-4">
+                          Itemized Breakdown
+                        </h4>
                         <div className="space-y-2">
                           {item.items?.map((sub, i) => (
-                            <div key={i} className="flex justify-between items-center bg-warm-50 p-3 rounded-xl border border-warm-100/50">
+                            <div
+                              key={i}
+                              className="flex justify-between items-center bg-warm-50 p-3 rounded-xl border border-warm-100/50"
+                            >
                               <div>
                                 <div className="text-sm font-bold text-warm-900">{sub.name}</div>
-                                <div className="text-[10px] text-warm-500">{sub.quantity} units &bull; {formatINR(sub.price)}/ea</div>
+                                <div className="text-[10px] text-warm-500">
+                                  {sub.quantity} units &bull; {formatINR(sub.price)}/ea
+                                </div>
                               </div>
-                              <div className="font-mono text-sm font-bold text-warm-800">{formatINR(sub.price * sub.quantity)}</div>
+                              <div className="font-mono text-sm font-bold text-warm-800">
+                                {formatINR(sub.price * sub.quantity)}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -324,7 +455,9 @@ export default function Orders() {
 
                       <div className="space-y-6">
                         <div>
-                          <h4 className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-4">Update Workflow Status</h4>
+                          <h4 className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-4">
+                            Update Workflow Status
+                          </h4>
                           <div className="flex flex-wrap gap-2">
                             {statusOptions.map((s) => (
                               <button
@@ -343,12 +476,20 @@ export default function Orders() {
                         </div>
 
                         <div>
-                          <h4 className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-4">Quick Actions</h4>
+                          <h4 className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-4">
+                            Quick Actions
+                          </h4>
                           <div className="flex flex-wrap gap-3">
-                            <Link to={`/app/admin/users?id=${item.client?._id}`} className="btn-outline py-2 px-4 rounded-xl text-xs gap-2">
+                            <Link
+                              to={`/app/admin/users?id=${item.client?._id}`}
+                              className="btn-outline py-2 px-4 rounded-xl text-xs gap-2"
+                            >
                               <User size={14} /> User Profile
                             </Link>
-                            <a href={`mailto:${item.client?.email}`} className="btn-outline py-2 px-4 rounded-xl text-xs gap-2">
+                            <a
+                              href={`mailto:${item.client?.email}`}
+                              className="btn-outline py-2 px-4 rounded-xl text-xs gap-2"
+                            >
                               <Mail size={14} /> Send Email
                             </a>
                           </div>
@@ -365,11 +506,30 @@ export default function Orders() {
           ))}
           {tab !== 'contracts' && meta.pages > 1 && (
             <div className="flex items-center justify-between pt-2">
-              <p className="text-xs text-warm-500">Showing {((meta.page - 1) * 20) + 1}-{Math.min(meta.page * 20, meta.total)} of {meta.total}</p>
+              <p className="text-xs text-warm-500">
+                Showing {(meta.page - 1) * 20 + 1}-{Math.min(meta.page * 20, meta.total)} of{' '}
+                {meta.total}
+              </p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={meta.page <= 1} onClick={() => fetchPage(meta.page - 1)}>Prev</Button>
-                <span className="text-xs text-warm-500 self-center">{meta.page} / {meta.pages}</span>
-                <Button variant="outline" size="sm" disabled={meta.page >= meta.pages} onClick={() => fetchPage(meta.page + 1)}>Next</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={meta.page <= 1}
+                  onClick={() => fetchPage(meta.page - 1)}
+                >
+                  Prev
+                </Button>
+                <span className="text-xs text-warm-500 self-center">
+                  {meta.page} / {meta.pages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={meta.page >= meta.pages}
+                  onClick={() => fetchPage(meta.page + 1)}
+                >
+                  Next
+                </Button>
               </div>
             </div>
           )}

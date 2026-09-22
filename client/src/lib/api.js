@@ -1,5 +1,6 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { captureException } from './sentry';
 
 // Production builds must set VITE_API_URL (Vercel env). The Railway URL below
 // is only a last-resort fallback so a misconfigured build still reaches an API
@@ -8,7 +9,7 @@ export const API_BASE =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD
     ? (console.warn('VITE_API_URL is not set — falling back to the default API host'),
-       'https://stackfox-api-production-c639.up.railway.app')
+      'https://stackfox-api-production-c639.up.railway.app')
     : '/api');
 
 const api = axios.create({
@@ -27,7 +28,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // ── Response interceptor: handle 401 refresh ─
@@ -79,7 +80,7 @@ api.interceptors.response.use(
         const { data } = await axios.post(
           `${API_BASE}/auth/refresh-token`,
           { refreshToken },
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         const newToken = data.data.accessToken;
@@ -101,8 +102,10 @@ api.interceptors.response.use(
         localStorage.removeItem('sf_user');
 
         // Only redirect if we're not already on auth pages
-        if (!window.location.pathname.startsWith('/login') &&
-            !window.location.pathname.startsWith('/signup')) {
+        if (
+          !window.location.pathname.startsWith('/login') &&
+          !window.location.pathname.startsWith('/signup')
+        ) {
           window.location.href = '/login?expired=true';
         }
 
@@ -112,17 +115,34 @@ api.interceptors.response.use(
       }
     }
 
-    // Handle other errors
-    const message = error.response?.data?.message || error.message || 'Something went wrong';
+    // Handle other errors.
+    //
+    // The API answers with { error, requestId } — this read `data.message`,
+    // which the API has never sent, so the server's own wording could never
+    // reach the user. (That is why `message` showed up as an unused variable.)
+    const status = error.response?.status;
+    const data = error.response?.data;
+    const message = data?.error || data?.message || error.message || 'Something went wrong';
 
-    if (error.response?.status === 429) {
+    // Set by the API on every response, including errors. Quoting it is the
+    // only way a user can point support at their exact failure.
+    const requestId = data?.requestId || error.response?.headers?.['x-request-id'];
+
+    if (status === 429) {
       toast.error('Too many requests. Please slow down.');
-    } else if (error.response?.status >= 500) {
-      toast.error('Server error. Please try again later.');
+    } else if (status >= 500) {
+      toast.error(
+        requestId
+          ? `Server error. Please try again — reference ${requestId}`
+          : 'Server error. Please try again later.',
+      );
+      // A 5xx is already an incident on the server. Reporting it here too is
+      // what shows whether users actually hit it, and how often.
+      captureException(error, { requestId, status, url: error.config?.url });
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // ── Convenience methods ─────────────────────

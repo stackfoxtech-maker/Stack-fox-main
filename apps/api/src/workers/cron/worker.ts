@@ -1,5 +1,6 @@
 import { createWorker, QUEUE } from "../../lib/queue";
 import { dispatchCron, registeredCronIds } from "./registry";
+import { log } from "../../lib/logger";
 
 let started = false;
 
@@ -13,5 +14,5 @@ export function startCronWorker(): void {
   if (started) return;
   started = true;
   createWorker(QUEUE.cron, dispatchCron);
-  console.log(`[cron] 1 worker draining ${registeredCronIds().length} schedules: ${registeredCronIds().join(", ")}`);
+  log().info({ schedules: registeredCronIds() }, "cron dispatcher draining schedules");
 }

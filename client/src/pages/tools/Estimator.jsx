@@ -6,7 +6,11 @@ const QUESTIONS = [
   { id: 'q1', label: 'What do you need?' },
   { id: 'q2', label: 'Describe your project briefly' },
   { id: 'q3', label: 'Select features (AI-suggested)' },
-  { id: 'q4', label: 'Budget range', options: ['< Rs 25K', 'Rs 25K-1L', 'Rs 1L-3L', 'Rs 3L-5L', 'Rs 5L-10L', 'Rs 10L+'] },
+  {
+    id: 'q4',
+    label: 'Budget range',
+    options: ['< Rs 25K', 'Rs 25K-1L', 'Rs 1L-3L', 'Rs 3L-5L', 'Rs 5L-10L', 'Rs 10L+'],
+  },
   { id: 'q5', label: 'Timeline', options: ['ASAP', '1 month', '1-3 months', '3+ months'] },
 ];
 
@@ -42,12 +46,16 @@ export default function Estimator() {
     <div className="max-w-3xl mx-auto px-6 py-16">
       <p className="text-sm text-orange-600 font-semibold mb-2">Free Tool · Powered by StackFox</p>
       <h1 className="text-4xl font-bold mb-3">Instant Project Estimator</h1>
-      <p className="text-gray-600 mb-8">Answer 5 quick questions and get a recommended service tier + range in under 2 seconds.</p>
+      <p className="text-gray-600 mb-8">
+        Answer 5 quick questions and get a recommended service tier + range in under 2 seconds.
+      </p>
 
       <form onSubmit={submit} className="bg-white border rounded-2xl p-6 mb-10 space-y-6">
         {QUESTIONS.map((q, qi) => (
           <div key={q.id} className="pb-4">
-            <label className="block text-lg font-semibold mb-2">{qi + 1}. {q.label}</label>
+            <label className="block text-lg font-semibold mb-2">
+              {qi + 1}. {q.label}
+            </label>
             {q.options ? (
               <div className="flex flex-wrap gap-2">
                 {q.options.map((opt) => (
@@ -76,7 +84,11 @@ export default function Estimator() {
           </div>
         ))}
 
-        <button type="submit" disabled={loading} className="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors">
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors"
+        >
           {loading ? 'Calculating…' : 'Get Instant Estimate'}
         </button>
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
@@ -85,11 +97,23 @@ export default function Estimator() {
       {recommendation && (
         <div className="bg-[#FAFAF8] border rounded-2xl p-8 text-center">
           <h2 className="text-2xl font-bold mb-2">Recommended for you</h2>
-          <div className="text-3xl font-extrabold text-orange-600 mb-1">{recommendation.recommendedTier || recommendation.tierName || 'GROWTH'}</div>
+          <div className="text-3xl font-extrabold text-orange-600 mb-1">
+            {recommendation.recommendedTier || recommendation.tierName || 'GROWTH'}
+          </div>
           <div className="text-sm text-gray-500 mb-6">{recommendation.priceRange || ''}</div>
           <div className="flex flex-wrap justify-center gap-3">
-            <Link to={`/builder?tier=${recommendation.tier || 'GROWTH'}`} className="px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600">Configure & Price</Link>
-            <Link to="/contact" className="px-6 py-3 border-2 border-orange-500 text-orange-600 rounded-xl font-semibold hover:bg-orange-50">Talk to Expert</Link>
+            <Link
+              to={`/builder?tier=${recommendation.tier || 'GROWTH'}`}
+              className="px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600"
+            >
+              Configure & Price
+            </Link>
+            <Link
+              to="/contact"
+              className="px-6 py-3 border-2 border-orange-500 text-orange-600 rounded-xl font-semibold hover:bg-orange-50"
+            >
+              Talk to Expert
+            </Link>
           </div>
         </div>
       )}

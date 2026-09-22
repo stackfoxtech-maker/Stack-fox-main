@@ -64,7 +64,14 @@ export default function Changelog() {
       <div className="mt-14 bg-[#FAFAF8] rounded-2xl p-8 text-center">
         <h2 className="text-xl font-bold mb-2">Ideas welcome</h2>
         <p className="text-gray-600 mb-4">
-          <Link to="/roadmap" className="text-orange-600 underline">View our roadmap</Link> or <Link to="/contact" className="text-orange-600 underline">tell us what you want</Link>.
+          <Link to="/roadmap" className="text-orange-600 underline">
+            View our roadmap
+          </Link>{' '}
+          or{' '}
+          <Link to="/contact" className="text-orange-600 underline">
+            tell us what you want
+          </Link>
+          .
         </p>
       </div>
     </div>

@@ -4,11 +4,15 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
+import compress from "@fastify/compress";
 
 import { prisma } from "@stackfox/prisma";
 import { redis } from "./lib/redis";
 import { isStorageConfigured } from "./lib/storage";
 import { authPlugin } from "./plugins/auth";
+import { log, newReqId, normaliseReqId, runWithReqId } from "./lib/logger";
+import { registerErrorHandler } from "./lib/errorHandler";
+import { captureException, flushSentry, initSentry, sentryEnabled } from "./lib/sentry";
 
 /**
  * Background workers run inline with the HTTP server by default — the deploy is
@@ -42,12 +46,11 @@ import { messageRoutes } from "./routes/messages";
 import { fileRoutes } from "./routes/files";
 import { ticketRoutes } from "./routes/tickets";
 import { notificationRoutes } from "./routes/notifications";
-import { publicApiRoutes } from "./routes/publicApi";
 import { adminRoutes } from "./routes/admin";
 import { toolRoutes } from "./routes/tools";
 import { blogRoutes } from "./routes/blog";
 import { cartRoutes } from "./routes/cart";
-import { quoteRoutes, backfillPaidQuotes } from "./routes/quotes";
+import { quoteRoutes } from "./routes/quotes";
 import { analyticsRoutes } from "./routes/analytics";
 import { referralRoutes } from "./routes/referrals";
 import { leadRoutes } from "./routes/leads";
@@ -58,15 +61,38 @@ import { projectInquiryRoutes } from "./routes/projectInquiries";
 import { reportRoutes } from "./routes/reports";
 import { handoverRoutes } from "./routes/handover";
 import { adminReportRoutes } from "./routes/adminReports";
+import { documentRoutes } from "./routes/documents";
+import { publicApiRoutes } from "./routes/publicApi";
+import { apiKeyRoutes } from "./routes/apiKeys";
 
 const app = Fastify({
+  // Railway terminates TLS and forwards, so without this every request is keyed
+  // by the proxy's address: the rate limiter below would throttle all users as
+  // one, and req.ip would never be the real client.
+  trustProxy: true,
+  // Fastify's default id is a per-process counter ("req-1"), which restarts
+  // at 1 on every deploy and collides across replicas. Accept a caller's
+  // x-request-id when it is well-formed so a trace spans client and API,
+  // otherwise mint a UUID.
+  genReqId: (req) => normaliseReqId(req.headers["x-request-id"]) ?? newReqId(),
   logger: {
     transport:
-      process.env.NODE_ENV === "development"
-        ? { target: "pino-pretty" }
-        : undefined,
+      process.env.NODE_ENV === "development" ? { target: "pino-pretty" } : undefined,
+    redact: {
+      // A log aggregator is a second place a bearer token can leak from, and
+      // it is the place nobody audits.
+      paths: [
+        "req.headers.authorization",
+        "req.headers.cookie",
+        "req.headers['x-api-key']",
+      ],
+      censor: "[redacted]",
+    },
   },
 });
+
+// Before anything else, so an error during start-up is reported too.
+initSentry();
 
 async function start() {
   const BUILT_IN_ORIGINS = [
@@ -87,7 +113,31 @@ async function start() {
     credentials: true,
   });
   await app.register(helmet);
-  await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
+
+  // Responses here are JSON lists — an engagement list with its projects, a
+  // 255-row catalogue, a report — which compress by roughly an order of
+  // magnitude. Railway bills egress and a good share of clients are on Indian
+  // mobile networks, so this is latency as much as cost.
+  //
+  // threshold: below ~1 KB the compressed frame plus the CPU is not worth it.
+  // Brotli first where the client supports it, gzip otherwise.
+  await app.register(compress, {
+    global: true,
+    threshold: 1024,
+    encodings: ["br", "gzip", "deflate"],
+  });
+  // Backed by Redis, not the default in-process LRU. Counters in memory reset
+  // on every deploy and do not aggregate across replicas, so horizontal scaling
+  // silently multiplied every limit — including the ones guarding OTP and the
+  // unauthenticated assistant endpoint.
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
+    redis,
+    // Redis being unreachable must not lock everyone out; fall back to
+    // in-process counting rather than rejecting.
+    skipOnError: true,
+  });
 
   // The web client sets `Content-Type: application/json` on every request, so a
   // POST with no body (an action route like .../accept or .../reveal) arrives
@@ -110,6 +160,16 @@ async function start() {
     },
   );
 
+  // Everything downstream of here — including queued jobs and outbound calls —
+  // runs inside a context carrying this request's id. onRequest is the first
+  // hook in the lifecycle, so the whole handler chain is covered.
+  app.addHook("onRequest", (req, reply, done) => {
+    reply.header("x-request-id", req.id);
+    runWithReqId(String(req.id), { route: req.routeOptions?.url }, done);
+  });
+
+  registerErrorHandler(app);
+
   // Auth plugin (decorators + hooks)
   await app.register(authPlugin);
 
@@ -119,7 +179,10 @@ async function start() {
   app.get("/health", async (_req, reply) => {
     const [db, cache] = await Promise.all([
       prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
-      redis.ping().then(() => true).catch(() => false),
+      redis
+        .ping()
+        .then(() => true)
+        .catch(() => false),
     ]);
 
     const status = db && cache ? "ok" : db ? "degraded" : "down";
@@ -128,7 +191,12 @@ async function start() {
     return {
       status,
       ts: Date.now(),
-      checks: { database: db, redis: cache, storage: isStorageConfigured() },
+      checks: {
+        database: db,
+        redis: cache,
+        storage: isStorageConfigured(),
+        errorReporting: sentryEnabled(),
+      },
       workersInline: WORKERS_INLINE,
     };
   });
@@ -158,7 +226,17 @@ async function start() {
   await app.register(fileRoutes, { prefix: "/" });
   await app.register(ticketRoutes, { prefix: "/" });
   await app.register(notificationRoutes, { prefix: "/" });
+  // /v1 is registered again. It was unregistered in Phase 0 because its only
+  // guard checked that `x-api-key` was non-empty and returned true, and every
+  // list took its `orgId` from the query string — so a caller both
+  // authenticated with any string and chose whose data to read.
+  //
+  // The three conditions that had to be met before re-enabling are met:
+  // requireApiKey resolves the presented key against ApiKey.keyHash, a revoked
+  // key is rejected, and every /v1 query is scoped by the key's own orgId with
+  // no parameter able to override it. See routes/publicApi.ts.
   await app.register(publicApiRoutes, { prefix: "/" });
+  await app.register(apiKeyRoutes, { prefix: "/" });
   await app.register(adminRoutes, { prefix: "/" });
   await app.register(toolRoutes, { prefix: "/" });
   await app.register(blogRoutes, { prefix: "/" });
@@ -174,6 +252,7 @@ async function start() {
   await app.register(reportRoutes, { prefix: "/" });
   await app.register(handoverRoutes, { prefix: "/" });
   await app.register(adminReportRoutes, { prefix: "/" });
+  await app.register(documentRoutes, { prefix: "/" });
 
   const port = Number(process.env.PORT) || 4000;
   const host = process.env.HOST ?? "0.0.0.0";
@@ -193,7 +272,13 @@ async function start() {
   await app.listen({ port, host });
   app.log.info(`API listening on ${host}:${port}`);
 
-  backfillPaidQuotes().catch((err) => app.log.error(err, "Quote backfill failed"));
+  // backfillPaidQuotes() used to run here on every boot. It is a one-off data
+  // migration, and for any org whose engagements happened to have no projects
+  // attached it DELETED that org's invoices, contracts and engagements before
+  // re-provisioning from a quote — scoped to the whole org, not to the quote.
+  // Run it deliberately instead:
+  //   pnpm --filter @stackfox/api backfill:quotes -- --dry-run
+  // See apps/api/scripts/backfill-paid-quotes.mts.
 
   const close = async (signal: string) => {
     app.log.info(`${signal} received, shutting down`);
@@ -214,7 +299,11 @@ async function start() {
   process.on("SIGINT", () => void close("SIGINT"));
 }
 
-start().catch((err) => {
-  console.error(err);
+start().catch(async (err) => {
+  log().fatal({ err }, "server failed to start");
+  captureException(err, { phase: "startup" });
+  // Without this the process exits before the event leaves the buffer, so the
+  // failures you most want reported are the ones that never arrive.
+  await flushSentry();
   process.exit(1);
 });

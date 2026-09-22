@@ -1,6 +1,14 @@
 import {
-  LayoutDashboard, Users, GitBranch, Mic, MessageSquare, Phone, Calendar,
-  FileText, BookOpen, TrendingUp,
+  LayoutDashboard,
+  Users,
+  GitBranch,
+  Mic,
+  MessageSquare,
+  Phone,
+  Calendar,
+  FileText,
+  BookOpen,
+  TrendingUp,
 } from 'lucide-react';
 import DashboardShell from '@app/DashboardShell';
 

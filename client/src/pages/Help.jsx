@@ -49,7 +49,9 @@ export default function Help() {
             <ul className="space-y-2">
               {s.items.map((i) => (
                 <li key={i.label}>
-                  <Link to={i.link} className="text-gray-700 hover:text-orange-600 hover:underline">{i.label}</Link>
+                  <Link to={i.link} className="text-gray-700 hover:text-orange-600 hover:underline">
+                    {i.label}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -60,7 +62,12 @@ export default function Help() {
       <div className="mt-16 bg-[#FAFAF8] rounded-2xl p-8 text-center">
         <h2 className="text-xl font-bold mb-2">Still stuck?</h2>
         <p className="text-gray-600 mb-4">Our team replies within 4 business hours.</p>
-        <Link to="/contact" className="px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600">Contact Support</Link>
+        <Link
+          to="/contact"
+          className="px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600"
+        >
+          Contact Support
+        </Link>
       </div>
     </div>
   );

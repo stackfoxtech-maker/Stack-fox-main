@@ -1,11 +1,15 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth, requireRole } from "../plugins/auth";
+import { requireAuth } from "../plugins/auth";
+import { LIST_CAP } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import { CreateReviewSchema } from "./opsSchemas";
 
 export async function reviewRoutes(app: FastifyInstance) {
   app.get("/reviews/my", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const items = await prisma.review.findMany({
+      take: LIST_CAP,
       where: { revieweeId: req.user!.sub },
       orderBy: { createdAt: "desc" },
     });
@@ -16,6 +20,7 @@ export async function reviewRoutes(app: FastifyInstance) {
     if (!requireAuth(req, reply)) return;
 
     const completed = await prisma.review.findMany({
+      take: LIST_CAP,
       where: { reviewerId: req.user!.sub },
       select: { revieweeId: true, period: true },
     });
@@ -50,6 +55,7 @@ export async function reviewRoutes(app: FastifyInstance) {
     const assigneeIds = [...new Set(assignments.map((a) => a.assigneeId))];
 
     const people = await prisma.user.findMany({
+      take: LIST_CAP,
       where: { id: { in: assigneeIds }, isActive: true },
       select: { id: true, name: true, role: true, designation: true },
     });
@@ -63,7 +69,8 @@ export async function reviewRoutes(app: FastifyInstance) {
         projectName: projectName.get(a.projectId) ?? a.projectId,
         revieweeId: a.assigneeId,
         revieweeName: person.get(a.assigneeId)!.name,
-        revieweeRole: person.get(a.assigneeId)!.designation ?? person.get(a.assigneeId)!.role,
+        revieweeRole:
+          person.get(a.assigneeId)!.designation ?? person.get(a.assigneeId)!.role,
         period,
       }));
 
@@ -80,24 +87,17 @@ export async function reviewRoutes(app: FastifyInstance) {
 
   app.post("/reviews", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { revieweeId, rating, comment, period } = req.body as {
-      revieweeId: string;
-      rating: number;
-      comment?: string;
-      period: string;
-    };
+    const revBody = parseBody(req, reply, CreateReviewSchema);
+    if (!revBody) return;
+    const { revieweeId, rating, comment, period } = revBody;
 
-    if (!rating || rating < 1 || rating > 5) {
-      return reply.code(400).send({ message: "rating (1-5) is required" });
-    }
-
-    if (!revieweeId) return reply.code(400).send({ message: "revieweeId is required" });
     if (revieweeId === req.user!.sub) {
       return reply.code(400).send({ message: "You cannot review yourself." });
     }
 
     const reviewee = await prisma.user.findUnique({ where: { id: revieweeId } });
-    if (!reviewee) return reply.code(404).send({ message: "That person no longer exists." });
+    if (!reviewee)
+      return reply.code(404).send({ message: "That person no longer exists." });
 
     const resolvedPeriod = period || String(new Date().getFullYear());
     const existing = await prisma.review.findFirst({
@@ -125,6 +125,7 @@ export async function reviewRoutes(app: FastifyInstance) {
   app.get("/reviews/completed", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const items = await prisma.review.findMany({
+      take: LIST_CAP,
       where: { reviewerId: req.user!.sub },
       orderBy: { createdAt: "desc" },
     });

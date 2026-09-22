@@ -14,12 +14,25 @@ import { randomBytes } from "crypto";
 const prisma = new PrismaClient();
 
 const INTERNAL = new Set([
-  "ADMIN", "SUPER_ADMIN", "SE", "SENIOR_PM", "PM", "DEVELOPER",
-  "QA", "DESIGNER", "DEVOPS", "FINANCE", "SALES", "TEAM",
+  "ADMIN",
+  "SUPER_ADMIN",
+  "SE",
+  "SENIOR_PM",
+  "PM",
+  "DEVELOPER",
+  "QA",
+  "DESIGNER",
+  "DEVOPS",
+  "FINANCE",
+  "SALES",
+  "TEAM",
 ]);
 
 function orgId(): string {
-  const seq = String(parseInt(randomBytes(2).toString("hex"), 16) % 10000).padStart(4, "0");
+  const seq = String(parseInt(randomBytes(2).toString("hex"), 16) % 10000).padStart(
+    4,
+    "0",
+  );
   return `ORG-${new Date().getFullYear()}-${seq}`;
 }
 
@@ -74,9 +87,14 @@ async function main() {
   console.log(`\nDone. created=${created} linked=${linked} skipped-internal=${skipped}`);
 
   const remaining = await prisma.user.count({ where: { orgId: null } });
-  console.log(`Users still without an org: ${remaining} (internal staff do not need one).`);
+  console.log(
+    `Users still without an org: ${remaining} (internal staff do not need one).`,
+  );
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

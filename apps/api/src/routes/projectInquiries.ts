@@ -1,10 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
+import { CATALOGUE_ROLES } from "@stackfox/core";
+import { parseBody } from "../lib/validate";
+import { UpdateStatusSchema } from "./opsSchemas";
 
 export async function projectInquiryRoutes(app: FastifyInstance) {
   app.get("/project-inquiries", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SE", "SENIOR_PM"])) return;
+    if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
     const { status, page = "1", limit = "20" } = req.query as Record<string, string>;
     const where: any = {};
     if (status && status !== "all") where.status = status;
@@ -19,17 +22,24 @@ export async function projectInquiryRoutes(app: FastifyInstance) {
       prisma.lead.count({ where }),
     ]);
 
-    return { data: items, meta: { pagination: { total, page: parseInt(page), limit: parseInt(limit) } } };
+    return {
+      data: items,
+      meta: { pagination: { total, page: parseInt(page), limit: parseInt(limit) } },
+    };
   });
 
   app.patch("/project-inquiries/:id/status", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { status } = req.body as { status: string };
+    const piBody = parseBody(req, reply, UpdateStatusSchema);
+    if (!piBody) return;
+    const { status } = piBody;
 
     const valid = ["NEW", "CONTACTED", "QUALIFIED", "CONVERTED", "LOST"];
     if (!valid.includes(status)) {
-      return reply.code(400).send({ message: `Invalid status. Must be one of: ${valid.join(", ")}` });
+      return reply
+        .code(400)
+        .send({ message: `Invalid status. Must be one of: ${valid.join(", ")}` });
     }
 
     const updated = await prisma.lead.update({

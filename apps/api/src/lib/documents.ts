@@ -1,7 +1,10 @@
 import { createHash } from "crypto";
 import { prisma } from "@stackfox/prisma";
 import { uploadFile, copyToWorm } from "./storage";
+import { recordDocument } from "./documentIntegrity";
 import { renderDocument } from "./pdf";
+import { asString } from "./json";
+import { log } from "./logger";
 import {
   renderCompanyInvoicePdf,
   awlInvoiceNumber,
@@ -55,12 +58,15 @@ export async function buildInvoicePdf(
     : null;
 
   // Money is stored in paise; the printed document is in rupees.
-  const P = (paise: number) => Math.round(paise) / 100;
+  const P = (paise: number | bigint) => Math.round(Number(paise)) / 100;
 
   const paid =
     invoice.status === "PAID"
-      ? invoice.grandTotal
-      : Math.min(Math.max(0, invoice.amountPaid ?? 0), invoice.grandTotal);
+      ? Number(invoice.grandTotal)
+      : Math.min(
+          Math.max(0, Number(invoice.amountPaid ?? 0)),
+          Number(invoice.grandTotal),
+        );
   const rate = invoice.gstRate ?? 18;
   const isInterState = invoice.gstType === "IGST";
 
@@ -123,7 +129,9 @@ export async function buildInvoicePdf(
       gstin: invoice.org?.gstin ?? undefined,
       address: addressLine || undefined,
       stateName: isInterState ? undefined : SUPPLIER.stateName,
-      stateCode: invoice.org?.gstin?.slice(0, 2) || (isInterState ? undefined : SUPPLIER.stateCode),
+      stateCode:
+        invoice.org?.gstin?.slice(0, 2) ||
+        (isInterState ? undefined : SUPPLIER.stateCode),
     },
     lines,
     subtotal: P(invoice.subtotal),
@@ -136,7 +144,29 @@ export async function buildInvoicePdf(
   });
 
   const key = invoiceKey(invoice);
+  const invoiceArchiveKey = `invoices/${invoice.id}.worm.pdf`;
   await uploadFile(key, pdf, "application/pdf");
+
+  // Invoices previously got neither a content hash nor an archive copy — only
+  // contracts did. An invoice is a document of record too.
+  let invoiceArchived: string | undefined;
+  try {
+    await copyToWorm(invoiceArchiveKey, pdf);
+    invoiceArchived = `worm/${invoiceArchiveKey}`;
+  } catch (err) {
+    log().error({ err, invoiceId: invoice.id }, "archive copy failed");
+  }
+
+  // The hash lives in the ledger, not on the invoice row — Invoice has no
+  // docHash column and does not need one, since document_ledger is the record.
+  await recordDocument({
+    documentType: "INVOICE",
+    documentId: invoice.id,
+    bytes: pdf,
+    storageKey: key,
+    archiveKey: invoiceArchived,
+  });
+
   await prisma.invoice.update({ where: { id: invoice.id }, data: { fileKey: key } });
   return key;
 }
@@ -155,7 +185,7 @@ export async function buildContractPdf(contractId: string): Promise<string | nul
 
   const clauses = (contract.clauseConfig ?? {}) as Record<string, unknown>;
   const clauseLines = Object.entries(clauses).map(
-    ([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`,
+    ([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : asString(v)}`,
   );
 
   const pdf = await renderDocument({
@@ -185,7 +215,25 @@ export async function buildContractPdf(contractId: string): Promise<string | nul
   const docHash = createHash("sha256").update(pdf).digest("hex");
 
   await uploadFile(key, pdf, "application/pdf");
-  await copyToWorm(wormKey, pdf).catch(() => {});
+
+  // This was `.catch(() => {})`. If the archive copy never landed, nothing said
+  // so — while the contract text asserts the signed copy is retained in
+  // write-once storage. Surface it instead.
+  let contractArchived: string | undefined;
+  try {
+    await copyToWorm(wormKey, pdf);
+    contractArchived = `worm/${wormKey}`;
+  } catch (err) {
+    log().error({ err, contractId: contract.id }, "archive copy failed");
+  }
+
+  await recordDocument({
+    documentType: "CONTRACT",
+    documentId: contract.id,
+    bytes: pdf,
+    storageKey: key,
+    archiveKey: contractArchived,
+  });
   await prisma.contract.update({
     where: { id: contract.id },
     data: { fileKey: key, wormKey, docHash },

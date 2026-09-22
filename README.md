@@ -29,20 +29,21 @@ stackfox/
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **API** | Fastify 4, TypeScript, Prisma 5, BullMQ, Redis |
+| Layer                                 | Technology                                            |
+| ------------------------------------- | ----------------------------------------------------- |
+| **API**                               | Fastify 4, TypeScript, Prisma 5, BullMQ, Redis        |
 | **Web app** (storefront + dashboards) | Vite 5, React 18, Tailwind CSS, React Router, Zustand |
-| **Database** | PostgreSQL (Supabase) |
-| **Auth** | JWT (jsonwebtoken) |
-| **AI** | Google Gemini |
-| **Payments** | Razorpay, Stripe |
-| **Storage** | Supabase Storage |
-| **Queue** | BullMQ + Redis / Upstash |
+| **Database**                          | PostgreSQL (Supabase)                                 |
+| **Auth**                              | JWT (jsonwebtoken)                                    |
+| **AI**                                | Google Gemini                                         |
+| **Payments**                          | Razorpay, Stripe                                      |
+| **Storage**                           | Supabase Storage                                      |
+| **Queue**                             | BullMQ + Redis / Upstash                              |
 
 ## Features
 
 ### Public Pages
+
 - Service catalog with cost breakdowns and timelines
 - Express checkout (3-field quick order)
 - Interactive quiz → recommended tier
@@ -52,6 +53,7 @@ stackfox/
 - Help center and demo request form
 
 ### Acquisition Tools
+
 - Website Audit — SEO/lighthouse-style checks
 - Estimator — rule-based project estimation
 - Brief Builder — AI-generated project briefs (voice, sketch, URL, text)
@@ -59,6 +61,7 @@ stackfox/
 - GST Invoice — line-item invoice builder with live totals
 
 ### Client Dashboard (`/app/client`)
+
 - Project overview, milestones, and timeline
 - Quotes, invoices, and payment tracking
 - File management and messaging
@@ -69,6 +72,7 @@ stackfox/
 - Referral program
 
 ### Team Dashboard (`/app/team`)
+
 - Personal task board (Kanban + list views)
 - Project assignments and details
 - Timesheet management
@@ -78,6 +82,7 @@ stackfox/
 - PM suite: Queue, Sprints, Resources, Quality, Finance, Clients, Analytics, SE Queue
 
 ### Admin Dashboard (`/app/admin`)
+
 - Service catalog CRUD (services, features, dependencies, bundles, rate cards)
 - User management and role control
 - Order and project oversight
@@ -96,12 +101,12 @@ stackfox/
 
 ### Prerequisites
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Node.js | >= 20 | Required by `engines` in root `package.json` |
-| pnpm | 9.6.0 | `corepack enable && corepack prepare pnpm@9.6.0 --activate` |
-| PostgreSQL | 15+ | Via Supabase (hosted) or local instance |
-| Redis | 6+ | Via Upstash (hosted) or local instance |
+| Tool       | Version | Notes                                                       |
+| ---------- | ------- | ----------------------------------------------------------- |
+| Node.js    | >= 20   | Required by `engines` in root `package.json`                |
+| pnpm       | 9.6.0   | `corepack enable && corepack prepare pnpm@9.6.0 --activate` |
+| PostgreSQL | 15+     | Via Supabase (hosted) or local instance                     |
+| Redis      | 6+      | Via Upstash (hosted) or local instance                      |
 
 ### Installation
 
@@ -205,6 +210,7 @@ pnpm dev
 ```
 
 This starts:
+
 - **API** at `http://localhost:4000` (Fastify)
 - **Client** at `http://localhost:5173` (Vite) — storefront + dashboards
 
@@ -222,39 +228,39 @@ pnpm --filter packages/prisma db:studio
 
 ### Root (Turborepo)
 
-| Script | Command | Description |
-|--------|---------|-------------|
-| `pnpm dev` | `turbo dev` | Start all dev servers |
-| `pnpm build` | `turbo build` | Build all apps |
-| `pnpm lint` | `turbo lint` | Lint all packages |
-| `pnpm typecheck` | `turbo typecheck` | TypeScript check all packages |
-| `pnpm db:generate` | `turbo db:generate` | Generate Prisma client |
-| `pnpm db:push` | `turbo db:push` | Push schema to database |
-| `pnpm db:migrate` | `turbo db:migrate` | Create a new migration (dev) |
-| `pnpm db:deploy` | `prisma migrate deploy` | Apply pending migrations (prod) |
+| Script                | Command                               | Description                          |
+| --------------------- | ------------------------------------- | ------------------------------------ |
+| `pnpm dev`            | `turbo dev`                           | Start all dev servers                |
+| `pnpm build`          | `turbo build`                         | Build all apps                       |
+| `pnpm lint`           | `turbo lint`                          | Lint all packages                    |
+| `pnpm typecheck`      | `turbo typecheck`                     | TypeScript check all packages        |
+| `pnpm db:generate`    | `turbo db:generate`                   | Generate Prisma client               |
+| `pnpm db:push`        | `turbo db:push`                       | Push schema to database              |
+| `pnpm db:migrate`     | `turbo db:migrate`                    | Create a new migration (dev)         |
+| `pnpm db:deploy`      | `prisma migrate deploy`               | Apply pending migrations (prod)      |
 | `pnpm check:contract` | `node scripts/check-api-contract.mjs` | Verify client calls match API routes |
-| `pnpm db:seed` | `turbo db:seed` | Seed the database |
-| `pnpm clean` | `turbo clean` | Remove build artifacts |
+| `pnpm db:seed`        | `turbo db:seed`                       | Seed the database                    |
+| `pnpm clean`          | `turbo clean`                         | Remove build artifacts               |
 
 ### API (`apps/api`)
 
-| Script | Command | Description |
-|--------|---------|-------------|
-| `pnpm dev` | `tsx watch src/server.ts` | Dev server with hot reload |
-| `pnpm build` | `tsc` | Compile to `dist/` |
-| `pnpm start` | `node dist/server.js` | Production server |
-| `pnpm worker` | `tsx src/workers/index.ts` | Run background workers |
-| `pnpm lint` | `eslint src/` | Lint API code |
-| `pnpm typecheck` | `tsc --noEmit` | TypeScript check |
+| Script           | Command                    | Description                |
+| ---------------- | -------------------------- | -------------------------- |
+| `pnpm dev`       | `tsx watch src/server.ts`  | Dev server with hot reload |
+| `pnpm build`     | `tsc`                      | Compile to `dist/`         |
+| `pnpm start`     | `node dist/server.js`      | Production server          |
+| `pnpm worker`    | `tsx src/workers/index.ts` | Run background workers     |
+| `pnpm lint`      | `eslint src/`              | Lint API code              |
+| `pnpm typecheck` | `tsc --noEmit`             | TypeScript check           |
 
 ### Client (`client/`)
 
-| Script | Command | Description |
-|--------|---------|-------------|
-| `pnpm dev` | `vite` | Dev server on port 5173 |
-| `pnpm build` | `vite build` | Production build to `dist/` |
-| `pnpm preview` | `vite preview` | Preview production build |
-| `pnpm lint` | `eslint src/ --ext .js,.jsx --fix` | Lint and fix |
+| Script         | Command                            | Description                 |
+| -------------- | ---------------------------------- | --------------------------- |
+| `pnpm dev`     | `vite`                             | Dev server on port 5173     |
+| `pnpm build`   | `vite build`                       | Production build to `dist/` |
+| `pnpm preview` | `vite preview`                     | Preview production build    |
+| `pnpm lint`    | `eslint src/ --ext .js,.jsx --fix` | Lint and fix                |
 
 ## API Overview
 
@@ -262,66 +268,66 @@ The API is mounted at `http://localhost:4000` (no `/api` prefix).
 
 ### Core Endpoints
 
-| Category | Endpoints |
-|----------|-----------|
-| **Auth** | `POST /auth/register`, `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/forgot-password`, `/auth/reset-password` |
-| **Catalog** | `GET /catalogue/services`, `/catalogue/categories`, `/catalogue/bundles`, `/catalogue/search` |
-| **Projects** | `GET /projects`, `GET /projects/:id`, `PATCH /projects/:id/status`, `GET /projects/:id/milestones` |
-| **Engagements** | `POST /engagements`, `GET /engagements`, `GET /engagements/:id` |
-| **Contracts** | `POST /contracts`, `GET /contracts/:id`, `POST /contracts/:id/pdf` |
-| **Invoices** | `GET /invoices`, `POST /invoices`, `PATCH /invoices/:id/utr` |
-| **Finance** | `GET /finance/ar-aging`, `/finance/wip`, `/finance/rev-rec`, `/finance/gstr1` |
-| **Tasks** | `GET /tasks/my`, `POST /tasks`, `PUT /tasks/:id` |
-| **Timesheets** | `GET /timesheets`, `POST /timesheets/:id/approve-all` |
-| **Tickets** | `POST /support`, `GET /support`, `GET /tickets`, `PATCH /tickets/:id/resolve` |
-| **Files** | `GET /files`, `POST /files/upload`, `DELETE /files/:id` |
-| **Messages** | `GET /messages/conversations`, `POST /messages/send` |
-| **Notifications** | `GET /notifications`, `PUT /notifications/:id/read` |
-| **Feedback** | `GET /feedback`, `POST /feedback` |
-| **Change Requests** | `GET /change-requests`, `POST /change-requests`, `PATCH /change-requests/:id/assess` |
-| **RFP** | `POST /rfps`, `PATCH /rfps/:id/decision`, `POST /rfps/:id/sdns` |
-| **Users** | `GET /users`, `POST /users`, `PUT /users/:id`, `PUT /users/me` |
-| **Analytics** | `GET /analytics/overview`, `/analytics/revenue`, `/analytics/conversion`, `/analytics/services` |
-| **Admin** | `GET /admin/services`, `/admin/features`, `/admin/bundles`, `/admin/rate-cards`, `/admin/flags`, `/admin/se-queue`, `/admin/compliance`, `/admin/screening` |
-| **Blog** | `GET /blog`, `GET /blog/:id`, `POST /blog/generate`, `POST /blog/suggest` |
-| **Tools** | `POST /tools/audit`, `/tools/estimate`, `/tools/brief`, `/tools/legal` |
+| Category            | Endpoints                                                                                                                                                   |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Auth**            | `POST /auth/register`, `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/forgot-password`, `/auth/reset-password`                                           |
+| **Catalog**         | `GET /catalogue/services`, `/catalogue/categories`, `/catalogue/bundles`, `/catalogue/search`                                                               |
+| **Projects**        | `GET /projects`, `GET /projects/:id`, `PATCH /projects/:id/status`, `GET /projects/:id/milestones`                                                          |
+| **Engagements**     | `POST /engagements`, `GET /engagements`, `GET /engagements/:id`                                                                                             |
+| **Contracts**       | `POST /contracts`, `GET /contracts/:id`, `POST /contracts/:id/pdf`                                                                                          |
+| **Invoices**        | `GET /invoices`, `POST /invoices`, `PATCH /invoices/:id/utr`                                                                                                |
+| **Finance**         | `GET /finance/ar-aging`, `/finance/wip`, `/finance/rev-rec`, `/finance/gstr1`                                                                               |
+| **Tasks**           | `GET /tasks/my`, `POST /tasks`, `PUT /tasks/:id`                                                                                                            |
+| **Timesheets**      | `GET /timesheets`, `POST /timesheets/:id/approve-all`                                                                                                       |
+| **Tickets**         | `POST /support`, `GET /support`, `GET /tickets`, `PATCH /tickets/:id/resolve`                                                                               |
+| **Files**           | `GET /files`, `POST /files/upload`, `DELETE /files/:id`                                                                                                     |
+| **Messages**        | `GET /messages/conversations`, `POST /messages/send`                                                                                                        |
+| **Notifications**   | `GET /notifications`, `PUT /notifications/:id/read`                                                                                                         |
+| **Feedback**        | `GET /feedback`, `POST /feedback`                                                                                                                           |
+| **Change Requests** | `GET /change-requests`, `POST /change-requests`, `PATCH /change-requests/:id/assess`                                                                        |
+| **RFP**             | `POST /rfps`, `PATCH /rfps/:id/decision`, `POST /rfps/:id/sdns`                                                                                             |
+| **Users**           | `GET /users`, `POST /users`, `PUT /users/:id`, `PUT /users/me`                                                                                              |
+| **Analytics**       | `GET /analytics/overview`, `/analytics/revenue`, `/analytics/conversion`, `/analytics/services`                                                             |
+| **Admin**           | `GET /admin/services`, `/admin/features`, `/admin/bundles`, `/admin/rate-cards`, `/admin/flags`, `/admin/se-queue`, `/admin/compliance`, `/admin/screening` |
+| **Blog**            | `GET /blog`, `GET /blog/:id`, `POST /blog/generate`, `POST /blog/suggest`                                                                                   |
+| **Tools**           | `POST /tools/audit`, `/tools/estimate`, `/tools/brief`, `/tools/legal`                                                                                      |
 
 ## Database Schema
 
 Key Prisma models:
 
-| Model | Purpose |
-|-------|---------|
-| `Org`, `User` | Identity and access control (18 roles) |
-| `ServiceUnit`, `SdpVersion`, `FeatureUnit`, `Dependency` | Service catalog with SDP versioning |
-| `Bundle`, `RateCard` | Bundled services and pricing |
-| `Workspace`, `Estimate`, `CustomLine`, `SdnNote` | Builder and estimation |
-| `Quote`, `Order` | Quotes and orders |
-| `Engagement`, `Contract`, `Signature` | Engagements and contracts |
-| `Project`, `Milestone`, `ChangeRequest` | Project lifecycle |
-| `Invoice`, `Credit`, `RevrecLedger`, `WipLedger`, `Payment` | Finance and revenue recognition |
-| `Timesheet`, `TimesheetLine` | Time and material tracking |
-| `Ticket`, `TicketReply` | Support and bug tracking |
-| `File`, `CredentialVault` | File storage and secrets |
-| `Event` | Append-only event store (372 event codes) |
-| `Program`, `Bench`, `Stakeholder` | Programs and resource bench |
-| `Rfp`, `SdnNote` | RFP management |
-| `Lead`, `Referral`, `Feedback` | CRM and referrals |
-| `Job`, `JobApplication` | Hiring pipeline |
-| `Notification`, `Conversation`, `Message` | Messaging and notifications |
-| `BlogPost`, `Guide`, `ChangelogVersion` | Content management |
-| `Flag`, `NotificationContent`, `ComplianceItem`, `ScreeningResult` | Governance |
-| `Review` | Performance reviews |
-| `Package`, `Preview`, `Blueprint` | B2C packages and previews |
-| `ShowcaseItem`, `Glossary` | Public showcase and glossary |
+| Model                                                              | Purpose                                   |
+| ------------------------------------------------------------------ | ----------------------------------------- |
+| `Org`, `User`                                                      | Identity and access control (18 roles)    |
+| `ServiceUnit`, `SdpVersion`, `FeatureUnit`, `Dependency`           | Service catalog with SDP versioning       |
+| `Bundle`, `RateCard`                                               | Bundled services and pricing              |
+| `Workspace`, `Estimate`, `CustomLine`, `SdnNote`                   | Builder and estimation                    |
+| `Quote`, `Order`                                                   | Quotes and orders                         |
+| `Engagement`, `Contract`, `Signature`                              | Engagements and contracts                 |
+| `Project`, `Milestone`, `ChangeRequest`                            | Project lifecycle                         |
+| `Invoice`, `Credit`, `RevrecLedger`, `WipLedger`, `Payment`        | Finance and revenue recognition           |
+| `Timesheet`, `TimesheetLine`                                       | Time and material tracking                |
+| `Ticket`, `TicketReply`                                            | Support and bug tracking                  |
+| `File`, `CredentialVault`                                          | File storage and secrets                  |
+| `Event`                                                            | Append-only event store (372 event codes) |
+| `Program`, `Bench`, `Stakeholder`                                  | Programs and resource bench               |
+| `Rfp`, `SdnNote`                                                   | RFP management                            |
+| `Lead`, `Referral`, `Feedback`                                     | CRM and referrals                         |
+| `Job`, `JobApplication`                                            | Hiring pipeline                           |
+| `Notification`, `Conversation`, `Message`                          | Messaging and notifications               |
+| `BlogPost`, `Guide`, `ChangelogVersion`                            | Content management                        |
+| `Flag`, `NotificationContent`, `ComplianceItem`, `ScreeningResult` | Governance                                |
+| `Review`                                                           | Performance reviews                       |
+| `Package`, `Preview`, `Blueprint`                                  | B2C packages and previews                 |
+| `ShowcaseItem`, `Glossary`                                         | Public showcase and glossary              |
 
 ## Role-Based Access
 
-| Role | Dashboard | Access |
-|------|-----------|--------|
-| `CLIENT`, `CLIENT_ADMIN`, `CLIENT_PM`, `INDIVIDUAL_CLIENT`, `ORG_OWNER` | `/app/client` | Client portal |
-| `TEAM`, `PM`, `DEVELOPER`, `QA`, `DESIGNER`, `DEVOPS`, `SE`, `SENIOR_PM` | `/app/team` | Team dashboard |
-| `ADMIN` | `/app/admin` | Admin dashboard |
+| Role                                                                     | Dashboard     | Access          |
+| ------------------------------------------------------------------------ | ------------- | --------------- |
+| `CLIENT`, `CLIENT_ADMIN`, `CLIENT_PM`, `INDIVIDUAL_CLIENT`, `ORG_OWNER`  | `/app/client` | Client portal   |
+| `TEAM`, `PM`, `DEVELOPER`, `QA`, `DESIGNER`, `DEVOPS`, `SE`, `SENIOR_PM` | `/app/team`   | Team dashboard  |
+| `ADMIN`                                                                  | `/app/admin`  | Admin dashboard |
 
 ## Deployment
 
@@ -336,6 +342,7 @@ cd client && pnpm build && cd ..
 ```
 
 Build outputs:
+
 - `apps/api/dist/` — compiled API server
 - `client/dist/` — static Vite build
 
@@ -368,13 +375,13 @@ docker run -p 4000:4000 stackfox-api
 
 ### Cloud Deployment
 
-| Service | Recommendation |
-|---------|---------------|
-| **API** | Railway, Render, or Fly.io |
-| **Client** | Vercel (Vite/static) or nginx on any VPS |
-| **Database** | Supabase (PostgreSQL) |
-| **Redis** | Upstash |
-| **Storage** | Supabase Storage |
+| Service      | Recommendation                           |
+| ------------ | ---------------------------------------- |
+| **API**      | Railway, Render, or Fly.io               |
+| **Client**   | Vercel (Vite/static) or nginx on any VPS |
+| **Database** | Supabase (PostgreSQL)                    |
+| **Redis**    | Upstash                                  |
+| **Storage**  | Supabase Storage                         |
 
 ## Project Structure
 

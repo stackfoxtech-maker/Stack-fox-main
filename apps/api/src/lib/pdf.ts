@@ -72,7 +72,11 @@ class Cursor {
   gap(h: number) {
     this.y -= h;
   }
-  text(s: string, size = 10, opts: { bold?: boolean; color?: typeof INK; x?: number } = {}) {
+  text(
+    s: string,
+    size = 10,
+    opts: { bold?: boolean; color?: typeof INK; x?: number } = {},
+  ) {
     s = ansi(s);
     this.ensure(size + 4);
     this.y -= size;
@@ -117,7 +121,13 @@ class Cursor {
     value = ansi(value);
     this.ensure(size + 4);
     this.y -= size;
-    this.page.drawText(label, { x: MARGIN, y: this.y, size, font: this.font, color: MUTED });
+    this.page.drawText(label, {
+      x: MARGIN,
+      y: this.y,
+      size,
+      font: this.font,
+      color: MUTED,
+    });
     const vw = this.bold.widthOfTextAtSize(value, size);
     this.page.drawText(value, {
       x: PAGE_W - MARGIN - vw,

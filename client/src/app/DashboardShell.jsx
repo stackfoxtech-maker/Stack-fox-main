@@ -29,16 +29,18 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
   const { user, logout } = useAuthStore();
   const location = useLocation();
 
-  const tabs = (tabItems && tabItems.length ? tabItems : navItems.slice(0, 4));
+  const tabs = tabItems && tabItems.length ? tabItems : navItems.slice(0, 4);
   const base = navItems[0]?.path || '/';
   const notifPath = navItems.find((i) => /notification|alert/i.test(i.label))?.path;
-  const openSearch = () => { setSearchMounted(true); setSearchOpen(true); };
+  const openSearch = () => {
+    setSearchMounted(true);
+    setSearchOpen(true);
+  };
 
   const isActive = (path) =>
     path === base ? location.pathname === base : location.pathname.startsWith(path);
 
-  const currentLabel =
-    [...navItems].reverse().find((i) => isActive(i.path))?.label || title;
+  const currentLabel = [...navItems].reverse().find((i) => isActive(i.path))?.label || title;
 
   const NavList = ({ onNavigate }) => (
     <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
@@ -48,13 +50,18 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
           to={item.path}
           end={item.path === base}
           onClick={onNavigate}
-          className={({ isActive: a }) => cn(
-            'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-            a
-              ? dark ? 'bg-fox-500/15 text-fox-400' : 'bg-fox-50 text-fox-600'
-              : dark ? 'text-warm-300 hover:bg-white/5 hover:text-white'
-                     : 'text-warm-600 hover:bg-warm-50 hover:text-warm-900',
-          )}
+          className={({ isActive: a }) =>
+            cn(
+              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+              a
+                ? dark
+                  ? 'bg-fox-500/15 text-fox-400'
+                  : 'bg-fox-50 text-fox-600'
+                : dark
+                  ? 'text-warm-300 hover:bg-white/5 hover:text-white'
+                  : 'text-warm-600 hover:bg-warm-50 hover:text-warm-900',
+            )
+          }
         >
           <item.icon size={18} />
           {item.label}
@@ -70,11 +77,18 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
           {user?.name?.charAt(0)}
         </div>
         <div className="min-w-0 flex-1">
-          <p className={cn('truncate text-sm font-medium', dark ? 'text-white' : 'text-warm-900')}>{user?.name}</p>
-          <p className={cn('truncate text-[11px]', dark ? 'text-warm-400' : 'text-warm-500')}>{user?.email}</p>
+          <p className={cn('truncate text-sm font-medium', dark ? 'text-white' : 'text-warm-900')}>
+            {user?.name}
+          </p>
+          <p className={cn('truncate text-[11px]', dark ? 'text-warm-400' : 'text-warm-500')}>
+            {user?.email}
+          </p>
         </div>
       </div>
-      <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-danger-500 transition-colors hover:bg-danger-50">
+      <button
+        onClick={logout}
+        className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-danger-500 transition-colors hover:bg-danger-50"
+      >
         <LogOut size={18} /> Log out
       </button>
     </div>
@@ -83,11 +97,18 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
   return (
     <div className="flex min-h-screen bg-warm-50">
       {/* ── Desktop sidebar ─────────────────────────────── */}
-      <aside className={cn(
-        'hidden w-64 flex-col border-r lg:flex',
-        dark ? 'border-warm-800 bg-warm-900' : 'border-warm-200 bg-white',
-      )}>
-        <div className={cn('flex h-16 items-center px-5', dark ? 'border-b border-warm-800' : 'border-b border-warm-100')}>
+      <aside
+        className={cn(
+          'hidden w-64 flex-col border-r lg:flex',
+          dark ? 'border-warm-800 bg-warm-900' : 'border-warm-200 bg-white',
+        )}
+      >
+        <div
+          className={cn(
+            'flex h-16 items-center px-5',
+            dark ? 'border-b border-warm-800' : 'border-b border-warm-100',
+          )}
+        >
           <NavLink to="/" className="flex items-center gap-2">
             <BrandLogo size={22} withBackground />
             <span className={cn('font-semibold', dark ? 'text-white' : 'text-warm-900')}>
@@ -110,11 +131,22 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={cn('flex h-16 items-center justify-between px-5', dark ? 'border-b border-warm-800' : 'border-b border-warm-100')}>
+            <div
+              className={cn(
+                'flex h-16 items-center justify-between px-5',
+                dark ? 'border-b border-warm-800' : 'border-b border-warm-100',
+              )}
+            >
               <span className={cn('font-semibold', dark ? 'text-white' : 'text-warm-900')}>
                 stack<span className="text-fox-500">fox</span>
               </span>
-              <button onClick={() => setDrawerOpen(false)} className={cn('rounded-lg p-1.5', dark ? 'hover:bg-white/10 text-warm-300' : 'hover:bg-warm-100')}>
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className={cn(
+                  'rounded-lg p-1.5',
+                  dark ? 'hover:bg-white/10 text-warm-300' : 'hover:bg-warm-100',
+                )}
+              >
                 <X size={18} />
               </button>
             </div>
@@ -128,16 +160,26 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top app bar */}
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-warm-200 bg-white/90 px-4 backdrop-blur-md lg:h-16 lg:px-6">
-          <span className="lg:hidden"><BrandLogo size={22} withBackground /></span>
+          <span className="lg:hidden">
+            <BrandLogo size={22} withBackground />
+          </span>
           <h1 className="flex-1 truncate text-base font-semibold text-warm-900 lg:text-lg">
             <span className="lg:hidden">{currentLabel}</span>
             <span className="hidden lg:inline">{title}</span>
           </h1>
-          <button onClick={openSearch} aria-label="Search services" className="grid h-9 w-9 place-items-center rounded-lg text-warm-600 hover:bg-warm-100">
+          <button
+            onClick={openSearch}
+            aria-label="Search services"
+            className="grid h-9 w-9 place-items-center rounded-lg text-warm-600 hover:bg-warm-100"
+          >
             <Search size={19} />
           </button>
           {notifPath && (
-            <NavLink to={notifPath} aria-label="Notifications" className="grid h-9 w-9 place-items-center rounded-lg text-warm-600 hover:bg-warm-100">
+            <NavLink
+              to={notifPath}
+              aria-label="Notifications"
+              className="grid h-9 w-9 place-items-center rounded-lg text-warm-600 hover:bg-warm-100"
+            >
               <Bell size={19} />
             </NavLink>
           )}
@@ -158,10 +200,12 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
               key={item.path}
               to={item.path}
               end={item.path === base}
-              className={({ isActive: a }) => cn(
-                'flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
-                a ? 'text-fox-600' : 'text-warm-500',
-              )}
+              className={({ isActive: a }) =>
+                cn(
+                  'flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
+                  a ? 'text-fox-600' : 'text-warm-500',
+                )
+              }
             >
               <item.icon size={20} strokeWidth={2} />
               {item.label}

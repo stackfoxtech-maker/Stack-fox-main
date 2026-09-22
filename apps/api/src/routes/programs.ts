@@ -3,18 +3,23 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
-import { computeHealthState } from "@stackfox/core";
+import { DELIVERY_ROLES, computeHealthState } from "@stackfox/core";
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { requireRole } from "../plugins/auth";
 import { clientScope } from "../lib/scope";
 import { toJson } from "../lib/json";
+import { parseBody } from "../lib/validate";
+import { CreateProgramSchema } from "./opsSchemas";
 
 /**
  * A programme groups engagements for one client, so it is readable by that
  * client and by internal staff — and by nobody else. These routes were fully
  * open, exposing budgets and delivery health across every account.
  */
-async function programInScope(req: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+async function programInScope(
+  req: FastifyRequest,
+  reply: FastifyReply,
+): Promise<boolean> {
   const scope = await clientScope(req, reply);
   if (scope === undefined) return false;
   if (scope === null) return true;
@@ -34,12 +39,13 @@ async function programInScope(req: FastifyRequest, reply: FastifyReply): Promise
 export async function programRoutes(app: FastifyInstance) {
   app.post("/programs", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const body = req.body as any;
+    const body = parseBody(req, reply, CreateProgramSchema);
+    if (!body) return;
     return prisma.program.create({
       data: {
         id: ids.programId(),
         name: body.name,
-        clientId: body.orgId ?? body.clientId,
+        clientId: body.clientId,
         leadUserId: req.user!.sub,
         budgetEnvelope: body.budgetEnvelope ?? null,
       },
@@ -59,14 +65,15 @@ export async function programRoutes(app: FastifyInstance) {
 
   app.patch("/programs/:id", async (req, reply) => {
     // Programme structure is managed by StackFox, not the client.
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SENIOR_PM", "PM"])) return;
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
     const { id } = req.params as { id: string };
     const body = (req.body ?? {}) as Record<string, unknown>;
 
     const data: Record<string, unknown> = {};
     if (typeof body.name === "string") data.name = body.name;
     if (typeof body.leadUserId === "string") data.leadUserId = body.leadUserId;
-    if (typeof body.budgetEnvelope === "number") data.budgetEnvelope = body.budgetEnvelope;
+    if (typeof body.budgetEnvelope === "number")
+      data.budgetEnvelope = body.budgetEnvelope;
     if (body.raid !== undefined) data.raid = toJson(body.raid);
 
     if (Object.keys(data).length === 0) {
@@ -102,7 +109,7 @@ export async function programRoutes(app: FastifyInstance) {
           status: m.status,
           dueDate: m.dueDate,
         })),
-      }))
+      })),
     );
   });
 
@@ -119,8 +126,8 @@ export async function programRoutes(app: FastifyInstance) {
       totalEngagements: engagements.length,
       totalProjects: engagements.reduce((s, e) => s + e.projects.length, 0),
       totalInvoiced: engagements.reduce(
-        (s, e) => s + e.invoices.reduce((si, inv) => si + (inv.grandTotal ?? 0), 0),
-        0
+        (s, e) => s + e.invoices.reduce((si, inv) => si + Number(inv.grandTotal ?? 0), 0),
+        0,
       ),
       generatedAt: new Date().toISOString(),
     };
@@ -142,10 +149,12 @@ export async function programRoutes(app: FastifyInstance) {
       include: { projects: true, invoices: true },
     });
 
-    const activeProjects = engagements.flatMap((e) => e.projects).filter((p) => p.status === "ACTIVE");
+    const activeProjects = engagements
+      .flatMap((e) => e.projects)
+      .filter((p) => p.status === "ACTIVE");
     const totalInvoiced = engagements.reduce(
-      (s, e) => s + e.invoices.reduce((si, inv) => si + (inv.grandTotal ?? 0), 0),
-      0
+      (s, e) => s + e.invoices.reduce((si, inv) => si + Number(inv.grandTotal ?? 0), 0),
+      0,
     );
 
     // "Last order" for a program is the most recent engagement start; a program
@@ -168,7 +177,10 @@ export async function programRoutes(app: FastifyInstance) {
     const health = computeHealthState({
       daysSinceLastOrder,
       outstandingInvoices: engagements.reduce(
-        (n, e) => n + e.invoices.filter((i) => i.status !== "PAID" && i.status !== "CANCELLED").length,
+        (n, e) =>
+          n +
+          e.invoices.filter((i) => i.status !== "PAID" && i.status !== "CANCELLED")
+            .length,
         0,
       ),
       openTickets,

@@ -24,7 +24,10 @@ export default function WebsiteAudit() {
     setLoading(true);
     setError('');
     try {
-      const res = await apiPost('/tools/audit', { url: url.trim(), email: email.trim() || undefined });
+      const res = await apiPost('/tools/audit', {
+        url: url.trim(),
+        email: email.trim() || undefined,
+      });
       setReport(res.data.report);
     } catch (err) {
       setError(err.response?.data?.error || 'Audit failed. Please check the URL and try again.');
@@ -37,7 +40,10 @@ export default function WebsiteAudit() {
     <div className="max-w-4xl mx-auto px-6 py-16">
       <p className="text-sm text-orange-600 font-semibold mb-2">Free Tool · Powered by StackFox</p>
       <h1 className="text-4xl font-bold mb-3">Free AI Website Audit</h1>
-      <p className="text-gray-600 mb-8">Enter your URL and get a scored report across 6 dimensions — with actionable fixes mapped to StackFox services.</p>
+      <p className="text-gray-600 mb-8">
+        Enter your URL and get a scored report across 6 dimensions — with actionable fixes mapped to
+        StackFox services.
+      </p>
 
       <form onSubmit={runAudit} className="bg-white border rounded-2xl p-6 mb-10">
         <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -86,20 +92,34 @@ export default function WebsiteAudit() {
         <div className="bg-white border rounded-2xl p-6 mb-10">
           <h2 className="text-2xl font-bold mb-4">Your Audit Report</h2>
           {typeof report === 'string' ? (
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 rounded-xl p-4">{report}</pre>
+            <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 rounded-xl p-4">
+              {report}
+            </pre>
           ) : (
             <div className="space-y-4">
               {Object.entries(report).map(([k, v]) => (
                 <div key={k} className="border-b pb-3">
                   <h3 className="font-semibold capitalize mb-1">{k.replace(/_/g, ' ')}</h3>
-                  <div className="text-sm text-gray-600">{typeof v === 'string' ? v : JSON.stringify(v)}</div>
+                  <div className="text-sm text-gray-600">
+                    {typeof v === 'string' ? v : JSON.stringify(v)}
+                  </div>
                 </div>
               ))}
             </div>
           )}
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/catalog" className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600">Fix Issues — View Services</Link>
-            <Link to="/tools/estimator" className="px-5 py-2.5 border-2 border-orange-500 text-orange-600 rounded-xl font-semibold hover:bg-orange-50">Get an Estimate</Link>
+            <Link
+              to="/catalog"
+              className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600"
+            >
+              Fix Issues — View Services
+            </Link>
+            <Link
+              to="/tools/estimator"
+              className="px-5 py-2.5 border-2 border-orange-500 text-orange-600 rounded-xl font-semibold hover:bg-orange-50"
+            >
+              Get an Estimate
+            </Link>
           </div>
         </div>
       )}

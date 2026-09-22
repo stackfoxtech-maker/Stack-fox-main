@@ -1,0 +1,33 @@
+# Secret-scanning configuration.
+#
+# Everything below is an allowlist entry, and each one states why the match is
+# not a live credential. Nothing is excluded for being noisy.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+[rules.allowlist]
+paths = [
+  # Deliberate, published-in-the-open values for the throwaway local test
+  # stack. The containers they belong to are created and destroyed by that
+  # same script and are never reachable off the machine.
+  '''scripts/test-stack\.sh''',
+
+  # A Next.js build artifact committed by mistake in August 2026. It carries a
+  # Server Actions encryptionKey, which was a real secret — but apps/web has
+  # since been deleted, so the key protects nothing that still exists. It stays
+  # in history because rewriting published history costs more than it is worth
+  # for a key with nothing behind it. Treat it as burned: never reuse it.
+  '''apps/web/\.next/''',
+]
+
+[allowlist]
+description = "Paths that cannot hold a credential"
+paths = [
+  '''pnpm-lock\.yaml''',
+  '''package-lock\.json''',
+  '''(^|/)dist/''',
+  '''(^|/)node_modules/''',
+]

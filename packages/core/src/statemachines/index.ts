@@ -9,19 +9,10 @@ export type ProjectStatus =
   | "CANCELLED";
 
 export type MilestoneStatus =
-  | "UPCOMING"
-  | "IN_PROGRESS"
-  | "IN_REVIEW"
-  | "REVISION"
-  | "APPROVED";
+  "UPCOMING" | "IN_PROGRESS" | "IN_REVIEW" | "REVISION" | "APPROVED";
 
 export type OrderStatus =
-  | "PENDING"
-  | "ACCEPTED"
-  | "CONTRACTING"
-  | "ACTIVE"
-  | "COMPLETED"
-  | "CANCELLED";
+  "PENDING" | "ACCEPTED" | "CONTRACTING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 
 export type InvoiceStatus =
   | "DRAFT"

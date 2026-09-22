@@ -1,12 +1,19 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import { canTransition, PROJECT_TRANSITIONS } from "@stackfox/core";
 import { clientScope, clientWriteScope, assertProjectInScope } from "../lib/scope";
-import { paginated, pageParams } from "../lib/http";
+import { LIST_CAP, pageParams, paginated } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import { MilestoneDeliverablesSchema } from "./opsSchemas";
+import {
+  AssessChangeRequestSchema,
+  CreateChangeRequestSchema,
+  MilestoneFeedbackSchema,
+  UpdateProjectStatusSchema,
+} from "./deliverySchemas";
 
 export async function projectRoutes(app: FastifyInstance) {
   // GET /projects
@@ -14,7 +21,12 @@ export async function projectRoutes(app: FastifyInstance) {
     const scope = await clientScope(req, reply);
     if (scope === undefined) return;
 
-    const { engId, status, page = "1", limit = "20" } = req.query as Record<string, string>;
+    const {
+      engId,
+      status,
+      page = "1",
+      limit = "20",
+    } = req.query as Record<string, string>;
     const where: any = {};
     if (scope !== null) where.engagement = { clientId: scope };
     if (engId) where.engagementId = engId;
@@ -62,13 +74,17 @@ export async function projectRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
     const { id } = req.params as { id: string };
     if (!(await assertProjectInScope(id, scope, reply))) return;
-    const { status } = req.body as { status: string };
+    const statusBody = parseBody(req, reply, UpdateProjectStatusSchema);
+    if (!statusBody) return;
+    const { status } = statusBody;
 
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return reply.code(404).send({ error: "Project not found" });
 
     if (!canTransition(project.status as any, status as any, PROJECT_TRANSITIONS)) {
-      return reply.code(409).send({ error: `Cannot transition from ${project.status} to ${status}` });
+      return reply
+        .code(409)
+        .send({ error: `Cannot transition from ${project.status} to ${status}` });
     }
 
     const updated = await prisma.project.update({ where: { id }, data: { status } });
@@ -80,7 +96,12 @@ export async function projectRoutes(app: FastifyInstance) {
       CANCELLED: "PROJECT_CANCELLED",
     };
     if (codeMap[status]) {
-      await emitEvent({ code: codeMap[status], payload: { projectId: id }, actor: req.user!.sub, projectId: id });
+      await emitEvent({
+        code: codeMap[status],
+        payload: { projectId: id },
+        actor: req.user!.sub,
+        projectId: id,
+      });
     }
 
     return updated;
@@ -94,7 +115,11 @@ export async function projectRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
     if (!(await assertProjectInScope(id, scope, reply))) return;
 
-    const milestones = await prisma.milestone.findMany({ where: { projectId: id }, orderBy: { number: "asc" } });
+    const milestones = await prisma.milestone.findMany({
+      take: LIST_CAP,
+      where: { projectId: id },
+      orderBy: { number: "asc" },
+    });
     return { data: milestones };
   });
 
@@ -148,7 +173,9 @@ export async function projectRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
     const { id, n } = req.params as { id: string; n: string };
     if (!(await assertProjectInScope(id, scope, reply))) return;
-    const { feedback } = req.body as { feedback: string };
+    const fbBody = parseBody(req, reply, MilestoneFeedbackSchema);
+    if (!fbBody) return;
+    const { feedback } = fbBody;
 
     const milestone = await prisma.milestone.findUnique({
       where: { projectId_number: { projectId: id, number: parseInt(n) } },
@@ -179,7 +206,11 @@ export async function projectRoutes(app: FastifyInstance) {
         projectId: id,
       });
 
-      return { milestone, cr, message: "Revision exceeds included rounds. Change request created." };
+      return {
+        milestone,
+        cr,
+        message: "Revision exceeds included rounds. Change request created.",
+      };
     }
 
     const updated = await prisma.milestone.update({
@@ -203,12 +234,8 @@ export async function projectRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
     const { id } = req.params as { id: string };
     if (!(await assertProjectInScope(id, scope, reply))) return;
-    const body = req.body as {
-      title: string;
-      description: string;
-      urgency?: string;
-      affectedMilestones?: number[];
-    };
+    const body = parseBody(req, reply, CreateChangeRequestSchema);
+    if (!body) return;
 
     const cr = await prisma.changeRequest.create({
       data: {
@@ -242,11 +269,11 @@ export async function projectRoutes(app: FastifyInstance) {
       if (!(await assertProjectInScope(id, scope, reply))) return;
     }
     const { crId } = req.params as { crId: string };
-    const { costDelta, timelineDelta, scopeImpact } = req.body as {
-      costDelta: number;
-      timelineDelta: number;
-      scopeImpact: string;
-    };
+    // costDelta becomes an invoice once this request is approved (see the
+    // G-041 block below), so it is integer paise like any other money field.
+    const assessBody = parseBody(req, reply, AssessChangeRequestSchema);
+    if (!assessBody) return;
+    const { costDelta, timelineDelta, scopeImpact } = assessBody;
 
     const updated = await prisma.changeRequest.update({
       where: { id: crId },
@@ -278,8 +305,12 @@ export async function projectRoutes(app: FastifyInstance) {
     }
 
     // G-041: if cost delta > 0, create invoice before approving
-    if (cr.costDelta && cr.costDelta > 0 && cr.projectId) {
-      const project = await prisma.project.findUnique({ where: { id: cr.projectId }, include: { engagement: true } });
+    const costDelta = Number(cr.costDelta ?? 0);
+    if (costDelta > 0 && cr.projectId) {
+      const project = await prisma.project.findUnique({
+        where: { id: cr.projectId },
+        include: { engagement: true },
+      });
       if (project) {
         const invoice = await prisma.invoice.create({
           data: {
@@ -289,13 +320,16 @@ export async function projectRoutes(app: FastifyInstance) {
             milestoneRef: `CR-${crId}`,
             sacCode: "998314",
             gstType: "IGST",
-            subtotal: cr.costDelta,
-            igst: Math.round(cr.costDelta * 0.18),
-            grandTotal: cr.costDelta + Math.round(cr.costDelta * 0.18),
+            subtotal: costDelta,
+            igst: Math.round(costDelta * 0.18),
+            grandTotal: costDelta + Math.round(costDelta * 0.18),
             status: "SENT",
           },
         });
-        await prisma.changeRequest.update({ where: { id: crId }, data: { invoiceId: invoice.id } });
+        await prisma.changeRequest.update({
+          where: { id: crId },
+          data: { invoiceId: invoice.id },
+        });
       }
     }
 
@@ -337,7 +371,9 @@ export async function projectRoutes(app: FastifyInstance) {
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return reply.code(404).send({ error: "Project not found" });
     if (!["COMPLETED", "CANCELLED"].includes(project.status)) {
-      return reply.code(409).send({ error: "Only completed/cancelled projects can be reactivated" });
+      return reply
+        .code(409)
+        .send({ error: "Only completed/cancelled projects can be reactivated" });
     }
 
     // Create micro-SOW contract
@@ -355,13 +391,16 @@ export async function projectRoutes(app: FastifyInstance) {
       orderBy: { number: "desc" },
     });
 
+    const milestoneBody = parseBody(req, reply, MilestoneDeliverablesSchema);
+    if (!milestoneBody) return;
+
     await prisma.milestone.create({
       data: {
         projectId: id,
         number: (maxMilestone?.number ?? 0) + 1,
         name: "Reactivation",
         paymentPct: 100,
-        deliverables: (req.body as any)?.deliverables ?? [],
+        deliverables: milestoneBody.deliverables ?? [],
       },
     });
 

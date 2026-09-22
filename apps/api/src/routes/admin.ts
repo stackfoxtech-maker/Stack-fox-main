@@ -2,9 +2,34 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { bumpSessionEpoch } from "../lib/session";
-import { paginated, pageParams } from "../lib/http";
-import { INTERNAL_ROLES, CLIENT_ROLES } from "@stackfox/core";
+import { LIST_CAP, pageParams, paginated } from "../lib/http";
+import {
+  CATALOGUE_ROLES,
+  CLIENT_ROLES,
+  INTERNAL_ROLES,
+  isAdminRole,
+  isInternalRole,
+} from "@stackfox/core";
 import { ok, withId } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import { ScreeningReviewSchema } from "./opsSchemas";
+import {
+  CreateServiceSchema,
+  UpdateServiceSchema,
+  CreateFeatureSchema,
+  UpdateFeatureSchema,
+  CreateDependencySchema,
+  CreateBundleSchema,
+  UpdateBundleSchema,
+  CreateRateCardSchema,
+  UpdateRateCardSchema,
+  CreateFlagSchema,
+  UpdateFlagSchema,
+  CreateNotificationTemplateSchema,
+  UpdateNotificationTemplateSchema,
+  CreateComplianceItemSchema,
+  UpdateComplianceItemSchema,
+} from "./adminSchemas";
 import {
   updateServiceNameInCatalogue,
   addServiceToCatalogue,
@@ -15,12 +40,16 @@ const ALL_ROLES = [...INTERNAL_ROLES, ...CLIENT_ROLES] as readonly string[];
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook("preHandler", async (req, reply) => {
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "SE", "SENIOR_PM"])) return;
+    if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
   });
 
   // Service CRUD
   app.get("/admin/services", async (req) => {
-    const { page, limit, skip } = pageParams(req.query as Record<string, string>, 50, 200);
+    const { page, limit, skip } = pageParams(
+      req.query as Record<string, string>,
+      50,
+      200,
+    );
     const [items, total] = await Promise.all([
       prisma.serviceUnit.findMany({ skip, take: limit, orderBy: { id: "asc" } }),
       prisma.serviceUnit.count(),
@@ -28,30 +57,39 @@ export async function adminRoutes(app: FastifyInstance) {
     return paginated(items, total, page, limit);
   });
 
-  app.post("/admin/services", async (req) => {
-    const body = req.body as any;
+  app.post("/admin/services", async (req, reply) => {
+    const body = parseBody(req, reply, CreateServiceSchema);
+    if (!body) return;
     const created = await prisma.serviceUnit.create({ data: body });
     try {
       addServiceToCatalogue({
         id: created.id,
         name: created.name,
         categoryTier1: created.categoryTier1,
-        starterPrice: created.starterPrice,
+        starterPrice: Number(created.starterPrice ?? 0),
         starterTimelineDays: created.starterTimelineDays,
       });
-    } catch {}
+    } catch (err) {
+      // The row is committed either way; the catalogue is a derived index.
+      // Silence here meant search kept serving a service that no longer
+      // matched the database, with nothing to show why.
+      req.log.warn({ err, serviceId: created.id }, "catalogue add failed");
+    }
     return created;
   });
 
-  app.patch("/admin/services/:id", async (req) => {
+  app.patch("/admin/services/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const body = req.body as any;
+    const body = parseBody(req, reply, UpdateServiceSchema);
+    if (!body) return;
     const existing = await prisma.serviceUnit.findUnique({ where: { id } });
     const updated = await prisma.serviceUnit.update({ where: { id }, data: body });
     if (existing && body.name && body.name !== existing.name) {
       try {
         updateServiceNameInCatalogue(id, body.name);
-      } catch {}
+      } catch (err) {
+        req.log.warn({ err, serviceId: id }, "catalogue rename failed");
+      }
     }
     return updated;
   });
@@ -61,7 +99,9 @@ export async function adminRoutes(app: FastifyInstance) {
     await prisma.serviceUnit.delete({ where: { id } });
     try {
       removeServiceFromCatalogue(id);
-    } catch {}
+    } catch (err) {
+      req.log.warn({ err, serviceId: id }, "catalogue removal failed");
+    }
     return { success: true };
   });
 
@@ -74,13 +114,17 @@ export async function adminRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post("/admin/features", async (req) => {
-    return prisma.featureUnit.create({ data: req.body as any });
+  app.post("/admin/features", async (req, reply) => {
+    const body = parseBody(req, reply, CreateFeatureSchema);
+    if (!body) return;
+    return prisma.featureUnit.create({ data: body });
   });
 
-  app.patch("/admin/features/:id", async (req) => {
+  app.patch("/admin/features/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    return prisma.featureUnit.update({ where: { id }, data: req.body as any });
+    const body = parseBody(req, reply, UpdateFeatureSchema);
+    if (!body) return;
+    return prisma.featureUnit.update({ where: { id }, data: body });
   });
 
   app.delete("/admin/features/:id", async (req) => {
@@ -94,8 +138,10 @@ export async function adminRoutes(app: FastifyInstance) {
     return prisma.dependency.findMany();
   });
 
-  app.post("/admin/dependencies", async (req) => {
-    return prisma.dependency.create({ data: req.body as any });
+  app.post("/admin/dependencies", async (req, reply) => {
+    const body = parseBody(req, reply, CreateDependencySchema);
+    if (!body) return;
+    return prisma.dependency.create({ data: body });
   });
 
   app.delete("/admin/dependencies/:id", async (req) => {
@@ -109,13 +155,17 @@ export async function adminRoutes(app: FastifyInstance) {
     return prisma.bundle.findMany();
   });
 
-  app.post("/admin/bundles", async (req) => {
-    return prisma.bundle.create({ data: req.body as any });
+  app.post("/admin/bundles", async (req, reply) => {
+    const body = parseBody(req, reply, CreateBundleSchema);
+    if (!body) return;
+    return prisma.bundle.create({ data: body });
   });
 
-  app.patch("/admin/bundles/:id", async (req) => {
+  app.patch("/admin/bundles/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    return prisma.bundle.update({ where: { id }, data: req.body as any });
+    const body = parseBody(req, reply, UpdateBundleSchema);
+    if (!body) return;
+    return prisma.bundle.update({ where: { id }, data: body });
   });
 
   app.delete("/admin/bundles/:id", async (req) => {
@@ -129,13 +179,17 @@ export async function adminRoutes(app: FastifyInstance) {
     return prisma.rateCard.findMany({ orderBy: { effectiveFrom: "desc" } });
   });
 
-  app.post("/admin/rate-cards", async (req) => {
-    return prisma.rateCard.create({ data: req.body as any });
+  app.post("/admin/rate-cards", async (req, reply) => {
+    const body = parseBody(req, reply, CreateRateCardSchema);
+    if (!body) return;
+    return prisma.rateCard.create({ data: body });
   });
 
-  app.patch("/admin/rate-cards/:id", async (req) => {
+  app.patch("/admin/rate-cards/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    return prisma.rateCard.update({ where: { id }, data: req.body as any });
+    const body = parseBody(req, reply, UpdateRateCardSchema);
+    if (!body) return;
+    return prisma.rateCard.update({ where: { id }, data: body });
   });
 
   // Flags CRUD
@@ -143,13 +197,17 @@ export async function adminRoutes(app: FastifyInstance) {
     return prisma.flag.findMany();
   });
 
-  app.post("/admin/flags", async (req) => {
-    return prisma.flag.create({ data: req.body as any });
+  app.post("/admin/flags", async (req, reply) => {
+    const body = parseBody(req, reply, CreateFlagSchema);
+    if (!body) return;
+    return prisma.flag.create({ data: body });
   });
 
-  app.patch("/admin/flags/:id", async (req) => {
+  app.patch("/admin/flags/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    return prisma.flag.update({ where: { id }, data: req.body as any });
+    const body = parseBody(req, reply, UpdateFlagSchema);
+    if (!body) return;
+    return prisma.flag.update({ where: { id }, data: body });
   });
 
   // Notification Templates — NotificationContent rows are all templates
@@ -158,13 +216,17 @@ export async function adminRoutes(app: FastifyInstance) {
     return prisma.notificationContent.findMany({ orderBy: { key: "asc" } });
   });
 
-  app.post("/admin/notification-templates", async (req) => {
-    return prisma.notificationContent.create({ data: req.body as any });
+  app.post("/admin/notification-templates", async (req, reply) => {
+    const body = parseBody(req, reply, CreateNotificationTemplateSchema);
+    if (!body) return;
+    return prisma.notificationContent.create({ data: body });
   });
 
-  app.patch("/admin/notification-templates/:key", async (req) => {
+  app.patch("/admin/notification-templates/:key", async (req, reply) => {
     const { key } = req.params as { key: string };
-    return prisma.notificationContent.update({ where: { key }, data: req.body as any });
+    const body = parseBody(req, reply, UpdateNotificationTemplateSchema);
+    if (!body) return;
+    return prisma.notificationContent.update({ where: { key }, data: body });
   });
 
   // User management
@@ -179,7 +241,15 @@ export async function adminRoutes(app: FastifyInstance) {
         skip,
         take: l,
         orderBy: { createdAt: "desc" },
-        select: { id: true, email: true, name: true, role: true, orgId: true, isActive: true, createdAt: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          orgId: true,
+          isActive: true,
+          createdAt: true,
+        },
       }),
       prisma.user.count({ where }),
     ]);
@@ -194,6 +264,29 @@ export async function adminRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
     const body = (req.body ?? {}) as Record<string, unknown>;
 
+    // The tree-level guard also admits SE and SENIOR_PM. Role changes were
+    // already restricted below, but isActive and orgId were not — so a
+    // mid-level staff account could deactivate every administrator, and the
+    // bumpSessionEpoch at the end made that lockout immediate.
+    const callerIsAdmin = isAdminRole(req.user!.role);
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true },
+    });
+    if (!target) return reply.code(404).send({ error: "User not found" });
+
+    if ((body.isActive !== undefined || body.orgId !== undefined) && !callerIsAdmin) {
+      return reply.code(403).send({
+        error: "Only an administrator can change a user's status or organisation.",
+      });
+    }
+    // Nobody may act on an account that outranks them, whatever the field.
+    if (!callerIsAdmin && isInternalRole(target.role)) {
+      return reply
+        .code(403)
+        .send({ error: "Insufficient permissions for this account." });
+    }
+
     const data: Record<string, unknown> = {};
     if (typeof body.name === "string") data.name = body.name;
     if (typeof body.phone === "string") data.phone = body.phone;
@@ -201,8 +294,10 @@ export async function adminRoutes(app: FastifyInstance) {
     if (typeof body.orgId === "string" || body.orgId === null) data.orgId = body.orgId;
 
     if (body.role !== undefined) {
-      if (!["ADMIN", "SUPER_ADMIN"].includes(req.user!.role)) {
-        return reply.code(403).send({ error: "Only an administrator can change a user's role." });
+      if (!callerIsAdmin) {
+        return reply
+          .code(403)
+          .send({ error: "Only an administrator can change a user's role." });
       }
       if (typeof body.role !== "string" || !ALL_ROLES.includes(body.role)) {
         return reply.code(400).send({
@@ -222,7 +317,14 @@ export async function adminRoutes(app: FastifyInstance) {
     const updated = await prisma.user.update({
       where: { id },
       data,
-      select: { id: true, email: true, name: true, role: true, orgId: true, isActive: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        orgId: true,
+        isActive: true,
+      },
     });
 
     // A role change or a deactivation must not leave a stale session live.
@@ -240,9 +342,11 @@ export async function adminRoutes(app: FastifyInstance) {
     });
   });
 
-  app.patch("/admin/screening/:id", async (req) => {
+  app.patch("/admin/screening/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const { result, reviewNote } = req.body as { result: string; reviewNote?: string };
+    const srBody = parseBody(req, reply, ScreeningReviewSchema);
+    if (!srBody) return;
+    const { result, reviewNote } = srBody;
     return prisma.screeningResult.update({
       where: { id },
       data: { result, reviewNote, reviewedBy: req.user!.sub, reviewedAt: new Date() },
@@ -267,13 +371,17 @@ export async function adminRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post("/admin/compliance", async (req) => {
-    return prisma.complianceItem.create({ data: req.body as any });
+  app.post("/admin/compliance", async (req, reply) => {
+    const body = parseBody(req, reply, CreateComplianceItemSchema);
+    if (!body) return;
+    return prisma.complianceItem.create({ data: body });
   });
 
-  app.patch("/admin/compliance/:id", async (req) => {
+  app.patch("/admin/compliance/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    return prisma.complianceItem.update({ where: { id }, data: req.body as any });
+    const body = parseBody(req, reply, UpdateComplianceItemSchema);
+    if (!body) return;
+    return prisma.complianceItem.update({ where: { id }, data: body });
   });
 
   app.get("/admin/purchases", async (req) => {
@@ -346,8 +454,11 @@ export async function adminRoutes(app: FastifyInstance) {
       }),
     ]);
 
-    const orderEngIds = orders.map((o) => o.engagementId).filter((id): id is string => Boolean(id));
+    const orderEngIds = orders
+      .map((o) => o.engagementId)
+      .filter((id): id is string => Boolean(id));
     const engagements = await prisma.engagement.findMany({
+      take: LIST_CAP,
       where: { id: { in: orderEngIds } },
       include: {
         client: {
@@ -414,8 +525,14 @@ export async function adminRoutes(app: FastifyInstance) {
         paidAt: o.paidAt,
         razorpayOrderId: o.razorpayOrderId,
         engagement: eng,
-        contracts: (eng?.contracts || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-        projects: (eng?.projects || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        contracts: (eng?.contracts || []).sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        ),
+        projects: (eng?.projects || []).sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        ),
         payments: o.payments,
       };
     };

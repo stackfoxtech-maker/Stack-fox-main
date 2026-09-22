@@ -1,14 +1,22 @@
 import { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ShoppingCart, X, Trash2, Plus, Minus, ArrowRight, Package,
-  FileText, AlertTriangle, TrendingUp, Download, MessageSquare
+  ShoppingCart,
+  X,
+  Trash2,
+  Plus,
+  Minus,
+  ArrowRight,
+  Package,
+  FileText,
+  AlertTriangle,
+  TrendingUp,
+  MessageSquare,
 } from 'lucide-react';
 import { CURRENCIES } from '@lib/constants';
 import { applyTierMultiplier, computeEstimateRange, TIERS, TIER_LABELS } from '@lib/estimate';
 // jsPDF (~150 KB gz) is loaded on demand — see pdfExport / PERF_AUDIT P0-3.
-const exportQuotePDF = (...args) =>
-  import('@lib/pdfExport').then((m) => m.exportQuotePDF(...args));
+const exportQuotePDF = (...args) => import('@lib/pdfExport').then((m) => m.exportQuotePDF(...args));
 import { Button, Spinner } from '@components/ui/Primitives';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
@@ -18,9 +26,20 @@ import { useState, useMemo } from 'react';
 
 export default function CartDrawer() {
   const {
-    isOpen, setOpen, items, subtotal, gstAmount, total,
-    itemCount, removeItem, updateQuantity, clearCart, isLoading,
-    curIdx, warnings, roiItems
+    isOpen,
+    setOpen,
+    items,
+    subtotal,
+    gstAmount,
+    total,
+    itemCount,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    isLoading,
+    curIdx,
+    warnings,
+    roiItems,
   } = useCartStore();
 
   const { isAuthenticated } = useAuthStore();
@@ -36,12 +55,16 @@ export default function CartDrawer() {
     } else {
       document.body.style.overflow = '';
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen]);
 
   // Close on Escape
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') setOpen(false); };
+    const handler = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [setOpen]);
@@ -68,7 +91,7 @@ export default function CartDrawer() {
   };
 
   const handleWhatsAppCheckout = () => {
-    const itemList = items.map(i => `- ${i.name} (${i.quantity}x)`).join('\n');
+    const itemList = items.map((i) => `- ${i.name} (${i.quantity}x)`).join('\n');
     const msg = `Hi StackFox! I'd like a quote for:\n\n${itemList}\n\nTotal: ${fmt(grandTotal)}\n\nPlease get in touch!`;
     window.open(`https://wa.me/918209395894?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -78,7 +101,9 @@ export default function CartDrawer() {
   const fmt = (n) => {
     const val = n * cur.rate;
     return new Intl.NumberFormat(cur.locale, {
-      style: 'currency', currency: cur.code, minimumFractionDigits: 0
+      style: 'currency',
+      currency: cur.code,
+      minimumFractionDigits: 0,
     }).format(val);
   };
 
@@ -109,7 +134,10 @@ export default function CartDrawer() {
           <div className="flex items-center gap-2">
             <ShoppingCart size={20} className="text-fox-500" />
             <h2 className="text-base font-semibold text-warm-900">
-              Cart {itemCount > 0 && <span className="text-warm-400 font-normal">({itemCount} items)</span>}
+              Cart{' '}
+              {itemCount > 0 && (
+                <span className="text-warm-400 font-normal">({itemCount} items)</span>
+              )}
             </h2>
           </div>
           <button
@@ -153,12 +181,16 @@ export default function CartDrawer() {
                 >
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-warm-900 leading-tight truncate">{item.name}</p>
+                    <p className="text-sm font-medium text-warm-900 leading-tight truncate">
+                      {item.name}
+                    </p>
                     <p className="text-xs text-warm-400 mt-0.5 capitalize">{item.itemType}</p>
                     <p className="text-sm font-mono font-semibold text-fox-600 mt-1">
                       {fmt(item.price * item.quantity)}
                       {item.quantity > 1 && (
-                        <span className="text-[10px] text-warm-400 font-normal ml-1">({fmt(item.price)} × {item.quantity})</span>
+                        <span className="text-[10px] text-warm-400 font-normal ml-1">
+                          ({fmt(item.price)} × {item.quantity})
+                        </span>
                       )}
                     </p>
                   </div>
@@ -172,7 +204,9 @@ export default function CartDrawer() {
                     >
                       <Minus size={11} />
                     </button>
-                    <span className="w-6 text-center text-sm font-mono font-medium">{item.quantity}</span>
+                    <span className="w-6 text-center text-sm font-mono font-medium">
+                      {item.quantity}
+                    </span>
                     <button
                       onClick={() => updateQuantity(item._id, item.quantity + 1, isAuthenticated)}
                       className="w-7 h-7 rounded-lg border border-warm-200 bg-white flex items-center justify-center hover:border-fox-300 hover:text-fox-600 transition-colors"
@@ -227,7 +261,9 @@ export default function CartDrawer() {
               </div>
               {cur.tax > 0 && (
                 <div className="flex justify-between text-warm-500">
-                  <span>{cur.taxName} ({cur.tax}%)</span>
+                  <span>
+                    {cur.taxName} ({cur.tax}%)
+                  </span>
                   <span className="font-mono text-warm-700">{fmt(tx)}</span>
                 </div>
               )}
@@ -245,7 +281,9 @@ export default function CartDrawer() {
                 </div>
                 <div className="space-y-1">
                   {warnings.map((w, idx) => (
-                    <div key={idx} className="text-[11px] text-amber-800 leading-tight">• {w.msg}</div>
+                    <div key={idx} className="text-[11px] text-amber-800 leading-tight">
+                      • {w.msg}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -300,7 +338,6 @@ export default function CartDrawer() {
             >
               <MessageSquare size={16} /> Send to WhatsApp
             </Button>
-
 
             <div className="flex items-center justify-between">
               <button

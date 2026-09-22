@@ -1,14 +1,20 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { clientScope } from "../lib/scope";
-import { paginated, pageParams } from "../lib/http";
+import { LIST_CAP, pageParams, paginated } from "../lib/http";
 
 export async function eventRoutes(app: FastifyInstance) {
   app.get("/events", async (req, reply) => {
     const scope = await clientScope(req, reply);
     if (scope === undefined) return;
 
-    const { engId, projectId, code, page = "1", limit = "50" } = req.query as Record<string, string>;
+    const {
+      engId,
+      projectId,
+      code,
+      page = "1",
+      limit = "50",
+    } = req.query as Record<string, string>;
     const where: any = {};
 
     // The activity feed is the most sensitive read in the portal: events carry
@@ -16,6 +22,7 @@ export async function eventRoutes(app: FastifyInstance) {
     // projects, and drop rows that belong to neither.
     if (scope !== null) {
       const engagements = await prisma.engagement.findMany({
+        take: LIST_CAP,
         where: { clientId: scope },
         select: { id: true, projects: { select: { id: true } } },
       });

@@ -1,9 +1,14 @@
 import type { FastifyInstance } from "fastify";
-import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { redis } from "../lib/redis";
 import { randomBytes } from "crypto";
-import { findCatalogueItem } from "../lib/catalogue";
+import { parseBody } from "../lib/validate";
+import { catalogPrice } from "../lib/pricing";
+import {
+  AddToCartSchema,
+  RemoveFromCartSchema,
+  UpdateCartQuantitySchema,
+} from "./deliverySchemas";
 
 /**
  * Cart.
@@ -74,37 +79,6 @@ function calcTotals(items: CartItem[]) {
  * Returns null when the id is in neither, so unknown items are refused rather
  * than trusting a price from the request body.
  */
-async function catalogPrice(
-  itemId: string,
-  itemType: string,
-  tier?: string,
-): Promise<{ name: string; price: number; source: string } | null> {
-  const listed = findCatalogueItem(itemId);
-  if (listed) {
-    return { name: listed.name, price: listed.price, source: "catalogue" };
-  }
-
-  // Database-backed ids (SF-CAT-NNN) and slugs, priced in paise.
-  if (itemType === "package") {
-    const pkg = await prisma.package.findUnique({ where: { id: itemId } });
-    if (pkg) return { name: pkg.name, price: pkg.flatPrice / 100, source: "db" };
-  }
-
-  const service = await prisma.serviceUnit.findFirst({
-    where: { OR: [{ id: itemId }, { slug: itemId }], status: "PUBLISHED" },
-  });
-  if (!service) return null;
-
-  const starter = service.starterPrice ?? 0;
-  const multiplier = tier === "PREMIUM" ? 1.4 : tier === "GROWTH" ? 1.5 : 1;
-  const paise =
-    tier === "PREMIUM" && service.premiumMinimum
-      ? Math.max(service.premiumMinimum, Math.round(starter * multiplier))
-      : Math.round(starter * multiplier);
-
-  return { name: service.name, price: paise / 100, source: "db" };
-}
-
 export async function cartRoutes(app: FastifyInstance) {
   app.get("/cart", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
@@ -114,21 +88,18 @@ export async function cartRoutes(app: FastifyInstance) {
   app.post("/cart/add", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const userId = req.user!.sub;
-    const { itemId, itemType = "service", quantity = 1, notes, tier } = req.body as {
-      itemId?: string;
-      itemType?: string;
-      quantity?: number;
-      notes?: string;
-      tier?: string;
-    };
-
-    if (!itemId) return reply.code(400).send({ message: "itemId is required" });
+    const body = parseBody(req, reply, AddToCartSchema);
+    if (!body) return;
+    const { itemId, itemType = "service", quantity = 1, notes, tier } = body;
 
     const qty = Math.max(1, Math.min(99, Math.floor(Number(quantity) || 1)));
 
     const priced = await catalogPrice(itemId, itemType, tier);
     if (!priced) {
-      req.log.warn({ itemId, itemType }, "Add-to-cart rejected: id not in catalogue or database");
+      req.log.warn(
+        { itemId, itemType },
+        "Add-to-cart rejected: id not in catalogue or database",
+      );
       return reply.code(404).send({
         message: "That item is no longer available. Please refresh and try again.",
       });
@@ -145,7 +116,9 @@ export async function cartRoutes(app: FastifyInstance) {
       if (notes !== undefined) items[idx].notes = notes;
     } else {
       if (items.length >= MAX_ITEMS) {
-        return reply.code(409).send({ message: `A cart can hold at most ${MAX_ITEMS} line items.` });
+        return reply
+          .code(409)
+          .send({ message: `A cart can hold at most ${MAX_ITEMS} line items.` });
       }
       items.push({
         _id: `cart_${randomBytes(8).toString("hex")}`,
@@ -165,8 +138,9 @@ export async function cartRoutes(app: FastifyInstance) {
   app.post("/cart/remove", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const userId = req.user!.sub;
-    const { cartItemId } = req.body as { cartItemId?: string };
-    if (!cartItemId) return reply.code(400).send({ message: "cartItemId is required" });
+    const removeBody = parseBody(req, reply, RemoveFromCartSchema);
+    if (!removeBody) return;
+    const { cartItemId } = removeBody;
 
     const items = (await readCart(userId)).filter((i) => i._id !== cartItemId);
     await writeCart(userId, items);
@@ -176,12 +150,14 @@ export async function cartRoutes(app: FastifyInstance) {
   app.post("/cart/update-quantity", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const userId = req.user!.sub;
-    const { cartItemId, quantity } = req.body as { cartItemId?: string; quantity?: number };
-    if (!cartItemId) return reply.code(400).send({ message: "cartItemId is required" });
+    const qtyBody = parseBody(req, reply, UpdateCartQuantitySchema);
+    if (!qtyBody) return;
+    const { cartItemId, quantity } = qtyBody;
 
     const items = await readCart(userId);
     const item = items.find((i) => i._id === cartItemId);
-    if (!item) return reply.code(404).send({ message: "That item is no longer in your cart." });
+    if (!item)
+      return reply.code(404).send({ message: "That item is no longer in your cart." });
 
     item.quantity = Math.max(1, Math.min(99, Math.floor(Number(quantity) || 1)));
     await writeCart(userId, items);

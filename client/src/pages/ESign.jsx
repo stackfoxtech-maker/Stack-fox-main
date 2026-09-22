@@ -21,7 +21,9 @@ export default function ESign() {
 
   const canSign = signature.trim() && agreed.terms && agreed.accuracy;
 
-  const handleSign = () => { if (canSign) setSigned(true); };
+  const handleSign = () => {
+    if (canSign) setSigned(true);
+  };
 
   if (signed) {
     return (
@@ -31,7 +33,9 @@ export default function ESign() {
             <CheckSquare className="text-green-600" size={28} />
           </div>
           <h2 className="text-2xl font-bold text-warm-900 mb-2">Document Signed</h2>
-          <p className="text-warm-500 mb-1">Signed by: <span className="font-medium text-warm-700">{signature}</span></p>
+          <p className="text-warm-500 mb-1">
+            Signed by: <span className="font-medium text-warm-700">{signature}</span>
+          </p>
           <p className="text-warm-500 text-sm">A copy has been sent to your email.</p>
         </div>
       </div>
@@ -52,7 +56,9 @@ export default function ESign() {
           </div>
           <div className="bg-warm-50 rounded-xl p-5 space-y-3 max-h-72 overflow-y-auto text-sm text-warm-700 leading-relaxed">
             {mockContract.clauses.map((c, i) => (
-              <p key={i}><span className="font-semibold text-warm-900">{i + 1}.</span> {c}</p>
+              <p key={i}>
+                <span className="font-semibold text-warm-900">{i + 1}.</span> {c}
+              </p>
             ))}
           </div>
         </div>
@@ -63,20 +69,28 @@ export default function ESign() {
           </h2>
           <input
             value={signature}
-            onChange={e => setSignature(e.target.value)}
+            onChange={(e) => setSignature(e.target.value)}
             placeholder="Type your full legal name"
             className="w-full border-b-2 border-warm-300 focus:border-fox-500 outline-none text-2xl py-3 font-serif text-warm-900 bg-transparent transition"
           />
           {signature && (
-            <p className="mt-3 text-sm text-warm-500">Preview: <span className="font-serif text-xl text-warm-900 italic">{signature}</span></p>
+            <p className="mt-3 text-sm text-warm-500">
+              Preview: <span className="font-serif text-xl text-warm-900 italic">{signature}</span>
+            </p>
           )}
         </div>
 
         <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-3">
           {[
-            { key: 'terms', label: 'I agree to the terms and conditions outlined in this document.' },
-            { key: 'accuracy', label: 'I confirm that the information provided is accurate and complete.' },
-          ].map(item => (
+            {
+              key: 'terms',
+              label: 'I agree to the terms and conditions outlined in this document.',
+            },
+            {
+              key: 'accuracy',
+              label: 'I confirm that the information provided is accurate and complete.',
+            },
+          ].map((item) => (
             <label key={item.key} className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"

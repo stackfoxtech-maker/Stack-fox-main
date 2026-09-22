@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Activity, Clock, Sparkles, Globe, Smartphone, Brain, Shield, ChevronRight } from 'lucide-react';
+import {
+  Activity,
+  Clock,
+  Sparkles,
+  Globe,
+  Smartphone,
+  Brain,
+  Shield,
+  ChevronRight,
+} from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { Section, SectionHeading, Button } from '@components/ui/Primitives';
 import { cn } from '@lib/utils';
@@ -9,7 +18,11 @@ import LeadInquiryModal from '@components/LeadInquiryModal';
 const STATUS_CONFIG = {
   live: { label: 'Live', color: 'bg-green-50 text-green-600 border-green-200', icon: Activity },
   ongoing: { label: 'Ongoing', color: 'bg-fox-50 text-fox-600 border-fox-200', icon: Clock },
-  upcoming: { label: 'Upcoming', color: 'bg-blue-50 text-blue-600 border-blue-200', icon: Sparkles },
+  upcoming: {
+    label: 'Upcoming',
+    color: 'bg-blue-50 text-blue-600 border-blue-200',
+    icon: Sparkles,
+  },
 };
 
 const TYPE_ICONS = {
@@ -17,7 +30,7 @@ const TYPE_ICONS = {
   'Web Platform': Globe,
   'Mobile (iOS/Android)': Smartphone,
   'AI / GenAI': Brain,
-  'Cybersecurity': Shield,
+  Cybersecurity: Shield,
 };
 
 export default function ProjectWall() {
@@ -58,9 +71,17 @@ export default function ProjectWall() {
             const TypeIcon = TYPE_ICONS[project.type] || Globe;
 
             return (
-              <div key={project.id} className="group bg-white rounded-3xl border border-warm-200 p-6 hover:shadow-xl hover:border-fox-200 transition-all duration-300 flex flex-col">
+              <div
+                key={project.id}
+                className="group bg-white rounded-3xl border border-warm-200 p-6 hover:shadow-xl hover:border-fox-200 transition-all duration-300 flex flex-col"
+              >
                 <div className="flex items-start justify-between mb-4">
-                  <div className={cn('inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border', status.color)}>
+                  <div
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border',
+                      status.color,
+                    )}
+                  >
                     <StatusIcon size={12} />
                     {status.label}
                   </div>
@@ -69,18 +90,34 @@ export default function ProjectWall() {
                   </div>
                 </div>
 
-                <h3 className="text-xl font-bold text-warm-900 group-hover:text-fox-600 transition-colors mb-2">{project.title}</h3>
-                <p className="text-sm text-warm-500 line-clamp-3 mb-6 leading-relaxed">{project.description}</p>
+                <h3 className="text-xl font-bold text-warm-900 group-hover:text-fox-600 transition-colors mb-2">
+                  {project.title}
+                </h3>
+                <p className="text-sm text-warm-500 line-clamp-3 mb-6 leading-relaxed">
+                  {project.description}
+                </p>
 
                 <div className="flex flex-wrap gap-1.5 mb-8 mt-auto">
                   {project.stack.map((s) => (
-                    <span key={s} className="px-2 py-0.5 rounded bg-warm-50 text-[10px] font-mono text-warm-400 border border-warm-100">{s}</span>
+                    <span
+                      key={s}
+                      className="px-2 py-0.5 rounded bg-warm-50 text-[10px] font-mono text-warm-400 border border-warm-100"
+                    >
+                      {s}
+                    </span>
                   ))}
                 </div>
 
                 <div className="pt-4 border-t border-warm-50 flex items-center justify-between">
-                  <div className="text-[11px] text-warm-400 font-bold uppercase tracking-tighter">{project.date}</div>
-                  <Button variant="ghost" size="sm" onClick={() => setInquiry(project)} className="text-fox-500 hover:bg-fox-50 gap-2 font-bold">
+                  <div className="text-[11px] text-warm-400 font-bold uppercase tracking-tighter">
+                    {project.date}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInquiry(project)}
+                    className="text-fox-500 hover:bg-fox-50 gap-2 font-bold"
+                  >
                     Discuss a build like this <ChevronRight size={14} />
                   </Button>
                 </div>

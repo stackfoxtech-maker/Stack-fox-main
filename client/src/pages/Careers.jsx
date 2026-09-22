@@ -35,7 +35,10 @@ export default function Careers() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
           {perks.map((perk, i) => (
-            <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-white border border-warm-200">
+            <div
+              key={i}
+              className="flex items-start gap-3 p-4 rounded-xl bg-white border border-warm-200"
+            >
               <Check size={16} className="text-success-500 shrink-0 mt-0.5" />
               <span className="text-sm text-warm-700">{perk}</span>
             </div>
@@ -66,7 +69,10 @@ export default function Careers() {
             </a>
             <p className="text-xs text-warm-500 mt-4">
               Or write to{' '}
-              <a href={`mailto:${CV_EMAIL}`} className="text-fox-500 font-medium hover:text-fox-600">
+              <a
+                href={`mailto:${CV_EMAIL}`}
+                className="text-fox-500 font-medium hover:text-fox-600"
+              >
                 {CV_EMAIL}
               </a>{' '}
               with your CV attached.

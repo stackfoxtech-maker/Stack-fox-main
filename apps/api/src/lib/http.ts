@@ -24,7 +24,9 @@ export function withId<T extends { id?: unknown }>(row: T): T & { _id: unknown }
   return { ...row, _id: (row as { id?: unknown }).id };
 }
 
-export function withIds<T extends { id?: unknown }>(rows: T[]): Array<T & { _id: unknown }> {
+export function withIds<T extends { id?: unknown }>(
+  rows: T[],
+): Array<T & { _id: unknown }> {
   return rows.map(withId);
 }
 
@@ -62,6 +64,23 @@ export function pageParams(
   maxLimit = 100,
 ): { page: number; limit: number; skip: number } {
   const page = Math.max(1, parseInt(query.page ?? "1") || 1);
-  const limit = Math.min(maxLimit, Math.max(1, parseInt(query.limit ?? String(defaultLimit)) || defaultLimit));
+  const limit = Math.min(
+    maxLimit,
+    Math.max(1, parseInt(query.limit ?? String(defaultLimit)) || defaultLimit),
+  );
   return { page, limit, skip: (page - 1) * limit };
 }
+
+/**
+ * Hard ceiling for list queries that have no pagination of their own.
+ *
+ * 90 of 119 findMany calls had no `take`, so every list endpoint loaded its
+ * whole table into process memory and serialised it — an out-of-memory crash in
+ * a single-container deploy rather than a slowdown, once the tables grow.
+ *
+ * This is a backstop, not pagination: a screen that genuinely needs more than
+ * this should use `pageParams`/`paginated` instead. It is deliberately NOT
+ * applied to queries that are summed or counted in JavaScript, because
+ * truncating those changes the answer rather than the page size.
+ */
+export const LIST_CAP = 500;

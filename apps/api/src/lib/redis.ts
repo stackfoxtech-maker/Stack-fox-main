@@ -1,4 +1,5 @@
 import Redis from "ioredis";
+import { rootLogger } from "./logger";
 
 export const redis = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", {
   maxRetriesPerRequest: null,
@@ -33,9 +34,10 @@ redis.connect().catch((err) => {
     url.startsWith("redis://") && !url.includes("localhost") && !url.includes("127.0.0.1")
       ? " Hosted Redis usually requires TLS — try the rediss:// scheme."
       : "";
-  console.error(
-    `[redis] Connection failed: ${err.message}.${hint} ` +
-      "OTP, password reset, token revocation and all background workers are degraded.",
+  rootLogger.error(
+    { err, hint },
+    "Redis connection failed. OTP, password reset, token revocation and all " +
+      "background workers are degraded.",
   );
 });
 
@@ -58,3 +60,31 @@ export const cache = {
     await redis.del(`lock:${key}`);
   },
 };
+
+/**
+ * Run a Redis call whose failure must not take the request down, and say so
+ * when it fails.
+ *
+ * Sixteen sites wrote `try { await redis.… } catch {}`. The intent was right —
+ * a Redis outage should not stop someone logging in — but the silence was not.
+ * One of those swallows was security-relevant: on the OTP paths the attempt
+ * counter is read as `attempts = Number(await redis.get(key) ?? 0)`, so a
+ * throwing Redis left `attempts` at 0 and reset the brute-force limit on every
+ * error rather than failing closed.
+ *
+ * `fallback` is what the caller gets when Redis is unreachable. Choose it so
+ * the degraded path is the safe one: a *high* attempt count locks the code out,
+ * a zero unlocks it.
+ */
+export async function tryRedis<T>(
+  op: string,
+  fn: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    rootLogger.warn({ err, op }, "redis operation failed; using fallback");
+    return fallback;
+  }
+}

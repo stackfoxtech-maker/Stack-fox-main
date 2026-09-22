@@ -1,5 +1,6 @@
 import { readFileSync, existsSync, writeFileSync } from "fs";
 import { resolve } from "path";
+import { log } from "./logger";
 
 /**
  * The storefront catalogue.
@@ -29,7 +30,15 @@ export interface CatalogueItem {
 }
 
 interface RawCatalogue {
-  services?: Array<{ id: string; name: string; price: number; catId?: string; unit?: string; est?: string; lay?: string }>;
+  services?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    catId?: string;
+    unit?: string;
+    est?: string;
+    lay?: string;
+  }>;
   packages?: Array<{ id: string; name: string; price: number }>;
   industryBundles?: Array<{ id: string; name: string; price: number }>;
   addons?: Array<{ id: string; name: string; price: number; desc?: string }>;
@@ -101,7 +110,7 @@ function load(): Map<string, CatalogueItem> {
 
   cache = map;
   loadedFrom = path;
-  console.log(`[catalogue] Loaded ${map.size} purchasable items from ${path}`);
+  log().info({ items: map.size, path }, "catalogue loaded");
   return cache;
 }
 
@@ -172,6 +181,21 @@ export function writeRawCatalogue(raw: RawCatalogue): void {
   const path = cataloguePath();
   if (!path) throw new Error("Catalogue file not found");
   writeFileSync(path, JSON.stringify(raw, null, 2), "utf8");
+
+  // Drop the in-memory copy, or every read until the next restart serves the
+  // file as it was before this write. An admin creating, renaming or deleting
+  // a service saw their change land in the file and then not appear anywhere
+  // — the classic "it worked on redeploy" bug.
+  //
+  // Done here rather than in each of the three mutators because this is the
+  // only way the file changes, so a fourth mutator added later is covered
+  // without anyone remembering to.
+  //
+  // ponytail: process-local. With more than one replica the others keep their
+  // stale copy until they restart; a pub/sub invalidation over Redis is the
+  // upgrade path if this is ever scaled out.
+  cache = null;
+  loadedFrom = null;
 }
 
 export function updateServiceNameInCatalogue(dbId: string, newName: string): boolean {

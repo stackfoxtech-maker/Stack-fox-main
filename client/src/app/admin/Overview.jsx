@@ -1,15 +1,26 @@
 import { useEffect, useState } from 'react';
-import { DollarSign, FolderKanban, Users, LifeBuoy, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react';
+import {
+  DollarSign,
+  FolderKanban,
+  Users,
+  LifeBuoy,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  RefreshCw,
+} from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, formatINRShort, formatDate } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
+import { formatINRShort, formatDate } from '@lib/utils';
+import { Spinner } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 
 const KPI = ({ label, value, icon: Icon, color, sub }) => (
   <div className="bg-white rounded-2xl border border-warm-200 p-5">
     <div className="flex items-center justify-between mb-3">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}><Icon size={20} /></div>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+        <Icon size={20} />
+      </div>
     </div>
     <div className="text-2xl font-bold font-mono text-warm-900">{value}</div>
     <div className="text-xs text-warm-500 mt-1">{label}</div>
@@ -54,7 +65,9 @@ export default function Overview() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [range.from, range.to]);
+  useEffect(() => {
+    fetchData();
+  }, [range.from, range.to]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -74,7 +87,12 @@ export default function Overview() {
 
   const trend = calcTrend();
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
 
   if (error && !data) {
     return (
@@ -84,7 +102,12 @@ export default function Overview() {
           <div>
             <p className="font-bold text-danger-800 text-sm">Failed to load dashboard</p>
             <p className="text-sm text-danger-700 mt-1">{error}</p>
-            <button onClick={handleRefresh} className="mt-3 text-xs font-bold text-danger-800 underline">Retry</button>
+            <button
+              onClick={handleRefresh}
+              className="mt-3 text-xs font-bold text-danger-800 underline"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </div>
@@ -99,13 +122,17 @@ export default function Overview() {
         <h2 className="text-display-sm text-warm-900">Dashboard</h2>
         <div className="flex items-center gap-2">
           <input
-            type="date" value={range.from} max={range.to}
+            type="date"
+            value={range.from}
+            max={range.to}
             onChange={(e) => setRange((p) => ({ ...p, from: e.target.value }))}
             className="text-xs border border-warm-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-fox-500/30"
           />
           <span className="text-xs text-warm-400">to</span>
           <input
-            type="date" value={range.to} min={range.from}
+            type="date"
+            value={range.to}
+            min={range.from}
             onChange={(e) => setRange((p) => ({ ...p, to: e.target.value }))}
             className="text-xs border border-warm-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-fox-500/30"
           />
@@ -114,7 +141,11 @@ export default function Overview() {
             disabled={refreshing}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-warm-100 text-warm-700 text-xs font-medium hover:bg-warm-200 disabled:opacity-50 transition"
           >
-            {refreshing ? <RefreshCw size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+            {refreshing ? (
+              <RefreshCw size={13} className="animate-spin" />
+            ) : (
+              <RefreshCw size={13} />
+            )}
             Refresh
           </button>
         </div>
@@ -127,10 +158,26 @@ export default function Overview() {
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPI label="Total revenue" value={formatINRShort(d.totalRevenue)} icon={DollarSign} color="bg-success-50 text-success-700" sub={`This period: ${formatDate(range.from)} - ${formatDate(range.to)}`} />
-        <KPI label="Active projects" value={d.totalProjects} icon={FolderKanban} color="bg-info-50 text-info-700" />
+        <KPI
+          label="Total revenue"
+          value={formatINRShort(d.totalRevenue)}
+          icon={DollarSign}
+          color="bg-success-50 text-success-700"
+          sub={`This period: ${formatDate(range.from)} - ${formatDate(range.to)}`}
+        />
+        <KPI
+          label="Active projects"
+          value={d.totalProjects}
+          icon={FolderKanban}
+          color="bg-info-50 text-info-700"
+        />
         <KPI label="Clients" value={d.activeClients} icon={Users} color="bg-fox-50 text-fox-600" />
-        <KPI label="Pending invoices" value={d.pendingInvoices} icon={LifeBuoy} color="bg-warning-50 text-warning-700" />
+        <KPI
+          label="Pending invoices"
+          value={d.pendingInvoices}
+          icon={LifeBuoy}
+          color="bg-warning-50 text-warning-700"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -160,7 +207,9 @@ export default function Overview() {
 
         <div className="bg-white rounded-2xl border border-warm-200 p-5">
           <h3 className="font-semibold text-warm-900 mb-1">Date range</h3>
-          <p className="text-xs text-warm-500">{formatDate(range.from)} - {formatDate(range.to)}</p>
+          <p className="text-xs text-warm-500">
+            {formatDate(range.from)} - {formatDate(range.to)}
+          </p>
           <p className="text-[10px] text-warm-400 mt-1">KPIs reflect selected period</p>
         </div>
       </div>

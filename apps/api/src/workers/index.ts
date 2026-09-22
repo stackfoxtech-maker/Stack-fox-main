@@ -24,11 +24,13 @@ import "./timesheetCompiler";
 import "./archiveRetention";
 import "./softex";
 import "./salesFollowup";
+import "./healthAlert";
 
 import { startCronWorker } from "./cron/worker";
 import { registerSchedules, pruneStaleSchedulers } from "../lib/scheduler";
 import { shutdownQueues } from "../lib/queue";
 import { redis } from "../lib/redis";
+import { log } from "../lib/logger";
 
 /**
  * Worker entrypoint.
@@ -50,7 +52,7 @@ import { redis } from "../lib/redis";
  * (`pnpm worker`), not when some other module imported it.
  */
 startCronWorker();
-console.log("[workers] 11 workers subscribed (10 direct + 1 cron dispatcher)");
+log().info({ direct: 10, dispatchers: 1 }, "workers subscribed");
 
 // Register the cron-shaped jobs the periodic handlers depend on. Best-effort:
 // a Redis hiccup at boot must not stop the on-demand workers (docgen, notify,
@@ -60,13 +62,13 @@ void (async () => {
     await pruneStaleSchedulers();
     await registerSchedules();
   } catch (err) {
-    console.error("[workers] schedule registration failed:", (err as Error).message);
+    log().error({ err }, "schedule registration failed");
   }
 })();
 
 if (require.main === module) {
   const shutdown = async (signal: string) => {
-    console.log(`[workers] ${signal} received, draining…`);
+    log().info({ signal }, "draining workers");
     await shutdownQueues().catch(() => {});
     await redis.quit().catch(() => {});
     process.exit(0);

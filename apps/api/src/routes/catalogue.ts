@@ -2,11 +2,17 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { cache } from "../lib/redis";
 import { readRawCatalogue } from "../lib/catalogue";
+import { TIMEOUT } from "../lib/timeouts";
 
 export async function catalogueRoutes(app: FastifyInstance) {
   // GET /catalogue/services
   app.get("/catalogue/services", async (req) => {
-    const { category, status, page = "1", limit = "20" } = req.query as Record<string, string>;
+    const {
+      category,
+      status,
+      page = "1",
+      limit = "20",
+    } = req.query as Record<string, string>;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const where: any = {};
@@ -15,7 +21,12 @@ export async function catalogueRoutes(app: FastifyInstance) {
     else where.status = "PUBLISHED";
 
     const [items, total] = await Promise.all([
-      prisma.serviceUnit.findMany({ where, skip, take: parseInt(limit), orderBy: { name: "asc" } }),
+      prisma.serviceUnit.findMany({
+        where,
+        skip,
+        take: parseInt(limit),
+        orderBy: { name: "asc" },
+      }),
       prisma.serviceUnit.count({ where }),
     ]);
 
@@ -32,7 +43,11 @@ export async function catalogueRoutes(app: FastifyInstance) {
       where: { id },
       include: {
         featureUnits: { orderBy: { sortOrder: "asc" } },
-        sdpVersions: { where: { publishedAt: { not: null } }, orderBy: { version: "desc" }, take: 1 },
+        sdpVersions: {
+          where: { publishedAt: { not: null } },
+          orderBy: { version: "desc" },
+          take: 1,
+        },
         depsFrom: { include: { to: true } },
         packages: true,
       },
@@ -98,8 +113,14 @@ export async function catalogueRoutes(app: FastifyInstance) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${meiliKey}`,
         },
+        // MEILI_URL defaults to localhost, which is nothing in production, so
+        // this path has been relying on a prompt connection refusal. Bound it.
+        signal: AbortSignal.timeout(TIMEOUT.search),
         body: JSON.stringify({ q, limit: 20 }),
       });
+      // A non-OK response used to be returned to the client verbatim, leaking
+      // the upstream error body. Fall through to the Prisma query instead.
+      if (!res.ok) throw new Error(`Meilisearch responded ${res.status}`);
       return res.json();
     } catch {
       // Fallback to Prisma full-text
@@ -146,14 +167,24 @@ export async function catalogueRoutes(app: FastifyInstance) {
 
   // American-spelling aliases used by the client app
   app.get("/catalog/services", async (req, reply) => {
-    const { category, status, page = "1", limit = "20" } = req.query as Record<string, string>;
+    const {
+      category,
+      status,
+      page = "1",
+      limit = "20",
+    } = req.query as Record<string, string>;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const where: any = {};
     if (category) where.categoryTier1 = category;
     if (status) where.status = status;
     else where.status = "PUBLISHED";
     const [items, total] = await Promise.all([
-      prisma.serviceUnit.findMany({ where, skip, take: parseInt(limit), orderBy: { name: "asc" } }),
+      prisma.serviceUnit.findMany({
+        where,
+        skip,
+        take: parseInt(limit),
+        orderBy: { name: "asc" },
+      }),
       prisma.serviceUnit.count({ where }),
     ]);
     return { items, total, page: parseInt(page), limit: parseInt(limit) };

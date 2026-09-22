@@ -13,7 +13,10 @@ export default function VerifyEmail() {
   const [status, setStatus] = useState('verifying'); // verifying | success | error
 
   useEffect(() => {
-    if (!token) { setStatus('error'); return; }
+    if (!token) {
+      setStatus('error');
+      return;
+    }
     verifyEmail(token).then((r) => setStatus(r.success ? 'success' : 'error'));
   }, [token]);
 
@@ -31,7 +34,9 @@ export default function VerifyEmail() {
             <CheckCircle size={48} className="text-success-500 mx-auto mb-4" />
             <h2 className="text-lg font-semibold text-warm-900 mb-2">Email verified!</h2>
             <p className="text-sm text-warm-500 mb-6">Your account is now fully activated.</p>
-            <Link to="/app/client"><Button variant="primary">Go to Dashboard</Button></Link>
+            <Link to="/app/client">
+              <Button variant="primary">Go to Dashboard</Button>
+            </Link>
           </>
         )}
         {status === 'error' && (
@@ -39,7 +44,9 @@ export default function VerifyEmail() {
             <XCircle size={48} className="text-danger-500 mx-auto mb-4" />
             <h2 className="text-lg font-semibold text-warm-900 mb-2">Verification failed</h2>
             <p className="text-sm text-warm-500 mb-6">This link may be expired or invalid.</p>
-            <Link to="/login"><Button variant="outline">Back to Login</Button></Link>
+            <Link to="/login">
+              <Button variant="outline">Back to Login</Button>
+            </Link>
           </>
         )}
       </div>

@@ -1,9 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
-import { isInternalRole } from "@stackfox/core";
-import { ok, withId, paginated, pageParams } from "../lib/http";
+import { DELIVERY_ROLES, isInternalRole } from "@stackfox/core";
+import { LIST_CAP, ok, pageParams, paginated } from "../lib/http";
 import { emitEvent } from "../lib/events";
+import { parseBody } from "../lib/validate";
+import { CreateTaskSchema } from "./opsSchemas";
 
 /**
  * Delivery tasks.
@@ -18,14 +20,15 @@ import { emitEvent } from "../lib/events";
  * that single number across every team member, so every figure was wrong.
  */
 
-const STAFF_WRITE = ["ADMIN", "SUPER_ADMIN", "SENIOR_PM", "PM", "SE"];
 const OPEN_STATUSES = ["backlog", "todo", "in-progress", "review"];
 
 function serializeTask(t: any) {
   return {
     ...t,
     _id: t.id,
-    project: t.project ? { id: t.project.id, projectNumber: t.project.id, name: t.project.name } : null,
+    project: t.project
+      ? { id: t.project.id, projectNumber: t.project.id, name: t.project.name }
+      : null,
   };
 }
 
@@ -33,6 +36,7 @@ export async function taskRoutes(app: FastifyInstance) {
   app.get("/tasks/my", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const tasks = await prisma.task.findMany({
+      take: LIST_CAP,
       where: { assigneeId: req.user!.sub },
       include: { project: true },
       orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
@@ -104,7 +108,9 @@ export async function taskRoutes(app: FastifyInstance) {
       .map((u) => {
         const mine = openTasks.filter((t) => t.assigneeId === u.id);
         const overdue = mine.filter((t) => t.dueDate && t.dueDate < now).length;
-        const urgent = mine.filter((t) => t.priority === "urgent" || t.priority === "high").length;
+        const urgent = mine.filter(
+          (t) => t.priority === "urgent" || t.priority === "high",
+        ).length;
 
         return {
           id: u.id,
@@ -125,18 +131,16 @@ export async function taskRoutes(app: FastifyInstance) {
     return ok(rows, {
       capacity,
       totalOpenTasks: openTasks.length,
-      unassigned: openTasks.filter((t) => !internal.some((u) => u.id === t.assigneeId)).length,
+      unassigned: openTasks.filter((t) => !internal.some((u) => u.id === t.assigneeId))
+        .length,
     });
   });
 
   app.post("/tasks", async (req, reply) => {
-    if (!requireRole(req, reply, STAFF_WRITE)) return;
-    const { title, description, assigneeId, projectId, priority, status, dueDate } =
-      req.body as Record<string, string | undefined>;
-
-    if (!title?.trim() || !assigneeId) {
-      return reply.code(400).send({ message: "title and assigneeId are required" });
-    }
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
+    const body = parseBody(req, reply, CreateTaskSchema);
+    if (!body) return;
+    const { title, description, assigneeId, projectId, priority, status, dueDate } = body;
 
     const assignee = await prisma.user.findUnique({ where: { id: assigneeId } });
     if (!assignee || !assignee.isActive) {
@@ -192,7 +196,7 @@ export async function taskRoutes(app: FastifyInstance) {
 
     // The assignee can move their own work; leads can edit anyone's. A client
     // has no business here at all.
-    const isLead = STAFF_WRITE.includes(req.user!.role);
+    const isLead = (DELIVERY_ROLES as readonly string[]).includes(req.user!.role);
     if (!isLead && task.assigneeId !== req.user!.sub) {
       return reply.code(404).send({ message: "Task not found" });
     }
@@ -201,9 +205,11 @@ export async function taskRoutes(app: FastifyInstance) {
     const data: Record<string, unknown> = {};
     if (typeof body.status === "string") data.status = body.status;
     if (typeof body.priority === "string") data.priority = body.priority;
-    if (typeof body.title === "string" && body.title.trim()) data.title = body.title.trim();
+    if (typeof body.title === "string" && body.title.trim())
+      data.title = body.title.trim();
     if (typeof body.description === "string") data.description = body.description;
-    if (body.dueDate !== undefined) data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+    if (body.dueDate !== undefined)
+      data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
 
     // Reassignment is a lead-only action.
     if (typeof body.assigneeId === "string" && body.assigneeId !== task.assigneeId) {
@@ -230,7 +236,7 @@ export async function taskRoutes(app: FastifyInstance) {
   });
 
   app.delete("/tasks/:id", async (req, reply) => {
-    if (!requireRole(req, reply, STAFF_WRITE)) return;
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
     const { id } = req.params as { id: string };
     const task = await prisma.task.findUnique({ where: { id } });
     if (!task) return reply.code(404).send({ message: "Task not found" });

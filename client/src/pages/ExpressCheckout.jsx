@@ -16,7 +16,8 @@ export default function ExpressCheckout() {
   const [error, setError] = useState('');
   const [paymentLink, setPaymentLink] = useState('');
 
-  const service = services.find((s) => s.id === serviceId || (s.slug || s.id) === serviceId) || services[0];
+  const service =
+    services.find((s) => s.id === serviceId || (s.slug || s.id) === serviceId) || services[0];
   const basePrice = service?.price ?? 0;
 
   const toggleAddon = (id) => {
@@ -41,7 +42,11 @@ export default function ExpressCheckout() {
         packageId: serviceId,
         addOns: selectedAddons,
       });
-      setPaymentLink(res.data.razorpayOrderId ? `/payment-confirmation?order=${res.data.razorpayOrderId}` : '/payment-confirmation');
+      setPaymentLink(
+        res.data.razorpayOrderId
+          ? `/payment-confirmation?order=${res.data.razorpayOrderId}`
+          : '/payment-confirmation',
+      );
     } catch (err) {
       setError(err.response?.data?.error || 'Checkout failed. Please try again.');
     } finally {
@@ -53,7 +58,9 @@ export default function ExpressCheckout() {
     <div className="max-w-md mx-auto px-6 py-16">
       <p className="text-sm font-semibold text-orange-600 mb-2">Starter Tier · Express Checkout</p>
       <h1 className="text-3xl font-bold mb-2">Almost done!</h1>
-      <p className="text-gray-600 mb-8">3 fields. No account needed. Your agreement is generated automatically.</p>
+      <p className="text-gray-600 mb-8">
+        3 fields. No account needed. Your agreement is generated automatically.
+      </p>
 
       <form onSubmit={submit} className="bg-white border rounded-2xl p-6 mb-6 space-y-4">
         <div>
@@ -130,7 +137,10 @@ export default function ExpressCheckout() {
 
       <p className="text-xs text-gray-400 text-center">
         By paying, you accept the{' '}
-        <Link to="/legal" className="text-orange-600 underline">StackFox Service Agreement</Link>. Click-accept with phone OTP.
+        <Link to="/legal" className="text-orange-600 underline">
+          StackFox Service Agreement
+        </Link>
+        . Click-accept with phone OTP.
       </p>
     </div>
   );

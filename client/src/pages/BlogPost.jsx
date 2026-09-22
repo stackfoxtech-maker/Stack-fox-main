@@ -1,11 +1,8 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, Clock, Calendar, User, Share2, 
-  Linkedin, Twitter, MessageCircle, ChevronLeft, ChevronRight, Loader2
-} from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, Linkedin, Twitter, MessageCircle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { sanitizeHtml } from '@lib/utils';
-import { Section, Button, Spinner } from '@components/ui/Primitives';
+import { Section, Spinner } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';
 import { useEffect, useState } from 'react';
 import api from '@lib/api';
@@ -15,7 +12,7 @@ export default function BlogPost() {
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   usePageTitle(post?.title || 'Blog Post');
 
   useEffect(() => {
@@ -25,7 +22,7 @@ export default function BlogPost() {
         setPost(res.data.data.post);
       } catch (err) {
         // Try to find in static data as fallback
-        const staticPost = data.resources?.find(p => p.id === id);
+        const staticPost = data.resources?.find((p) => p.id === id);
         if (staticPost) {
           setPost(staticPost);
         } else {
@@ -52,14 +49,18 @@ export default function BlogPost() {
     return (
       <Section className="min-h-[60vh] flex flex-col items-center justify-center text-center">
         <h2 className="text-2xl font-bold text-warm-900 mb-2">Post not found</h2>
-        <p className="text-warm-500 mb-6">The article you're looking for might have been moved or removed.</p>
-        <Link to="/resources" className="btn-fox px-6 py-2">Back to Blog</Link>
+        <p className="text-warm-500 mb-6">
+          The article you're looking for might have been moved or removed.
+        </p>
+        <Link to="/resources" className="btn-fox px-6 py-2">
+          Back to Blog
+        </Link>
       </Section>
     );
   }
 
   const relatedPosts = data.resources
-    ?.filter(p => p.id !== post.id && p.category === post.category)
+    ?.filter((p) => p.id !== post.id && p.category === post.category)
     .slice(0, 2);
 
   return (
@@ -67,11 +68,11 @@ export default function BlogPost() {
       {/* Article Header */}
       <div className="bg-warm-50/50 border-b border-warm-100 py-12 md:py-20">
         <div className="container-fx">
-          <Link 
-            to="/resources" 
+          <Link
+            to="/resources"
             className="inline-flex items-center gap-2 text-sm font-bold text-warm-500 hover:text-fox-500 transition-colors mb-8 group"
           >
-            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
             Back to Articles
           </Link>
 
@@ -93,14 +94,23 @@ export default function BlogPost() {
                   )}
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-warm-900">{post.author?.name || post.author || 'StackFox Team'}</div>
-                  <div className="text-[10px] text-warm-400 font-bold uppercase tracking-wider">Expert Contributor</div>
+                  <div className="text-sm font-bold text-warm-900">
+                    {post.author?.name || post.author || 'StackFox Team'}
+                  </div>
+                  <div className="text-[10px] text-warm-400 font-bold uppercase tracking-wider">
+                    Expert Contributor
+                  </div>
                 </div>
               </div>
               <div className="h-8 w-px bg-warm-200 hidden sm:block" />
               <div className="flex items-center gap-4 text-xs text-warm-500 font-medium">
-                <span className="flex items-center gap-1.5"><Calendar size={14} className="text-warm-300" /> {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : post.date}</span>
-                <span className="flex items-center gap-1.5"><Clock size={14} className="text-warm-300" /> {post.readTime} min read</span>
+                <span className="flex items-center gap-1.5">
+                  <Calendar size={14} className="text-warm-300" />{' '}
+                  {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : post.date}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock size={14} className="text-warm-300" /> {post.readTime} min read
+                </span>
               </div>
             </div>
           </div>
@@ -113,7 +123,9 @@ export default function BlogPost() {
             {/* Sidebar / Sharing */}
             <div className="lg:col-span-1 lg:sticky lg:top-32 h-fit">
               <div className="flex lg:flex-col gap-4 items-center justify-center lg:justify-start">
-                <span className="text-[10px] font-black uppercase text-warm-400 lg:mb-2 vertical-text lg:rotate-0">Share</span>
+                <span className="text-[10px] font-black uppercase text-warm-400 lg:mb-2 vertical-text lg:rotate-0">
+                  Share
+                </span>
                 <button className="w-10 h-10 rounded-full border border-warm-200 flex items-center justify-center text-warm-400 hover:border-fox-500 hover:text-fox-500 transition-all">
                   <Linkedin size={18} />
                 </button>
@@ -143,11 +155,17 @@ export default function BlogPost() {
                   )}
                 </div>
                 <div className="text-center md:text-left">
-                  <h4 className="text-lg font-bold text-warm-900 mb-2">Written by {post.author?.name || post.author || 'StackFox Team'}</h4>
+                  <h4 className="text-lg font-bold text-warm-900 mb-2">
+                    Written by {post.author?.name || post.author || 'StackFox Team'}
+                  </h4>
                   <p className="text-sm text-warm-500 leading-relaxed mb-4">
-                    The StackFox team focuses on delivering high-performance, scalable tech solutions for modern businesses. We share our learnings to help the Indian ecosystem build better products.
+                    The StackFox team focuses on delivering high-performance, scalable tech
+                    solutions for modern businesses. We share our learnings to help the Indian
+                    ecosystem build better products.
                   </p>
-                  <Link to="/contact" className="text-fox-500 text-sm font-bold hover:underline">Work with us →</Link>
+                  <Link to="/contact" className="text-fox-500 text-sm font-bold hover:underline">
+                    Work with us →
+                  </Link>
                 </div>
               </div>
             </article>
@@ -158,20 +176,27 @@ export default function BlogPost() {
                 Related Reading
               </h4>
               <div className="space-y-6">
-                {relatedPosts?.map(rp => (
+                {relatedPosts?.map((rp) => (
                   <Link key={rp.id} to={`/resources/${rp.id}`} className="group block">
-                    <span className="text-[10px] font-bold text-fox-500 uppercase mb-1 block">{rp.category}</span>
+                    <span className="text-[10px] font-bold text-fox-500 uppercase mb-1 block">
+                      {rp.category}
+                    </span>
                     <h5 className="text-sm font-bold text-warm-900 group-hover:text-fox-600 transition-colors leading-snug">
                       {rp.title}
                     </h5>
                     <p className="text-xs text-warm-500 mt-2 line-clamp-2">{rp.excerpt}</p>
                   </Link>
                 ))}
-                
+
                 <div className="bg-fox-500 rounded-2xl p-6 text-white">
                   <h5 className="text-lg font-bold mb-2">Have a project in mind?</h5>
-                  <p className="text-white/80 text-xs mb-4 leading-relaxed">Let's turn your idea into a high-performance reality.</p>
-                  <Link to="/builder" className="inline-block bg-white text-fox-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-warm-50 transition-colors">
+                  <p className="text-white/80 text-xs mb-4 leading-relaxed">
+                    Let's turn your idea into a high-performance reality.
+                  </p>
+                  <Link
+                    to="/builder"
+                    className="inline-block bg-white text-fox-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-warm-50 transition-colors"
+                  >
                     Start Building
                   </Link>
                 </div>

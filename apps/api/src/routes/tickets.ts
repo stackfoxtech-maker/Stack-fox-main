@@ -3,8 +3,15 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
-import { paginated, pageParams } from "../lib/http";
+import { LIST_CAP, pageParams, paginated } from "../lib/http";
 import { clientScope, projectIdsInScope } from "../lib/scope";
+import { parseBody } from "../lib/validate";
+import {
+  CloseTicketSchema,
+  CreateTicketSchema,
+  ResolveTicketSchema,
+  TicketMessageSchema,
+} from "./crmSchemas";
 
 function serializeTicket(t: any) {
   return {
@@ -27,10 +34,8 @@ export async function ticketRoutes(app: FastifyInstance) {
   // also backs the PM-side P1-P4 bug tracker further below at /tickets.
   app.post("/support", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const body = req.body as any;
-    if (!body.subject || !body.description) {
-      return reply.code(400).send({ message: "subject and description are required" });
-    }
+    const body = parseBody(req, reply, CreateTicketSchema);
+    if (!body) return;
 
     const ticket = await prisma.ticket.create({
       data: {
@@ -46,7 +51,11 @@ export async function ticketRoutes(app: FastifyInstance) {
 
     await emitEvent({
       code: "TICKET_RAISED",
-      payload: { ticketId: ticket.id, category: ticket.category, priority: ticket.priority },
+      payload: {
+        ticketId: ticket.id,
+        category: ticket.category,
+        priority: ticket.priority,
+      },
       actor: req.user!.sub,
     });
 
@@ -56,6 +65,7 @@ export async function ticketRoutes(app: FastifyInstance) {
   app.get("/support", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const tickets = await prisma.ticket.findMany({
+      take: LIST_CAP,
       where: { raisedBy: req.user!.sub },
       include: { replies: { orderBy: { createdAt: "asc" } } },
       orderBy: { createdAt: "desc" },
@@ -79,8 +89,9 @@ export async function ticketRoutes(app: FastifyInstance) {
   app.post("/support/:id/reply", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { message } = req.body as { message?: string };
-    if (!message?.trim()) return reply.code(400).send({ message: "message is required" });
+    const msgBody = parseBody(req, reply, TicketMessageSchema);
+    if (!msgBody) return;
+    const { message } = msgBody;
 
     const ticket = await prisma.ticket.findUnique({ where: { id } });
     if (!ticket || ticket.raisedBy !== req.user!.sub) {
@@ -101,7 +112,11 @@ export async function ticketRoutes(app: FastifyInstance) {
       await prisma.ticket.update({ where: { id }, data: { status: "REOPENED" } });
     }
 
-    await emitEvent({ code: "TICKET_REPLY_ADDED", payload: { ticketId: id }, actor: req.user!.sub });
+    await emitEvent({
+      code: "TICKET_REPLY_ADDED",
+      payload: { ticketId: id },
+      actor: req.user!.sub,
+    });
 
     return { data: { success: true } };
   });
@@ -120,7 +135,8 @@ export async function ticketRoutes(app: FastifyInstance) {
     // defects to every other client.
     if (scope !== null) {
       const allowed = await projectIdsInScope(scope);
-      if (q.projectId && !allowed!.includes(q.projectId)) return paginated([], 0, page, limit);
+      if (q.projectId && !allowed!.includes(q.projectId))
+        return paginated([], 0, page, limit);
       where.projectId = { in: q.projectId ? [q.projectId] : allowed! };
     } else if (q.projectId) {
       where.projectId = q.projectId;
@@ -130,7 +146,12 @@ export async function ticketRoutes(app: FastifyInstance) {
     if (q.severity) where.severity = q.severity;
 
     const [items, total] = await Promise.all([
-      prisma.ticket.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" } }),
+      prisma.ticket.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
       prisma.ticket.count({ where }),
     ]);
     return paginated(items, total, page, limit);
@@ -148,7 +169,10 @@ export async function ticketRoutes(app: FastifyInstance) {
       });
       if (!owned) return reply.code(404).send({ error: "Ticket not found" });
     }
-    const ticket = await prisma.ticket.findUnique({ where: { id }, include: { replies: true } });
+    const ticket = await prisma.ticket.findUnique({
+      where: { id },
+      include: { replies: true },
+    });
     if (!ticket) return reply.code(404).send({ error: "Ticket not found" });
     return ticket;
   });
@@ -171,7 +195,9 @@ export async function ticketRoutes(app: FastifyInstance) {
   app.patch("/tickets/:id/resolve", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { resolution } = req.body as { resolution?: string };
+    const resBody = parseBody(req, reply, ResolveTicketSchema);
+    if (!resBody) return;
+    const { resolution } = resBody;
     const updated = await prisma.ticket.update({
       where: { id },
       data: { status: "RESOLVED", resolution, resolvedAt: new Date() },
@@ -187,14 +213,20 @@ export async function ticketRoutes(app: FastifyInstance) {
   app.patch("/tickets/:id/verify", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { accepted } = req.body as { accepted: boolean };
+    const closeBody = parseBody(req, reply, CloseTicketSchema);
+    if (!closeBody) return;
+    const { accepted } = closeBody;
 
     if (accepted) {
       const updated = await prisma.ticket.update({
         where: { id },
         data: { status: "CLOSED", closedAt: new Date() },
       });
-      await emitEvent({ code: "TICKET_CLOSED", payload: { ticketId: id }, actor: req.user!.sub });
+      await emitEvent({
+        code: "TICKET_CLOSED",
+        payload: { ticketId: id },
+        actor: req.user!.sub,
+      });
       return updated;
     }
 
@@ -202,7 +234,11 @@ export async function ticketRoutes(app: FastifyInstance) {
       where: { id },
       data: { status: "REOPENED" },
     });
-    await emitEvent({ code: "TICKET_REOPENED", payload: { ticketId: id }, actor: req.user!.sub });
+    await emitEvent({
+      code: "TICKET_REOPENED",
+      payload: { ticketId: id },
+      actor: req.user!.sub,
+    });
     return updated;
   });
 
@@ -210,8 +246,9 @@ export async function ticketRoutes(app: FastifyInstance) {
   app.post("/tickets/:id/reply", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { id } = req.params as { id: string };
-    const { message } = req.body as { message?: string };
-    if (!message?.trim()) return reply.code(400).send({ error: "message is required" });
+    const replyBody = parseBody(req, reply, TicketMessageSchema);
+    if (!replyBody) return;
+    const { message } = replyBody;
 
     const ticket = await prisma.ticket.findUnique({ where: { id } });
     if (!ticket) return reply.code(404).send({ error: "Ticket not found" });
@@ -227,10 +264,17 @@ export async function ticketRoutes(app: FastifyInstance) {
     });
 
     if (ticket.status === "OPEN") {
-      await prisma.ticket.update({ where: { id }, data: { status: "ACKNOWLEDGED", acknowledgedAt: new Date() } });
+      await prisma.ticket.update({
+        where: { id },
+        data: { status: "ACKNOWLEDGED", acknowledgedAt: new Date() },
+      });
     }
 
-    await emitEvent({ code: "TICKET_REPLY_ADDED", payload: { ticketId: id }, actor: req.user!.sub });
+    await emitEvent({
+      code: "TICKET_REPLY_ADDED",
+      payload: { ticketId: id },
+      actor: req.user!.sub,
+    });
 
     return { success: true };
   });

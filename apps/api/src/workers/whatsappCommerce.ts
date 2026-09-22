@@ -1,13 +1,14 @@
 import { createWorker, QUEUE } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
 import { generateContent } from "../lib/gemini";
-import { queues } from "../lib/queue";
+import { TIMEOUT } from "../lib/timeouts";
+import { log } from "../lib/logger";
 
 createWorker(QUEUE.whatsappCommerce, async (job) => {
   const { from, message, type, timestamp } = job.data;
 
   if (type === "text" || type === "interactive") {
-    const userMessage = typeof message === "string" ? message : message?.body ?? "";
+    const userMessage = typeof message === "string" ? message : (message?.body ?? "");
 
     // Use Gemini to understand intent
     const prompt = `You are a StackFox IT services assistant on WhatsApp. The user said: "${userMessage}"
@@ -20,7 +21,12 @@ Return as JSON: { intent, entities: { services: [], projectRef: null, ticketRef:
     try {
       parsed = JSON.parse(result);
     } catch {
-      parsed = { intent: "OTHER", entities: {}, suggestedReply: "I'd be happy to help! Could you tell me more about what you're looking for?" };
+      parsed = {
+        intent: "OTHER",
+        entities: {},
+        suggestedReply:
+          "I'd be happy to help! Could you tell me more about what you're looking for?",
+      };
     }
 
     // Store conversation
@@ -38,6 +44,7 @@ Return as JSON: { intent, entities: { services: [], projectRef: null, ticketRef:
       try {
         await fetch(process.env.WHATSAPP_BSP_URL, {
           method: "POST",
+          signal: AbortSignal.timeout(TIMEOUT.messaging),
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${process.env.WHATSAPP_BSP_TOKEN}`,
@@ -50,7 +57,7 @@ Return as JSON: { intent, entities: { services: [], projectRef: null, ticketRef:
           }),
         });
       } catch (err) {
-        console.error("[whatsappCommerce] Failed to send reply:", err);
+        log().error({ err }, "failed to send WhatsApp reply");
       }
     }
   }

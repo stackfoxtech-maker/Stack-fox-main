@@ -75,8 +75,15 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6 group">
-            <BrandLogo size={32} withBackground containerClassName="shadow-sm shadow-fox-200 group-hover:scale-105 transition-transform" />
-            <span className="text-xl font-semibold"><span className="text-warm-900">stack</span><span className="text-fox-500">fox</span></span>
+            <BrandLogo
+              size={32}
+              withBackground
+              containerClassName="shadow-sm shadow-fox-200 group-hover:scale-105 transition-transform"
+            />
+            <span className="text-xl font-semibold">
+              <span className="text-warm-900">stack</span>
+              <span className="text-fox-500">fox</span>
+            </span>
           </Link>
           <h1 className="text-display-sm text-warm-900">Welcome back</h1>
           <p className="text-sm text-warm-500 mt-1">Log in to your StackFox account</p>
@@ -84,7 +91,10 @@ export default function Login() {
 
         <div className="card-fx p-6">
           {notice && (
-            <div role="alert" className="mb-4 rounded-xl border border-danger-500/20 bg-danger-500/5 px-4 py-3 text-sm text-danger-700">
+            <div
+              role="alert"
+              className="mb-4 rounded-xl border border-danger-500/20 bg-danger-500/5 px-4 py-3 text-sm text-danger-700"
+            >
               {notice}
             </div>
           )}
@@ -92,8 +102,14 @@ export default function Login() {
           <div className="space-y-4">
             <GoogleButton label="Continue with Google" />
             <div className="relative py-1">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-warm-200" /></div>
-              <div className="relative flex justify-center"><span className="bg-white px-3 text-xs uppercase tracking-wide text-warm-400">or</span></div>
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-warm-200" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-white px-3 text-xs uppercase tracking-wide text-warm-400">
+                  or
+                </span>
+              </div>
             </div>
           </div>
 
@@ -109,7 +125,10 @@ export default function Login() {
               </button>
               <button
                 type="button"
-                onClick={() => { setMode('otp'); setOtpStep('enter-phone'); }}
+                onClick={() => {
+                  setMode('otp');
+                  setOtpStep('enter-phone');
+                }}
                 className={`py-2 rounded-lg transition ${mode === 'otp' ? 'bg-white shadow-sm text-warm-900' : 'text-warm-500'}`}
               >
                 Phone OTP
@@ -119,19 +138,47 @@ export default function Login() {
 
           {mode === 'password' || !PHONE_OTP_ENABLED ? (
             <form onSubmit={handlePassword} className="space-y-4 mt-4">
-              <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required autoFocus />
+              <Input
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                autoFocus
+              />
               <div className="relative">
-                <Input label="Password" type={showPw ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 8 characters" required />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-9 text-warm-400 hover:text-warm-600">
+                <Input
+                  label="Password"
+                  type={showPw ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min 8 characters"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-9 text-warm-400 hover:text-warm-600"
+                >
                   {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               <div className="flex justify-end -mt-1">
-                <Link to="/forgot-password" className="inline-flex min-h-[36px] items-center px-1 text-sm font-medium text-fox-600 hover:text-fox-700 hover:underline">
+                <Link
+                  to="/forgot-password"
+                  className="inline-flex min-h-[36px] items-center px-1 text-sm font-medium text-fox-600 hover:text-fox-700 hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
-              <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                isLoading={isLoading}
+                className="w-full"
+              >
                 Log in <ArrowRight size={18} />
               </Button>
             </form>
@@ -147,13 +194,23 @@ export default function Login() {
                 required
                 autoFocus
               />
-              <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                isLoading={isLoading}
+                className="w-full"
+              >
                 Send code <ArrowRight size={18} />
               </Button>
             </form>
           ) : (
             <form onSubmit={handleVerify} className="space-y-4 mt-4">
-              <button type="button" onClick={() => setOtpStep('enter-phone')} className="inline-flex items-center gap-1 text-sm text-warm-500 hover:text-warm-800">
+              <button
+                type="button"
+                onClick={() => setOtpStep('enter-phone')}
+                className="inline-flex items-center gap-1 text-sm text-warm-500 hover:text-warm-800"
+              >
                 <ArrowLeft size={14} /> {phone}
               </button>
               <Input
@@ -166,11 +223,21 @@ export default function Login() {
                 autoFocus
               />
               <div className="flex justify-end -mt-1">
-                <button type="button" onClick={() => sendOtp({ phone: phone.replace(/[^\d+]/g, '') })} className="text-sm font-medium text-fox-600 hover:text-fox-700 hover:underline">
+                <button
+                  type="button"
+                  onClick={() => sendOtp({ phone: phone.replace(/[^\d+]/g, '') })}
+                  className="text-sm font-medium text-fox-600 hover:text-fox-700 hover:underline"
+                >
                   Resend code
                 </button>
               </div>
-              <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                isLoading={isLoading}
+                className="w-full"
+              >
                 Verify &amp; log in <ArrowRight size={18} />
               </Button>
             </form>
@@ -179,7 +246,9 @@ export default function Login() {
 
         <p className="text-center text-sm text-warm-500 mt-6">
           Don&apos;t have an account?{' '}
-          <Link to="/signup" className="text-fox-500 font-medium hover:underline">Sign up</Link>
+          <Link to="/signup" className="text-fox-500 font-medium hover:underline">
+            Sign up
+          </Link>
         </p>
       </div>
     </div>

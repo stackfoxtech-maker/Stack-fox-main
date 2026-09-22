@@ -7,7 +7,9 @@ const downloadInvoicePDF = (inv) =>
   import('@lib/pdfExport').then((m) => m.exportTaxInvoicePDF(inv));
 
 const Label = ({ children }) => (
-  <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#1F4FA0]">{children}</div>
+  <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#1F4FA0]">
+    {children}
+  </div>
 );
 
 export default function InvoicePreview({ quote, account, paymentMode, onContinue, onBack }) {
@@ -33,9 +35,11 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
   );
 
   const dueAmount =
-    paymentMode === 'UPFRONT' ? Math.round(inv.payable * 0.95)
-      : paymentMode === 'MILESTONE' ? Math.round(inv.payable * 0.3)
-      : inv.payable;
+    paymentMode === 'UPFRONT'
+      ? Math.round(inv.payable * 0.95)
+      : paymentMode === 'MILESTONE'
+        ? Math.round(inv.payable * 0.3)
+        : inv.payable;
 
   const allAcknowledged = quote.items.every((_, i) => acknowledged[i]);
   const canContinue = allAcknowledged && acceptedAll;
@@ -76,16 +80,27 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
 
       {/* ── The invoice document ─────────────────────────────────────────── */}
       <div className="overflow-hidden rounded-md border border-warm-200 bg-white">
-        <div className="mx-auto max-w-[820px] p-6 text-warm-800 sm:p-8" style={{ fontFeatureSettings: '"tnum"' }}>
+        <div
+          className="mx-auto max-w-[820px] p-6 text-warm-800 sm:p-8"
+          style={{ fontFeatureSettings: '"tnum"' }}
+        >
           {/* Header */}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h3 className="text-lg font-bold tracking-[0.06em] text-warm-900">{inv.supplier.legalName}</h3>
-              <p className="mt-0.5 text-[13px] font-semibold text-[#1F4FA0]">{inv.supplier.tradeName}</p>
+              <h3 className="text-lg font-bold tracking-[0.06em] text-warm-900">
+                {inv.supplier.legalName}
+              </h3>
+              <p className="mt-0.5 text-[13px] font-semibold text-[#1F4FA0]">
+                {inv.supplier.tradeName}
+              </p>
               <div className="mt-2 space-y-0.5 text-[11px] text-warm-600">
                 <p>CIN: {inv.supplier.cin}</p>
-                <p>GSTIN: {inv.supplier.gstin} &nbsp;·&nbsp; PAN: {inv.supplier.pan}</p>
-                <p>State: {inv.supplier.stateName} ({inv.supplier.stateCode})</p>
+                <p>
+                  GSTIN: {inv.supplier.gstin} &nbsp;·&nbsp; PAN: {inv.supplier.pan}
+                </p>
+                <p>
+                  State: {inv.supplier.stateName} ({inv.supplier.stateCode})
+                </p>
               </div>
             </div>
             <div className="text-right">
@@ -107,7 +122,9 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
               <p className="text-[12px] font-semibold text-warm-900">{inv.supplier.legalName}</p>
               <p className="text-[11px] text-[#1F4FA0]">{inv.supplier.tradeName}</p>
               <div className="mt-1 space-y-0.5 text-[11px] text-warm-600">
-                {inv.supplier.addressLines.map((l) => <p key={l}>{l}</p>)}
+                {inv.supplier.addressLines.map((l) => (
+                  <p key={l}>{l}</p>
+                ))}
                 <p>Ph: {inv.supplier.phone}</p>
                 <p>{inv.supplier.email}</p>
                 <p>{inv.supplier.website}</p>
@@ -122,7 +139,11 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
                 {inv.recipient.email && <p>{inv.recipient.email}</p>}
                 {inv.recipient.phone && <p>{inv.recipient.phone}</p>}
                 {inv.recipient.gstin && <p>GSTIN: {inv.recipient.gstin}</p>}
-                {inv.recipient.stateName && <p>State: {inv.recipient.stateName} ({inv.recipient.stateCode})</p>}
+                {inv.recipient.stateName && (
+                  <p>
+                    State: {inv.recipient.stateName} ({inv.recipient.stateCode})
+                  </p>
+                )}
               </div>
             </div>
             <div>
@@ -171,8 +192,12 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
                     <td className="px-2 py-2 text-right tabular-nums">{l.qty}</td>
                     <td className="px-2 py-2 text-center">{l.unit}</td>
                     <td className="px-2 py-2 text-right tabular-nums">{inr2(l.rate)}</td>
-                    <td className="px-2 py-2 text-right tabular-nums text-warm-500">{l.discount ? inr2(l.discount) : '—'}</td>
-                    <td className="px-2 py-2 text-right font-semibold tabular-nums text-[#1F4FA0]">{inr2(l.amount)}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-warm-500">
+                      {l.discount ? inr2(l.discount) : '—'}
+                    </td>
+                    <td className="px-2 py-2 text-right font-semibold tabular-nums text-[#1F4FA0]">
+                      {inr2(l.amount)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -233,8 +258,12 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
                   <th className="py-1 pr-3 text-left">SAC</th>
                   <th className="py-1 pr-3 text-left">Desc</th>
                   <th className="py-1 pr-3 text-right">Taxable</th>
-                  <th className="py-1 pr-3 text-right">{inv.isInterState ? 'IGST' : `CGST@${inv.halfRate}%`}</th>
-                  {!inv.isInterState && <th className="py-1 pr-3 text-right">SGST@{inv.halfRate}%</th>}
+                  <th className="py-1 pr-3 text-right">
+                    {inv.isInterState ? 'IGST' : `CGST@${inv.halfRate}%`}
+                  </th>
+                  {!inv.isInterState && (
+                    <th className="py-1 pr-3 text-right">SGST@{inv.halfRate}%</th>
+                  )}
                   <th className="py-1 text-right">Tax</th>
                 </tr>
               </thead>
@@ -244,9 +273,17 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
                     <td className="py-1.5 pr-3 font-semibold tabular-nums">{r.sacCode}</td>
                     <td className="py-1.5 pr-3 text-warm-500">{r.sacDesc}</td>
                     <td className="py-1.5 pr-3 text-right tabular-nums">{inr2(r.taxable)}</td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums text-warm-500">{inr2(inv.isInterState ? r.igst : r.cgst)}</td>
-                    {!inv.isInterState && <td className="py-1.5 pr-3 text-right tabular-nums text-warm-500">{inr2(r.sgst)}</td>}
-                    <td className="py-1.5 text-right font-semibold tabular-nums text-[#1F4FA0]">{inr2(r.tax)}</td>
+                    <td className="py-1.5 pr-3 text-right tabular-nums text-warm-500">
+                      {inr2(inv.isInterState ? r.igst : r.cgst)}
+                    </td>
+                    {!inv.isInterState && (
+                      <td className="py-1.5 pr-3 text-right tabular-nums text-warm-500">
+                        {inr2(r.sgst)}
+                      </td>
+                    )}
+                    <td className="py-1.5 text-right font-semibold tabular-nums text-[#1F4FA0]">
+                      {inr2(r.tax)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -260,41 +297,64 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
             <div>
               <Label>Bank Details</Label>
               <div className="space-y-0.5 text-[11px] text-warm-700">
-                <p><span className="font-semibold text-warm-900">Beneficiary:</span> {inv.bank.beneficiary}</p>
-                <p><span className="font-semibold text-warm-900">Bank:</span> {inv.bank.bank}</p>
-                <p><span className="font-semibold text-warm-900">Branch:</span> {inv.bank.branch}</p>
-                <p><span className="font-semibold text-warm-900">PAN:</span> {inv.bank.pan}</p>
+                <p>
+                  <span className="font-semibold text-warm-900">Beneficiary:</span>{' '}
+                  {inv.bank.beneficiary}
+                </p>
+                <p>
+                  <span className="font-semibold text-warm-900">Bank:</span> {inv.bank.bank}
+                </p>
+                <p>
+                  <span className="font-semibold text-warm-900">Branch:</span> {inv.bank.branch}
+                </p>
+                <p>
+                  <span className="font-semibold text-warm-900">PAN:</span> {inv.bank.pan}
+                </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-[#1F4FA0]">For {inv.supplier.legalName}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-[#1F4FA0]">
+                For {inv.supplier.legalName}
+              </p>
               <div className="mt-2 flex justify-end">
                 <div className="grid h-16 w-16 place-items-center rounded-full border-2 border-[#1F4FA0]/60">
-                  <span className="text-center text-[7px] font-bold leading-tight text-[#1F4FA0]">DIGITALLY<br />SIGNED</span>
+                  <span className="text-center text-[7px] font-bold leading-tight text-[#1F4FA0]">
+                    DIGITALLY
+                    <br />
+                    SIGNED
+                  </span>
                 </div>
               </div>
-              <p className="mt-1 text-[12px] font-semibold text-warm-900">{inv.supplier.signatory.name}</p>
+              <p className="mt-1 text-[12px] font-semibold text-warm-900">
+                {inv.supplier.signatory.name}
+              </p>
               <p className="text-[10px] text-[#1F4FA0]">{inv.supplier.signatory.title}</p>
-              <p className="mt-1 text-[9px] text-warm-500">Date: {inv.date} · Place: {inv.place}</p>
+              <p className="mt-1 text-[9px] text-warm-500">
+                Date: {inv.date} · Place: {inv.place}
+              </p>
               <p className="text-[9px] text-warm-500">Digitally signed — IT Act 2000, Sec. 5</p>
             </div>
           </div>
 
-          <p className="mt-4 text-[11px] text-warm-500"><span className="font-semibold text-warm-900">Notes:</span> {inv.notes}</p>
+          <p className="mt-4 text-[11px] text-warm-500">
+            <span className="font-semibold text-warm-900">Notes:</span> {inv.notes}
+          </p>
 
           <div className="my-4 h-px bg-warm-200" />
 
           <Label>Terms &amp; Conditions</Label>
           <p className="text-[9.5px] leading-relaxed text-warm-500">
-            1. Payment due within 30 days. Interest @ 18% p.a. (MSMED Act, Sec. 16). 2. GST per CGST/SGST Act 2017. SAC/HSN
-            per GST Tariff. 3. Rule 46 CGST Rules 2017; valid for ITC u/s 16(2)(a). 4. Reverse Charge: N/A. 5. TDS u/s
-            194J/194C where applicable. 6. Form 16A within 15 days of quarter-end. 7. Retained-amount payment on IP transfer.
-            8. Disputes subject to Jaipur jurisdiction. 9. E&amp;OE.
+            1. Payment due within 30 days. Interest @ 18% p.a. (MSMED Act, Sec. 16). 2. GST per
+            CGST/SGST Act 2017. SAC/HSN per GST Tariff. 3. Rule 46 CGST Rules 2017; valid for ITC
+            u/s 16(2)(a). 4. Reverse Charge: N/A. 5. TDS u/s 194J/194C where applicable. 6. Form 16A
+            within 15 days of quarter-end. 7. Retained-amount payment on IP transfer. 8. Disputes
+            subject to Jaipur jurisdiction. 9. E&amp;OE.
           </p>
 
           <div className="mt-4 h-[2px] bg-[#1F4FA0]" />
           <p className="mt-2 text-center text-[9px] font-bold text-warm-700">
-            {inv.supplier.legalName} &nbsp;|&nbsp; {inv.supplier.tradeName} &nbsp;|&nbsp; CIN: {inv.supplier.cin} &nbsp;|&nbsp; GSTIN: {inv.supplier.gstin}
+            {inv.supplier.legalName} &nbsp;|&nbsp; {inv.supplier.tradeName} &nbsp;|&nbsp; CIN:{' '}
+            {inv.supplier.cin} &nbsp;|&nbsp; GSTIN: {inv.supplier.gstin}
           </p>
           <p className="text-center text-[8px] text-warm-400">
             {inv.supplier.addressLines.join(', ')} · {inv.supplier.phone} · {inv.supplier.email}
@@ -315,23 +375,39 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
                 acknowledged[i] ? 'border-sage-200 bg-sage-50' : 'border-warm-200 bg-warm-white'
               }`}
             >
-              <input type="checkbox" checked={!!acknowledged[i]} onChange={() => toggleItem(i)} className="h-4 w-4 accent-fox-500" />
+              <input
+                type="checkbox"
+                checked={!!acknowledged[i]}
+                onChange={() => toggleItem(i)}
+                className="h-4 w-4 accent-fox-500"
+              />
               <span className="flex-1 text-body-sm font-medium text-warm-800">{item.name}</span>
-              <span className="price-tag text-body-sm text-warm-700">{inr2(item.price * item.quantity)}</span>
+              <span className="price-tag text-body-sm text-warm-700">
+                {inr2(item.price * item.quantity)}
+              </span>
             </label>
           ))}
         </div>
         <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-sm bg-warm-50 p-3">
-          <input type="checkbox" checked={acceptedAll} onChange={toggleAll} className="mt-0.5 h-4 w-4 accent-fox-500" />
+          <input
+            type="checkbox"
+            checked={acceptedAll}
+            onChange={toggleAll}
+            className="mt-0.5 h-4 w-4 accent-fox-500"
+          />
           <span className="text-body-sm leading-relaxed text-warm-700">
-            I, <strong>{account.name || 'the undersigned'}</strong>, accept all {quote.items.length} line item(s), confirm the
-            quantities, descriptions and pricing, and authorize {inv.supplier.tradeName} to proceed on payment.
+            I, <strong>{account.name || 'the undersigned'}</strong>, accept all {quote.items.length}{' '}
+            line item(s), confirm the quantities, descriptions and pricing, and authorize{' '}
+            {inv.supplier.tradeName} to proceed on payment.
           </span>
         </label>
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <button onClick={onBack} className="flex items-center gap-1 text-body-sm font-medium text-warm-500 hover:text-warm-800">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 text-body-sm font-medium text-warm-500 hover:text-warm-800"
+        >
           ← Back
         </button>
         <div className="flex items-center gap-2">
@@ -342,7 +418,9 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
             onClick={onContinue}
             disabled={!canContinue}
             className={`flex items-center gap-2 rounded-pill px-6 py-2.5 text-body-sm font-semibold transition ${
-              canContinue ? 'bg-fox-500 text-white hover:bg-fox-600' : 'cursor-not-allowed bg-warm-200 text-warm-400'
+              canContinue
+                ? 'bg-fox-500 text-white hover:bg-fox-600'
+                : 'cursor-not-allowed bg-warm-200 text-warm-400'
             }`}
           >
             <CheckSquare size={16} /> Continue to Contract

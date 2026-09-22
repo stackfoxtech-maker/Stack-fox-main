@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { CheckCircle2, CreditCard, ArrowRight, ArrowLeft, ShieldCheck, FileText } from 'lucide-react';
+import {
+  CheckCircle2,
+  CreditCard,
+  ArrowRight,
+  ArrowLeft,
+  ShieldCheck,
+  FileText,
+} from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR } from '@lib/utils';
 import { TIER_LABELS } from '@lib/estimate';
@@ -13,8 +20,26 @@ import ContractSigning from '@components/checkout/ContractSigning';
 
 const STEP_NAMES = {
   STARTER: ['Confirm Package', 'Invoice', 'Your Details', 'Contract', 'Pay'],
-  GROWTH: ['Review Scope', 'Account', 'Project Setup', 'Payment Terms', 'Invoice', 'Contract', 'Docs & Pay'],
-  PREMIUM: ['Review Scope', 'Organisation', 'Engagement', 'Payment Terms', 'Invoice', 'Contract', 'Docs & E-Sign', 'Pay', 'Confirm'],
+  GROWTH: [
+    'Review Scope',
+    'Account',
+    'Project Setup',
+    'Payment Terms',
+    'Invoice',
+    'Contract',
+    'Docs & Pay',
+  ],
+  PREMIUM: [
+    'Review Scope',
+    'Organisation',
+    'Engagement',
+    'Payment Terms',
+    'Invoice',
+    'Contract',
+    'Docs & E-Sign',
+    'Pay',
+    'Confirm',
+  ],
 };
 
 /**
@@ -31,7 +56,9 @@ function Field({ label, required = false, hint, className = '', children }) {
         <label className="text-xs font-semibold text-warm-700">
           {label}
           {required ? (
-            <span className="text-danger-500 ml-0.5" aria-hidden="true">*</span>
+            <span className="text-danger-500 ml-0.5" aria-hidden="true">
+              *
+            </span>
           ) : (
             <span className="ml-1.5 text-[10px] font-medium text-warm-400 uppercase tracking-wide">
               Optional
@@ -55,8 +82,18 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
   const [paying, setPaying] = useState(false);
-  const [account, setAccount] = useState({ name: '', phone: '', email: '', orgName: '', gstin: '' });
-  const [project, setProject] = useState({ projectName: '', startDate: '', commsPreference: 'Email' });
+  const [account, setAccount] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    orgName: '',
+    gstin: '',
+  });
+  const [project, setProject] = useState({
+    projectName: '',
+    startDate: '',
+    commsPreference: 'Email',
+  });
   const [paymentMode, setPaymentMode] = useState('MILESTONE');
   const [engagementModel, setEngagementModel] = useState('FPM');
   const [docsAccepted, setDocsAccepted] = useState(true);
@@ -66,7 +103,8 @@ export default function Checkout() {
   // quote, but nothing read it back, so returning from the dashboard meant
   // retyping the whole form from step one.
   useEffect(() => {
-    api.get(`/quotes/${quoteId}`)
+    api
+      .get(`/quotes/${quoteId}`)
       .then((r) => {
         const q = r.data.data;
         setQuote(q);
@@ -93,12 +131,19 @@ export default function Checkout() {
       .finally(() => setLoading(false));
   }, [quoteId]);
 
-  if (loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center py-24">
+        <Spinner size="lg" />
+      </div>
+    );
   if (!quote) {
     return (
       <div className="max-w-lg mx-auto text-center py-24">
         <p className="text-warm-600 mb-4">This quote couldn't be found.</p>
-        <Link to="/builder" className="text-fox-500 font-semibold">Back to Builder →</Link>
+        <Link to="/builder" className="text-fox-500 font-semibold">
+          Back to Builder →
+        </Link>
       </div>
     );
   }
@@ -108,7 +153,9 @@ export default function Checkout() {
         <CheckCircle2 className="w-14 h-14 text-emerald-500 mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-warm-900 mb-2">Already paid</h1>
         <p className="text-warm-600 mb-6">Quote {quote.quoteNumber} was already confirmed.</p>
-        <Link to="/app/client/quotes" className="text-fox-500 font-semibold">View my quotes →</Link>
+        <Link to="/app/client/quotes" className="text-fox-500 font-semibold">
+          View my quotes →
+        </Link>
       </div>
     );
   }
@@ -122,7 +169,14 @@ export default function Checkout() {
     try {
       await api.patch(`/quotes/${quoteId}`, {
         tier,
-        checkoutDetails: { account, project, paymentMode, engagementModel, docsAccepted, step: nextStep },
+        checkoutDetails: {
+          account,
+          project,
+          paymentMode,
+          engagementModel,
+          docsAccepted,
+          step: nextStep,
+        },
       });
     } catch {
       // Non-fatal — the wizard can still proceed locally; payment is authoritative.
@@ -133,7 +187,11 @@ export default function Checkout() {
     // Validation mirrors the required markers on the fields exactly. A field
     // labelled required that the wizard then waves through teaches people to
     // ignore the marker.
-    if (steps[step] === 'Your Details' || steps[step] === 'Account' || steps[step] === 'Organisation') {
+    if (
+      steps[step] === 'Your Details' ||
+      steps[step] === 'Account' ||
+      steps[step] === 'Organisation'
+    ) {
       if (!account.name || !account.phone || !account.email) {
         toast.error('Name, phone and email are required.');
         return;
@@ -164,14 +222,19 @@ export default function Checkout() {
   // and pins the actual charge amount; this never feeds a request body.
   // Keep in sync with PAYMENT_TERMS in packages/core/src/billing/index.ts.
   const effectivePaymentMode = tier === 'STARTER' ? 'FULL' : paymentMode;
-  const payAmount = effectivePaymentMode === 'UPFRONT' ? Math.round(quote.total * 0.95)
-    : effectivePaymentMode === 'MILESTONE' ? Math.round(quote.total * 0.3)
-    : quote.total;
+  const payAmount =
+    effectivePaymentMode === 'UPFRONT'
+      ? Math.round(quote.total * 0.95)
+      : effectivePaymentMode === 'MILESTONE'
+        ? Math.round(quote.total * 0.3)
+        : quote.total;
 
   const handlePay = async () => {
     setPaying(true);
     try {
-      const { data } = await api.post(`/quotes/${quoteId}/pay`, { paymentMode: effectivePaymentMode });
+      const { data } = await api.post(`/quotes/${quoteId}/pay`, {
+        paymentMode: effectivePaymentMode,
+      });
       const order = data.data;
 
       const options = {
@@ -226,15 +289,23 @@ export default function Checkout() {
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
       <div className="text-center mb-8">
-        <span className="text-xs font-bold text-fox-500 uppercase tracking-widest">{TIER_LABELS[tier]} Checkout</span>
+        <span className="text-xs font-bold text-fox-500 uppercase tracking-widest">
+          {TIER_LABELS[tier]} Checkout
+        </span>
         <h1 className="text-2xl font-bold text-warm-900 mt-1">{quote.quoteNumber}</h1>
       </div>
 
       <div className="flex items-center gap-2 mb-8">
         {steps.map((name, i) => (
           <div key={name} className="flex-1 text-center">
-            <div className={`h-1.5 rounded-full mb-2 ${i <= step ? 'bg-fox-500' : 'bg-warm-200'}`} />
-            <span className={`text-[10px] font-bold uppercase tracking-wide ${i === step ? 'text-fox-600' : 'text-warm-400'}`}>{name}</span>
+            <div
+              className={`h-1.5 rounded-full mb-2 ${i <= step ? 'bg-fox-500' : 'bg-warm-200'}`}
+            />
+            <span
+              className={`text-[10px] font-bold uppercase tracking-wide ${i === step ? 'text-fox-600' : 'text-warm-400'}`}
+            >
+              {name}
+            </span>
           </div>
         ))}
       </div>
@@ -246,9 +317,16 @@ export default function Checkout() {
             <h2 className="font-bold text-warm-900">{steps[0]}</h2>
             <div className="space-y-2">
               {quote.items.map((item, i) => (
-                <div key={i} className="flex justify-between text-sm py-2 border-b border-warm-100 last:border-0">
-                  <span className="text-warm-700">{item.name} {item.quantity > 1 && `×${item.quantity}`}</span>
-                  <span className="font-mono text-warm-600">{formatINR(item.price * item.quantity)}</span>
+                <div
+                  key={i}
+                  className="flex justify-between text-sm py-2 border-b border-warm-100 last:border-0"
+                >
+                  <span className="text-warm-700">
+                    {item.name} {item.quantity > 1 && `×${item.quantity}`}
+                  </span>
+                  <span className="font-mono text-warm-600">
+                    {formatINR(item.price * item.quantity)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -257,15 +335,23 @@ export default function Checkout() {
                 {range.format === 'flat' ? 'Fixed Price' : 'Estimated Range'}
               </div>
               <div className="text-xl font-black text-fox-900">
-                {range.format === 'flat' ? formatINR(range.mid) : `${formatINR(range.low)} – ${formatINR(range.high)}`}
+                {range.format === 'flat'
+                  ? formatINR(range.mid)
+                  : `${formatINR(range.low)} – ${formatINR(range.high)}`}
               </div>
-              {tier !== 'STARTER' && <p className="text-[11px] text-fox-600 mt-1">±15% tolerance from mid-range. Final quote confirmed after review.</p>}
+              {tier !== 'STARTER' && (
+                <p className="text-[11px] text-fox-600 mt-1">
+                  ±15% tolerance from mid-range. Final quote confirmed after review.
+                </p>
+              )}
             </div>
           </div>
         )}
 
         {/* Step 1: Account / Your Details / Organisation */}
-        {(steps[step] === 'Your Details' || steps[step] === 'Account' || steps[step] === 'Organisation') && (
+        {(steps[step] === 'Your Details' ||
+          steps[step] === 'Account' ||
+          steps[step] === 'Organisation') && (
           <div className="space-y-4">
             <h2 className="font-bold text-warm-900">{steps[step]}</h2>
             <p className="text-xs text-warm-500">
@@ -273,26 +359,55 @@ export default function Checkout() {
             </p>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Full name" required>
-                <input placeholder="Full Name" value={account.name} onChange={(e) => setAccount({ ...account, name: e.target.value })} className="input-fx w-full" />
+                <input
+                  placeholder="Full Name"
+                  value={account.name}
+                  onChange={(e) => setAccount({ ...account, name: e.target.value })}
+                  className="input-fx w-full"
+                />
               </Field>
               <Field label="Phone" required>
-                <input placeholder="Phone" value={account.phone} onChange={(e) => setAccount({ ...account, phone: e.target.value })} className="input-fx w-full" />
+                <input
+                  placeholder="Phone"
+                  value={account.phone}
+                  onChange={(e) => setAccount({ ...account, phone: e.target.value })}
+                  className="input-fx w-full"
+                />
               </Field>
               <Field label="Email" required className="sm:col-span-2">
-                <input placeholder="Email" value={account.email} onChange={(e) => setAccount({ ...account, email: e.target.value })} className="input-fx w-full" />
+                <input
+                  placeholder="Email"
+                  value={account.email}
+                  onChange={(e) => setAccount({ ...account, email: e.target.value })}
+                  className="input-fx w-full"
+                />
               </Field>
               {tier !== 'STARTER' && (
                 <>
                   <Field label="Organisation name" required hint="Printed on the tax invoice.">
-                    <input placeholder="Organisation Name" value={account.orgName} onChange={(e) => setAccount({ ...account, orgName: e.target.value })} className="input-fx w-full" />
+                    <input
+                      placeholder="Organisation Name"
+                      value={account.orgName}
+                      onChange={(e) => setAccount({ ...account, orgName: e.target.value })}
+                      className="input-fx w-full"
+                    />
                   </Field>
                   <Field label="GSTIN" hint="Add it to claim input tax credit.">
-                    <input placeholder="22AAAAA0000A1Z5" value={account.gstin} onChange={(e) => setAccount({ ...account, gstin: e.target.value })} className="input-fx w-full" />
+                    <input
+                      placeholder="22AAAAA0000A1Z5"
+                      value={account.gstin}
+                      onChange={(e) => setAccount({ ...account, gstin: e.target.value })}
+                      className="input-fx w-full"
+                    />
                   </Field>
                 </>
               )}
             </div>
-            {tier === 'STARTER' && <p className="text-xs text-warm-400">No GSTIN, org details, or KYC required for Starter packages.</p>}
+            {tier === 'STARTER' && (
+              <p className="text-xs text-warm-400">
+                No GSTIN, org details, or KYC required for Starter packages.
+              </p>
+            )}
           </div>
         )}
 
@@ -305,21 +420,43 @@ export default function Checkout() {
             </p>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Project name" required>
-                <input placeholder="Project Name" value={project.projectName} onChange={(e) => setProject({ ...project, projectName: e.target.value })} className="input-fx w-full" />
+                <input
+                  placeholder="Project Name"
+                  value={project.projectName}
+                  onChange={(e) => setProject({ ...project, projectName: e.target.value })}
+                  className="input-fx w-full"
+                />
               </Field>
               <Field label="Preferred start date">
-                <input type="date" value={project.startDate} onChange={(e) => setProject({ ...project, startDate: e.target.value })} className="input-fx w-full" />
+                <input
+                  type="date"
+                  value={project.startDate}
+                  onChange={(e) => setProject({ ...project, startDate: e.target.value })}
+                  className="input-fx w-full"
+                />
               </Field>
               <Field label="Communication preference" hint="Defaults to email.">
-                <select value={project.commsPreference} onChange={(e) => setProject({ ...project, commsPreference: e.target.value })} className="input-fx w-full">
+                <select
+                  value={project.commsPreference}
+                  onChange={(e) => setProject({ ...project, commsPreference: e.target.value })}
+                  className="input-fx w-full"
+                >
                   <option>Email</option>
                   <option>WhatsApp</option>
                   <option>Slack</option>
                 </select>
               </Field>
               {tier === 'PREMIUM' && (
-                <Field label="Engagement model" required hint="Determines how the work is contracted and billed.">
-                  <select value={engagementModel} onChange={(e) => setEngagementModel(e.target.value)} className="input-fx w-full">
+                <Field
+                  label="Engagement model"
+                  required
+                  hint="Determines how the work is contracted and billed."
+                >
+                  <select
+                    value={engagementModel}
+                    onChange={(e) => setEngagementModel(e.target.value)}
+                    className="input-fx w-full"
+                  >
                     <option value="FPM">Fixed Price Model</option>
                     <option value="TNM">Time &amp; Materials</option>
                     <option value="RET">Retainer</option>
@@ -337,11 +474,17 @@ export default function Checkout() {
           <div className="space-y-4">
             <h2 className="font-bold text-warm-900">Payment Terms</h2>
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => setPaymentMode('MILESTONE')} className={`p-4 rounded-2xl border-2 text-left ${paymentMode === 'MILESTONE' ? 'border-fox-500 bg-fox-50' : 'border-warm-200'}`}>
+              <button
+                onClick={() => setPaymentMode('MILESTONE')}
+                className={`p-4 rounded-2xl border-2 text-left ${paymentMode === 'MILESTONE' ? 'border-fox-500 bg-fox-50' : 'border-warm-200'}`}
+              >
                 <div className="font-bold text-sm text-warm-900">Milestone</div>
                 <div className="text-xs text-warm-500 mt-1">30% now, rest on delivery</div>
               </button>
-              <button onClick={() => setPaymentMode('UPFRONT')} className={`p-4 rounded-2xl border-2 text-left ${paymentMode === 'UPFRONT' ? 'border-fox-500 bg-fox-50' : 'border-warm-200'}`}>
+              <button
+                onClick={() => setPaymentMode('UPFRONT')}
+                className={`p-4 rounded-2xl border-2 text-left ${paymentMode === 'UPFRONT' ? 'border-fox-500 bg-fox-50' : 'border-warm-200'}`}
+              >
                 <div className="font-bold text-sm text-warm-900">Upfront</div>
                 <div className="text-xs text-warm-500 mt-1">5% discount — pay 95% now</div>
               </button>
@@ -392,7 +535,8 @@ export default function Checkout() {
               <span className="font-mono font-black text-xl">{formatINR(payAmount)}</span>
             </div>
             <p className="text-xs text-warm-400">
-              UPI, card, netbanking, or EMI (orders ≥₹15,000). Payment confirms the documents accepted in the previous step.
+              UPI, card, netbanking, or EMI (orders ≥₹15,000). Payment confirms the documents
+              accepted in the previous step.
             </p>
             <Button variant="primary" className="w-full" isLoading={paying} onClick={handlePay}>
               <CreditCard size={16} className="mr-2" /> Pay {formatINR(payAmount)}
@@ -409,14 +553,29 @@ export default function Checkout() {
                 <FileText size={14} /> Documents generated for this order
               </div>
               {['SOW', 'MSA', 'NDA', 'IP Assignment Deed', 'DPA'].map((doc) => (
-                <div key={doc} className="text-sm text-warm-700 flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-500" /> {doc}</div>
+                <div key={doc} className="text-sm text-warm-700 flex items-center gap-2">
+                  <CheckCircle2 size={14} className="text-emerald-500" /> {doc}
+                </div>
               ))}
             </div>
             <label className="flex items-start gap-3 text-sm text-warm-700 cursor-pointer">
-              <input type="checkbox" checked={docsAccepted} onChange={(e) => setDocsAccepted(e.target.checked)} className="mt-1" />
-              <span>I've reviewed and accept the full document suite. Aadhaar e-sign follows for orders ≥₹5L.</span>
+              <input
+                type="checkbox"
+                checked={docsAccepted}
+                onChange={(e) => setDocsAccepted(e.target.checked)}
+                className="mt-1"
+              />
+              <span>
+                I've reviewed and accept the full document suite. Aadhaar e-sign follows for orders
+                ≥₹5L.
+              </span>
             </label>
-            <Button variant="primary" className="w-full gap-1" disabled={!docsAccepted} onClick={next}>
+            <Button
+              variant="primary"
+              className="w-full gap-1"
+              disabled={!docsAccepted}
+              onClick={next}
+            >
               Continue to Payment <ArrowRight size={14} />
             </Button>
           </div>
@@ -432,7 +591,9 @@ export default function Checkout() {
             </div>
             <p className="text-xs text-warm-400">
               UPI, card, netbanking, or EMI (orders ≥₹15,000).{' '}
-              {tier === 'STARTER' ? 'Agreement auto-accepted on payment.' : 'Payment confirms the documents accepted in the previous step.'}
+              {tier === 'STARTER'
+                ? 'Agreement auto-accepted on payment.'
+                : 'Payment confirms the documents accepted in the previous step.'}
             </p>
             <Button variant="primary" className="w-full" isLoading={paying} onClick={handlePay}>
               <CreditCard size={16} className="mr-2" /> Pay {formatINR(payAmount)}
@@ -445,23 +606,38 @@ export default function Checkout() {
           <div className="space-y-4 text-center py-4">
             <ShieldCheck className="w-12 h-12 text-emerald-500 mx-auto" />
             <h2 className="font-bold text-warm-900 text-lg">Payment confirmed</h2>
-            <p className="text-sm text-warm-600">Your dedicated PM will reach out within 24 hours to schedule the kickoff call.</p>
-            <Link to="/app/client/quotes" className="btn-fox inline-flex mt-2">Go to My Quotes</Link>
+            <p className="text-sm text-warm-600">
+              Your dedicated PM will reach out within 24 hours to schedule the kickoff call.
+            </p>
+            <Link to="/app/client/quotes" className="btn-fox inline-flex mt-2">
+              Go to My Quotes
+            </Link>
           </div>
         )}
 
         {/* Nav buttons — hidden on steps that render their own CTA above */}
-        {!['Pay', 'Confirm', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(steps[step]) && (
+        {!['Pay', 'Confirm', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(
+          steps[step],
+        ) && (
           <div className="flex justify-between pt-2">
-            <Button variant="ghost" onClick={back} disabled={step === 0} className="gap-1"><ArrowLeft size={14} /> Back</Button>
-            <Button variant="primary" onClick={next} className="gap-1">Continue <ArrowRight size={14} /></Button>
+            <Button variant="ghost" onClick={back} disabled={step === 0} className="gap-1">
+              <ArrowLeft size={14} /> Back
+            </Button>
+            <Button variant="primary" onClick={next} className="gap-1">
+              Continue <ArrowRight size={14} />
+            </Button>
           </div>
         )}
-        {['Pay', 'Confirm', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(steps[step]) && step > 0 && (
-          <div className="flex justify-start">
-            <Button variant="ghost" onClick={back} className="gap-1"><ArrowLeft size={14} /> Back</Button>
-          </div>
-        )}
+        {['Pay', 'Confirm', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(
+          steps[step],
+        ) &&
+          step > 0 && (
+            <div className="flex justify-start">
+              <Button variant="ghost" onClick={back} className="gap-1">
+                <ArrowLeft size={14} /> Back
+              </Button>
+            </div>
+          )}
       </div>
     </div>
   );

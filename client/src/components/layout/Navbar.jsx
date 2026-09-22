@@ -1,9 +1,26 @@
 import { useState, lazy, Suspense } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  ShoppingCart, Menu, X, ChevronDown, User, LogOut, LayoutDashboard,
-  Hammer, Package, Building2, Briefcase, BookOpen, Phone, Tag, Layers,
-  FileText, Sparkles, ArrowRight, Search, Home
+  ShoppingCart,
+  Menu,
+  X,
+  ChevronDown,
+  User,
+  LogOut,
+  LayoutDashboard,
+  Hammer,
+  Package,
+  Building2,
+  Briefcase,
+  BookOpen,
+  Phone,
+  Tag,
+  Layers,
+  FileText,
+  Sparkles,
+  ArrowRight,
+  Search,
+  Home,
 } from 'lucide-react';
 import { cn } from '@lib/utils';
 import { useScrollPosition, useClickOutside } from '@lib/hooks';
@@ -32,16 +49,26 @@ const MORE_GROUPS = [
   {
     title: 'Explore',
     links: [
-       { label: 'All Services', href: '/catalog', icon: Layers, desc: '240+ pieces, 13 domains' },
+      { label: 'All Services', href: '/catalog', icon: Layers, desc: '240+ pieces, 13 domains' },
       { label: 'About Us', href: '/about', icon: Sparkles, desc: 'Story, values & team' },
-      { label: 'Resources', href: '/resources', icon: BookOpen, desc: 'Blog, guides & case studies' },
+      {
+        label: 'Resources',
+        href: '/resources',
+        icon: BookOpen,
+        desc: 'Blog, guides & case studies',
+      },
     ],
   },
   {
     title: 'Work with us',
     links: [
       { label: 'Careers', href: '/careers', icon: Briefcase, desc: 'Join the team' },
-      { label: 'Project Wall', href: '/project-wall', icon: FileText, desc: 'Live & delivered projects' },
+      {
+        label: 'Project Wall',
+        href: '/project-wall',
+        icon: FileText,
+        desc: 'Live & delivered projects',
+      },
       { label: 'Contact', href: '/contact', icon: Phone, desc: 'Book a free call' },
     ],
   },
@@ -50,10 +77,10 @@ const MORE_GROUPS = [
 // ── Logo ────────────────────────────────────────────────────────────────────
 const FoxLogo = () => (
   <Link to="/" className="flex items-center gap-2 group">
-    <BrandLogo 
-      size={28} 
-      withBackground 
-      containerClassName="group-hover:scale-105 transition-transform" 
+    <BrandLogo
+      size={28}
+      withBackground
+      containerClassName="group-hover:scale-105 transition-transform"
     />
     <div className="flex flex-col">
       <span className="text-xl font-semibold leading-none">
@@ -161,7 +188,7 @@ const MoreMenu = () => {
   const location = useLocation();
 
   const isActive = MORE_GROUPS.some((g) =>
-    g.links.some((l) => location.pathname.startsWith(l.href))
+    g.links.some((l) => location.pathname.startsWith(l.href)),
   );
 
   return (
@@ -172,14 +199,11 @@ const MoreMenu = () => {
           'flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
           isActive || open
             ? 'text-fox-500 bg-fox-50'
-            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50'
+            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50',
         )}
       >
         More
-        <ChevronDown
-          size={14}
-          className={cn('transition-transform', open && 'rotate-180')}
-        />
+        <ChevronDown size={14} className={cn('transition-transform', open && 'rotate-180')} />
       </button>
 
       {open && (
@@ -210,9 +234,7 @@ const MoreMenu = () => {
                           <Icon size={15} />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold text-warm-900">
-                            {link.label}
-                          </div>
+                          <div className="text-sm font-semibold text-warm-900">{link.label}</div>
                           <div className="text-[11px] text-warm-500 leading-tight mt-0.5">
                             {link.desc}
                           </div>
@@ -252,7 +274,10 @@ const isLinkActive = (path, current) => {
 export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchMounted, setSearchMounted] = useState(false);
-  const openSearch = () => { setSearchMounted(true); setIsSearchOpen(true); };
+  const openSearch = () => {
+    setSearchMounted(true);
+    setIsSearchOpen(true);
+  };
   const isScrolled = useScrollPosition(20);
   const { isAuthenticated } = useAuthStore();
   const { itemCount, toggleCart } = useCartStore();
@@ -269,7 +294,7 @@ export default function Navbar() {
         'fixed top-0 left-0 right-0 z-50 transition-[background,box-shadow,border-color] duration-medium ease-enter',
         isScrolled
           ? 'bg-warm-white/92 backdrop-blur-lg shadow-nav border-b border-warm-200'
-          : 'bg-warm-white/70 backdrop-blur-sm border-b border-transparent'
+          : 'bg-warm-white/70 backdrop-blur-sm border-b border-transparent',
       )}
     >
       <div className="container-fx">
@@ -290,7 +315,7 @@ export default function Navbar() {
                   'px-3.5 py-2 text-body-sm font-medium rounded-sm transition-colors duration-short',
                   isLinkActive(link.href, location.pathname)
                     ? 'text-fox-700 bg-fox-50'
-                    : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50'
+                    : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50',
                 )}
               >
                 {link.label}
@@ -389,9 +414,7 @@ export default function Navbar() {
                       }}
                       className={cn(
                         'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors',
-                        active
-                          ? 'text-fox-500 bg-fox-50'
-                          : 'text-warm-700 hover:bg-warm-50'
+                        active ? 'text-fox-500 bg-fox-50' : 'text-warm-700 hover:bg-warm-50',
                       )}
                     >
                       <Icon size={16} className={active ? 'text-fox-500' : 'text-warm-400'} />
@@ -425,9 +448,7 @@ export default function Navbar() {
                         }}
                         className={cn(
                           'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors',
-                          active
-                            ? 'text-fox-500 bg-fox-50'
-                            : 'text-warm-700 hover:bg-warm-50'
+                          active ? 'text-fox-500 bg-fox-50' : 'text-warm-700 hover:bg-warm-50',
                         )}
                       >
                         <Icon size={16} className={active ? 'text-fox-500' : 'text-warm-400'} />

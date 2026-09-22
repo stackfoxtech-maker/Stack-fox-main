@@ -3,8 +3,10 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth, requireRole } from "../plugins/auth";
 import { isInternalRole } from "@stackfox/core";
 import { generateStructured } from "../lib/gemini";
-import { ok, withId, withIds, paginated, pageParams } from "../lib/http";
+import { ok, paginated, pageParams } from "../lib/http";
 import { sanitizeHtml } from "../lib/sanitizeHtml";
+import { parseBody } from "../lib/validate";
+import { CreateBlogPostSchema, GenerateArticleSchema } from "./opsSchemas";
 
 /**
  * Blog and knowledge base.
@@ -69,7 +71,12 @@ export async function blogRoutes(app: FastifyInstance) {
     }
 
     const [posts, total] = await Promise.all([
-      prisma.blogPost.findMany({ where, orderBy: { publishedAt: "desc" }, skip, take: limit }),
+      prisma.blogPost.findMany({
+        where,
+        orderBy: { publishedAt: "desc" },
+        skip,
+        take: limit,
+      }),
       prisma.blogPost.count({ where }),
     ]);
 
@@ -104,7 +111,12 @@ export async function blogRoutes(app: FastifyInstance) {
     if (q.status && q.status !== "all") where.status = q.status;
 
     const [posts, total] = await Promise.all([
-      prisma.blogPost.findMany({ where, orderBy: { publishedAt: "desc" }, skip, take: limit }),
+      prisma.blogPost.findMany({
+        where,
+        orderBy: { publishedAt: "desc" },
+        skip,
+        take: limit,
+      }),
       prisma.blogPost.count({ where }),
     ]);
     return paginated(posts.map(serialize), total, page, limit);
@@ -112,7 +124,9 @@ export async function blogRoutes(app: FastifyInstance) {
 
   app.get("/blog/:id", async (req, reply) => {
     const { id } = req.params as { id: string };
-    const post = await prisma.blogPost.findFirst({ where: { OR: [{ id }, { slug: id }] } });
+    const post = await prisma.blogPost.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+    });
     if (!post) return reply.code(404).send({ error: "Post not found" });
 
     // Unpublished drafts are visible to staff only.
@@ -126,14 +140,9 @@ export async function blogRoutes(app: FastifyInstance) {
 
   app.post("/blog/suggest", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { title, content, category } = req.body as {
-      title?: string;
-      content?: string;
-      category?: string;
-    };
-    if (!title?.trim() || !content?.trim()) {
-      return reply.code(400).send({ message: "title and content are required" });
-    }
+    const body = parseBody(req, reply, CreateBlogPostSchema);
+    if (!body) return;
+    const { title, content, category } = body;
 
     const author = await prisma.user.findUnique({
       where: { id: req.user!.sub },
@@ -187,7 +196,9 @@ export async function blogRoutes(app: FastifyInstance) {
         status,
         author: body.author?.trim() || null,
         coverImage: body.coverImage?.trim() || null,
-        tags: Array.isArray(body.tags) ? body.tags.filter((t: unknown) => typeof t === "string") : [],
+        tags: Array.isArray(body.tags)
+          ? body.tags.filter((t: unknown) => typeof t === "string")
+          : [],
         publishedAt: body.publishedAt ? new Date(body.publishedAt) : new Date(),
       },
     });
@@ -211,15 +222,21 @@ export async function blogRoutes(app: FastifyInstance) {
         data.slug = await uniqueSlug(body.slug || body.title, id);
       }
     }
-    if (typeof body.slug === "string" && body.slug.trim() && body.slug !== existing.slug) {
+    if (
+      typeof body.slug === "string" &&
+      body.slug.trim() &&
+      body.slug !== existing.slug
+    ) {
       data.slug = await uniqueSlug(body.slug, id);
     }
     if (typeof body.content === "string") data.content = sanitizeHtml(body.content);
-    if (typeof body.excerpt === "string") data.excerpt = sanitizeHtml(body.excerpt.trim());
+    if (typeof body.excerpt === "string")
+      data.excerpt = sanitizeHtml(body.excerpt.trim());
     if (typeof body.category === "string") data.category = body.category.trim();
     if (typeof body.featured === "boolean") data.featured = body.featured;
     if (typeof body.author === "string") data.author = body.author.trim() || null;
-    if (typeof body.coverImage === "string") data.coverImage = body.coverImage.trim() || null;
+    if (typeof body.coverImage === "string")
+      data.coverImage = body.coverImage.trim() || null;
     if (Array.isArray(body.tags)) {
       data.tags = body.tags.filter((t: unknown) => typeof t === "string");
     }
@@ -260,8 +277,9 @@ export async function blogRoutes(app: FastifyInstance) {
     { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
     async (req, reply) => {
       if (!requireRole(req, reply, EDITOR_ROLES)) return;
-      const { topic, category } = req.body as { topic?: string; category?: string };
-      if (!topic?.trim()) return reply.code(400).send({ message: "topic is required" });
+      const genBody = parseBody(req, reply, GenerateArticleSchema);
+      if (!genBody) return;
+      const { topic, category } = genBody;
 
       if (!process.env.GEMINI_API_KEY) {
         return reply.code(503).send({
@@ -309,7 +327,9 @@ Return JSON with: title, excerpt (under 160 characters), content (800-1200 words
         },
       });
 
-      return ok(serialize(post), { message: "Draft created — review it before publishing." });
+      return ok(serialize(post), {
+        message: "Draft created — review it before publishing.",
+      });
     },
   );
 }

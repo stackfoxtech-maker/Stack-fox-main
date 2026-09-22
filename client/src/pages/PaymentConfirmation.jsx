@@ -51,13 +51,18 @@ export default function PaymentConfirmation() {
             <p className="text-xs font-semibold text-warm-500 uppercase mb-2">Items</p>
             <ul className="space-y-1">
               {order.items.map((item, i) => (
-                <li key={i} className="text-sm text-warm-700">• {item}</li>
+                <li key={i} className="text-sm text-warm-700">
+                  • {item}
+                </li>
               ))}
             </ul>
           </div>
 
           <div className="mt-6 space-y-3">
-            <a href="/dashboard" className="flex items-center justify-center gap-2 w-full bg-fox-500 text-white py-3 rounded-xl font-semibold hover:bg-fox-600 transition">
+            <a
+              href="/dashboard"
+              className="flex items-center justify-center gap-2 w-full bg-fox-500 text-white py-3 rounded-xl font-semibold hover:bg-fox-600 transition"
+            >
               Go to Dashboard <ArrowRight size={18} />
             </a>
             <button className="flex items-center justify-center gap-2 w-full border border-warm-200 text-warm-700 py-3 rounded-xl font-medium hover:bg-warm-50 transition">

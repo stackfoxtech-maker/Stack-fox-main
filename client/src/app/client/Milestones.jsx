@@ -36,7 +36,8 @@ export default function Milestones() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    api.get('/projects', { params: { limit: 10 } })
+    api
+      .get('/projects', { params: { limit: 10 } })
       .then((r) => {
         const projData = r.data.data || r.data.items || r.data || [];
         setProjects(projData);
@@ -48,21 +49,35 @@ export default function Milestones() {
 
   useEffect(() => {
     if (!selectedProjectId) return;
-    api.get(`/projects/${selectedProjectId}/milestones`)
+    api
+      .get(`/projects/${selectedProjectId}/milestones`)
       .then((r) => setMilestones(r.data.data || r.data.items || r.data || []))
       .catch(() => setError(true));
   }, [selectedProjectId]);
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
 
   if (error || projects.length === 0) {
     return (
       <div className="p-6">
         <p className="text-sm font-semibold text-orange-600 mb-2">G2 · Milestone Tracker</p>
         <h1 className="text-2xl font-bold mb-6">Project Milestones</h1>
-        <EmptyState title="No projects yet" description="Milestones will appear here once your project is set up." />
+        <EmptyState
+          title="No projects yet"
+          description="Milestones will appear here once your project is set up."
+        />
         <div className="mt-8">
-          <Link to="/app/client/projects" className="px-4 py-2 text-sm text-orange-600 font-semibold hover:underline">← Back to projects</Link>
+          <Link
+            to="/app/client/projects"
+            className="px-4 py-2 text-sm text-orange-600 font-semibold hover:underline"
+          >
+            ← Back to projects
+          </Link>
         </div>
       </div>
     );
@@ -82,7 +97,9 @@ export default function Milestones() {
             className="w-full border border-warm-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fox-500/30"
           >
             {projects.map((p) => (
-              <option key={p._id} value={p._id}>{p.name || p.id}</option>
+              <option key={p._id} value={p._id}>
+                {p.name || p.id}
+              </option>
             ))}
           </select>
         </div>
@@ -95,9 +112,14 @@ export default function Milestones() {
           const color = statusColors[status] || 'gray';
           const variant = badgeVariants[status] || 'neutral';
           return (
-            <div key={m._id || m.id} className="border rounded-xl p-4 flex items-center justify-between">
+            <div
+              key={m._id || m.id}
+              className="border rounded-xl p-4 flex items-center justify-between"
+            >
               <div className="flex items-center gap-3">
-                <span className={`w-3 h-3 rounded-full ${color === 'gray' ? 'bg-gray-400' : color === 'orange' ? 'bg-orange-500' : color === 'blue' ? 'bg-blue-500' : color === 'green' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                <span
+                  className={`w-3 h-3 rounded-full ${color === 'gray' ? 'bg-gray-400' : color === 'orange' ? 'bg-orange-500' : color === 'blue' ? 'bg-blue-500' : color === 'green' ? 'bg-green-500' : 'bg-yellow-500'}`}
+                />
                 <div>
                   <div className="font-medium">{m.name || m.title}</div>
                   <div className="text-xs text-gray-500">ID: {m._id || m.id}</div>
@@ -105,14 +127,21 @@ export default function Milestones() {
               </div>
               <div className="text-right">
                 <Badge variant={variant}>{statusLabels[status] || status}</Badge>
-                <div className="text-xs text-gray-500 mt-1">{m.dueDate || m.date ? formatDate(m.dueDate || m.date) : ''}</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {m.dueDate || m.date ? formatDate(m.dueDate || m.date) : ''}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
       <div className="mt-8">
-        <Link to="/app/client/projects" className="px-4 py-2 text-sm text-orange-600 font-semibold hover:underline">← Back to projects</Link>
+        <Link
+          to="/app/client/projects"
+          className="px-4 py-2 text-sm text-orange-600 font-semibold hover:underline"
+        >
+          ← Back to projects
+        </Link>
       </div>
     </div>
   );

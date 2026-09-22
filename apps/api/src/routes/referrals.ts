@@ -2,9 +2,11 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { isInternalRole } from "@stackfox/core";
-import { ok, withIds } from "../lib/http";
+import { LIST_CAP, ok, withIds } from "../lib/http";
 import * as ids from "../lib/id";
 import { queues } from "../lib/queue";
+import { parseBody } from "../lib/validate";
+import { ReferralSchema } from "./opsSchemas";
 
 /**
  * Referral programme.
@@ -21,6 +23,7 @@ export async function referralRoutes(app: FastifyInstance) {
     const where = isInternalRole(req.user!.role) ? {} : { referrerId: req.user!.sub };
 
     const items = await prisma.referral.findMany({
+      take: LIST_CAP,
       where,
       include: { referrer: { select: { id: true, name: true, email: true } } },
       orderBy: { createdAt: "desc" },
@@ -47,8 +50,10 @@ export async function referralRoutes(app: FastifyInstance) {
       }),
     ]);
 
-    const totalEarnings = earnings._sum.commissionAmount ?? 0;
-    const paidOut = paid._sum.commissionAmount ?? 0;
+    // Prisma types a BigInt _sum as bigint; it arrives as a number at
+    // runtime (see packages/prisma). Number() is correct under either.
+    const totalEarnings = Number(earnings._sum.commissionAmount ?? 0);
+    const paidOut = Number(paid._sum.commissionAmount ?? 0);
 
     return ok({
       total,
@@ -68,10 +73,9 @@ export async function referralRoutes(app: FastifyInstance) {
    */
   app.post("/referrals", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { referredEmail, referredName } = req.body as {
-      referredEmail?: string;
-      referredName?: string;
-    };
+    const refBody = parseBody(req, reply, ReferralSchema);
+    if (!refBody) return;
+    const { referredEmail, referredName } = refBody;
 
     const email = referredEmail?.trim().toLowerCase();
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
@@ -117,9 +121,11 @@ export async function referralRoutes(app: FastifyInstance) {
       },
     });
 
-    await queues.referralProcessor.add("process", { referralId: referral.id }).catch((err) => {
-      req.log.warn({ err }, "Referral queued for processing but dispatch failed");
-    });
+    await queues.referralProcessor
+      .add("process", { referralId: referral.id })
+      .catch((err) => {
+        req.log.warn({ err }, "Referral queued for processing but dispatch failed");
+      });
 
     return ok({ ...referral, _id: referral.id });
   });

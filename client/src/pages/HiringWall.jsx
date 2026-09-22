@@ -13,7 +13,15 @@ export default function HiringWall() {
   const jobId = params.get('job');
   const jobs = data.careers.openPositions;
   const [selected, setSelected] = useState(jobId || jobs[0]?.id || '');
-  const [form, setForm] = useState({ name: '', email: '', phone: '', experience: '', coverLetter: '', portfolioUrl: '', linkedinUrl: '' });
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    experience: '',
+    coverLetter: '',
+    portfolioUrl: '',
+    linkedinUrl: '',
+  });
   const [loading, setLoading] = useState(false);
 
   const job = jobs.find((j) => j.id === selected);
@@ -21,12 +29,23 @@ export default function HiringWall() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email) { toast.error('Name and email required.'); return; }
+    if (!form.name || !form.email) {
+      toast.error('Name and email required.');
+      return;
+    }
     setLoading(true);
     try {
       await api.post(`/jobs/${selected}/apply`, form);
       toast.success('Application submitted!');
-      setForm({ name: '', email: '', phone: '', experience: '', coverLetter: '', portfolioUrl: '', linkedinUrl: '' });
+      setForm({
+        name: '',
+        email: '',
+        phone: '',
+        experience: '',
+        coverLetter: '',
+        portfolioUrl: '',
+        linkedinUrl: '',
+      });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit application.');
     }
@@ -40,13 +59,27 @@ export default function HiringWall() {
         {/* Job selector */}
         <div className="mb-8">
           <label className="text-sm font-medium text-warm-700 mb-2 block">Select position</label>
-          <select value={selected} onChange={(e) => setSelected(e.target.value)} className="input-fx">
-            {jobs.map((j) => <option key={j.id} value={j.id}>{j.title} — {j.type}</option>)}
+          <select
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+            className="input-fx"
+          >
+            {jobs.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.title} — {j.type}
+              </option>
+            ))}
           </select>
           {job && (
             <div className="mt-3 flex flex-wrap gap-3 text-xs text-warm-500">
-              <span className="flex items-center gap-1"><MapPin size={12} />{job.location}</span>
-              <span className="flex items-center gap-1"><Briefcase size={12} />{job.experience}</span>
+              <span className="flex items-center gap-1">
+                <MapPin size={12} />
+                {job.location}
+              </span>
+              <span className="flex items-center gap-1">
+                <Briefcase size={12} />
+                {job.experience}
+              </span>
               {job.salary && <span className="font-mono text-fox-500">{job.salary}</span>}
             </div>
           )}
@@ -54,19 +87,63 @@ export default function HiringWall() {
 
         <div onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Full name *" value={form.name} onChange={set('name')} placeholder="Your name" required />
-            <Input label="Email *" type="email" value={form.email} onChange={set('email')} placeholder="you@example.com" required />
+            <Input
+              label="Full name *"
+              value={form.name}
+              onChange={set('name')}
+              placeholder="Your name"
+              required
+            />
+            <Input
+              label="Email *"
+              type="email"
+              value={form.email}
+              onChange={set('email')}
+              placeholder="you@example.com"
+              required
+            />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Phone" value={form.phone} onChange={set('phone')} placeholder="+91 98765 43210" />
-            <Input label="Experience" value={form.experience} onChange={set('experience')} placeholder="e.g. 3 years" />
+            <Input
+              label="Phone"
+              value={form.phone}
+              onChange={set('phone')}
+              placeholder="+91 98765 43210"
+            />
+            <Input
+              label="Experience"
+              value={form.experience}
+              onChange={set('experience')}
+              placeholder="e.g. 3 years"
+            />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Portfolio URL" value={form.portfolioUrl} onChange={set('portfolioUrl')} placeholder="https://..." />
-            <Input label="LinkedIn URL" value={form.linkedinUrl} onChange={set('linkedinUrl')} placeholder="https://linkedin.com/in/..." />
+            <Input
+              label="Portfolio URL"
+              value={form.portfolioUrl}
+              onChange={set('portfolioUrl')}
+              placeholder="https://..."
+            />
+            <Input
+              label="LinkedIn URL"
+              value={form.linkedinUrl}
+              onChange={set('linkedinUrl')}
+              placeholder="https://linkedin.com/in/..."
+            />
           </div>
-          <Textarea label="Cover letter" value={form.coverLetter} onChange={set('coverLetter')} placeholder="Why do you want to join StackFox?" />
-          <Button variant="primary" size="lg" isLoading={loading} onClick={handleSubmit} className="w-full md:w-auto">
+          <Textarea
+            label="Cover letter"
+            value={form.coverLetter}
+            onChange={set('coverLetter')}
+            placeholder="Why do you want to join StackFox?"
+          />
+          <Button
+            variant="primary"
+            size="lg"
+            isLoading={loading}
+            onClick={handleSubmit}
+            className="w-full md:w-auto"
+          >
             <Send size={16} /> Submit Application
           </Button>
         </div>

@@ -17,7 +17,12 @@ function getDaysInMonth(year, month) {
 function mapTaskToTask(task) {
   const status = task.status || 'todo';
   if (status === 'done') return null;
-  const type = task.priority === 'urgent' || task.priority === 'critical' ? 'deadline' : status === 'review' ? 'review' : 'meeting';
+  const type =
+    task.priority === 'urgent' || task.priority === 'critical'
+      ? 'deadline'
+      : status === 'review'
+        ? 'review'
+        : 'meeting';
   return { title: task.title, type };
 }
 
@@ -29,15 +34,32 @@ export default function Calendar() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/tasks/my').then((r) => setTasks(r.data.data?.tasks || [])).catch(() => toast.error('Failed to load calendar tasks.')).finally(() => setLoading(false));
+    api
+      .get('/tasks/my')
+      .then((r) => setTasks(r.data.data?.tasks || []))
+      .catch(() => toast.error('Failed to load calendar tasks.'))
+      .finally(() => setLoading(false));
   }, []);
 
   const { first, total } = getDaysInMonth(year, month);
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const monthName = new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' });
+  const monthName = new Date(year, month).toLocaleString('default', {
+    month: 'long',
+    year: 'numeric',
+  });
 
-  const prev = () => { if (month === 0) { setMonth(11); setYear(year - 1); } else setMonth(month - 1); };
-  const next = () => { if (month === 11) { setMonth(0); setYear(year + 1); } else setMonth(month + 1); };
+  const prev = () => {
+    if (month === 0) {
+      setMonth(11);
+      setYear(year - 1);
+    } else setMonth(month - 1);
+  };
+  const next = () => {
+    if (month === 11) {
+      setMonth(0);
+      setYear(year + 1);
+    } else setMonth(month + 1);
+  };
 
   const tasksByDate = {};
   tasks.forEach((t) => {
@@ -54,7 +76,11 @@ export default function Calendar() {
   const todayTasks = tasksByDate[todayStr] || [];
 
   if (loading) {
-    return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-warm-200 border-t-fox-500 rounded-full animate-spin" /></div>;
+    return (
+      <div className="flex justify-center py-20">
+        <div className="w-8 h-8 border-2 border-warm-200 border-t-fox-500 rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -64,28 +90,46 @@ export default function Calendar() {
       <div className="flex gap-5">
         <div className="flex-1 bg-white rounded-2xl border border-warm-200 p-6">
           <div className="flex items-center justify-between mb-5">
-            <button onClick={prev} className="p-1.5 rounded-lg hover:bg-warm-100 transition"><ChevronLeft size={18} className="text-warm-600" /></button>
+            <button onClick={prev} className="p-1.5 rounded-lg hover:bg-warm-100 transition">
+              <ChevronLeft size={18} className="text-warm-600" />
+            </button>
             <h3 className="font-semibold text-warm-900">{monthName}</h3>
-            <button onClick={next} className="p-1.5 rounded-lg hover:bg-warm-100 transition"><ChevronRight size={18} className="text-warm-600" /></button>
+            <button onClick={next} className="p-1.5 rounded-lg hover:bg-warm-100 transition">
+              <ChevronRight size={18} className="text-warm-600" />
+            </button>
           </div>
 
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {DAYS.map((d) => <div key={d} className="text-center text-xs font-semibold text-warm-400 py-1">{d}</div>)}
+            {DAYS.map((d) => (
+              <div key={d} className="text-center text-xs font-semibold text-warm-400 py-1">
+                {d}
+              </div>
+            ))}
           </div>
 
           <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: first }).map((_, i) => <div key={`e${i}`} />)}
+            {Array.from({ length: first }).map((_, i) => (
+              <div key={`e${i}`} />
+            ))}
             {Array.from({ length: total }, (_, i) => {
               const day = i + 1;
               const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
               const isToday = dateStr === todayStr;
               const tasks = tasksByDate[dateStr];
               return (
-                <div key={day} className={`relative flex flex-col items-center py-2 rounded-xl text-sm transition cursor-default ${isToday ? 'bg-fox-500 text-white font-bold' : 'text-warm-700 hover:bg-warm-50'}`}>
+                <div
+                  key={day}
+                  className={`relative flex flex-col items-center py-2 rounded-xl text-sm transition cursor-default ${isToday ? 'bg-fox-500 text-white font-bold' : 'text-warm-700 hover:bg-warm-50'}`}
+                >
                   {day}
                   {tasks && (
                     <div className="flex gap-0.5 mt-1">
-                      {tasks.map((t, j) => <div key={j} className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : typeColor[t.type]}`} />)}
+                      {tasks.map((t, j) => (
+                        <div
+                          key={j}
+                          className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : typeColor[t.type]}`}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
@@ -107,7 +151,9 @@ export default function Calendar() {
                   <div className={`w-2 h-2 rounded-full ${typeColor[t.type]}`} />
                   <div>
                     <p className="text-sm font-medium text-warm-800">{t.title}</p>
-                    <Badge variant={typeVariant[t.type]} className="mt-1">{t.type}</Badge>
+                    <Badge variant={typeVariant[t.type]} className="mt-1">
+                      {t.type}
+                    </Badge>
                   </div>
                 </div>
               ))}

@@ -32,10 +32,14 @@ function Queue() {
 
   useEffect(() => {
     apiGet('/admin/se-queue')
-      .then((r) => setItems(Array.isArray(r.data) ? r.data : r.data?.data ?? []))
-      .catch((e) => setError(e.response?.status === 403
-        ? 'You need the SE or Senior PM role to review workspaces.'
-        : 'Could not load the review queue.'))
+      .then((r) => setItems(Array.isArray(r.data) ? r.data : (r.data?.data ?? [])))
+      .catch((e) =>
+        setError(
+          e.response?.status === 403
+            ? 'You need the SE or Senior PM role to review workspaces.'
+            : 'Could not load the review queue.',
+        ),
+      )
       .finally(() => setLoading(false));
   }, []);
 
@@ -44,11 +48,14 @@ function Queue() {
       <p className="text-sm font-semibold text-fox-600 mb-1">Solutions Engineering</p>
       <h1 className="text-2xl font-bold mb-2">Scope review queue</h1>
       <p className="text-warm-500 text-sm mb-8">
-        Workspaces a client submitted for sign-off before checkout. Review the scope, then approve or send it back with notes.
+        Workspaces a client submitted for sign-off before checkout. Review the scope, then approve
+        or send it back with notes.
       </p>
 
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <div className="flex justify-center py-20">
+          <Spinner size="lg" />
+        </div>
       ) : error ? (
         <p className="text-sm text-fox-600 text-center py-10">{error}</p>
       ) : items.length === 0 ? (
@@ -64,9 +71,12 @@ function Queue() {
                   className="flex items-center justify-between bg-white border border-warm-200 rounded-xl p-4 hover:border-fox-300 transition-colors"
                 >
                   <div>
-                    <div className="font-semibold text-warm-900 font-mono text-sm">{ws.id.slice(0, 8)}</div>
+                    <div className="font-semibold text-warm-900 font-mono text-sm">
+                      {ws.id.slice(0, 8)}
+                    </div>
                     <div className="text-xs text-warm-500 mt-0.5">
-                      {canvas.length} service{canvas.length === 1 ? '' : 's'} · submitted {formatDate(ws.updatedAt)}
+                      {canvas.length} service{canvas.length === 1 ? '' : 's'} · submitted{' '}
+                      {formatDate(ws.updatedAt)}
                     </div>
                   </div>
                   <span className="text-xs font-semibold text-fox-600">Review →</span>
@@ -101,11 +111,15 @@ function Detail({ id }) {
         if (cancelled) return;
         setWs(wsRes.data);
         const rows = svcRes.data?.data ?? svcRes.data ?? [];
-        setServiceNames(Object.fromEntries((Array.isArray(rows) ? rows : []).map((s) => [s.id, s.name])));
+        setServiceNames(
+          Object.fromEntries((Array.isArray(rows) ? rows : []).map((s) => [s.id, s.name])),
+        );
       })
       .catch(() => !cancelled && setError('Could not load this workspace.'))
       .finally(() => !cancelled && setLoading(false));
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const canvas = useMemo(() => (Array.isArray(ws?.canvas) ? ws.canvas : []), [ws]);
@@ -134,14 +148,22 @@ function Detail({ id }) {
     }
   };
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
   if (error) return <p className="text-sm text-fox-600 text-center py-10">{error}</p>;
 
   const alreadyDone = ws.seStatus && ws.seStatus !== 'SE_QUEUE';
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <Link to="/app/team/se-queue" className="inline-flex items-center gap-1 text-sm text-warm-500 hover:text-warm-800 mb-4">
+      <Link
+        to="/app/team/se-queue"
+        className="inline-flex items-center gap-1 text-sm text-warm-500 hover:text-warm-800 mb-4"
+      >
         <ArrowLeft size={15} /> Back to queue
       </Link>
 
@@ -149,7 +171,8 @@ function Detail({ id }) {
         <div>
           <h1 className="text-xl font-bold font-mono">{ws.id.slice(0, 8)}</h1>
           <p className="text-xs text-warm-500 mt-1">
-            Submitted {formatDate(ws.updatedAt)} · timeline ×{Number(ws.timelineMult || 1).toFixed(2)}
+            Submitted {formatDate(ws.updatedAt)} · timeline ×
+            {Number(ws.timelineMult || 1).toFixed(2)}
           </p>
         </div>
         {alreadyDone && (
@@ -169,18 +192,24 @@ function Detail({ id }) {
         ) : (
           <ul className="divide-y divide-warm-100 border border-warm-200 rounded-xl overflow-hidden">
             {canvas.map((entry) => {
-              const features = entry.features && typeof entry.features === 'object' ? entry.features : {};
+              const features =
+                entry.features && typeof entry.features === 'object' ? entry.features : {};
               const on = Object.values(features).filter(Boolean).length;
               const total = Object.keys(features).length;
               return (
-                <li key={entry.serviceId} className="flex items-center justify-between bg-white px-4 py-3">
+                <li
+                  key={entry.serviceId}
+                  className="flex items-center justify-between bg-white px-4 py-3"
+                >
                   <div>
                     <div className="text-sm font-medium text-warm-900">
                       {serviceNames[entry.serviceId] || entry.serviceId}
                     </div>
                     <div className="text-xs text-warm-500 font-mono">{entry.serviceId}</div>
                   </div>
-                  <span className="text-xs text-warm-500">{on}/{total} features on</span>
+                  <span className="text-xs text-warm-500">
+                    {on}/{total} features on
+                  </span>
                 </li>
               );
             })}
@@ -203,14 +232,19 @@ function Detail({ id }) {
                 <div key={line.id} className="bg-white border border-warm-200 rounded-xl p-4">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <h3 className="text-sm font-semibold text-warm-900">{line.title}</h3>
-                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${CONFIDENCE_STYLE[line.confidence] || 'bg-warm-100 text-warm-600'}`}>
+                    <span
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${CONFIDENCE_STYLE[line.confidence] || 'bg-warm-100 text-warm-600'}`}
+                    >
                       {line.confidence || '—'}
                     </span>
                   </div>
-                  {line.description && <p className="text-sm text-warm-600 mb-2">{line.description}</p>}
+                  {line.description && (
+                    <p className="text-sm text-warm-600 mb-2">{line.description}</p>
+                  )}
                   {line.acceptCriteria && (
                     <p className="text-xs text-warm-500 mb-2">
-                      <span className="font-semibold text-warm-600">Acceptance:</span> {line.acceptCriteria}
+                      <span className="font-semibold text-warm-600">Acceptance:</span>{' '}
+                      {line.acceptCriteria}
                     </p>
                   )}
                   {hrs != null && (
@@ -241,7 +275,9 @@ function Detail({ id }) {
                 <Button variant="primary" disabled={busy} onClick={() => act('return')}>
                   <RotateCcw size={15} className="mr-1.5" /> Send back to client
                 </Button>
-                <Button variant="ghost" disabled={busy} onClick={() => setReturnMode(false)}>Cancel</Button>
+                <Button variant="ghost" disabled={busy} onClick={() => setReturnMode(false)}>
+                  Cancel
+                </Button>
               </div>
             </div>
           ) : (

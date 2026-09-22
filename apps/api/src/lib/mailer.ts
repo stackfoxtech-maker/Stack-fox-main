@@ -7,6 +7,7 @@
  * what makes password reset usable on a local checkout.
  */
 import { webAppUrl } from "./urls";
+import { TIMEOUT } from "./timeouts";
 
 export interface MailMessage {
   to: string;
@@ -32,11 +33,13 @@ function fromAddress(): string {
 
 export async function sendMail(msg: MailMessage): Promise<MailResult> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return { delivered: false, provider: "none", error: "RESEND_API_KEY is not set" };
+  if (!apiKey)
+    return { delivered: false, provider: "none", error: "RESEND_API_KEY is not set" };
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
+      signal: AbortSignal.timeout(TIMEOUT.messaging),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -52,7 +55,11 @@ export async function sendMail(msg: MailMessage): Promise<MailResult> {
 
     if (!res.ok) {
       const body = await res.text();
-      return { delivered: false, provider: "resend", error: `${res.status} ${body.slice(0, 300)}` };
+      return {
+        delivered: false,
+        provider: "resend",
+        error: `${res.status} ${body.slice(0, 300)}`,
+      };
     }
     return { delivered: true, provider: "resend" };
   } catch (err) {
@@ -62,7 +69,12 @@ export async function sendMail(msg: MailMessage): Promise<MailResult> {
 
 // ── Templates ───────────────────────────────
 
-const SHELL = (heading: string, body: string, cta: { label: string; url: string }, footer: string) => `
+const SHELL = (
+  heading: string,
+  body: string,
+  cta: { label: string; url: string },
+  footer: string,
+) => `
 <!doctype html>
 <html><body style="margin:0;padding:0;background:#faf8f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#faf8f5;padding:32px 16px;">

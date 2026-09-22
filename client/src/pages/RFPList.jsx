@@ -9,11 +9,46 @@ const statusStyles = {
 };
 
 const mockRFPs = [
-  { id: 'RFP-001', company: 'Acme Corp', industry: 'Technology', date: '2026-08-18', status: 'Proposal Sent', budget: '₹2,00,000 – ₹5,00,000' },
-  { id: 'RFP-002', company: 'MediCare Plus', industry: 'Healthcare', date: '2026-08-15', status: 'Under Review', budget: '₹5,00,000 – ₹10,00,000' },
-  { id: 'RFP-003', company: 'EduStart', industry: 'Education', date: '2026-08-10', status: 'Accepted', budget: '₹50,000 – ₹2,00,000' },
-  { id: 'RFP-004', company: 'BuildRight', industry: 'Real Estate', date: '2026-08-05', status: 'Rejected', budget: 'Under ₹50,000' },
-  { id: 'RFP-005', company: 'QuickMart', industry: 'E-Commerce', date: '2026-08-01', status: 'Submitted', budget: '₹2,00,000 – ₹5,00,000' },
+  {
+    id: 'RFP-001',
+    company: 'Acme Corp',
+    industry: 'Technology',
+    date: '2026-08-18',
+    status: 'Proposal Sent',
+    budget: '₹2,00,000 – ₹5,00,000',
+  },
+  {
+    id: 'RFP-002',
+    company: 'MediCare Plus',
+    industry: 'Healthcare',
+    date: '2026-08-15',
+    status: 'Under Review',
+    budget: '₹5,00,000 – ₹10,00,000',
+  },
+  {
+    id: 'RFP-003',
+    company: 'EduStart',
+    industry: 'Education',
+    date: '2026-08-10',
+    status: 'Accepted',
+    budget: '₹50,000 – ₹2,00,000',
+  },
+  {
+    id: 'RFP-004',
+    company: 'BuildRight',
+    industry: 'Real Estate',
+    date: '2026-08-05',
+    status: 'Rejected',
+    budget: 'Under ₹50,000',
+  },
+  {
+    id: 'RFP-005',
+    company: 'QuickMart',
+    industry: 'E-Commerce',
+    date: '2026-08-01',
+    status: 'Submitted',
+    budget: '₹2,00,000 – ₹5,00,000',
+  },
 ];
 
 export default function RFPList() {
@@ -24,22 +59,36 @@ export default function RFPList() {
           <h1 className="text-3xl font-bold text-warm-900 flex items-center gap-3">
             <FileText className="text-fox-500" /> My RFP Submissions
           </h1>
-          <a href="/rfp/submit" className="bg-fox-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-fox-600 transition">+ New RFP</a>
+          <a
+            href="/rfp/submit"
+            className="bg-fox-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-fox-600 transition"
+          >
+            + New RFP
+          </a>
         </div>
 
         <div className="space-y-4">
-          {mockRFPs.map(rfp => (
-            <div key={rfp.id} className="bg-white rounded-2xl border border-warm-200 p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+          {mockRFPs.map((rfp) => (
+            <div
+              key={rfp.id}
+              className="bg-white rounded-2xl border border-warm-200 p-6 flex flex-col sm:flex-row sm:items-center gap-4"
+            >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-1">
                   <h3 className="font-semibold text-warm-900 truncate">{rfp.company}</h3>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[rfp.status]}`}>{rfp.status}</span>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[rfp.status]}`}
+                  >
+                    {rfp.status}
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-warm-500">
                   <span>{rfp.id}</span>
                   <span>{rfp.industry}</span>
                   <span>{rfp.budget}</span>
-                  <span className="flex items-center gap-1"><Clock size={13} /> {rfp.date}</span>
+                  <span className="flex items-center gap-1">
+                    <Clock size={13} /> {rfp.date}
+                  </span>
                 </div>
               </div>
               <button className="flex items-center gap-1.5 text-sm font-medium text-fox-500 hover:text-fox-600 shrink-0">

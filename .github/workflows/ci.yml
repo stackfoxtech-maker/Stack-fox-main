@@ -34,6 +34,16 @@ jobs:
           pnpm --filter @stackfox/prisma build
           pnpm --filter @stackfox/core build
 
+      - name: Lint
+        run: pnpm lint
+
+      # Gating on this is only honest because the tree was reformatted once, in
+      # a single commit listed in .git-blame-ignore-revs. A format check on a
+      # never-formatted tree is a permanently red gate, which teaches people to
+      # ignore CI.
+      - name: Format
+        run: pnpm format:check
+
       - name: Typecheck API
         run: pnpm --filter @stackfox/api typecheck
 
@@ -42,6 +52,13 @@ jobs:
 
       - name: API ↔ client contract
         run: node scripts/check-api-contract.mjs
+
+      # docs/openapi.json and docs/API.md are generated from the routes and the
+      # zod schemas. Gating on them means a new endpoint cannot ship
+      # undocumented: the generator reruns here and the job fails if the
+      # committed files no longer match the code.
+      - name: API docs are in sync
+        run: pnpm --filter @stackfox/api docs:api:check
 
       - name: Catalogue is a single source
         run: |
@@ -57,6 +74,10 @@ jobs:
       - name: Build client
         working-directory: client
         run: npm run build
+
+      - name: Client unit tests
+        working-directory: client
+        run: npm test
 
   test:
     name: integration suites
@@ -81,7 +102,14 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stackfox_test
       DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stackfox_test
       REDIS_URL: redis://localhost:6379
-      JWT_SECRET: ci-test-secret
+      # env.ts requires min(32) — "ci-test-secret" was 14 characters, so the
+      # API refused to boot once the env schema started being enforced.
+      JWT_SECRET: ci-test-secret-at-least-32-characters-long
+      # The seed creates a privileged account and refuses to invent a password
+      # for it (SF-C3: it used to fall back to one published in the repo). CI
+      # therefore has to supply one. Throwaway value for a throwaway database —
+      # it never leaves this job.
+      ADMIN_PASSWORD: ci-admin-password-not-real-12345
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
@@ -110,3 +138,62 @@ jobs:
 
       - name: Run suites
         run: pnpm --filter @stackfox/api test
+
+  security:
+    name: secrets · dependencies
+    runs-on: ubuntu-latest
+    steps:
+      # gitleaks needs the history, not just the tip, or a secret committed
+      # earlier in the branch walks straight through.
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Scan history for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 9.6.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+
+      - name: Dependency audit (workspace)
+        run: node scripts/audit-gate.mjs
+
+      - name: Dependency audit (client)
+        working-directory: client
+        run: |
+          npm ci --legacy-peer-deps
+          node ../scripts/audit-gate.mjs --npm
+
+  drift:
+    name: schema ↔ migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shadow
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/shadow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9.6.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+
+      # A schema.prisma edited without a matching migration deploys cleanly and
+      # then fails at the first query against the missing column. This replays
+      # the migrations into a shadow database and diffs the result against the
+      # schema: any difference is a migration someone forgot to generate.
+      - name: Migrations reproduce the schema
+        run: pnpm --filter @stackfox/prisma db:drift

@@ -1,0 +1,23 @@
+# Generated or vendored — formatting these creates churn with no reader.
+**/dist/**
+**/node_modules/**
+**/.turbo/**
+packages/prisma/src/generated/**
+pnpm-lock.yaml
+package-lock.json
+client/dist/**
+
+# The canonical catalogue: a 250-service data file. Reformatting it would be a
+# multi-thousand-line diff that hides every real change to it afterwards.
+shared/stackfox-data.json
+
+# Migration SQL is written to be read as a record of what ran. Leave it as it
+# was applied.
+packages/prisma/prisma/migrations/**
+
+# Generated from the routes and the zod schemas by
+# apps/api/scripts/generate-openapi.mts. CI regenerates these and fails on a
+# diff, so formatting them here would make that check permanently red — the
+# generator's output would never match the formatted file on disk.
+docs/openapi.json
+docs/API.md

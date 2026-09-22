@@ -1,10 +1,12 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth, requireRole } from "../plugins/auth";
+import { requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
-import { canTransition } from "@stackfox/core";
+import { SALES_ROLES, canTransition } from "@stackfox/core";
 import { clientScope, clientWriteScope, assertEngagementInScope } from "../lib/scope";
-import { ok, withId, withIds } from "../lib/http";
+import { LIST_CAP, ok, withId, withIds } from "../lib/http";
+import { parseBody } from "../lib/validate";
+import { CreateEngagementSchema, UpdateEngagementStatusSchema } from "./opsSchemas";
 
 const ENGAGEMENT_TRANSITIONS = [
   { from: "DRAFT", to: "ACTIVE" },
@@ -18,8 +20,9 @@ export async function engagementRoutes(app: FastifyInstance) {
   app.post("/engagements", async (req, reply) => {
     // Engagements are created by StackFox as part of order fulfilment, never
     // self-served by a client.
-    if (!requireRole(req, reply, ["ADMIN", "SUPER_ADMIN", "PM", "SENIOR_PM", "SALES"])) return;
-    const body = req.body as any;
+    if (!requireRole(req, reply, SALES_ROLES)) return;
+    const body = parseBody(req, reply, CreateEngagementSchema);
+    if (!body) return;
     const { engagementId } = await import("../lib/id");
     return prisma.engagement.create({
       data: {
@@ -59,6 +62,7 @@ export async function engagementRoutes(app: FastifyInstance) {
     if (model) where.model = model;
 
     const items = await prisma.engagement.findMany({
+      take: LIST_CAP,
       where,
       include: { projects: { select: { id: true, name: true, status: true } } },
       orderBy: { createdAt: "desc" },
@@ -71,13 +75,17 @@ export async function engagementRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
     const { id } = req.params as { id: string };
     if (!(await assertEngagementInScope(id, scope, reply))) return;
-    const { status } = req.body as { status: string };
+    const stBody = parseBody(req, reply, UpdateEngagementStatusSchema);
+    if (!stBody) return;
+    const { status } = stBody;
 
     const eng = await prisma.engagement.findUnique({ where: { id } });
     if (!eng) return reply.code(404).send({ error: "Engagement not found" });
 
     if (!canTransition(eng.status, status, ENGAGEMENT_TRANSITIONS as any)) {
-      return reply.code(409).send({ error: `Cannot transition from ${eng.status} to ${status}` });
+      return reply
+        .code(409)
+        .send({ error: `Cannot transition from ${eng.status} to ${status}` });
     }
 
     const updated = await prisma.engagement.update({
@@ -85,7 +93,9 @@ export async function engagementRoutes(app: FastifyInstance) {
       data: {
         status,
         ...(status === "ACTIVE" ? { executedAt: new Date() } : {}),
-        ...(status === "COMPLETED" || status === "TERMINATED" ? { endsAt: new Date() } : {}),
+        ...(status === "COMPLETED" || status === "TERMINATED"
+          ? { endsAt: new Date() }
+          : {}),
       },
     });
 

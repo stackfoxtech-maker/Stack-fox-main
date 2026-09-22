@@ -1,4 +1,5 @@
 import type { Job } from "bullmq";
+import { log } from "../../lib/logger";
 
 /**
  * Handler registry for the consolidated `cron` queue.
@@ -31,7 +32,9 @@ const handlers = new Map<string, CronHandler>();
  */
 export function registerCron(id: string, handler: CronHandler): void {
   if (handlers.has(id)) {
-    throw new Error(`[cron] duplicate handler id "${id}" — two workers claim the same schedule`);
+    throw new Error(
+      `[cron] duplicate handler id "${id}" — two workers claim the same schedule`,
+    );
   }
   handlers.set(id, handler);
 }
@@ -45,7 +48,7 @@ export function registerCron(id: string, handler: CronHandler): void {
 export async function dispatchCron(job: Job): Promise<void> {
   const handler = handlers.get(job.name);
   if (!handler) {
-    console.error(`[cron] no handler registered for "${job.name}" — skipped`);
+    log().error({ jobName: job.name }, "no cron handler registered; job skipped");
     return;
   }
   await handler(job);

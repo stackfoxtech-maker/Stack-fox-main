@@ -42,7 +42,10 @@ export default function LegalStarterPack() {
     <div className="max-w-3xl mx-auto px-6 py-16">
       <p className="text-sm text-orange-600 font-semibold mb-2">Free Tool · Powered by StackFox</p>
       <h1 className="text-4xl font-bold mb-3">Legal Starter Pack</h1>
-      <p className="text-gray-600 mb-8">Generate DPDP Act 2023 compliant Privacy Policy, Terms & Conditions, and Refund Policy for your business instantly.</p>
+      <p className="text-gray-600 mb-8">
+        Generate DPDP Act 2023 compliant Privacy Policy, Terms & Conditions, and Refund Policy for
+        your business instantly.
+      </p>
 
       <form onSubmit={generate} className="bg-white border rounded-2xl p-6 mb-8">
         <div className="grid md:grid-cols-2 gap-4">
@@ -81,15 +84,20 @@ export default function LegalStarterPack() {
 
           <div className="mt-6 flex flex-wrap gap-3">
             <button
-              onClick={() => navigator.clipboard?.writeText(docs).then(
-                () => toast.success('Copied to clipboard'),
-                () => {},
-              )}
+              onClick={() =>
+                navigator.clipboard?.writeText(docs).then(
+                  () => toast.success('Copied to clipboard'),
+                  () => {},
+                )
+              }
               className="px-5 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600"
             >
               Copy Documents
             </button>
-            <Link to="/contact" className="px-5 py-2.5 border-2 border-orange-500 text-orange-600 rounded-xl font-semibold hover:bg-orange-50">
+            <Link
+              to="/contact"
+              className="px-5 py-2.5 border-2 border-orange-500 text-orange-600 rounded-xl font-semibold hover:bg-orange-50"
+            >
               Get Expert Legal Review
             </Link>
           </div>

@@ -1,4 +1,6 @@
 import Razorpay from "razorpay";
+import { createHmac, timingSafeEqual } from "crypto";
+import { log } from "./logger";
 
 let _razorpay: InstanceType<typeof Razorpay> | null = null;
 
@@ -12,8 +14,6 @@ function getRazorpay() {
   return _razorpay;
 }
 
-export const razorpay = { get instance() { return getRazorpay(); } };
-
 export async function createRazorpayOrder(
   amountPaise: number,
   currency = "INR",
@@ -21,7 +21,10 @@ export async function createRazorpayOrder(
   notes?: Record<string, string>,
 ) {
   const rz = getRazorpay();
-  if (!rz) throw new Error("Razorpay not configured — set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET");
+  if (!rz)
+    throw new Error(
+      "Razorpay not configured — set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET",
+    );
   return rz.orders.create({
     amount: amountPaise,
     currency,
@@ -30,12 +33,18 @@ export async function createRazorpayOrder(
   });
 }
 
+/** Constant-time hex comparison. Length is not secret; the digest is. */
+function hmacMatches(expected: string, presented: string): boolean {
+  const a = Buffer.from(expected);
+  const b = Buffer.from(presented);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export function verifyRazorpaySignature(
   bodyOrOrderId: string,
   signatureOrPaymentId: string,
   maybeSignature?: string,
 ): boolean {
-  const { createHmac } = require("crypto");
   const secret = process.env.RAZORPAY_KEY_SECRET ?? "";
   let body: string;
   let signature: string;
@@ -48,8 +57,11 @@ export function verifyRazorpaySignature(
     signature = signatureOrPaymentId;
   }
 
+  // Was `expected === signature`, which short-circuits on the first differing
+  // character and leaks the digest a byte at a time. The webhook verifier below
+  // already did this correctly.
   const expected = createHmac("sha256", secret).update(body).digest("hex");
-  return expected === signature;
+  return hmacMatches(expected, signature);
 }
 
 /**
@@ -58,37 +70,42 @@ export function verifyRazorpaySignature(
  * dashboard (Settings → Webhooks), not the API key secret — and over the exact
  * raw request bytes, so pass `req.rawBody`, never a re-serialised object.
  */
-export function verifyRazorpayWebhookSignature(rawBody: string, signature: string): boolean {
-  const { createHmac, timingSafeEqual } = require("crypto");
+export function verifyRazorpayWebhookSignature(
+  rawBody: string,
+  signature: string,
+): boolean {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET ?? "";
   if (!secret || !signature || !rawBody) return false;
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-  const a = Buffer.from(expected);
-  const b = Buffer.from(signature);
-  return a.length === b.length && timingSafeEqual(a, b);
+  return hmacMatches(expected, signature);
 }
 
 // Stripe integration
 let stripe: any = null;
 
+/**
+ * The `stripe` package is NOT a dependency of this app — only Razorpay is
+ * wired up. Setting STRIPE_SECRET_KEY used to throw MODULE_NOT_FOUND on the
+ * first line of the Stripe webhook handler, so every delivery 500'd and no
+ * payment was ever recorded. Fail with something a human can act on instead.
+ *
+ * Decide one way or the other: add `stripe` to dependencies, or delete this
+ * helper, routes/finance.ts#/webhooks/stripe and the STRIPE_* env vars.
+ */
 export function getStripe() {
-  if (!stripe && process.env.STRIPE_SECRET_KEY) {
+  if (stripe || !process.env.STRIPE_SECRET_KEY) return stripe;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Stripe = require("stripe");
     stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  } catch (err) {
+    log().error(
+      { err },
+      "STRIPE_SECRET_KEY is set but the `stripe` package is not installed. " +
+        "Stripe webhooks will be rejected. Run `pnpm --filter @stackfox/api " +
+        "add stripe`, or unset STRIPE_SECRET_KEY.",
+    );
+    stripe = null;
   }
   return stripe;
-}
-
-export async function createStripePaymentIntent(
-  amountPaise: number,
-  currency = "inr",
-  metadata?: Record<string, string>,
-) {
-  const s = getStripe();
-  if (!s) throw new Error("Stripe not configured");
-  return s.paymentIntents.create({
-    amount: amountPaise,
-    currency,
-    metadata: metadata ?? {},
-  });
 }
