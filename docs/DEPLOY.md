@@ -68,25 +68,65 @@ Without `lock_timeout`, an `ACCESS EXCLUSIVE` lock waits behind any open
 transaction on the table — and every query arriving after it queues behind the
 _lock_, not the transaction. A single `idle in transaction` session is enough to
 stall reads and writes on `invoices`, `orders` and `payments` for as long as it
-lasts. With the timeout, that becomes a **clean failed deploy** instead: Railway
-never cuts over, the old container keeps serving, and you retry in a quiet
-window.
+lasts.
 
-Each migration runs in a transaction, so a timeout leaves **no half-widened
-schema**.
+### Verified, not assumed
 
-### Not verified
+All of this was measured on 2026-09-22 against a throwaway Postgres 16, by
+holding a real conflicting lock:
+
+| Claim                                                  | Result                                                                                                                |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| All 8 migrations apply to a fresh database             | clean; all 26 columns `bigint`                                                                                        |
+| With `lock_timeout='5s'`, a blocked rewrite fails fast | **failed at 5s**, `canceling statement due to lock timeout`                                                           |
+| Without it, the rewrite queues                         | **still blocked at 8s** when the client gave up                                                                       |
+| A failed migration leaves no half-widened schema       | `bench.cost_per_day` (the _first_ ALTER) was still `integer` after blocking the _last_ table — so it is transactional |
+
+### The part that is NOT self-healing
+
+A failed migration is **not** simply retryable, and this is the one thing that
+can turn a bad deploy into a stuck service.
+
+Prisma records the failure in `_prisma_migrations` (`finished_at` null,
+`applied_steps_count` 0) and then **refuses every future migration** until it is
+explicitly resolved:
+
+```
+Error: P3009   migrate found failed migrations in the target database
+```
+
+Because migrations run from the container's `CMD`, that means the new container
+cannot boot at all: it fails, restarts, fails again, and stops at
+`restartPolicyMaxRetries`. Railway keeps the **old** container serving, so the
+site stays up on old code — but no further deploy will succeed until someone
+clears the failed row by hand.
+
+Recovery, verified end to end:
+
+```bash
+# Use DIRECT_DATABASE_URL, not the pooler — this is DDL, not pooled traffic.
+cd packages/prisma
+./node_modules/.bin/prisma migrate resolve   --rolled-back 20260921120000_money_bigint   --schema prisma/schema.prisma
+```
+
+Then redeploy. With the lock gone this applies cleanly and the columns widen.
+**Do not** use `--applied` here: that would mark the migration done without
+having run it, leaving the schema `integer` while Prisma believes it is
+`bigint`.
+
+Practically: deploy this when nothing is holding long transactions, and have
+the command above ready. If the deploy fails on the migration, run it before
+retrying rather than hitting redeploy.
+
+### Still not verified
 
 - **Production row counts.** The migration's original note claimed the rewrite
-  is "sub-second". That was measured against a local test database. Production
-  reads were unavailable, so treat it as an assumption — the `lock_timeout` is
-  what makes acting on it safe, not the claim itself.
-- **The edited migration has not been run against a live Postgres.** Docker was
-  unavailable. The SQL change is two `SET` statements, but it is untested.
-  Prisma checksums only migrations it has already recorded, and production has
-  never applied this one, so the edit does not cause a checksum error there.
-  A _local_ database that already applied the old file **will** complain that
-  the migration was modified; re-resolve it there.
+  is "sub-second". That was measured against a local database; production reads
+  were unavailable. The `lock_timeout` is what makes acting on that assumption
+  safe, not the claim itself.
+- A local database that already applied the pre-edit file will report a checksum
+  mismatch; re-resolve it there. Production has never applied this migration, so
+  the edit is inert there.
 
 ---
 

@@ -31,9 +31,13 @@
 --                      transaction session is therefore enough to stall reads
 --                      and writes on invoices, orders and payments for as long
 --                      as it lasts. Failing after 5s instead turns an
---                      unbounded production stall into a clean failed deploy:
---                      Railway never cuts over, the old container keeps
---                      serving, and this can be retried in a quiet window.
+--                      unbounded production stall into a fast failure:
+--                      Railway never cuts over and the old container keeps
+--                      serving. Note it is NOT simply retryable -- Prisma
+--                      records the failure and then refuses every later
+--                      migration with P3009, so the container fail-loops until
+--                      someone runs `migrate resolve --rolled-back` on this
+--                      migration. See docs/DEPLOY.md.
 --
 --   statement_timeout  Bounds the rewrite itself. Sized for small tables,
 --                      which is what this database is believed to hold -- but
