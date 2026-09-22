@@ -279,7 +279,7 @@ async function call(method: string, path: string, token?: string, body?: unknown
   ];
 
   for (const [label, actual, required] of fromMain) {
-    const missing = required.filter((r) => !(actual as readonly string[]).includes(r));
+    const missing = required.filter((r) => !actual.includes(r));
     check(
       `${label} still grants every role ea32a0f listed`,
       missing.length === 0,

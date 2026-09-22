@@ -26,6 +26,30 @@ const ACCEPTED = [
       "in a deployed artifact.",
     until: "2026-12-31",
   },
+  {
+    module: "vite",
+    reason:
+      "client/ devDependency. Three advisories, all against the dev server: " +
+      "path traversal in optimised-deps .map handling, a server.fs.deny " +
+      "bypass on Windows alternate paths, and launch-editor NTLMv2 " +
+      "disclosure. Production runs `vite build`, whose output is static " +
+      "assets on Vercel — the dev server never runs there. No patched 5.x " +
+      "exists; the fix starts at 6.4.3, a major bump for a React 18 client " +
+      "on Vite 5, which is not something to land inside the PR that closes " +
+      "a live authentication bypass. Tracked separately.",
+    until: "2026-11-30",
+  },
+  {
+    module: "vitest",
+    reason:
+      "client/ devDependency, test runner only. The critical advisory needs " +
+      "the Vitest UI server listening; @vitest/ui is not installed and no " +
+      "script passes --ui, so it is unreachable rather than merely " +
+      "dev-only. The @vitest/mocker path-traversal advisory is fixed in " +
+      "4.1.11 — two majors up from 2.1.9. Bumped with vite, since the two " +
+      "share a version line.",
+    until: "2026-11-30",
+  },
 ];
 
 // Resolved 2026-09-21 by the Fastify 4 -> 5 upgrade, and removed from the list

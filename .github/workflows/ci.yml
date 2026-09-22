@@ -102,7 +102,14 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stackfox_test
       DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stackfox_test
       REDIS_URL: redis://localhost:6379
-      JWT_SECRET: ci-test-secret
+      # env.ts requires min(32) — "ci-test-secret" was 14 characters, so the
+      # API refused to boot once the env schema started being enforced.
+      JWT_SECRET: ci-test-secret-at-least-32-characters-long
+      # The seed creates a privileged account and refuses to invent a password
+      # for it (SF-C3: it used to fall back to one published in the repo). CI
+      # therefore has to supply one. Throwaway value for a throwaway database —
+      # it never leaves this job.
+      ADMIN_PASSWORD: ci-admin-password-not-real-12345
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
