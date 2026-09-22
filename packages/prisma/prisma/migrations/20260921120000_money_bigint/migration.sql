@@ -17,9 +17,41 @@
 -- plus Math.min/Math.max would otherwise have had to change.
 --
 -- OPERATIONAL NOTE: int4 -> int8 rewrites the table and takes an ACCESS
--- EXCLUSIVE lock for the duration. On the current row counts that is
--- sub-second. If these tables grow to millions of rows, revisit this with a
--- add-column/backfill/swap approach instead.
+-- EXCLUSIVE lock for the duration. If these tables grow to millions of rows,
+-- revisit this with an add-column/backfill/swap approach instead.
+--
+-- The two SETs below are the deployment safety net, and they matter because
+-- the container's CMD runs `migrate deploy` BEFORE the server starts while the
+-- PREVIOUS container is still serving traffic. So this runs against a live
+-- database, not a quiet one.
+--
+--   lock_timeout       An ACCESS EXCLUSIVE lock waits behind any open
+--                      transaction touching the table -- and while it waits,
+--                      every later query queues behind IT. One idle-in-
+--                      transaction session is therefore enough to stall reads
+--                      and writes on invoices, orders and payments for as long
+--                      as it lasts. Failing after 5s instead turns an
+--                      unbounded production stall into a clean failed deploy:
+--                      Railway never cuts over, the old container keeps
+--                      serving, and this can be retried in a quiet window.
+--
+--   statement_timeout  Bounds the rewrite itself. Sized for small tables,
+--                      which is what this database is believed to hold -- but
+--                      that was measured locally, not in production, so this
+--                      is the guard rather than the assumption.
+--
+-- Plain SET, not SET LOCAL, deliberately. SET LOCAL is the transaction-scoped
+-- form, but outside a transaction it silently does nothing -- so if the runner
+-- ever stopped wrapping migrations, the protection would vanish with no error.
+-- Plain SET applies either way; it is session-scoped, and the session here is
+-- a short-lived CLI connection that exits immediately afterwards, so there is
+-- nothing for it to leak into.
+--
+-- If the ALTERs do fail, they fail together: each migration runs in a
+-- transaction, so a timeout leaves no half-widened schema.
+SET lock_timeout = '5s';
+SET statement_timeout = '120s';
+
 -- AlterTable
 ALTER TABLE "bench" ALTER COLUMN "cost_per_day" SET DATA TYPE BIGINT;
 
