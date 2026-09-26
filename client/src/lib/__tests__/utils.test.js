@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatINR, formatINRShort, cn } from '../utils';
+import { formatINR, formatPaise, formatINRShort, cn } from '../utils';
 
 /**
  * Currency formatting is what a client reads on an invoice screen, so the
@@ -23,8 +23,38 @@ describe('formatINR', () => {
   });
 
   it('groups in the Indian system, not thousands', () => {
-    // 1,00,000 — not 100,000.
-    expect(formatINR(100000).replace(/[^\d,]/g, '')).toBe('1,00,000');
+    // 1,00,000.00 — not 100,000.00.
+    expect(formatINR(100000).replace(/[^\d,.]/g, '')).toBe('1,00,000.00');
+  });
+
+  // Two decimal places, always. The formatter used to round to whole rupees,
+  // so an invoice of ₹1,580.85 displayed as ₹1,581 — the screen then disagreed
+  // with the PDF, the card statement and the GST return. 18% GST on ₹999 is
+  // exactly ₹179.82, so paise are the normal case, not an edge case.
+  it('keeps paise rather than rounding them away', () => {
+    expect(formatINR(1580.85)).toContain('1,580.85');
+    expect(formatINR(179.82)).toContain('179.82');
+  });
+});
+
+describe('formatPaise', () => {
+  // Money columns are integer paise. This is the only converter; call sites
+  // pass the stored value straight through.
+  it('renders stored paise as rupees', () => {
+    expect(formatPaise(158085)).toContain('1,580.85');
+    expect(formatPaise(17982)).toContain('179.82');
+    expect(formatPaise(100)).toContain('1.00');
+  });
+
+  it('is exactly 1/100th of the same number through formatINR', () => {
+    // The bug this pair exists to prevent: an invoice of 158085 paise shown
+    // as ₹1,58,085 because the call site forgot to convert.
+    expect(formatPaise(158085)).not.toBe(formatINR(158085));
+    expect(formatPaise(158085)).toBe(formatINR(1580.85));
+  });
+
+  it('shows a dash for blank values rather than ₹NaN', () => {
+    for (const v of [null, undefined, '', 'abc']) expect(formatPaise(v)).toBe('—');
   });
 });
 

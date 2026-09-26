@@ -13,7 +13,7 @@ import { prisma } from "@stackfox/prisma";
 import { hashPassword } from "../src/lib/password";
 import * as ids from "../src/lib/id";
 
-const BASE = "http://localhost:4000";
+const BASE = process.env.TEST_API_URL ?? "http://localhost:4000";
 const stamp = Date.now();
 
 type Result = { s: number; b: any };
@@ -323,6 +323,19 @@ check(
   `B earnings are 0, not platform-wide`,
   bStats.b?.data?.totalEarnings === 0,
   "expect 0",
+);
+
+// A stale cached epoch must not authenticate a disabled or deleted account.
+const revoked = await register("revoked");
+await prisma.user.update({ where: { id: revoked.userId }, data: { isActive: false } });
+check(
+  "disabled account token is rejected",
+  (await call("GET", "/quotes", revoked.token)).s === 401,
+);
+await prisma.user.delete({ where: { id: revoked.userId } });
+check(
+  "deleted account token is rejected",
+  (await call("GET", "/quotes", revoked.token)).s === 401,
 );
 
 // ── Report ───────────────────────────────────────────────────────────────────

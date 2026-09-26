@@ -9,6 +9,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
+import { quoteForDisplay } from '@lib/quoteMoney';
 import { formatINR } from '@lib/utils';
 import { TIER_LABELS } from '@lib/estimate';
 import { Spinner, Button } from '@components/ui/Primitives';
@@ -17,6 +18,7 @@ import { loadRazorpay } from '@lib/razorpay';
 import toast from 'react-hot-toast';
 import InvoicePreview from '@components/checkout/InvoicePreview';
 import ContractSigning from '@components/checkout/ContractSigning';
+import TierPicker from '@components/checkout/TierPicker';
 
 const STEP_NAMES = {
   STARTER: ['Confirm Package', 'Invoice', 'Your Details', 'Contract', 'Pay'],
@@ -106,7 +108,13 @@ export default function Checkout() {
     api
       .get(`/quotes/${quoteId}`)
       .then((r) => {
-        const q = r.data.data;
+        // The API tags every quote moneyUnit: "PAISE" (see routes/quotes.ts
+        // serializeQuote). quoteForDisplay is the one place that converts back
+        // to rupees for the UI — every downstream reader (this component's own
+        // arithmetic, ContractSigning, InvoicePreview, pdfExport) assumes rupees
+        // and none of them convert, so converting once here is what makes that
+        // assumption true instead of accidental.
+        const q = quoteForDisplay(r.data.data);
         setQuote(q);
 
         const saved = q?.checkoutDetails;
@@ -202,6 +210,12 @@ export default function Checkout() {
         toast.error('Organisation name is required.');
         return;
       }
+      // Printed on a legal tax invoice, so a malformed GSTIN must not pass.
+      const gstin = account.gstin?.trim().toUpperCase();
+      if (gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstin)) {
+        toast.error('Enter a valid 15-character GSTIN, or leave it blank.');
+        return;
+      }
     }
     if (steps[step] === 'Project Setup' || steps[step] === 'Engagement') {
       if (!project.projectName?.trim()) {
@@ -251,7 +265,7 @@ export default function Checkout() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-            const paidQuote = verifyRes.data.data;
+            const paidQuote = quoteForDisplay(verifyRes.data.data);
             setQuote(paidQuote);
             if (paidQuote.status === 'partially_paid') {
               toast.success('Payment received — the remaining balance is still due.');
@@ -315,6 +329,7 @@ export default function Checkout() {
         {step === 0 && (
           <div className="space-y-4">
             <h2 className="font-bold text-warm-900">{steps[0]}</h2>
+            <TierPicker quote={quote} />
             <div className="space-y-2">
               {quote.items.map((item, i) => (
                 <div
@@ -339,9 +354,15 @@ export default function Checkout() {
                   ? formatINR(range.mid)
                   : `${formatINR(range.low)} – ${formatINR(range.high)}`}
               </div>
-              {tier !== 'STARTER' && (
+              {tier === 'GROWTH' && (
                 <p className="text-[11px] text-fox-600 mt-1">
                   ±15% tolerance from mid-range. Final quote confirmed after review.
+                </p>
+              )}
+              {tier === 'PREMIUM' && (
+                <p className="text-[11px] text-fox-600 mt-1">
+                  Premium is quoted as a range that firms up after discovery. Final quote confirmed
+                  after review.
                 </p>
               )}
             </div>

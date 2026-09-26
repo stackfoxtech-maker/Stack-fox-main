@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import {
   FileText,
@@ -388,7 +389,9 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
         },
       });
     } catch {
-      // Non-fatal — contract data will be saved on provisioning anyway
+      toast.error('Could not save your signature. Please try again.');
+      setSaving(false);
+      return;
     }
 
     setSigned(true);

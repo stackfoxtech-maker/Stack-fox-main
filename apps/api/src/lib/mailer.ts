@@ -10,6 +10,7 @@ import { webAppUrl } from "./urls";
 import { TIMEOUT } from "./timeouts";
 
 export interface MailMessage {
+  idempotencyKey?: string;
   to: string;
   subject: string;
   html: string;
@@ -43,6 +44,7 @@ export async function sendMail(msg: MailMessage): Promise<MailResult> {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        ...(msg.idempotencyKey ? { "Idempotency-Key": msg.idempotencyKey } : {}),
       },
       body: JSON.stringify({
         from: fromAddress(),

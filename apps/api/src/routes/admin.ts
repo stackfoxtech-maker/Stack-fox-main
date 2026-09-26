@@ -43,16 +43,48 @@ export async function adminRoutes(app: FastifyInstance) {
     if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
   });
 
+  /**
+   * Admin list endpoints are paginated and searched **in the database**.
+   *
+   * They previously were not, and the admin Catalog page paid for it: it asked
+   * for `limit=500`, services capped it at 200 of 258 rows, and the other four
+   * tabs had no `take` at all — /admin/features returned all 809 rows (183 kB)
+   * on every tab switch and again after every create, edit and delete.
+   *
+   * Worse than the volume, the truncation was silent and the search box only
+   * filtered what had already been downloaded. So 58 services were invisible in
+   * the UI *and* unfindable by searching for them.
+   *
+   * `q` filters server-side. Every one of these returns the same
+   * `{ data, meta.pagination }` envelope, so the client can page through
+   * without knowing which endpoint it is talking to.
+   */
+  function searchTerm(req: { query: unknown }): string | undefined {
+    const q = (req.query as Record<string, string | undefined>).q?.trim();
+    return q ? q : undefined;
+  }
+
+  /** Case-insensitive "contains" across the fields a human would search by. */
+  function contains(q: string | undefined, fields: string[]) {
+    if (!q) return {};
+    return {
+      OR: fields.map((f) => ({
+        [f]: { contains: q, mode: "insensitive" as const },
+      })),
+    };
+  }
+
   // Service CRUD
   app.get("/admin/services", async (req) => {
     const { page, limit, skip } = pageParams(
       req.query as Record<string, string>,
       50,
-      200,
+      LIST_CAP,
     );
+    const where = contains(searchTerm(req), ["name", "id", "categoryTier1"]);
     const [items, total] = await Promise.all([
-      prisma.serviceUnit.findMany({ skip, take: limit, orderBy: { id: "asc" } }),
-      prisma.serviceUnit.count(),
+      prisma.serviceUnit.findMany({ where, skip, take: limit, orderBy: { id: "asc" } }),
+      prisma.serviceUnit.count({ where }),
     ]);
     return paginated(items, total, page, limit);
   });
@@ -108,10 +140,25 @@ export async function adminRoutes(app: FastifyInstance) {
   // Feature CRUD
   app.get("/admin/features", async (req) => {
     const { serviceId } = req.query as { serviceId?: string };
-    return prisma.featureUnit.findMany({
-      where: serviceId ? { serviceId } : {},
-      orderBy: { sortOrder: "asc" },
-    });
+    const { page, limit, skip } = pageParams(
+      req.query as Record<string, string>,
+      50,
+      LIST_CAP,
+    );
+    const where = {
+      ...(serviceId ? { serviceId } : {}),
+      ...contains(searchTerm(req), ["name", "id", "serviceId"]),
+    };
+    const [items, total] = await Promise.all([
+      prisma.featureUnit.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ serviceId: "asc" }, { sortOrder: "asc" }],
+      }),
+      prisma.featureUnit.count({ where }),
+    ]);
+    return paginated(items, total, page, limit);
   });
 
   app.post("/admin/features", async (req, reply) => {
@@ -134,8 +181,23 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   // Dependency CRUD
-  app.get("/admin/dependencies", async () => {
-    return prisma.dependency.findMany();
+  app.get("/admin/dependencies", async (req) => {
+    const { page, limit, skip } = pageParams(
+      req.query as Record<string, string>,
+      50,
+      LIST_CAP,
+    );
+    const where = contains(searchTerm(req), ["fromId", "toId", "type"]);
+    const [items, total] = await Promise.all([
+      prisma.dependency.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ fromId: "asc" }, { toId: "asc" }],
+      }),
+      prisma.dependency.count({ where }),
+    ]);
+    return paginated(items, total, page, limit);
   });
 
   app.post("/admin/dependencies", async (req, reply) => {
@@ -151,8 +213,18 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   // Bundle CRUD
-  app.get("/admin/bundles", async () => {
-    return prisma.bundle.findMany();
+  app.get("/admin/bundles", async (req) => {
+    const { page, limit, skip } = pageParams(
+      req.query as Record<string, string>,
+      50,
+      LIST_CAP,
+    );
+    const where = contains(searchTerm(req), ["name", "id", "status"]);
+    const [items, total] = await Promise.all([
+      prisma.bundle.findMany({ where, skip, take: limit, orderBy: { id: "asc" } }),
+      prisma.bundle.count({ where }),
+    ]);
+    return paginated(items, total, page, limit);
   });
 
   app.post("/admin/bundles", async (req, reply) => {
@@ -175,8 +247,23 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   // Rate Card CRUD
-  app.get("/admin/rate-cards", async () => {
-    return prisma.rateCard.findMany({ orderBy: { effectiveFrom: "desc" } });
+  app.get("/admin/rate-cards", async (req) => {
+    const { page, limit, skip } = pageParams(
+      req.query as Record<string, string>,
+      50,
+      LIST_CAP,
+    );
+    const where = contains(searchTerm(req), ["key", "type"]);
+    const [items, total] = await Promise.all([
+      prisma.rateCard.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { effectiveFrom: "desc" },
+      }),
+      prisma.rateCard.count({ where }),
+    ]);
+    return paginated(items, total, page, limit);
   });
 
   app.post("/admin/rate-cards", async (req, reply) => {
@@ -550,9 +637,9 @@ export async function adminRoutes(app: FastifyInstance) {
         name: it.name,
         quantity: it.quantity || 1,
       })),
-      subtotal: q.subtotal,
-      gst: q.gstAmount,
-      total: q.total,
+      subtotal: Number(q.subtotal) / 100,
+      gst: Number(q.gstAmount) / 100,
+      total: Number(q.total) / 100,
       tier: q.tier,
       paidAt: q.paidAt,
       razorpayOrderId: q.razorpayOrderId,

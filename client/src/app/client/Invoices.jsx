@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Receipt, CreditCard, Download } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, formatDate, capitalize, getStatusBadge, cn } from '@lib/utils';
+import { formatDate, capitalize, getStatusBadge, cn, formatPaise } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
 import api from '@lib/api';
 import { loadRazorpay } from '@lib/razorpay';
@@ -129,13 +129,13 @@ export default function Invoices() {
                   <div>
                     <div className="text-xs text-warm-500">Total</div>
                     <div className="font-mono text-sm font-bold text-warm-900">
-                      {formatINR(inv.total)}
+                      {formatPaise(inv.total)}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-warm-500">Paid</div>
                     <div className="font-mono text-sm text-success-700">
-                      {formatINR(inv.paidAmount || 0)}
+                      {formatPaise(inv.paidAmount || 0)}
                     </div>
                   </div>
                   <div>
@@ -146,7 +146,7 @@ export default function Invoices() {
                         balance > 0 ? 'text-danger-500' : 'text-success-700',
                       )}
                     >
-                      {formatINR(balance)}
+                      {formatPaise(balance)}
                     </div>
                   </div>
                 </div>
@@ -155,8 +155,8 @@ export default function Invoices() {
                   <div className="text-xs text-warm-400 mb-3">
                     GST:{' '}
                     {inv.gst.isInterState
-                      ? `IGST ${formatINR(inv.gst.igst)}`
-                      : `CGST ${formatINR(inv.gst.cgst)} + SGST ${formatINR(inv.gst.sgst)}`}
+                      ? `IGST ${formatPaise(inv.gst.igst)}`
+                      : `CGST ${formatPaise(inv.gst.cgst)} + SGST ${formatPaise(inv.gst.sgst)}`}
                   </div>
                 )}
 
@@ -168,7 +168,7 @@ export default function Invoices() {
                       isLoading={paying === inv._id}
                       onClick={() => handlePay(inv)}
                     >
-                      <CreditCard size={16} /> Pay {formatINR(balance)}
+                      <CreditCard size={16} /> Pay {formatPaise(balance)}
                     </Button>
                   )}
                   <Button

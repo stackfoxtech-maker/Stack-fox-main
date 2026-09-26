@@ -15,7 +15,6 @@ const prisma = new PrismaClient();
 
 const INTERNAL = new Set([
   "ADMIN",
-  "SUPER_ADMIN",
   "SE",
   "SENIOR_PM",
   "PM",

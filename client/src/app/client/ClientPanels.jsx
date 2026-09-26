@@ -24,7 +24,7 @@ import {
   Eye,
   FileText,
 } from 'lucide-react';
-import { formatDate, formatINR, timeAgo } from '@lib/utils';
+import { formatDate, formatINR, timeAgo, formatPaise } from '@lib/utils';
 import {
   Modal,
   Input,
@@ -319,7 +319,7 @@ export function Changes() {
                       <span>
                         Cost impact:{' '}
                         <span className="font-mono font-semibold">
-                          {priced ? formatINR(c.costDelta / 100) : 'No extra charge'}
+                          {priced ? formatPaise(c.costDelta) : 'No extra charge'}
                         </span>
                       </span>
                       {c.timelineDelta != null && (
@@ -332,8 +332,7 @@ export function Changes() {
                     {c.scopeImpact && <p className="text-xs text-warm-600 mt-2">{c.scopeImpact}</p>}
                     {priced && (
                       <p className="text-xs text-warm-500 mt-2">
-                        Approving this raises an invoice for {formatINR(c.costDelta / 100)} plus
-                        GST.
+                        Approving this raises an invoice for {formatPaise(c.costDelta)} plus GST.
                       </p>
                     )}
                     <div className="flex gap-2 mt-3">

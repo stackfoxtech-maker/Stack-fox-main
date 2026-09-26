@@ -15,6 +15,7 @@ export default function Projects() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     if (id) {
       api
         .get(`/projects/${id}`)
@@ -45,8 +46,10 @@ export default function Projects() {
             <ArrowLeft size={18} />
           </Link>
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-warm-900">{project.title}</h2>
-            <p className="text-xs text-warm-500">{project.projectNumber}</p>
+            <h2 className="text-lg font-semibold text-warm-900">
+              {project.name || project.title || project.service?.name || project.id}
+            </h2>
+            <p className="text-xs text-warm-500">{project.projectNumber || project.id}</p>
           </div>
           <Badge variant={getStatusBadge(project.status)?.replace('badge-', '')}>
             {capitalize(project.status)}
@@ -60,7 +63,7 @@ export default function Projects() {
               key={i}
               className="flex items-center gap-3 py-2 border-b border-warm-100 last:border-0"
             >
-              <span className="text-sm flex-1">{ms.title}</span>
+              <span className="text-sm flex-1">{ms.name || ms.title}</span>
               <Badge variant={getStatusBadge(ms.status)?.replace('badge-', '') || 'neutral'}>
                 {capitalize(ms.status)}
               </Badge>
@@ -73,7 +76,7 @@ export default function Projects() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-warm-900">Assigned projects</h2>
+      <h2 className="text-lg font-semibold text-warm-900">Projects</h2>
       {projects.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
@@ -90,9 +93,11 @@ export default function Projects() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-warm-900">{p.title}</p>
+                  <p className="font-medium text-warm-900">
+                    {p.name || p.title || p.service?.name || p.id}
+                  </p>
                   <p className="text-xs text-warm-500">
-                    {p.projectNumber} · {formatDate(p.createdAt)}
+                    {p.projectNumber || p.id} · {formatDate(p.createdAt)}
                   </p>
                 </div>
                 <Badge variant={getStatusBadge(p.status)?.replace('badge-', '')}>

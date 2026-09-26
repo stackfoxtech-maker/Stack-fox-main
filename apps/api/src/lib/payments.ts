@@ -4,6 +4,18 @@ import { log } from "./logger";
 
 let _razorpay: InstanceType<typeof Razorpay> | null = null;
 
+export function assertPaymentInitiationEnabled() {
+  if (
+    process.env.RAZORPAY_KEY_ID?.startsWith("rzp_live_") &&
+    process.env.LIVE_PAYMENTS_ENABLED !== "true"
+  ) {
+    throw Object.assign(
+      new Error("Live payments are disabled pending production money reconciliation"),
+      { statusCode: 503 },
+    );
+  }
+}
+
 function getRazorpay() {
   if (!_razorpay) {
     const keyId = process.env.RAZORPAY_KEY_ID;
@@ -20,6 +32,10 @@ export async function createRazorpayOrder(
   receipt?: string,
   notes?: Record<string, string>,
 ) {
+  if (!Number.isSafeInteger(amountPaise) || amountPaise < 100) {
+    throw new Error("Payment amount must be an integer of at least 100 paise");
+  }
+  assertPaymentInitiationEnabled();
   const rz = getRazorpay();
   if (!rz)
     throw new Error(
@@ -28,7 +44,7 @@ export async function createRazorpayOrder(
   return rz.orders.create({
     amount: amountPaise,
     currency,
-    receipt: receipt ?? `rcpt_${Date.now()}`,
+    receipt: (receipt ?? `rcpt_${Date.now()}`).slice(0, 40),
     notes: notes ?? {},
   });
 }
@@ -46,6 +62,7 @@ export function verifyRazorpaySignature(
   maybeSignature?: string,
 ): boolean {
   const secret = process.env.RAZORPAY_KEY_SECRET ?? "";
+  if (!secret) return false;
   let body: string;
   let signature: string;
 
@@ -62,6 +79,30 @@ export function verifyRazorpaySignature(
   // already did this correctly.
   const expected = createHmac("sha256", secret).update(body).digest("hex");
   return hmacMatches(expected, signature);
+}
+
+/** The browser signature authenticates IDs, not capture status or amount. */
+export async function fetchCapturedPayment(paymentId: string, orderId: string) {
+  const rz = getRazorpay();
+  if (!rz) throw new Error("Razorpay not configured");
+  const payment = await rz.payments.fetch(paymentId);
+  if (
+    payment.order_id !== orderId ||
+    payment.status !== "captured" ||
+    payment.currency !== "INR"
+  ) {
+    throw new Error("Payment is not a captured INR payment for this order");
+  }
+  const amount = Number(payment.amount);
+  if (!Number.isSafeInteger(amount) || amount <= 0)
+    throw new Error("Invalid captured amount");
+  return { amount, method: payment.method };
+}
+
+export async function fetchRazorpayOrder(orderId: string) {
+  const rz = getRazorpay();
+  if (!rz) throw new Error("Razorpay not configured");
+  return rz.orders.fetch(orderId);
 }
 
 /**

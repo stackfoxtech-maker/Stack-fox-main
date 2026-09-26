@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users as UsersIcon, Plus, Search, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePageTitle, useDebounce } from '@lib/hooks';
 import { formatDate, capitalize, cn } from '@lib/utils';
@@ -23,59 +24,69 @@ const roleBadge = {
   pm: 'info',
 };
 
+const DEFAULT_META = { pagination: { total: 0, page: 1, limit: 10, pages: 1 } };
+
 export default function AdminUsers() {
   usePageTitle('Admin Users');
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [meta, setMeta] = useState({ pagination: { total: 0, page: 1, limit: 10, pages: 1 } });
+  const [limit] = useState(10);
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', role: 'TEAM' });
   const [editForm, setEditForm] = useState({ name: '', email: '', role: 'TEAM' });
   const q = useDebounce(search, 200);
+  const queryClient = useQueryClient();
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  // Reference pattern for the client-wide TanStack Query adoption (see
+  // main.jsx for the provider). Other pages keep their existing
+  // useEffect+useState fetches until migrated individually — no big-bang
+  // rewrite.
+  const {
+    data,
+    isLoading: loading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ['admin-users', { page, limit, roleFilter, q }],
+    queryFn: async () => {
       const params = { page, limit };
       if (roleFilter !== 'all') params.role = roleFilter;
       if (q) params.search = q;
       const r = await api.get('/users', { params });
-      setUsers(r.data.data || []);
-      setMeta(r.data.meta || { pagination: { total: 0, page: 1, limit: 10, pages: 1 } });
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch users.');
-      toast.error(err.response?.data?.message || 'Failed to fetch users.');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return { users: r.data.data || [], meta: r.data.meta || DEFAULT_META };
+    },
+    placeholderData: (prev) => prev,
+  });
+  const users = data?.users || [];
+  const meta = data?.meta || DEFAULT_META;
+  const error = queryError ? queryError.response?.data?.message || 'Failed to fetch users.' : null;
 
-  useEffect(() => {
-    fetchUsers();
-  }, [roleFilter, q, page, limit]);
+  const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: ['admin-users'] });
 
-  const createUser = async () => {
+  const createMutation = useMutation({
+    mutationFn: (form) => api.post('/users', form),
+    onSuccess: () => {
+      toast.success('User created.');
+      setShowCreate(false);
+      setCreateForm({ name: '', email: '', password: '', role: 'TEAM' });
+      invalidateUsers();
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed.'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, patch }) => api.put(`/users/${id}`, patch),
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed.'),
+  });
+
+  const createUser = () => {
     if (!createForm.name || !createForm.email || !createForm.password) {
       toast.error('Fill all fields.');
       return;
     }
-    try {
-      await api.post('/users', createForm);
-      toast.success('User created.');
-      setShowCreate(false);
-      setCreateForm({ name: '', email: '', password: '', role: 'TEAM' });
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed.');
-    }
+    createMutation.mutate(createForm);
   };
 
   const openEdit = (user) => {
@@ -84,44 +95,49 @@ export default function AdminUsers() {
     setShowEdit(true);
   };
 
-  const updateUser = async () => {
+  const updateUser = () => {
     if (!editUser) return;
-    try {
-      await api.put(`/users/${editUser._id}`, {
-        name: editForm.name,
-        email: editForm.email,
-        role: editForm.role,
-      });
-      toast.success('User updated.');
-      setShowEdit(false);
-      setEditUser(null);
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed.');
-    }
+    updateMutation.mutate(
+      {
+        id: editUser._id,
+        patch: { name: editForm.name, email: editForm.email, role: editForm.role },
+      },
+      {
+        onSuccess: () => {
+          toast.success('User updated.');
+          setShowEdit(false);
+          setEditUser(null);
+          invalidateUsers();
+        },
+      },
+    );
   };
 
-  const toggleActive = async (user) => {
-    try {
-      await api.put(`/users/${user._id}`, { isActive: !user.isActive });
-      toast.success(user.isActive ? 'Deactivated.' : 'Activated.');
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed.');
-    }
+  const toggleActive = (user) => {
+    updateMutation.mutate(
+      { id: user._id, patch: { isActive: !user.isActive } },
+      {
+        onSuccess: () => {
+          toast.success(user.isActive ? 'Deactivated.' : 'Activated.');
+          invalidateUsers();
+        },
+      },
+    );
   };
 
   const isTeamMember = (user) => user.role?.toLowerCase() === 'team';
 
-  const toggleTeamMember = async (user) => {
+  const toggleTeamMember = (user) => {
     const nextRole = isTeamMember(user) ? 'CLIENT' : 'TEAM';
-    try {
-      await api.put(`/users/${user._id}`, { role: nextRole });
-      toast.success(isTeamMember(user) ? 'Removed from team.' : 'Added as team member.');
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed.');
-    }
+    updateMutation.mutate(
+      { id: user._id, patch: { role: nextRole } },
+      {
+        onSuccess: () => {
+          toast.success(isTeamMember(user) ? 'Removed from team.' : 'Added as team member.');
+          invalidateUsers();
+        },
+      },
+    );
   };
 
   const start =

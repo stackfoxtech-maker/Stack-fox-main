@@ -1,103 +1,19 @@
 import { describe, it, expect } from 'vitest';
-
-/**
- * Role routing — the client half of SF-H9.
- *
- * These lists live in authStore.js and routes.jsx as a hand-maintained mirror
- * of packages/core/src/roles, because the client is not in the pnpm workspace
- * and cannot import it. Drift between the two is not cosmetic: it locked the
- * master admin out of the admin panel and sent SALES and FINANCE into a
- * redirect loop, because getDashboardPath() returned a route whose own guard
- * rejected them.
- *
- * The invariant that actually matters is the loop: EVERY role must resolve to
- * a dashboard whose guard admits it. That is what these assert.
- */
-
-// Mirrors of the authStore helpers. Kept as literals rather than imported so a
-// change to the store is a visible, deliberate change here too.
-const ADMIN = ['admin', 'ADMIN', 'SUPER_ADMIN'];
-const SALES = ['SALES'];
-const TEAM = [
-  'team',
-  'TEAM',
-  'SE',
-  'SENIOR_PM',
-  'PM',
-  'DEVELOPER',
-  'QA',
-  'DESIGNER',
-  'DEVOPS',
-  'FINANCE',
-  'SALES',
-];
-const CLIENT = [
-  'client',
-  'CLIENT',
-  'CLIENT_ADMIN',
-  'CLIENT_PM',
-  'CLIENT_VIEWER',
-  'INDIVIDUAL_CLIENT',
-  'ORG_OWNER',
-  'REFERRER',
-];
-
-const isAdmin = (r) => ADMIN.includes(r);
-const isSales = (r) => SALES.includes(r);
-const isTeam = (r) => TEAM.includes(r);
-
-function getDashboardPath(role) {
-  if (isAdmin(role)) return '/app/admin';
-  if (isSales(role)) return '/app/team/sales';
-  if (isTeam(role)) return '/app/team';
-  return '/app/client';
-}
-
-// Mirrors of the routes.jsx guards.
+import {
+  ADMIN_ROLES,
+  INTERNAL_ROLES,
+  CLIENT_ROLES,
+  SALES_ROLES,
+  dashboardForRole,
+} from '../../../../packages/core/src/roles/index';
+const getDashboardPath = (role) =>
+  dashboardForRole(role) === 'sales' ? '/app/team/sales' : '/app/' + dashboardForRole(role);
 const GUARDS = {
-  '/app/client': [...CLIENT, 'admin', 'ADMIN', 'SUPER_ADMIN'],
-  '/app/team': [
-    'team',
-    'admin',
-    'SE',
-    'SENIOR_PM',
-    'PM',
-    'DEVELOPER',
-    'QA',
-    'DESIGNER',
-    'DEVOPS',
-    'FINANCE',
-    'SALES',
-    'ADMIN',
-    'SUPER_ADMIN',
-  ],
-  '/app/team/sales': ['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'SALES', 'ADMIN', 'SUPER_ADMIN'],
-  '/app/admin': ['admin', 'ADMIN', 'SUPER_ADMIN'],
+  '/app/admin': ADMIN_ROLES,
+  '/app/team': [...INTERNAL_ROLES, 'TEAM'],
+  '/app/team/sales': SALES_ROLES,
+  '/app/client': [...CLIENT_ROLES, ...ADMIN_ROLES],
 };
-
-const INTERNAL_ROLES = [
-  'ADMIN',
-  'SUPER_ADMIN',
-  'SE',
-  'SENIOR_PM',
-  'PM',
-  'DEVELOPER',
-  'QA',
-  'DESIGNER',
-  'DEVOPS',
-  'FINANCE',
-  'SALES',
-];
-const CLIENT_ROLES = [
-  'INDIVIDUAL_CLIENT',
-  'ORG_OWNER',
-  'CLIENT_ADMIN',
-  'CLIENT_PM',
-  'CLIENT_VIEWER',
-  'CLIENT',
-  'REFERRER',
-];
-
 describe('dashboard routing', () => {
   it.each([...INTERNAL_ROLES, ...CLIENT_ROLES])(
     '%s lands on a dashboard whose guard admits it',
@@ -114,9 +30,20 @@ describe('dashboard routing', () => {
     },
   );
 
-  it('SUPER_ADMIN reaches the admin panel', () => {
-    expect(getDashboardPath('SUPER_ADMIN')).toBe('/app/admin');
-    expect(GUARDS['/app/admin']).toContain('SUPER_ADMIN');
+  it('ADMIN reaches the admin panel', () => {
+    expect(getDashboardPath('ADMIN')).toBe('/app/admin');
+    expect(GUARDS['/app/admin']).toContain('ADMIN');
+  });
+
+  // SUPER_ADMIN was retired on 2026-09-22 — it granted exactly what ADMIN
+  // granted, so the name implied a tier the code never enforced. It must not
+  // come back silently: an unrecognised role falls through to the client
+  // portal, so a stray SUPER_ADMIN row would be quietly demoted rather than
+  // rejected, which is the kind of failure nobody notices.
+  it('SUPER_ADMIN is retired and no longer an admin role', () => {
+    expect(GUARDS['/app/admin']).not.toContain('SUPER_ADMIN');
+    expect(INTERNAL_ROLES).not.toContain('SUPER_ADMIN');
+    expect(getDashboardPath('SUPER_ADMIN')).toBe('/app/client');
   });
 
   it('SALES reaches the sales dashboard built for it', () => {

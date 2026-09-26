@@ -1,10 +1,14 @@
 /**
  * Seeds (or repairs) the master admin account.
  *
- * SUPER_ADMIN already exists as one of the eleven internal roles, so this does
- * not invent a new tier of access — it just guarantees there is a real, usable
- * login holding that role. A fresh database has no users at all, which means
- * nobody can reach the admin panel to create the first one; this is the way in.
+ * ADMIN already exists as one of the internal roles, so this does not invent a
+ * new tier of access — it just guarantees there is a real, usable login holding
+ * that role. A fresh database has no users at all, which means nobody can reach
+ * the admin panel to create the first one; this is the way in.
+ *
+ * This used to assign SUPER_ADMIN. That role was retired on 2026-09-22: it sat
+ * in every policy set alongside ADMIN and in none of them alone, so it granted
+ * nothing extra while implying a privilege tier that did not exist.
  *
  * Credentials come from the environment and are never defaulted. A seed script
  * that ships a fallback password is a backdoor: it gets copied to production,
@@ -52,7 +56,7 @@ if (existing) {
   await prisma.user.update({
     where: { id: existing.id },
     data: {
-      role: "SUPER_ADMIN",
+      role: "ADMIN",
       isActive: true,
       // Preserve anything else already on authData (OAuth links, flags) and
       // replace only the password.
@@ -61,7 +65,7 @@ if (existing) {
   });
 
   console.log(`\n  Updated existing user ${EMAIL}`);
-  console.log(`    role      ${previousRole} -> SUPER_ADMIN`);
+  console.log(`    role      ${previousRole} -> ADMIN`);
   console.log(`    password  reset`);
   console.log(`    status    active, verified\n`);
 } else {
@@ -69,7 +73,7 @@ if (existing) {
     data: {
       name: NAME,
       email: EMAIL,
-      role: "SUPER_ADMIN",
+      role: "ADMIN",
       isActive: true,
       authData: toJson({ provider: "email", passwordHash, verified: true }),
     },
@@ -79,7 +83,7 @@ if (existing) {
   console.log(`    id     ${user.id}`);
   console.log(`    email  ${EMAIL}`);
   console.log(`    name   ${NAME}`);
-  console.log(`    role   SUPER_ADMIN\n`);
+  console.log(`    role   ADMIN\n`);
 }
 
 // Internal staff are not scoped to an Org — clientScope() returns null for

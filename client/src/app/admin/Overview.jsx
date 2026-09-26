@@ -53,8 +53,9 @@ export default function Overview() {
         api.get('/analytics/overview'),
         api.get('/analytics/revenue', { params: { from: range.from, to: range.to } }),
       ]);
-      setData(overviewRes.data.data);
-      setRevenueSeries(Array.isArray(revenueRes.data.data) ? revenueRes.data.data : []);
+      setData(overviewRes.data.data ?? overviewRes.data);
+      const series = revenueRes.data.data ?? revenueRes.data;
+      setRevenueSeries(Array.isArray(series) ? series : []);
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || 'Failed to load dashboard data';
       setError(msg);
@@ -163,7 +164,7 @@ export default function Overview() {
           value={formatINRShort(d.totalRevenue)}
           icon={DollarSign}
           color="bg-success-50 text-success-700"
-          sub={`This period: ${formatDate(range.from)} - ${formatDate(range.to)}`}
+          sub="All-time collected revenue"
         />
         <KPI
           label="Active projects"
@@ -210,7 +211,9 @@ export default function Overview() {
           <p className="text-xs text-warm-500">
             {formatDate(range.from)} - {formatDate(range.to)}
           </p>
-          <p className="text-[10px] text-warm-400 mt-1">KPIs reflect selected period</p>
+          <p className="text-[10px] text-warm-400 mt-1">
+            Revenue trend period; KPI totals are all-time
+          </p>
         </div>
       </div>
     </div>

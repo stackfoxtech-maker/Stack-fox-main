@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Package, Plus, Trash2, Search, Pencil } from 'lucide-react';
 import { usePageTitle, useDebounce } from '@lib/hooks';
-import { formatINR, cn } from '@lib/utils';
+import { cn, formatPaise } from '@lib/utils';
 import {
   Spinner,
   Button,
@@ -14,6 +14,10 @@ import {
 } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
+
+// One page of rows per request. 50 keeps the payload small enough that a
+// tab switch is cheap, while being more than fits on a screen.
+const PAGE_SIZE = 50;
 
 const TABS = [
   { key: 'services', label: 'Services' },
@@ -43,6 +47,8 @@ export default function Catalog() {
   usePageTitle('Admin Catalog');
   const [tab, setTab] = useState('services');
   const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({ total: 0, page: 1, pages: 1 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -51,35 +57,51 @@ export default function Catalog() {
   const [saving, setSaving] = useState(false);
   const q = useDebounce(search, 200);
 
+  // Search and paging happen in the database, not here.
+  //
+  // This used to request `limit=500` and filter the result in the browser. The
+  // API capped services at 200 of 258 rows, so 58 were invisible — and because
+  // the search box only filtered what had already arrived, they could not be
+  // found by searching for them either. /admin/features was worse: 809 rows and
+  // 183 kB, re-fetched on every tab switch and again after every save.
   const fetchData = async () => {
     setLoading(true);
     try {
-      const r = await api.get(`/admin/${tab}`, { params: { limit: 500 } });
+      const r = await api.get(`/admin/${tab}`, {
+        params: { page, limit: PAGE_SIZE, ...(q ? { q } : {}) },
+      });
       const data = r.data;
-      // Some admin endpoints return a bare array, others the `{ data }` envelope
-      // (services/bundles are paginated; features/dependencies are plain lists).
+      // Every admin list now returns { data, meta.pagination }. The array
+      // fallbacks stay for a stale cached bundle hitting a new API.
       const rows = Array.isArray(data)
         ? data
         : Array.isArray(data?.data)
           ? data.data
           : data?.items || [];
       setItems(rows);
+      setMeta(data?.meta?.pagination ?? { total: rows.length, page: 1, pages: 1 });
     } catch (err) {
       console.error('Fetch error:', err);
       setItems([]);
+      setMeta({ total: 0, page: 1, pages: 1 });
       toast.error(`Failed to load ${tab}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // `q` is the debounced search term, so typing costs one query per pause
+  // rather than one per keystroke.
   useEffect(() => {
     fetchData();
-  }, [tab]);
+  }, [tab, page, q]);
 
-  const filtered = q
-    ? items.filter((i) => (i.name || i.id || '').toLowerCase().includes(q.toLowerCase()))
-    : items;
+  // A new search must start at page 1, or searching from page 3 looks empty.
+  useEffect(() => {
+    setPage(1);
+  }, [q, tab]);
+
+  const filtered = items;
 
   const openCreate = () => {
     setEditingId(null);
@@ -216,8 +238,8 @@ export default function Catalog() {
         <div className="bg-white/50 rounded-3xl border-2 border-dashed border-warm-200 p-20">
           <EmptyState
             icon={Package}
-            title={`No ${tab} yet`}
-            description="Add one to get started."
+            title={q ? `No ${tab} match "${q}"` : `No ${tab} yet`}
+            description={q ? 'Try a different search term.' : 'Add one to get started.'}
           />
         </div>
       ) : (
@@ -314,7 +336,7 @@ export default function Catalog() {
                     )}
                     <td className="py-4 px-6 text-right">
                       <span className="text-base font-black text-warm-900">
-                        {item.starterPrice ? formatINR(item.starterPrice / 100) : '—'}
+                        {item.starterPrice ? formatPaise(item.starterPrice) : '—'}
                       </span>
                     </td>
                     <td className="py-4 px-6">
@@ -345,8 +367,44 @@ export default function Catalog() {
         </div>
       )}
 
-      <div className="text-xs px-2 text-warm-400 font-medium">
-        Showing {filtered.length} of {items.length} {tab}
+      {/*
+        The count is now the database total, not the length of what happened to
+        be downloaded. Previously this read "Showing 200 of 200 services" while
+        258 existed, which is how 58 of them stayed hidden without anyone
+        noticing.
+      */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2">
+        <div className="text-xs text-warm-400 font-medium">
+          {meta.total === 0
+            ? `No ${tab}`
+            : `Showing ${(meta.page - 1) * PAGE_SIZE + 1}–${
+                (meta.page - 1) * PAGE_SIZE + filtered.length
+              } of ${meta.total} ${tab}${q ? ` matching "${q}"` : ''}`}
+        </div>
+
+        {meta.pages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={loading || page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-xs text-warm-500 font-bold tabular-nums px-1">
+              Page {meta.page} of {meta.pages}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={loading || page >= meta.pages}
+              onClick={() => setPage((p) => Math.min(meta.pages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
 
       <Modal

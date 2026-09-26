@@ -1,6 +1,7 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { captureException } from './sentry';
+import { quoteForDisplay } from './quoteMoney';
 
 // Production builds must set VITE_API_URL (Vercel env). The Railway URL below
 // is only a last-resort fallback so a misconfigured build still reaches an API
@@ -44,9 +45,25 @@ const processQueue = (error, token = null) => {
 };
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (/^\/quotes(?:\/[^/]+)?$/.test(response.config.url || '')) {
+      const data = response.data?.data;
+      if (Array.isArray(data)) response.data.data = data.map(quoteForDisplay);
+      else if (data?.quote) data.quote = quoteForDisplay(data.quote);
+      else if (data?.moneyUnit === 'PAISE') response.data.data = quoteForDisplay(data);
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
+
+    // The API's validation and error handler reply { error, details }, but most
+    // screens read `data.message`, so every 4xx showed a generic fallback.
+    const body = error.response?.data;
+    if (body && typeof body === 'object' && !body.message && body.error) {
+      const detail = body.details?.[0]?.message;
+      body.message = detail ? `${body.error}: ${detail}` : body.error;
+    }
 
     // Don't retry auth routes or already retried requests
     if (

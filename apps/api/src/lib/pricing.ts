@@ -1,4 +1,5 @@
 import { prisma } from "@stackfox/prisma";
+import { TIER_MULTIPLIERS } from "./estimate";
 import { findCatalogueItem } from "./catalogue";
 
 /**
@@ -41,7 +42,9 @@ export async function catalogPrice(
 
   const starter = Number(service.starterPrice ?? 0);
   const premiumMinimum = Number(service.premiumMinimum ?? 0);
-  const multiplier = tier === "PREMIUM" ? 1.4 : tier === "GROWTH" ? 1.5 : 1;
+  // One table for every path. This was a private 1.4 for Premium here while the
+  // quote path used 2.2, so Premium could price below Growth in the cart.
+  const multiplier = TIER_MULTIPLIERS[tier ?? ""] ?? 1;
   const paise =
     tier === "PREMIUM" && premiumMinimum
       ? Math.max(premiumMinimum, Math.round(starter * multiplier))

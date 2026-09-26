@@ -16,7 +16,7 @@ import {
   Package,
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, formatDate, capitalize, getStatusBadge } from '@lib/utils';
+import { formatINR, formatDate, capitalize, getStatusBadge, formatPaise } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button, Input } from '@components/ui/Primitives';
 import api from '@lib/api';
 
@@ -286,7 +286,7 @@ export default function Purchases() {
               className="bg-white p-3 rounded-lg border border-warm-100/60 flex items-center justify-between"
             >
               <div>
-                <div className="text-sm font-bold text-warm-900">{formatINR(pay.amount / 100)}</div>
+                <div className="text-sm font-bold text-warm-900">{formatPaise(pay.amount)}</div>
                 <div className="text-[10px] text-warm-500">
                   {pay.gateway} • {pay.method || '–'} • {formatDate(pay.createdAt)}
                 </div>

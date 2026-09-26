@@ -1,3 +1,9 @@
+import {
+  isAdminRole,
+  isInternalRole,
+  isClientRole,
+  dashboardForRole,
+} from '../../../packages/core/src/roles/index';
 import { create } from 'zustand';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
@@ -250,52 +256,13 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
-  // ── Role helpers ──────────────────────────────────────────────────────────
-  // MUST stay in step with packages/core/src/roles/index.ts. The client is not
-  // in the pnpm workspace so it cannot import that module — until it is, these
-  // lists are a hand-maintained mirror, and drift here is a real lockout.
-  //
-  // What drifted before: SUPER_ADMIN (the role the master-admin seeder assigns)
-  // was in none of these, so the account with the most access was classed as a
-  // client and sent to /app/client. SALES and FINANCE were in none either, and
-  // getDashboardPath() returned a route whose own guard rejected them — an
-  // infinite redirect.
-  isAdmin: () => ['admin', 'ADMIN', 'SUPER_ADMIN'].includes(get().user?.role),
-  isSales: () => ['SALES'].includes(get().user?.role),
-  isTeam: () =>
-    [
-      'team',
-      'TEAM',
-      'SE',
-      'SENIOR_PM',
-      'PM',
-      'DEVELOPER',
-      'QA',
-      'DESIGNER',
-      'DEVOPS',
-      'FINANCE',
-      'SALES',
-    ].includes(get().user?.role),
-  isClient: () =>
-    [
-      'client',
-      'CLIENT',
-      'CLIENT_ADMIN',
-      'CLIENT_PM',
-      'CLIENT_VIEWER',
-      'INDIVIDUAL_CLIENT',
-      'ORG_OWNER',
-      'REFERRER',
-    ].includes(get().user?.role),
-
-  // Single source of truth for "which dashboard does this role land on".
-  // Every path returned here must be admitted by that route's own guard in
-  // routes.jsx, or the redirect loops.
+  isAdmin: () => isAdminRole(get().user?.role),
+  isSales: () => dashboardForRole(get().user?.role) === 'sales',
+  isTeam: () => isInternalRole(get().user?.role),
+  isClient: () => isClientRole(get().user?.role),
   getDashboardPath: () => {
-    if (get().isAdmin()) return '/app/admin';
-    if (get().isSales()) return '/app/team/sales';
-    if (get().isTeam()) return '/app/team';
-    return '/app/client';
+    const dashboard = dashboardForRole(get().user?.role);
+    return dashboard === 'sales' ? '/app/team/sales' : '/app/' + dashboard;
   },
 }));
 

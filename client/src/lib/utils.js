@@ -15,26 +15,57 @@ export const sanitizeHtml = (html) =>
   DOMPurify.sanitize(html ?? '', { USE_PROFILES: { html: true } });
 
 /**
- * Format amount in INR (Indian number system).
+ * Money display.
+ *
+ * This codebase has two money units and that is not going to change soon, so
+ * the formatters say which one they take rather than leaving every call site
+ * to remember.
+ *
+ *   RUPEES  the storefront: shared/stackfox-data.json, the cart, the Builder,
+ *           pricing pages. The catalogue file is bundled straight into the
+ *           browser, so there is no API boundary that could convert it.
+ *           routes/cart.ts states it plainly: `price: number; // rupees`.
+ *
+ *   PAISE   anything that came from a money column: invoices, payments, rate
+ *           cards, change requests, referral commissions.
+ *
+ * Both render two decimal places. The previous formatter used
+ * `maximumFractionDigits: 0`, which silently rounded ₹1,580.85 to ₹1,581 —
+ * tolerable on a dashboard headline, wrong on an invoice, where the screen
+ * then disagrees with the PDF, the card statement and the GST return. Paise
+ * are not rare: 18% GST on ₹999 is exactly ₹179.82.
  */
-export const formatINR = (amount) => {
-  if (amount === null || amount === undefined) return '—';
-  return new Intl.NumberFormat('en-IN', {
+const inr = (rupees, dp) =>
+  new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
+    minimumFractionDigits: dp,
+    maximumFractionDigits: dp,
+  }).format(rupees);
+
+const blank = (v) => v === null || v === undefined || v === '' || !Number.isFinite(Number(v));
+
+/** Format an amount already in RUPEES (storefront, cart, Builder). */
+export const formatINR = (rupees) => (blank(rupees) ? '—' : inr(Number(rupees), 2));
+
+/** Format an amount in PAISE (anything read from a money column). */
+export const formatPaise = (paise) => (blank(paise) ? '—' : inr(Number(paise) / 100, 2));
 
 /**
- * Short INR format (1.5L, 2.3Cr).
+ * Rounded rupees, no paise — dashboard headlines and chart axes only, where
+ * the exact figure is noise. Never an invoice, quote or receipt.
  */
-export const formatINRShort = (amount) => {
-  if (amount >= 10000000) return `${(amount / 10000000).toFixed(1)}Cr`;
-  if (amount >= 100000) return `${(amount / 100000).toFixed(1)}L`;
-  if (amount >= 1000) return `${(amount / 1000).toFixed(1)}K`;
-  return String(amount);
+export const formatINRRounded = (rupees) => (blank(rupees) ? '—' : inr(Number(rupees), 0));
+
+/**
+ * Short INR format (1.5L, 2.3Cr). Takes RUPEES. Chart axes and compact stats.
+ */
+export const formatINRShort = (rupees) => {
+  const n = Number(rupees ?? 0);
+  if (n >= 10000000) return `${(n / 10000000).toFixed(1)}Cr`;
+  if (n >= 100000) return `${(n / 100000).toFixed(1)}L`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return String(Math.round(n));
 };
 
 /**

@@ -35,6 +35,26 @@ export default function Messages() {
     }
   };
 
+  const [starting, setStarting] = useState(false);
+
+  // A client cannot see the staff directory, so the server picks the recipient:
+  // the project's PM, or an administrator when none is assigned.
+  const startTeamConversation = async () => {
+    setStarting(true);
+    try {
+      const r = await api.post('/messages/start-team', {});
+      const conv = r.data.data;
+      const list = await api.get('/messages/conversations');
+      const all = list.data.data?.conversations || [];
+      setConversations(all);
+      await openConv(all.find((c) => c._id === conv._id) || conv);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not start a conversation. Try again.');
+    } finally {
+      setStarting(false);
+    }
+  };
+
   const sendMessage = async () => {
     if (!newMsg.trim() || !activeConv) return;
     setSending(true);
@@ -58,13 +78,18 @@ export default function Messages() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-warm-900">Messages</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-warm-900">Messages</h2>
+        <Button variant="primary" size="sm" onClick={startTeamConversation} disabled={starting}>
+          <MessageCircle size={16} /> {starting ? 'Opening…' : 'Message your team'}
+        </Button>
+      </div>
 
       {conversations.length === 0 && !activeConv ? (
         <EmptyState
           icon={MessageCircle}
           title="No conversations"
-          description="Messages with your project team will appear here."
+          description="Use Message your team to reach your project manager."
         />
       ) : (
         <div className="flex gap-4 h-[calc(100vh-220px)] min-h-[400px]">

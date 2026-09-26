@@ -218,7 +218,11 @@ try {
 } finally {
   await prisma.signature.deleteMany({ where: { contractId: { startsWith: `CON-` } } });
   await prisma.contract.deleteMany({ where: { engagementId: eng.id } });
-  await prisma.payment.deleteMany({ where: { gatewayOrderId: { contains: tag } } });
+  await prisma.invoice.updateMany({
+    where: { orgId: org.id },
+    data: { status: "CANCELLED" },
+  });
+  await prisma.payment.deleteMany({ where: { invoice: { orgId: org.id } } });
   await prisma.invoice.deleteMany({ where: { orgId: org.id } });
   await prisma.engagement.deleteMany({ where: { id: eng.id } });
   await prisma.org.deleteMany({ where: { id: org.id } });

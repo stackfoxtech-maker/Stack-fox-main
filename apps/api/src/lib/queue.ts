@@ -8,6 +8,7 @@ import { captureException } from "./sentry";
 export const connection = {
   host: redis.options.host,
   port: redis.options.port,
+  db: redis.options.db,
   username: redis.options.username,
   password: redis.options.password,
   tls: redis.options.tls,

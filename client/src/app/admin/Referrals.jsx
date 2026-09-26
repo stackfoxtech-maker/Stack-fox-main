@@ -84,7 +84,7 @@ export default function Referrals() {
     },
     {
       label: 'Total Earnings',
-      value: formatINR((stats?.totalEarnings || 0) / 100),
+      value: formatINR(stats?.totalEarnings || 0),
       icon: IndianRupee,
       color: 'text-fox-500 bg-fox-500/10',
     },
@@ -191,7 +191,7 @@ export default function Referrals() {
                   {p.referrer?.name || 'Unknown'}
                 </span>
                 <span className="text-sm font-mono text-warm-800">
-                  {formatINR((p.commissionAmount || 0) / 100)}
+                  {formatINR(p.commissionAmount || 0)}
                 </span>
                 <Badge variant={payoutVariant(p.status)}>
                   {capitalize(p.status.toLowerCase())}

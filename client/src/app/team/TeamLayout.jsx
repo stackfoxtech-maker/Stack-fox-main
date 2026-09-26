@@ -17,6 +17,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import DashboardShell from '@app/DashboardShell';
+import useAuthStore from '@store/authStore';
+import { FINANCE_VIEW_ROLES } from '../../../../packages/core/src/roles/index';
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/app/team' },
@@ -40,5 +42,10 @@ const navItems = [
 const tabItems = [navItems[0], navItems[1], navItems[2], navItems[3]]; // Dashboard · Tasks · Projects · Timesheets
 
 export default function TeamLayout() {
-  return <DashboardShell title="Team" navItems={navItems} tabItems={tabItems} />;
+  const role = useAuthStore((s) => s.user?.role);
+  // Mirrors the API: only finance-viewing roles may read invoices.
+  const items = navItems.filter(
+    (i) => i.path !== '/app/team/finance' || FINANCE_VIEW_ROLES.includes(role),
+  );
+  return <DashboardShell title="Team" navItems={items} tabItems={tabItems} />;
 }

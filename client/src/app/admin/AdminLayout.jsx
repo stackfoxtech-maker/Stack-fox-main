@@ -20,6 +20,7 @@ import {
   CalendarClock,
   ShieldCheck,
   ScrollText,
+  Key,
 } from 'lucide-react';
 import DashboardShell from '@app/DashboardShell';
 
@@ -45,6 +46,7 @@ const navItems = [
   { label: 'Templates', icon: Mail, path: '/app/admin/templates' },
   { label: 'Compliance', icon: CalendarClock, path: '/app/admin/compliance' },
   { label: 'Screening', icon: ShieldCheck, path: '/app/admin/screening' },
+  { label: 'API Keys', icon: Key, path: '/app/admin/api-keys' },
   { label: 'Settings', icon: Settings, path: '/app/admin/settings' },
 ];
 

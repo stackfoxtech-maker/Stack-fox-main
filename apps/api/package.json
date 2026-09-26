@@ -34,7 +34,9 @@
     "test:transactions": "tsx tests/transactions.mts",
     "test:quote-pricing": "tsx tests/quote-pricing.mts",
     "docs:api": "tsx scripts/generate-openapi.mts",
-    "docs:api:check": "tsx scripts/generate-openapi.mts --check"
+    "docs:api:check": "tsx scripts/generate-openapi.mts --check",
+    "test:audit": "tsx tests/production-audit.mts",
+    "test:mutations": "tsx tests/mutation-smoke.mts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",

@@ -14,8 +14,9 @@
 import "../src/env";
 import { prisma } from "@stackfox/prisma";
 import { redis } from "../src/lib/redis";
+import { readSession, writeSession } from "../src/lib/checkoutSession";
 
-const BASE = "http://localhost:4000";
+const BASE = process.env.TEST_API_URL ?? "http://localhost:4000";
 const stamp = Date.now();
 
 type Result = { s: number; b: any };
@@ -180,6 +181,31 @@ const user = await register("checkout");
     `complete after cache flush -> ${completed.s}`,
     completed.s === 200,
     "expect 200 — purchase must not be lost",
+  );
+}
+
+// A request that read the form before payment initiation must not overwrite
+// the now-locked session, even if it already passed the HTTP pre-handler.
+{
+  const { sid } = await newCheckout(user.token);
+  const stale = await readSession(sid);
+  if (!stale) throw new Error("missing session fixture");
+  await prisma.checkoutSession.update({
+    where: { id: sid },
+    data: { razorpayOrderId: `order_locked_${stamp}` },
+  });
+  stale.paymentTerms = { mode: "UPFRONT" };
+  let rejected = false;
+  try {
+    await writeSession(sid, stale);
+  } catch (error: any) {
+    rejected = error.statusCode === 409;
+  }
+  check("late form write rejected after gateway order creation", rejected);
+  const row = await prisma.checkoutSession.findUniqueOrThrow({ where: { id: sid } });
+  check(
+    "late form write preserves gateway order and payment terms",
+    row.razorpayOrderId === `order_locked_${stamp}` && !(row.data as any).paymentTerms,
   );
 }
 

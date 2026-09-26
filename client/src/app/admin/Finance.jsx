@@ -9,7 +9,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, formatDate } from '@lib/utils';
+import { formatDate, formatPaise } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button, Modal, Input } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
@@ -46,6 +46,7 @@ export default function Finance() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const limit = 20;
   const [paidModal, setPaidModal] = useState({ open: false, invoice: null });
   const [utr, setUtr] = useState('');
@@ -55,7 +56,7 @@ export default function Finance() {
   const fetchInvoices = (pageNum = 1) => {
     setLoading(true);
     setError(null);
-    api
+    return api
       .get('/invoices', { params: { page: pageNum, limit } })
       .then((r) => {
         const data = r.data.data || [];
@@ -63,7 +64,9 @@ export default function Finance() {
         const pagination = r.data.meta?.pagination;
         if (pagination) {
           setPage(pagination.page);
+          setTotal(pagination.total);
         }
+        return r;
       })
       .catch((err) => {
         setError(err?.response?.data?.error || 'Failed to load invoices');
@@ -79,14 +82,13 @@ export default function Finance() {
   useEffect(() => {
     Promise.all([fetchInvoices(1), fetchMetrics()])
       .then(([invRes, arRes]) => {
+        if (!invRes) return;
         const invs = invRes.data.data || [];
-        const totalOutstanding = invs
-          .filter((i) => i.status !== 'paid')
-          .reduce((s, i) => s + (i.grandTotal || 0), 0);
+        const totalOutstanding = arRes.data.data?.totalOutstanding ?? 0;
         const overdue = invs.filter((i) => i.status === 'overdue').length;
         setMetrics({
-          totalInvoices: invs.length,
-          outstanding: formatINR(totalOutstanding / 100),
+          totalInvoices: invRes.data.meta?.pagination?.total ?? invs.length,
+          outstanding: formatPaise(totalOutstanding),
           overdue,
           arAging: arRes.data.data,
         });
@@ -100,6 +102,12 @@ export default function Finance() {
       const year = now.getFullYear();
       const month = now.getMonth() + 1;
       const { data } = await api.get('/finance/gstr1', { params: { month: month, year } });
+      if (data.complete === false) {
+        toast.error(
+          'Export blocked: invoices need reconciliation or the report exceeds its limit.',
+        );
+        return;
+      }
       const rows = Array.isArray(data)
         ? data
         : data?.data
@@ -232,14 +240,14 @@ export default function Finance() {
             color="bg-blue-50 text-blue-600"
           />
           <MetricCard
-            label="Overdue"
+            label="Overdue on this page"
             value={metrics.overdue}
             icon={AlertTriangle}
             color="bg-danger-50 text-danger-600"
           />
           <MetricCard
             label="AR Aging Buckets"
-            value={metrics.arAging ? Object.keys(metrics.arAging).length : '–'}
+            value={metrics.arAging ? 5 : '–'}
             icon={Clock}
             color="bg-amber-50 text-amber-600"
           />
@@ -257,7 +265,7 @@ export default function Finance() {
                   <p className="text-[10px] font-bold uppercase tracking-widest mb-1 opacity-80">
                     {bucket.label}
                   </p>
-                  <p className="text-lg font-black font-mono">{formatINR(amount / 100)}</p>
+                  <p className="text-lg font-black font-mono">{formatPaise(amount)}</p>
                 </div>
               );
             })}
@@ -309,7 +317,7 @@ export default function Finance() {
                   <tr key={inv.id} className="border-t border-warm-50 hover:bg-warm-50/50">
                     <td className="px-5 py-3 font-mono text-xs">{inv.invoiceNumber || inv.id}</td>
                     <td className="px-5 py-3">{inv.org?.name || '–'}</td>
-                    <td className="px-5 py-3 font-mono">{formatINR((inv.total ?? 0) / 100)}</td>
+                    <td className="px-5 py-3 font-mono">{formatPaise(inv.total ?? 0)}</td>
                     <td className="px-5 py-3">
                       <Badge variant={statusBadgeVariant(inv.status)}>{inv.status}</Badge>
                     </td>
@@ -323,6 +331,7 @@ export default function Finance() {
                           size="sm"
                           className="rounded-lg text-xs"
                           onClick={() => openPaidModal(inv)}
+                          disabled={['paid', 'cancelled'].includes(inv.status)}
                         >
                           <CheckCircle size={12} className="text-emerald-600" /> Mark Paid
                         </Button>
@@ -353,8 +362,7 @@ export default function Finance() {
         {!error && invoices.length > 0 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-warm-100">
             <p className="text-xs text-warm-500">
-              Showing {(page - 1) * limit + 1}-{Math.min(page * limit, invoices.length)} of{' '}
-              {invoices.length}
+              Showing {(page - 1) * limit + 1}-{Math.min(page * limit, total)} of {total}
             </p>
             <div className="flex gap-2">
               <Button
@@ -369,7 +377,7 @@ export default function Finance() {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={invoices.length < limit}
+                disabled={page * limit >= total}
                 onClick={() => fetchInvoices(page + 1)}
               >
                 Next

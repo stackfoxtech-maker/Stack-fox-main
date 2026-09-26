@@ -21,7 +21,18 @@ import { CreateBlogPostSchema, GenerateArticleSchema } from "./opsSchemas";
  * (DRAFT, SUGGESTED by a team member, ARCHIVED).
  */
 
-const EDITOR_ROLES = ["ADMIN", "SUPER_ADMIN", "SALES", "SENIOR_PM"];
+const EDITOR_ROLES = ["ADMIN", "SALES", "SENIOR_PM"];
+
+const POST_STATUSES = ["DRAFT", "PUBLISHED", "SUGGESTED", "ARCHIVED"];
+
+/**
+ * The admin editor sends lowercase ("published"). Matching case-sensitively
+ * silently fell back to DRAFT, so a post an admin published never went live.
+ */
+const asPostStatus = (v: unknown): string | null => {
+  const s = typeof v === "string" ? v.toUpperCase() : "";
+  return POST_STATUSES.includes(s) ? s : null;
+};
 
 function slugify(input: string): string {
   return input
@@ -108,7 +119,7 @@ export async function blogRoutes(app: FastifyInstance) {
     const { page, limit, skip } = pageParams(q, 50, 200);
 
     const where: any = {};
-    if (q.status && q.status !== "all") where.status = q.status;
+    if (q.status && q.status !== "all") where.status = asPostStatus(q.status) ?? q.status;
 
     const [posts, total] = await Promise.all([
       prisma.blogPost.findMany({
@@ -180,9 +191,7 @@ export async function blogRoutes(app: FastifyInstance) {
       return reply.code(400).send({ message: "title and content are required" });
     }
 
-    const status = ["DRAFT", "PUBLISHED", "SUGGESTED", "ARCHIVED"].includes(body.status)
-      ? body.status
-      : "DRAFT";
+    const status = asPostStatus(body.status) ?? "DRAFT";
 
     const cleanContent = sanitizeHtml(body.content);
     const post = await prisma.blogPost.create({
@@ -240,10 +249,11 @@ export async function blogRoutes(app: FastifyInstance) {
     if (Array.isArray(body.tags)) {
       data.tags = body.tags.filter((t: unknown) => typeof t === "string");
     }
-    if (["DRAFT", "PUBLISHED", "SUGGESTED", "ARCHIVED"].includes(body.status)) {
-      data.status = body.status;
+    const nextStatus = asPostStatus(body.status);
+    if (nextStatus) {
+      data.status = nextStatus;
       // Going live for the first time stamps the publication date.
-      if (body.status === "PUBLISHED" && existing.status !== "PUBLISHED") {
+      if (nextStatus === "PUBLISHED" && existing.status !== "PUBLISHED") {
         data.publishedAt = new Date();
       }
     }

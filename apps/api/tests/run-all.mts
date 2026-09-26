@@ -12,6 +12,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
+import Redis from "ioredis";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -39,6 +40,14 @@ const SUITES = [
   "catalogue-cache.mts",
   "transactions.mts",
   "quote-pricing.mts",
+  "production-audit.mts",
+  "mutation-smoke.mts",
+  "signup-form.mts",
+  "payment-gateway-unavailable.mts",
+  "blog-publish.mts",
+  "invoice-access.mts",
+  "messaging-team.mts",
+  "tier-pricing.mts",
 ];
 
 function run(file: string): Promise<number> {
@@ -52,21 +61,43 @@ function run(file: string): Promise<number> {
   });
 }
 
-/**
- * Known limitation: the rate limiter is Redis-backed and shared, so a full run
- * can exhaust the 100 req/min budget and a later suite sees 429s that have
- * nothing to do with what it is testing. access-control.mts is the usual
- * casualty — it passes alone and can fail here.
- *
- * Not papered over with a higher limit in test, because phase0-security.mts
- * asserts the limiter actually holds and a test-only ceiling would make that
- * assertion meaningless. Re-run a failing suite on its own, or restart the
- * stack, before believing a failure.
- */
+// Isolate limiter counters between suites, keeping production limits intact
+// within each suite (including the brute-force/rate-limit assertions).
+// Refuse remote hosts and non-test databases before any fixture or Redis write.
+const database = new URL(process.env.DATABASE_URL ?? "");
+const redisUrl = new URL(process.env.REDIS_URL ?? "");
+const local = (host: string) => ["localhost", "127.0.0.1", "[::1]"].includes(host);
+if (
+  !local(database.hostname) ||
+  !/^\/stackfox_(test|audit_)/.test(database.pathname) ||
+  !local(redisUrl.hostname)
+) {
+  throw new Error("Regression suites require a dedicated local test database and Redis");
+}
+const limiterRedis = new Redis(redisUrl.toString(), { maxRetriesPerRequest: 1 });
+async function resetLimiter() {
+  let cursor = "0";
+  do {
+    const [next, keys] = await limiterRedis.scan(
+      cursor,
+      "MATCH",
+      "fastify-rate-limit-*",
+      "COUNT",
+      100,
+    );
+    cursor = next;
+    if (keys.length) await limiterRedis.del(...keys);
+  } while (cursor !== "0");
+}
 const results: Array<{ suite: string; code: number }> = [];
-for (const suite of SUITES) {
-  console.log(`\n─── ${suite} ───`);
-  results.push({ suite, code: await run(suite) });
+try {
+  for (const suite of SUITES) {
+    console.log(`\n─── ${suite} ───`);
+    await resetLimiter();
+    results.push({ suite, code: await run(suite) });
+  }
+} finally {
+  await limiterRedis.quit();
 }
 
 console.log("\n═══ Summary ═══");

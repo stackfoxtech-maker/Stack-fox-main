@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Gift, Copy, Check, Users } from 'lucide-react';
 import { Badge, EmptyState, Spinner } from '@components/ui/Primitives';
-import { formatINR, formatDate, copyToClipboard } from '@lib/utils';
+import { formatINR, formatPaise, formatDate, copyToClipboard } from '@lib/utils';
 import api from '@lib/api';
 
 const statusMap = { pending: 'warning', signed_up: 'info', converted: 'success' };
@@ -119,9 +119,14 @@ export default function Referrals() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                {(r.earning || r.rewardAmount || 0) > 0 && (
+                {/* r.earning / r.rewardAmount do not exist on the Referral model
+                    (the field is commissionAmount) -- this always read undefined
+                    and showed nothing, or once "fixed" naively would have shown
+                    every commission as raw paise through formatINR. Two separate
+                    bugs on one line: wrong field name, wrong formatter. */}
+                {(r.commissionAmount || 0) > 0 && (
                   <span className="text-sm font-mono font-semibold text-green-600">
-                    +{formatINR(r.earning || r.rewardAmount || 0)}
+                    +{formatPaise(r.commissionAmount || 0)}
                   </span>
                 )}
                 <Badge variant={statusMap[r.status] || 'neutral'}>

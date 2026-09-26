@@ -1,5 +1,6 @@
 import { createWorker, QUEUE } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
+import { flushBusinessMail } from "../lib/businessMail";
 
 interface NotifyJob {
   code: string;
@@ -18,6 +19,7 @@ interface NotifyJob {
  */
 createWorker<NotifyJob>(QUEUE.notifications, async (job) => {
   const { code, payload, engagementId, projectId, userIds } = job.data;
+  if (code.startsWith("INVOICE_")) await flushBusinessMail();
 
   const subscribers = Array.from(
     new Set([...(await getSubscribers(engagementId, projectId)), ...(userIds ?? [])]),

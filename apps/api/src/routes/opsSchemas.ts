@@ -166,6 +166,10 @@ export const StartConversationSchema = strictObject({
   projectId: businessId.optional(),
 });
 
+export const StartTeamConversationSchema = strictObject({
+  projectId: businessId.optional(),
+});
+
 export const SendMessageSchema = strictObject({
   conversationId: z.string().trim().min(1).max(120),
   // The handler already rejects over 10,000; this refuses it before the body

@@ -1,12 +1,11 @@
 /**
- * The 18 roles split into two worlds: *internal* staff, who work across every
+ * The 17 roles split into two worlds: *internal* staff, who work across every
  * client, and *external* client-side users, whose visibility is confined to
  * their own Org. Every client-facing query is scoped on this distinction, so
  * adding a role here without classifying it is a data-leak waiting to happen.
  */
 export const INTERNAL_ROLES = [
   "ADMIN",
-  "SUPER_ADMIN",
   "SE",
   "SENIOR_PM",
   "PM",
@@ -65,53 +64,45 @@ export function isReadOnlyClient(role: string | undefined | null): boolean {
 //
 // These exist because the role lists were previously written out as literal
 // arrays at ~40 call sites across the API, the Zustand store and the router —
-// four independent copies that drifted. SUPER_ADMIN, the role the master-admin
-// seeder assigns, was missing from seven API guards and every client guard, so
-// the account with the most access could not open the admin panel. SALES and
-// FINANCE appeared in no client guard at all, and getDashboardPath() sent them
-// to a route that also rejected them — a redirect loop.
+// four independent copies that drifted. SALES and FINANCE appeared in no client
+// guard at all, and getDashboardPath() sent them to a route that also rejected
+// them — a redirect loop.
+//
+// SUPER_ADMIN was retired on 2026-09-22. It appeared in all seven sets below
+// and in none of them alone, so it granted exactly what ADMIN granted — a name
+// implying a privilege ladder that did not exist. The risk was not the code but
+// the reading of it: an operator handed ADMIN, believing it the lesser grant,
+// received the catalogue, every user, finance and the credential vault. The one
+// production account holding it was migrated to ADMIN before this landed.
 //
 // Guards take a policy set from here. Never an inline literal.
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** Full platform administration: user roles, settings, destructive operations. */
-export const ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN"] as const;
+export const ADMIN_ROLES = ["ADMIN"] as const;
 
 /** Service catalogue, feature units, bundles, rate cards, governance. */
-export const CATALOGUE_ROLES = ["ADMIN", "SUPER_ADMIN", "SE", "SENIOR_PM"] as const;
+export const CATALOGUE_ROLES = ["ADMIN", "SE", "SENIOR_PM"] as const;
 
 /** Delivery management: engagements, projects, programmes, contracts, tasks. */
-export const DELIVERY_ROLES = ["ADMIN", "SUPER_ADMIN", "SENIOR_PM", "PM", "SE"] as const;
+export const DELIVERY_ROLES = ["ADMIN", "SENIOR_PM", "PM", "SE"] as const;
 
 /** Money movement: credit notes, write-offs, manual settlement. */
-export const FINANCE_ROLES = ["ADMIN", "SUPER_ADMIN", "FINANCE"] as const;
+export const FINANCE_ROLES = ["ADMIN", "FINANCE"] as const;
 
 /** Reading financial reports — wider than acting on them. */
-export const FINANCE_VIEW_ROLES = [
-  "ADMIN",
-  "SUPER_ADMIN",
-  "FINANCE",
-  "SENIOR_PM",
-  "PM",
-] as const;
+export const FINANCE_VIEW_ROLES = ["ADMIN", "FINANCE", "SENIOR_PM", "PM"] as const;
 
 /** Leads, proposals, follow-ups, the sales workspace. */
-export const SALES_ROLES = [
-  "ADMIN",
-  "SUPER_ADMIN",
-  "SALES",
-  "SENIOR_PM",
-  "SE",
-  "PM",
-] as const;
+export const SALES_ROLES = ["ADMIN", "SALES", "SENIOR_PM", "SE", "PM"] as const;
 
 /** Production credential vault: who may store or destroy client secrets. */
-export const VAULT_ROLES = ["ADMIN", "SUPER_ADMIN", "PM", "SENIOR_PM", "DEVOPS"] as const;
+export const VAULT_ROLES = ["ADMIN", "PM", "SENIOR_PM", "DEVOPS"] as const;
 
 /** Every internal role. Use when the only question is staff vs client. */
 export const STAFF_ROLES = INTERNAL_ROLES;
 
-/** True for the two roles that may change another user's role or access. */
+/** True for the role that may change another user's role or access. */
 export function isAdminRole(role: string | undefined | null): boolean {
   if (!role) return false;
   return (ADMIN_ROLES as readonly string[]).includes(normalise(role));

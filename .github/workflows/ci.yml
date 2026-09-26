@@ -111,6 +111,7 @@ jobs:
       # it never leaves this job.
       ADMIN_PASSWORD: ci-admin-password-not-real-12345
       NODE_ENV: test
+      WORKERS_INLINE: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

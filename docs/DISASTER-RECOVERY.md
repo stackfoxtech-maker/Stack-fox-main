@@ -25,26 +25,31 @@ Railway's.** A restore is driven from the Supabase dashboard or via
 `pg_dump`/`pg_restore` against the Supabase connection string. Railway's own
 backup features are irrelevant to the data of record.
 
-### Still to fill in — one dashboard lookup
+### Confirmed 2026-09-23, via the Supabase organisation API
 
-These are visible only in the Supabase project settings, and the RPO below is
-a target until they are recorded:
+|                                  |                                                              |
+| -------------------------------- | ------------------------------------------------------------ |
+| Supabase plan / tier             | **`free`**                                                   |
+| Automated backup frequency       | **None** — Pro/Team/Enterprise only                          |
+| Retention window                 | **N/A** — nothing is taken to retain                         |
+| Point-in-time recovery available | **No** — paid add-on, Pro plan and above                     |
+| Last verified                    | 2026-09-23, `get_organization` on org `kacntvhxhgbxutryoybz` |
 
-|                                  |                 |
-| -------------------------------- | --------------- |
-| Supabase plan / tier             | **UNCONFIRMED** |
-| Automated backup frequency       | **UNCONFIRMED** |
-| Retention window                 | **UNCONFIRMED** |
-| Point-in-time recovery available | **UNCONFIRMED** |
-| Last verified                    | —               |
+This is the branch the paragraph below anticipated, confirmed rather than
+assumed. **The honest RPO today is "everything since the last manual dump."**
+There is no automated input to this procedure at all — a scheduled `pg_dump`
+to off-site storage is the first gap to close, not an optional extra, and
+Supabase's own documentation says exactly this for free-tier projects: _"we
+recommend that free tier plan projects regularly export their data using the
+Supabase CLI `db dump` command and maintain off-site backups."_
 
-Supabase takes **no automated backups on the free tier**. If that is the plan,
-the honest RPO is "everything since the last manual dump", and the procedure
-below has no automated input — a scheduled `pg_dump` becomes the first thing to
-add rather than an optional extra.
+A free project also **pauses after 7 days of inactivity** — a second reason
+this cannot be left to \"whenever someone remembers.\"
 
-Point-in-time recovery is the specific feature that makes the 1-hour RPO below
-achievable. Daily snapshots do not.
+**Upgrading to Supabase Pro ($25/mo) is tracked separately as F-4** and is the
+single highest-leverage fix available for this document: it adds daily
+backups with 7-day retention and removes the inactivity pause, for less than
+the cost of one incident.
 
 ---
 
@@ -63,10 +68,10 @@ achievable. Daily snapshots do not.
 
 **RPO — how much data we accept losing.**
 
-|          | Target     | Met today?                                                                                              |
-| -------- | ---------- | ------------------------------------------------------------------------------------------------------- |
-| Postgres | **1 hour** | Depends on the Supabase plan. Point-in-time recovery meets it; daily snapshots do not (worst case 24h). |
-| Storage  | 24 hours   | Supabase bucket backup cadence — confirm on the plan                                                    |
+|          | Target     | Met today?                                                                                                             |
+| -------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Postgres | **1 hour** | **No.** Confirmed free tier: no PITR, no automated backups at all. Real RPO is "time since the last manual `pg_dump`." |
+| Storage  | 24 hours   | **Unconfirmed** — Supabase bucket backup cadence for this plan not yet checked                                         |
 
 One hour is chosen because that is roughly the window in which losing writes is
 recoverable by hand: an invoice or two re-issued, a signature re-collected. A
@@ -126,8 +131,11 @@ A full backup → restore → boot cycle, run end to end.
 complete:
 
 - A restore from a _Supabase snapshot_, rather than from a dump we took
-  ourselves. That is the path a real disaster uses, and it depends on the plan
-  tier above.
+  ourselves. **Now confirmed impossible to rehearse on the current plan** — the
+  free tier takes no automated snapshots at all, so there is no provider-side
+  restore path to test until F-4 (Supabase Pro) is bought. Everything measured
+  above is the _only_ restore path that exists today: a manual `pg_dump` we
+  took ourselves.
 - A storage bucket restore.
 - A restore at production data volume.
 
@@ -270,16 +278,19 @@ the loss survivable rather than to persist it.
 
 Stated here rather than discovered during an incident:
 
-1. **The Supabase plan tier is unrecorded.** The providers are confirmed —
-   Postgres and storage on Supabase, API and Redis on Railway — but until the
-   backup frequency, retention window and whether PITR is enabled are written
-   down, the RPO above is a target and not a fact.
-2. **No provider-snapshot restore has been rehearsed** — only a dump/restore
-   cycle we drove ourselves.
+1. ~~The Supabase plan tier is unrecorded.~~ **Resolved 2026-09-23** — confirmed
+   `free`, via the Supabase organisation API. It means what the worst case in
+   this document assumed: no automated backups, no PITR. This is now a fact,
+   not a target, and it is the reason F-4 (buy Supabase Pro) is Critical rather
+   than a nice-to-have.
+2. **No provider-snapshot restore has been rehearsed, and cannot be on this
+   plan** — the free tier takes no snapshots to restore from. Every number
+   above is from a dump/restore cycle we drove ourselves.
 3. **No storage-bucket restore has been rehearsed.**
 4. **The rehearsal ran at 175 KiB.** The measured times are a floor, not a
    prediction.
 5. **One person holds the access** needed to perform a restore.
-6. **Nothing schedules the manual dump.** If the provider tier turns out not to
-   include automated backups, a cron job that dumps to object storage is the
-   first thing to add.
+6. **Nothing schedules the manual dump.** This is no longer a hypothetical —
+   the plan is confirmed to have no automated backups, so a cron job that
+   dumps to object storage is the single highest-value thing to add after
+   upgrading the plan (or instead of, if the upgrade is delayed).

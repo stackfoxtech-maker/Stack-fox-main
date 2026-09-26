@@ -223,6 +223,7 @@ model Quote {
   status          String    @default("draft") // draft|checkout|paid
   checkoutDetails Json      @default("{}") // account/engagement/payment-terms captured across checkout steps
   razorpayOrderId String?   @map("razorpay_order_id")
+  invoiceId       String?   @unique @map("invoice_id")
   paidAt          DateTime? @map("paid_at")
   createdAt       DateTime  @default(now()) @map("created_at")
   validUntil      DateTime  @map("valid_until")
@@ -580,6 +581,7 @@ model Invoice {
 
   org        Org         @relation(fields: [orgId], references: [id])
   engagement Engagement? @relation(fields: [engagementId], references: [id])
+  payments   Payment[]
 
   @@index([engagementId, status])
   @@index([orgId])
@@ -1167,7 +1169,7 @@ model Proposal {
   // Selected offering, free-form: { website?, seo?, marketing?, addons?[], custom?[] }
   packages  Json      @default("{}")
   notes     String?
-  totalMin  Int       @default(0) @map("total_min") // rupees
+  totalMin  Int       @default(0) @map("total_min") // paise
   totalMax  Int       @default(0) @map("total_max")
   status    String    @default("DRAFT") // DRAFT|SENT|ACCEPTED|REJECTED
   fileKey   String?   @map("file_key")
@@ -1187,7 +1189,8 @@ model Proposal {
 
 model Payment {
   id               String   @id @default(uuid())
-  orderId          String   @map("order_id")
+  orderId          String?   @map("order_id")
+  invoiceId        String?   @map("invoice_id")
   gateway          String // RAZORPAY|STRIPE|BANK_TRANSFER
   gatewayPaymentId String?  @map("gateway_payment_id")
   gatewayOrderId   String?  @map("gateway_order_id")
@@ -1198,10 +1201,30 @@ model Payment {
   metadata         Json?
   createdAt        DateTime @default(now()) @map("created_at")
 
-  order Order @relation(fields: [orderId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([orderId])
+  @@index([invoiceId])
+  @@unique([gateway, gatewayPaymentId])
   @@map("payments")
+}
+
+model BusinessMail {
+  id            String   @id
+  recipient     String
+  subject       String
+  body          String
+  status        String   @default("PENDING")
+  attempts      Int      @default(0)
+  nextAttemptAt DateTime @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  leaseUntil    DateTime? @map("lease_until") @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  sentAt        DateTime? @map("sent_at") @db.Timestamptz(6)
+  lastError     String? @map("last_error")
+
+  @@index([status, nextAttemptAt], map: "business_mail_pending_idx")
+  @@map("business_mail")
 }
 
 // ═══════════════════════════════════════════════════════════

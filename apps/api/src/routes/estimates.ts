@@ -51,7 +51,11 @@ export async function estimateRoutes(app: FastifyInstance) {
       where: { id: workspaceId },
       include: { customLineItems: true },
     });
-    if (!ws) return reply.code(404).send({ error: "Workspace not found" });
+    if (
+      !ws ||
+      (ws.userId && ws.userId !== req.user?.sub && !isInternalRole(req.user?.role))
+    )
+      return reply.code(404).send({ error: "Workspace not found" });
 
     const canvas = ws.canvas as any[];
     const rateCard = await prisma.rateCard.findFirst({

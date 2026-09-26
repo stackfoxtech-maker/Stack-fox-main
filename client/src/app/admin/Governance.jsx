@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Flag, IndianRupee, Mail, CalendarClock, ShieldCheck } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, formatDate, cn } from '@lib/utils';
+import { formatDate, cn, formatPaise } from '@lib/utils';
 import {
   Spinner,
   Button,
@@ -222,7 +222,7 @@ export function Pricing() {
                   </td>
                   <td className="py-3 px-4 font-mono text-warm-700">{r.key}</td>
                   <td className="py-3 px-4 text-right font-semibold text-warm-900">
-                    {formatINR(r.rate / 100)}
+                    {formatPaise(r.rate)}
                     {r.type === 'ROLE' ? '/hr' : '/pt'}
                   </td>
                   <td className="py-3 px-4 text-right text-warm-500">
