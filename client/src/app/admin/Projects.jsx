@@ -5,6 +5,7 @@ import { usePageTitle } from '@lib/hooks';
 import { formatDate, capitalize, getStatusBadge } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
 import api from '@lib/api';
+import MilestoneActions from '@components/project/MilestoneActions';
 
 const STATUSES = [
   'ALL',
@@ -76,15 +77,6 @@ export default function AdminProjects() {
       .finally(() => setActionLoading(null));
   };
 
-  const approveMilestone = (n) => {
-    setActionLoading(`ms-${n}`);
-    api
-      .patch(`/projects/${id}/milestones/${n}/approve`)
-      .then(() => refreshProject())
-      .catch((e) => setError(e?.response?.data?.message || 'Failed to approve milestone'))
-      .finally(() => setActionLoading(null));
-  };
-
   if (loading)
     return (
       <div className="flex justify-center py-20">
@@ -94,7 +86,7 @@ export default function AdminProjects() {
 
   if (error && !id)
     return <EmptyState icon={FolderKanban} title="Something went wrong" description={error} />;
-  if (error && id)
+  if (error && id && !project)
     return <div className="bg-danger-50 text-danger-700 rounded-xl p-4 text-sm">{error}</div>;
 
   if (id && project) {
@@ -103,6 +95,14 @@ export default function AdminProjects() {
     const total = (project.milestones || []).length;
     return (
       <div className="space-y-4">
+        {error && (
+          <div className="bg-danger-50 text-danger-700 rounded-xl p-4 text-sm flex justify-between gap-3">
+            <span>{error}</span>
+            <button className="font-semibold" onClick={() => setError(null)}>
+              Dismiss
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-3">
           <Link to="/app/admin/projects" className="p-2 hover:bg-warm-100 rounded-lg">
             <ArrowLeft size={18} />
@@ -192,18 +192,11 @@ export default function AdminProjects() {
                         </Badge>
                       </td>
                       <td className="px-5 py-3">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={actionLoading !== null || ms.status === 'APPROVED'}
-                          onClick={() => approveMilestone(ms.number)}
-                        >
-                          {actionLoading === `ms-${ms.number}`
-                            ? '...'
-                            : ms.status === 'APPROVED'
-                              ? 'Approved'
-                              : 'Approve'}
-                        </Button>
+                        <MilestoneActions
+                          projectId={pid}
+                          milestone={ms}
+                          onChanged={refreshProject}
+                        />
                       </td>
                     </tr>
                   ))}
