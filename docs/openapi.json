@@ -1588,6 +1588,22 @@
         ],
         "additionalProperties": false
       },
+      "UpdateMilestoneStatusSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "IN_REVIEW"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
       "UpdateProjectStatusSchema": {
         "type": "object",
         "properties": {
@@ -8984,6 +9000,49 @@
     "/projects/{id}/milestones/{n}/request-revision": {
       "patch": {
         "summary": "PATCH /projects/:id/milestones/:n/request-revision",
+        "tags": [
+          "projects"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
+    "/projects/{id}/milestones/{n}/status": {
+      "patch": {
+        "summary": "PATCH /projects/:id/milestones/:n/status",
         "tags": [
           "projects"
         ],

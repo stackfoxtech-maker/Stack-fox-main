@@ -48,6 +48,7 @@ const SUITES = [
   "invoice-access.mts",
   "messaging-team.mts",
   "tier-pricing.mts",
+  "milestone-flow.mts",
 ];
 
 function run(file: string): Promise<number> {

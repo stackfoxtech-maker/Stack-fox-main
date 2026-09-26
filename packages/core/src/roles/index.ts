@@ -93,6 +93,21 @@ export const FINANCE_ROLES = ["ADMIN", "FINANCE"] as const;
 /** Reading financial reports — wider than acting on them. */
 export const FINANCE_VIEW_ROLES = ["ADMIN", "FINANCE", "SENIOR_PM", "PM"] as const;
 
+/** Staff who deliver the work: may start a milestone and submit it for review. */
+export const MILESTONE_WORK_ROLES = [
+  "ADMIN",
+  "SENIOR_PM",
+  "PM",
+  "SE",
+  "DEVELOPER",
+  "DESIGNER",
+  "QA",
+  "DEVOPS",
+] as const;
+
+/** May approve a submitted milestone, which raises its invoice. */
+export const MILESTONE_APPROVE_ROLES = ["ADMIN", "SENIOR_PM", "PM"] as const;
+
 /** Leads, proposals, follow-ups, the sales workspace. */
 export const SALES_ROLES = ["ADMIN", "SALES", "SENIOR_PM", "SE", "PM"] as const;
 

@@ -41,6 +41,18 @@ export const PROJECT_TRANSITIONS: Transition<ProjectStatus>[] = [
   { from: "ACTIVE", to: "CANCELLED" },
 ];
 
+/**
+ * Delivery work moves forward by the team, and back only through review.
+ * APPROVED is terminal: it raises the milestone invoice.
+ */
+export const MILESTONE_TRANSITIONS: Transition<MilestoneStatus>[] = [
+  { from: "UPCOMING", to: "IN_PROGRESS" },
+  { from: "IN_PROGRESS", to: "IN_REVIEW" },
+  { from: "REVISION", to: "IN_REVIEW" },
+  { from: "IN_REVIEW", to: "APPROVED" },
+  { from: "IN_REVIEW", to: "REVISION" },
+];
+
 export function canTransition<S extends string>(
   current: S,
   target: S,
