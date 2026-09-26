@@ -1,0 +1,7 @@
+# Each entry is a single finding that is not a live credential, with the reason.
+# Fingerprints pin the exact commit, file, rule and line, so a new secret on
+# any other line still fails the scan.
+
+# Throwaway password for a user the mutation-smoke suite registers against the
+# isolated local test database (created and destroyed by the test run).
+647de1b690b9119a781c4e1176ad3d98158825a9:apps/api/tests/mutation-smoke.mts:generic-api-key:73

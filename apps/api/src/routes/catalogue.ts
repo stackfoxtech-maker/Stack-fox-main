@@ -59,8 +59,13 @@ export async function catalogueRoutes(app: FastifyInstance) {
   });
 
   // GET /catalogue/services/:id/features
-  app.get("/catalogue/services/:id/features", async (req) => {
+  app.get("/catalogue/services/:id/features", async (req, reply) => {
     const { id } = req.params as { id: string };
+    const service = await prisma.serviceUnit.findFirst({
+      where: { id, status: "PUBLISHED" },
+      select: { id: true },
+    });
+    if (!service) return reply.code(404).send({ error: "Service not found" });
     return prisma.featureUnit.findMany({
       where: { serviceId: id },
       orderBy: { sortOrder: "asc" },

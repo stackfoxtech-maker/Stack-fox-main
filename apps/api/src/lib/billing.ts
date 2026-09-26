@@ -1,3 +1,4 @@
+import { queueInvoiceEmail } from "./businessMail";
 import { prisma } from "@stackfox/prisma";
 import { queues } from "./queue";
 import { toJson } from "./json";
@@ -62,16 +63,17 @@ export async function recordInvoicePaymentRows(
   const amount = facts.amount ?? Number(invoice.grandTotal);
 
   // 1. Payment row — requires an Order (the schema relation is mandatory).
-  if (invoice.orderId) {
+  {
     const already = facts.gatewayPaymentId
       ? await db.payment.findFirst({
-          where: { gatewayPaymentId: facts.gatewayPaymentId },
+          where: { gateway: facts.gateway, gatewayPaymentId: facts.gatewayPaymentId },
         })
       : null;
     if (!already) {
-      await db.payment.create({
+      const payment = await db.payment.create({
         data: {
           orderId: invoice.orderId,
+          invoiceId: invoice.id,
           gateway: facts.gateway,
           gatewayPaymentId: facts.gatewayPaymentId,
           gatewayOrderId: facts.gatewayOrderId,
@@ -83,6 +85,13 @@ export async function recordInvoicePaymentRows(
         },
       });
 
+      await queueInvoiceEmail(
+        db,
+        invoice.id,
+        "receipt",
+        facts.gatewayPaymentId ?? payment.id,
+        amount,
+      );
       // Mirror onto the order so a fully-paid order stops looking PENDING.
       //
       // updateMany rather than update: the order may legitimately not exist
@@ -90,22 +99,20 @@ export async function recordInvoicePaymentRows(
       // update() would roll back the payment row we just wrote. The previous
       // code swallowed that error with .catch(() => {}), which worked only
       // because there was no transaction to poison.
-      await db.order.updateMany({
-        where: { id: invoice.orderId },
-        data: { status: "PAID", paidAt: new Date() },
+      const settled = await db.invoice.findUnique({
+        where: { id: invoice.id },
+        select: { status: true },
       });
+      if (invoice.orderId && settled?.status === "PAID")
+        await db.order.updateMany({
+          where: { id: invoice.orderId },
+          data: { status: "PAID", paidAt: new Date() },
+        });
     }
   }
 
   // 2. Revenue recognition — decided here, enqueued after commit.
-  let needsRevRec = false;
-  if (invoice.engagementId) {
-    const existing = await db.revrecLedger.findFirst({
-      where: { invoiceId: invoice.id, type: "RECOGNIZED" },
-      select: { id: true },
-    });
-    needsRevRec = !existing;
-  }
+  const needsRevRec = Boolean(invoice.engagementId);
 
   return {
     invoiceId: invoice.id,
@@ -164,4 +171,43 @@ export async function recordInvoicePayment(
     recordInvoicePaymentRows(tx, invoice, facts),
   );
   await enqueuePaymentSideEffects(fx);
+}
+
+/** Lock before reading the balance; deduplicate before incrementing it. */
+export async function settleInvoice(invoiceId: string, facts: PaymentFacts) {
+  if (
+    !Number.isSafeInteger(facts.amount) ||
+    facts.amount! <= 0 ||
+    !facts.gatewayPaymentId
+  )
+    throw new Error("Captured amount and reference are required");
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM invoices WHERE id = ${invoiceId} FOR UPDATE`;
+    const invoice = await tx.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    const prior = await tx.payment.findFirst({
+      where: { gateway: facts.gateway, gatewayPaymentId: facts.gatewayPaymentId },
+    });
+    if (prior) {
+      if (prior.invoiceId !== invoice.id || Number(prior.amount) !== facts.amount)
+        throw new Error("Payment belongs to another settlement");
+      return { invoice, fx: null, replayed: true };
+    }
+    if (invoice.status === "CANCELLED")
+      throw new Error("Cancelled invoice requires reconciliation");
+    const amountPaid = Number(invoice.amountPaid) + facts.amount!;
+    const paid = amountPaid >= Number(invoice.grandTotal);
+    const updated = await tx.invoice.update({
+      where: { id: invoice.id },
+      data: {
+        amountPaid,
+        status: paid ? "PAID" : "PARTIALLY_PAID",
+        paidAt: paid ? new Date() : null,
+        utr: facts.gatewayPaymentId,
+      },
+    });
+    const fx = await recordInvoicePaymentRows(tx, updated, facts);
+    return { invoice: updated, fx, replayed: false };
+  });
+  if (result.fx) await enqueuePaymentSideEffects(result.fx);
+  return result;
 }

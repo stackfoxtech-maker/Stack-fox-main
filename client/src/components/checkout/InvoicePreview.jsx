@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CheckSquare, Download, FileText } from 'lucide-react';
 import { buildInvoice, inr2 } from '@lib/invoice';
+import { TIER_LABELS } from '@lib/estimate';
 
 // jsPDF is loaded on demand (PERF_AUDIT P0-3).
 const downloadInvoicePDF = (inv) =>
@@ -17,22 +18,37 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
   const [acceptedAll, setAcceptedAll] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const inv = useMemo(
-    () =>
-      buildInvoice(
-        quote.items.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity })),
-        {
-          name: account.name,
-          orgName: account.orgName,
-          email: account.email,
-          phone: account.phone,
-          gstin: account.gstin,
-          stateCode: account.stateCode,
-        },
-        { invoiceNo: quote.invoiceNumber, date: quote.createdAt },
-      ),
-    [quote, account],
-  );
+  const inv = useMemo(() => {
+    const lines = quote.items.map((i) => ({
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+    }));
+    // The server prices a quote as (sum of items) x tier multiplier. Without
+    // this line the preview showed the raw item sum, so the invoice the client
+    // acknowledged was lower than the quote total they were then charged on.
+    const itemSum = lines.reduce((s, l) => s + l.price * l.quantity, 0);
+    const uplift = Math.round((Number(quote.subtotal) - itemSum) * 100) / 100;
+    if (uplift > 0.005) {
+      lines.push({
+        name: `${TIER_LABELS[quote.tier] || 'Tier'} tier service overhead (PM, QA, warranty, priority support)`,
+        price: uplift,
+        quantity: 1,
+      });
+    }
+    return buildInvoice(
+      lines,
+      {
+        name: account.name,
+        orgName: account.orgName,
+        email: account.email,
+        phone: account.phone,
+        gstin: account.gstin,
+        stateCode: account.stateCode,
+      },
+      { invoiceNo: quote.invoiceNumber, date: quote.createdAt },
+    );
+  }, [quote, account]);
 
   const dueAmount =
     paymentMode === 'UPFRONT'

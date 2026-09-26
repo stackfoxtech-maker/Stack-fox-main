@@ -1,9 +1,14 @@
 import { PrismaClient } from "@prisma/client";
 import { config } from "dotenv";
 import { resolve } from "path";
-import { requireSeedPassword, upsertStaffUser } from "./seed-helpers";
+import {
+  requireSeedPassword,
+  upsertStaffUser,
+  requireLocalSeedDatabase,
+} from "./seed-helpers";
 
 config({ path: resolve(__dirname, "../../..", ".env") });
+requireLocalSeedDatabase();
 
 import data from "../../../shared/stackfox-data.json";
 const prisma = new PrismaClient();

@@ -1,3 +1,10 @@
+import {
+  ADMIN_ROLES,
+  CLIENT_ROLES,
+  STAFF_ROLES,
+  SALES_ROLES,
+  FINANCE_VIEW_ROLES,
+} from '../../packages/core/src/roles/index';
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import useAuthStore from '@store/authStore';
@@ -157,6 +164,7 @@ const AdminProjectWall = lazy(() => import('@app/admin/ProjectWall'));
 const AdminContent = lazy(() => import('@app/admin/Content'));
 const AdminAnalytics = lazy(() => import('@app/admin/Analytics'));
 const AdminSettings = lazy(() => import('@app/admin/Settings'));
+const AdminApiKeys = lazy(() => import('@app/admin/ApiKeys'));
 const AdminFinance = lazy(() => import('@app/admin/Finance'));
 const AdminEngagements = lazy(() => import('@app/admin/Engagements'));
 const AdminNotifications = lazy(() => import('@app/admin/Notifications'));
@@ -206,7 +214,7 @@ const ProtectedRoute = ({ roles }) => {
     return <Navigate to="/login" replace />;
   }
 
-  const userRole = user?.role?.toLowerCase();
+  const userRole = user?.role?.trim().toUpperCase();
   if (roles && !roles.includes(userRole) && !roles.includes(user?.role)) {
     // Role no longer matches this dashboard (e.g. admin just promoted/demoted
     // this user) — send them to the dashboard their current role now owns,
@@ -314,23 +322,7 @@ export default function AppRoutes() {
       {/* Client dashboard */}
       <Route
         path="app/client"
-        element={
-          <ProtectedRoute
-            roles={[
-              'client',
-              'admin',
-              'CLIENT',
-              'CLIENT_ADMIN',
-              'CLIENT_PM',
-              'CLIENT_VIEWER',
-              'INDIVIDUAL_CLIENT',
-              'ORG_OWNER',
-              'REFERRER',
-              'ADMIN',
-              'SUPER_ADMIN',
-            ]}
-          />
-        }
+        element={<ProtectedRoute roles={[...CLIENT_ROLES, ...ADMIN_ROLES]} />}
       >
         <Route element={<ClientLayout />}>
           <Route index element={<ClientOverview />} />
@@ -364,28 +356,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Team dashboard */}
-      <Route
-        path="app/team"
-        element={
-          <ProtectedRoute
-            roles={[
-              'team',
-              'admin',
-              'SE',
-              'SENIOR_PM',
-              'PM',
-              'DEVELOPER',
-              'QA',
-              'DESIGNER',
-              'DEVOPS',
-              'FINANCE',
-              'SALES',
-              'ADMIN',
-              'SUPER_ADMIN',
-            ]}
-          />
-        }
-      >
+      <Route path="app/team" element={<ProtectedRoute roles={[...STAFF_ROLES, 'TEAM']} />}>
         <Route element={<TeamLayout />}>
           <Route index element={<TeamDashboard />} />
           <Route path="tasks" element={<TeamTasks />} />
@@ -400,7 +371,9 @@ export default function AppRoutes() {
           <Route path="sprints" element={<TeamSprints />} />
           <Route path="resources" element={<TeamResources />} />
           <Route path="quality" element={<TeamQuality />} />
-          <Route path="finance" element={<TeamFinance />} />
+          <Route element={<ProtectedRoute roles={FINANCE_VIEW_ROLES} />}>
+            <Route path="finance" element={<TeamFinance />} />
+          </Route>
           <Route path="clients" element={<TeamClients />} />
           <Route path="analytics" element={<TeamAnalyticsDash />} />
           <Route path="se-queue" element={<TeamSEQueue />} />
@@ -409,14 +382,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Salesperson Dashboard */}
-      <Route
-        path="app/team/sales"
-        element={
-          <ProtectedRoute
-            roles={['team', 'admin', 'SE', 'SENIOR_PM', 'PM', 'SALES', 'ADMIN', 'SUPER_ADMIN']}
-          />
-        }
-      >
+      <Route path="app/team/sales" element={<ProtectedRoute roles={SALES_ROLES} />}>
         <Route element={<SalesLayout />}>
           <Route index element={<SalesDashboard />} />
           <Route path="leads" element={<SalesLeads />} />
@@ -432,10 +398,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Admin dashboard */}
-      <Route
-        path="app/admin"
-        element={<ProtectedRoute roles={['admin', 'ADMIN', 'SUPER_ADMIN']} />}
-      >
+      <Route path="app/admin" element={<ProtectedRoute roles={ADMIN_ROLES} />}>
         <Route element={<AdminLayout />}>
           <Route index element={<AdminOverview />} />
           <Route path="catalog" element={<AdminCatalog />} />
@@ -460,6 +423,7 @@ export default function AppRoutes() {
           <Route path="compliance" element={<AdminCompliance />} />
           <Route path="screening" element={<AdminScreening />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="api-keys" element={<AdminApiKeys />} />
         </Route>
       </Route>
 

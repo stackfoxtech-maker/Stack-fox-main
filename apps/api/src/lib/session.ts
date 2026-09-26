@@ -27,27 +27,14 @@ function epochFromAuthData(authData: unknown): number {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 }
 
-/** Current epoch for a user. Redis-cached; falls back to the DB row on any cache miss or Redis outage. */
+/** Check revocation and account state authoritatively; stale cache must not reopen access. */
 export async function getSessionEpoch(userId: string): Promise<number> {
-  try {
-    const cached = await redis.get(cacheKey(userId));
-    if (cached !== null) return Number(cached) || 0;
-  } catch {
-    /* Redis down — fall through to the DB, which is authoritative anyway. */
-  }
-
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { authData: true },
+    select: { authData: true, isActive: true },
   });
-  const epoch = user ? epochFromAuthData(user.authData) : 0;
-
-  try {
-    await redis.set(cacheKey(userId), String(epoch), "EX", CACHE_TTL_SEC);
-  } catch {
-    /* best-effort cache warm */
-  }
-  return epoch;
+  if (!user?.isActive) throw new Error("Account is missing or inactive");
+  return epochFromAuthData(user.authData);
 }
 
 /**

@@ -139,9 +139,9 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
           return;
         }
       } catch (err: any) {
-        // Both Redis and the DB are unreachable — the request will fail
-        // elsewhere anyway; log and accept rather than lock everyone out.
-        req.log.warn({ err: err.message }, "Session-epoch check failed; accepting token");
+        // Revocation/account state cannot be established: reject the token.
+        req.log.warn({ err: err.message }, "Session-epoch check failed; rejecting token");
+        return;
       }
 
       req.user = payload;

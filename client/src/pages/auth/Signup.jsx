@@ -9,7 +9,7 @@ import GoogleButton from '@components/auth/GoogleButton';
 
 export default function Signup() {
   usePageTitle('Sign up');
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const { register, isLoading } = useAuthStore();
   const navigate = useNavigate();
@@ -66,7 +66,6 @@ export default function Signup() {
               placeholder="you@example.com"
               required
             />
-            <Input label="Phone" value={form.phone} onChange={set('phone')} required />
             <div className="relative">
               <Input
                 label="Password"

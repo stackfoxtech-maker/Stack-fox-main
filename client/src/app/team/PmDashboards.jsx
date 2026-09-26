@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Spinner, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
+import { formatPaise } from '@lib/utils';
 import toast from 'react-hot-toast';
 
 export function Queue() {
@@ -406,10 +407,8 @@ export function Finance() {
         Revenue, payouts, and invoice reconciliation for the team.
       </p>
       <div className="bg-white border rounded-xl p-4 mb-6">
-        <div className="text-2xl font-bold text-green-600">
-          Rs {(totalRevenue / 100000).toFixed(1)}L
-        </div>
-        <div className="text-xs text-gray-500">Revenue this month (from paid invoices)</div>
+        <div className="text-2xl font-bold text-green-600">{formatPaise(totalRevenue)}</div>
+        <div className="text-xs text-gray-500">Collected across all paid invoices</div>
       </div>
       {invoices.length === 0 ? (
         <EmptyState title="No invoices" description="Invoices will appear here once created." />
@@ -424,9 +423,7 @@ export function Finance() {
                 </span>
               </div>
               <div className="text-right">
-                <div className="font-bold">
-                  Rs {((i.total || i.grandTotal || 0) / 100000).toFixed(1)}L
-                </div>
+                <div className="font-bold">{formatPaise(i.total || i.grandTotal || 0)}</div>
                 <span
                   className={`text-xs ${i.status === 'paid' ? 'text-green-700' : 'text-orange-700'}`}
                 >

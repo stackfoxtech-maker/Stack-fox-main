@@ -9,7 +9,10 @@ import { config } from "dotenv";
 import { resolve } from "path";
 import { z } from "zod";
 
-config({ path: resolve(__dirname, "../../../.env") });
+// Tests supply an isolated environment; never refill blank external credentials
+// from a developer's production-capable .env.
+if (process.env.NODE_ENV !== "test")
+  config({ path: resolve(__dirname, "../../../.env") });
 
 /**
  * Boot-time environment validation.

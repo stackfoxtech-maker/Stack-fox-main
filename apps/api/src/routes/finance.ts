@@ -1,9 +1,15 @@
+import { queueInvoiceEmail } from "../lib/businessMail";
+import { settleQuote } from "./quotes";
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
 import { verifyRazorpayWebhookSignature, getStripe } from "../lib/payments";
-import { enqueuePaymentSideEffects, recordInvoicePaymentRows } from "../lib/billing";
+import {
+  enqueuePaymentSideEffects,
+  recordInvoicePaymentRows,
+  settleInvoice,
+} from "../lib/billing";
 import { clientScope } from "../lib/scope";
 import { LIST_CAP, pageParams } from "../lib/http";
 import { isStorageConfigured } from "../lib/storage";
@@ -39,12 +45,8 @@ function serializeInvoice(inv: any) {
   const rawStatus = String(inv.status ?? "DRAFT").toUpperCase();
   const status = rawStatus.toLowerCase().replace(/_/g, "-");
   const grandTotal = inv.grandTotal ?? 0;
-  // A PAID invoice has collected its full total even if `amountPaid` was never
-  // backfilled on an older row; otherwise trust the tracked figure.
-  const paidAmount =
-    rawStatus === "PAID"
-      ? grandTotal
-      : Math.min(Math.max(0, inv.amountPaid ?? 0), grandTotal);
+  // Never invent collected money from a legacy status label.
+  const paidAmount = Math.min(Math.max(0, inv.amountPaid ?? 0), grandTotal);
   return {
     ...inv,
     _id: inv.id,
@@ -77,6 +79,9 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get("/invoices", async (req, reply) => {
     const scope = await clientScope(req, reply);
     if (scope === undefined) return;
+    // scope === null means internal staff, who otherwise see every client's
+    // invoices. Limit that to the finance-viewing roles, like the reports.
+    if (scope === null && !requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
 
     const q = req.query as Record<string, string>;
     const { page, limit, skip } = pageParams(q);
@@ -108,6 +113,9 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get("/invoices/:id", async (req, reply) => {
     const scope = await clientScope(req, reply);
     if (scope === undefined) return;
+    // scope === null means internal staff, who otherwise see every client's
+    // invoices. Limit that to the finance-viewing roles, like the reports.
+    if (scope === null && !requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
 
     const { id } = req.params as { id: string };
     const invoice = await prisma.invoice.findFirst({
@@ -127,6 +135,9 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get("/invoices/:id/pdf", async (req, reply) => {
     const scope = await clientScope(req, reply);
     if (scope === undefined) return;
+    // scope === null means internal staff, who otherwise see every client's
+    // invoices. Limit that to the finance-viewing roles, like the reports.
+    if (scope === null && !requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
 
     const { id } = req.params as { id: string };
     const invoice = await prisma.invoice.findFirst({
@@ -243,49 +254,21 @@ export async function financeRoutes(app: FastifyInstance) {
       amount != null
         ? Math.min(balance, Math.max(0, Math.round(Number(amount))))
         : balance;
-    const newPaid = Math.min(existingTotal, existingPaid + applied);
-    const fullyPaid = newPaid >= existingTotal;
-
-    // The invoice flip and the Payment row are one fact. Recorded separately,
-    // a failure between them left an invoice marked PAID with no payment
-    // behind it — the books disagreeing with themselves.
-    const { updated, fx } = await prisma.$transaction(async (tx) => {
-      const updated = await tx.invoice.update({
-        where: { id },
-        data: {
-          utr: String(utr).trim(),
-          amountPaid: newPaid,
-          status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
-          paidAt: fullyPaid
-            ? (existing.paidAt ?? (paidAt ? new Date(paidAt) : new Date()))
-            : null,
-        },
-      });
-
-      // Idempotent on `gatewayPaymentId`, so re-recording the same UTR is a
-      // no-op rather than a duplicate Payment row.
-      const fx = await recordInvoicePaymentRows(tx, updated, {
-        gateway: "BANK_TRANSFER",
-        gatewayPaymentId: `utr:${String(utr).trim()}`,
-        method: "bank_transfer",
-        amount: applied,
-      });
-
-      return { updated, fx };
+    const result = await settleInvoice(id, {
+      gateway: "BANK_TRANSFER",
+      gatewayPaymentId: "utr:" + String(utr).trim(),
+      method: "bank_transfer",
+      amount: applied,
     });
-
-    // After commit, never inside: a rolled-back transaction that had already
-    // enqueued would leave a worker acting on an invoice that is not paid.
-    await enqueuePaymentSideEffects(fx);
-
-    await emitEvent({
-      code: fullyPaid ? "INVOICE_PAID" : "INVOICE_PARTIALLY_PAID",
-      payload: { invoiceId: id, utr: String(utr).trim(), amount: applied },
-      actor: req.user!.sub,
-      engagementId: updated.engagementId ?? undefined,
-    });
-
-    return { data: serializeInvoice(updated) };
+    if (!result.replayed)
+      await emitEvent({
+        code:
+          result.invoice.status === "PAID" ? "INVOICE_PAID" : "INVOICE_PARTIALLY_PAID",
+        payload: { invoiceId: id, amount: applied },
+        actor: req.user!.sub,
+        engagementId: result.invoice.engagementId ?? undefined,
+      });
+    return { data: serializeInvoice(result.invoice) };
   });
 
   // PATCH /invoices/:id/status — admin-only workflow transition.
@@ -311,7 +294,14 @@ export async function financeRoutes(app: FastifyInstance) {
     const existing = await prisma.invoice.findUnique({ where: { id } });
     if (!existing) return reply.code(404).send({ error: "Invoice not found" });
 
-    const becomingPaid = normalized === "PAID" && existing.status !== "PAID";
+    if (
+      ["PAID", "PARTIALLY_PAID"].includes(normalized) ||
+      (Number(existing.amountPaid) > 0 && normalized !== existing.status)
+    )
+      return reply
+        .code(409)
+        .send({ error: "Use payment reconciliation to change a settled invoice" });
+    const becomingPaid = false;
 
     const { updated, fx } = await prisma.$transaction(async (tx) => {
       const updated = await tx.invoice.update({
@@ -327,6 +317,8 @@ export async function financeRoutes(app: FastifyInstance) {
         },
       });
 
+      if (normalized === "SENT" && existing.status !== "SENT")
+        await queueInvoiceEmail(tx, id, "issued", id);
       const fx = becomingPaid
         ? await recordInvoicePaymentRows(tx, updated, {
             gateway: "BANK_TRANSFER",
@@ -358,40 +350,15 @@ export async function financeRoutes(app: FastifyInstance) {
     capturedPaise: number,
     facts: Parameters<typeof recordInvoicePaymentRows>[2],
   ) {
-    const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
-    if (!invoice || invoice.status === "PAID" || invoice.status === "CANCELLED") return;
-
-    const captured = Math.max(0, Math.round(capturedPaise) || 0);
-    const grandTotal = Number(invoice.grandTotal);
-    const newPaid = Math.min(grandTotal, Number(invoice.amountPaid ?? 0) + captured);
-    const fullyPaid = newPaid >= grandTotal;
-
-    const { updated, fx } = await prisma.$transaction(async (tx) => {
-      const updated = await tx.invoice.update({
-        where: { id: invoice.id },
-        data: {
-          amountPaid: newPaid,
-          status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
-          paidAt: fullyPaid ? new Date() : null,
-        },
+    const result = await settleInvoice(invoiceId, { ...facts, amount: capturedPaise });
+    if (!result.replayed)
+      await emitEvent({
+        code:
+          result.invoice.status === "PAID" ? "INVOICE_PAID" : "INVOICE_PARTIALLY_PAID",
+        payload: { invoiceId, amount: capturedPaise },
+        actor: "SYSTEM",
+        engagementId: result.invoice.engagementId ?? undefined,
       });
-
-      const fx = await recordInvoicePaymentRows(tx, updated, {
-        ...facts,
-        amount: captured || undefined,
-      });
-
-      return { updated, fx };
-    });
-
-    await enqueuePaymentSideEffects(fx);
-
-    await emitEvent({
-      code: fullyPaid ? "INVOICE_PAID" : "INVOICE_PARTIALLY_PAID",
-      payload: { invoiceId: invoice.id, gateway: facts.gateway, amount: captured },
-      actor: "system",
-      engagementId: updated.engagementId ?? undefined,
-    });
   }
 
   // Razorpay webhook
@@ -427,6 +394,22 @@ export async function financeRoutes(app: FastifyInstance) {
 
     if (eventType === "payment.captured") {
       const rzpOrderId = entity.order_id;
+      if (
+        typeof rzpOrderId !== "string" ||
+        typeof entity.id !== "string" ||
+        entity.currency !== "INR" ||
+        entity.status !== "captured" ||
+        !Number.isSafeInteger(entity.amount) ||
+        entity.amount <= 0
+      )
+        return reply.code(400).send({ error: "Invalid capture" });
+      const quote = await prisma.quote.findFirst({
+        where: { razorpayOrderId: rzpOrderId },
+      });
+      if (quote) {
+        await settleQuote(quote.id, rzpOrderId, entity.id, entity.amount);
+        return { ok: true };
+      }
 
       const invoice = await prisma.invoice.findFirst({
         where: { razorpayOrderId: rzpOrderId },
@@ -444,7 +427,7 @@ export async function financeRoutes(app: FastifyInstance) {
       const order = await prisma.order.findFirst({
         where: { razorpayOrderId: rzpOrderId },
       });
-      if (order) {
+      if (order && !invoice) {
         // The order flip and the Payment row go together: an order marked PAID
         // with no payment behind it is the same books-disagree problem as the
         // invoice paths above.
@@ -634,30 +617,97 @@ export async function financeRoutes(app: FastifyInstance) {
           in: ["SENT", "VIEWED", "PARTIALLY_PAID", "PAID", "OVERDUE", "DISPUTED"],
         },
       },
-      include: { org: true },
+      include: {
+        org: true,
+        payments: { where: { status: "CAPTURED" }, select: { amount: true } },
+      },
     });
 
-    const rows = invoices.map((inv) => {
-      const gstin = (inv.org as any)?.gstin ?? "";
-      return {
-        invoiceId: inv.id,
-        invoiceDate: inv.createdAt.toISOString().slice(0, 10),
-        section: gstin ? "B2B" : "B2CS",
-        gstin,
-        counterparty: (inv.org as any)?.name ?? "",
-        sacCode: inv.sacCode,
-        gstRate: inv.gstRate ?? 18,
-        // legacy field names kept so the existing CSV export keeps working
-        subtotal: inv.subtotal,
-        taxableValue: inv.subtotal,
-        igst: inv.igst,
-        cgst: inv.cgst,
-        sgst: inv.sgst,
-        grandTotal: inv.grandTotal,
-        invoiceValue: inv.grandTotal,
-        paidAt: inv.paidAt,
-      };
-    });
+    /**
+     * Refuse to export an invoice that cannot be true.
+     *
+     * This endpoint is not a dashboard. Its output is shaped to be handed to
+     * an accountant and filed with the tax authority, and an incorrect GSTR-1
+     * carries penalties and interest.
+     *
+     * The export code itself is correct — it was the input that was not. Six
+     * production invoices are marked PAID with `amountPaid` 0 and no Payment
+     * row at all, carrying grand totals of 4 and 5. Asked for September 2026,
+     * this endpoint formatted all six into a plausible, well-formed, entirely
+     * wrong return, with real counterparty names against invented amounts and
+     * nothing in the output hinting at a problem.
+     *
+     * So the arithmetic is checked before the row is emitted rather than
+     * after. A suspect invoice is reported in `excluded` and left out of the
+     * filing sections — visible, and impossible to file by accident.
+     */
+    function rejectionReason(inv: (typeof invoices)[number]): string | null {
+      const subtotal = Number(inv.subtotal ?? 0);
+      const grand = Number(inv.grandTotal ?? 0);
+      const tax = Number(inv.cgst ?? 0) + Number(inv.sgst ?? 0) + Number(inv.igst ?? 0);
+
+      if (grand <= 0) return "grandTotal is zero or negative";
+
+      // Money is integer paise, so a real invoice cannot total under ₹1.
+      if (grand < 100) return `grandTotal ${grand} is under ₹1 — not a real amount`;
+
+      // The components must add up, or the return misstates taxable value.
+      if (subtotal + tax !== grand) {
+        return `subtotal ${subtotal} + tax ${tax} ≠ grandTotal ${grand}`;
+      }
+
+      // PAID with nothing collected is the signature of the non-transactional
+      // settlement bug, and catches all six of the corrupt production rows.
+      //
+      const captured = inv.payments.reduce(
+        (sum, payment) => sum + Number(payment.amount),
+        0,
+      );
+      if (
+        inv.status === "PAID" &&
+        (Number(inv.amountPaid ?? 0) < grand || captured < grand)
+      ) {
+        return "marked PAID without matching captured-payment evidence";
+      }
+
+      return null;
+    }
+
+    const excluded = invoices
+      .map((inv) => ({ invoiceId: inv.id, reason: rejectionReason(inv) }))
+      .filter((e): e is { invoiceId: string; reason: string } => e.reason !== null);
+
+    const excludedIds = new Set(excluded.map((e) => e.invoiceId));
+    const rows = invoices
+      .filter((inv) => !excludedIds.has(inv.id))
+      .map((inv) => {
+        const gstin = (inv.org as any)?.gstin ?? "";
+        return {
+          invoiceId: inv.id,
+          invoiceDate: inv.createdAt.toISOString().slice(0, 10),
+          section: gstin ? "B2B" : "B2CS",
+          gstin,
+          counterparty: (inv.org as any)?.name ?? "",
+          sacCode: inv.sacCode,
+          gstRate: inv.gstRate ?? 18,
+          // legacy field names kept so the existing CSV export keeps working
+          subtotal: inv.subtotal,
+          taxableValue: inv.subtotal,
+          igst: inv.igst,
+          cgst: inv.cgst,
+          sgst: inv.sgst,
+          grandTotal: inv.grandTotal,
+          invoiceValue: inv.grandTotal,
+          paidAt: inv.paidAt,
+        };
+      });
+
+    if (excluded.length) {
+      req.log.error(
+        { period: `${m}-${y}`, excluded },
+        "GSTR-1 export withheld invoices that failed their arithmetic",
+      );
+    }
 
     return {
       period: `${String(m).padStart(2, "0")}-${y}`,
@@ -665,6 +715,11 @@ export async function financeRoutes(app: FastifyInstance) {
       data: rows,
       b2b: rows.filter((r) => r.section === "B2B"),
       b2cs: rows.filter((r) => r.section === "B2CS"),
+      // Loud rather than silent. Whoever is about to file needs to know the
+      // period is incomplete and exactly which invoices to look at — a smaller
+      // return filed in ignorance is worse than a blocked one.
+      excluded,
+      complete: excluded.length === 0 && invoices.length < LIST_CAP,
     };
   });
 }

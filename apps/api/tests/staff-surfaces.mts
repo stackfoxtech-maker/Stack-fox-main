@@ -7,7 +7,7 @@
 import "../src/env";
 import { prisma } from "@stackfox/prisma";
 
-const BASE = "http://localhost:4000";
+const BASE = process.env.TEST_API_URL ?? "http://localhost:4000";
 
 async function login(email: string): Promise<string | undefined> {
   const r = await fetch(`${BASE}/auth/login`, {

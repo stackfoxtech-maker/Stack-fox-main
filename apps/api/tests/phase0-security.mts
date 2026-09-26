@@ -18,7 +18,7 @@ import { prisma } from "@stackfox/prisma";
 import { hashPassword } from "../src/lib/password";
 import { assertPublicHttpUrl } from "../src/lib/safeUrl";
 
-const BASE = "http://localhost:4000";
+const BASE = process.env.TEST_API_URL ?? "http://localhost:4000";
 const stamp = Date.now();
 
 type Result = { s: number; b: any };

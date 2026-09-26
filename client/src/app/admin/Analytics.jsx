@@ -8,6 +8,7 @@ import api from '@lib/api';
 export default function Analytics() {
   usePageTitle('Admin Analytics');
   const [revenue, setRevenue] = useState(null);
+  const [summary, setSummary] = useState(null);
   const [conversion, setConversion] = useState(null);
   const [services, setServices] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,6 +20,7 @@ export default function Analytics() {
     let cancelled = false;
 
     Promise.all([
+      api.get('/analytics/overview').catch(() => ({ data: null })),
       api.get('/analytics/revenue').catch((err) => {
         if (!cancelled)
           setErrors((p) => ({
@@ -44,11 +46,12 @@ export default function Analytics() {
         return { data: { data: [] } };
       }),
     ])
-      .then(([r, c, s]) => {
+      .then(([overview, r, c, s]) => {
         if (!cancelled) {
-          setRevenue(r.data.data);
-          setConversion(c.data.data);
-          setServices(s.data.data);
+          setSummary(overview.data?.data ?? overview.data);
+          setRevenue(r.data.data ?? r.data);
+          setConversion(c.data.data ?? c.data);
+          setServices(s.data.data ?? s.data);
         }
       })
       .finally(() => {
@@ -86,13 +89,13 @@ export default function Analytics() {
         <div className="bg-white rounded-2xl border border-warm-200 p-5">
           <div className="text-xs text-warm-500 mb-1">Total revenue</div>
           <div className="text-2xl font-bold font-mono text-warm-900">
-            {formatINR(revenue?.totalRevenue || 0)}
+            {summary ? formatINR(summary.totalRevenue) : 'Unavailable'}
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-warm-200 p-5">
           <div className="text-xs text-warm-500 mb-1">Pending amount</div>
           <div className="text-2xl font-bold font-mono text-warning-500">
-            {formatINR(revenue?.pendingAmount || 0)}
+            {summary ? formatINR(summary.pendingAmount) : 'Unavailable'}
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-warm-200 p-5">

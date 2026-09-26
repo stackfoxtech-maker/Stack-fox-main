@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FolderKanban, ArrowLeft, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, formatDate, capitalize, cn, getStatusBadge } from '@lib/utils';
+import { formatPaise, formatDate, capitalize, cn, getStatusBadge } from '@lib/utils';
 import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
 
@@ -82,9 +82,14 @@ function ProjectDetail({ id }) {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total', value: formatINR(project.engagement?.commercial?.total || 0) },
-          { label: 'Paid', value: formatINR(project.engagement?.commercial?.total || 0) },
-          { label: 'Balance', value: formatINR(0) },
+          // engagement.commercial is written by provisionQuote() from the raw
+          // (paise) quote row and nothing converts it before it reaches here —
+          // formatPaise, not formatINR. "Paid" mirroring "Total" and "Balance"
+          // being hardcoded 0 are pre-existing, unrelated to the unit and left
+          // as-is; both still need the same conversion once real data flows.
+          { label: 'Total', value: formatPaise(project.engagement?.commercial?.total || 0) },
+          { label: 'Paid', value: formatPaise(project.engagement?.commercial?.total || 0) },
+          { label: 'Balance', value: formatPaise(0) },
           { label: 'Start', value: formatDate(project.createdAt) },
         ].map((s, i) => (
           <div key={i} className="bg-warm-50 rounded-xl p-4">

@@ -2,6 +2,15 @@ import { randomBytes, scrypt as _scrypt } from "crypto";
 import { promisify } from "util";
 import type { Prisma, PrismaClient } from "@prisma/client";
 
+export function requireLocalSeedDatabase() {
+  const url = new URL(process.env.DATABASE_URL ?? "");
+  if (!["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname)) {
+    throw new Error(
+      "Seed scripts require a local database; use a reviewed production data migration for remote databases",
+    );
+  }
+}
+
 /**
  * Safe primitives for the seed scripts.
  *

@@ -8,7 +8,7 @@ import { prisma } from "@stackfox/prisma";
 import * as ids from "../src/lib/id";
 import { encryptSecret } from "../src/lib/crypto";
 
-const BASE = "http://localhost:4000";
+const BASE = process.env.TEST_API_URL ?? "http://localhost:4000";
 const stamp = Date.now();
 const email = `kit-${stamp}@example.com`;
 
@@ -66,7 +66,7 @@ for (const n of [1, 2]) {
     },
   });
 }
-await prisma.invoice.create({
+const paidInvoice = await prisma.invoice.create({
   data: {
     id: ids.invoiceId(),
     engagementId: eng.id,
@@ -76,9 +76,24 @@ await prisma.invoice.create({
     subtotal: 5000000,
     igst: 900000,
     grandTotal: 5900000,
-    status: "PAID",
+    status: "SENT",
     paidAt: past,
   },
+});
+await prisma.$transaction(async (tx) => {
+  await tx.payment.create({
+    data: {
+      invoiceId: paidInvoice.id,
+      gateway: "BANK_TRANSFER",
+      gatewayPaymentId: paidInvoice.id,
+      amount: 5900000,
+      status: "CAPTURED",
+    },
+  });
+  await tx.invoice.update({
+    where: { id: paidInvoice.id },
+    data: { status: "PAID", amountPaid: 5900000 },
+  });
 });
 await prisma.file.create({
   data: {

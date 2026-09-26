@@ -1,5 +1,5 @@
 import { createWorker, QUEUE } from "../lib/queue";
-import { prisma } from "@stackfox/prisma";
+import { reconcileInvoiceRevenue } from "../lib/revenue";
 
 interface RevRecJob {
   invoiceId?: string;
@@ -9,24 +9,7 @@ interface RevRecJob {
 }
 
 createWorker<RevRecJob>(QUEUE.revRec, async (job) => {
-  const { invoiceId, amount, engagementId, milestoneRef } = job.data;
-
-  await prisma.revrecLedger.create({
-    data: {
-      engagementId,
-      invoiceId,
-      // `recognised` is the ledger's canonical column; `amount` mirrors it so
-      // reporting queries can read one field name across both ledgers.
-      recognised: amount,
-      amount,
-      period: currentPeriod(),
-      type: "RECOGNIZED",
-      description: `Revenue recognized for ${milestoneRef ?? invoiceId ?? engagementId}`,
-    },
-  });
+  if (!job.data.invoiceId)
+    throw new Error("Revenue recognition requires invoice payment evidence");
+  await reconcileInvoiceRevenue(job.data.invoiceId);
 });
-
-function currentPeriod(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}

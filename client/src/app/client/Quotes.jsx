@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FileText, Download, Clock, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize, getStatusBadge } from '@lib/utils';
+import { quoteForDisplay } from '@lib/quoteMoney';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
 // Lazy — keeps jsPDF out of the dashboard bundle (PERF_AUDIT P0-3).
 const exportQuotePDF = (...args) => import('@lib/pdfExport').then((m) => m.exportQuotePDF(...args));
@@ -36,7 +37,11 @@ export default function Quotes() {
   useEffect(() => {
     api
       .get('/quotes')
-      .then((r) => setQuotes(r.data.data || []))
+      // Same conversion as Checkout.jsx: the API returns quotes tagged
+      // moneyUnit: "PAISE", and every render below (list total, line items,
+      // subtotal, GST, the PDF export) reads the field directly through
+      // formatINR() expecting rupees.
+      .then((r) => setQuotes((r.data.data || []).map(quoteForDisplay)))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

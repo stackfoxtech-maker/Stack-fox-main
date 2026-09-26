@@ -16,6 +16,7 @@
     "db:deploy": "pnpm --filter @stackfox/prisma db:deploy",
     "db:seed": "turbo db:seed",
     "check:contract": "node scripts/check-api-contract.mjs",
+    "check:auth": "node scripts/check-auth-coverage.mjs",
     "clean": "turbo clean",
     "format": "prettier --write .",
     "lint:fix": "eslint . --fix",

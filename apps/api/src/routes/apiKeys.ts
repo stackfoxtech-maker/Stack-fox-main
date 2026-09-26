@@ -61,12 +61,50 @@ export async function apiKeyRoutes(app: FastifyInstance) {
     return ORG_MANAGER_ROLES.includes(caller.role) ? caller.orgId : null;
   }
 
+  /**
+   * Same resolution, but answers the caller correctly when it fails.
+   *
+   * Two unrelated failures used to collapse into one 403. Internal staff are
+   * deliberately not org-scoped, so an admin's own `orgId` is null — and
+   * calling this without `?orgId=` therefore produced "Insufficient
+   * permissions". That reads as *you may not do this* when the truth is
+   * *say which organisation*.
+   *
+   * It is a plausible reason no API key has ever been issued: the only person
+   * who could issue one was told they lacked the access to. An endpoint that
+   * reports a missing argument as a permissions failure sends whoever hits it
+   * looking in entirely the wrong place.
+   *
+   * Returns the org id, or null after sending the response.
+   */
+  function targetOrgOrReply(
+    req: Parameters<typeof requireAuth>[0],
+    reply: Parameters<typeof requireAuth>[1],
+    queryOrgId?: string,
+  ): string | null {
+    const caller = req.user!;
+    const orgId = targetOrg(req, queryOrgId);
+    if (orgId) return orgId;
+
+    // Permitted, but did not say which org — that is a bad request, not a
+    // refusal. Only reachable for internal staff, who have no org of their own.
+    if (isInternalRole(caller.role)) {
+      reply.code(400).send({
+        error: "Specify which organisation with ?orgId=",
+      });
+      return null;
+    }
+
+    reply.code(403).send({ error: "Insufficient permissions" });
+    return null;
+  }
+
   app.get("/api-keys", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const { orgId: queryOrgId } = req.query as { orgId?: string };
 
-    const orgId = targetOrg(req, queryOrgId);
-    if (!orgId) return reply.code(403).send({ error: "Insufficient permissions" });
+    const orgId = targetOrgOrReply(req, reply, queryOrgId);
+    if (!orgId) return;
 
     return prisma.apiKey.findMany({
       where: { orgId },
@@ -80,8 +118,8 @@ export async function apiKeyRoutes(app: FastifyInstance) {
     if (!requireAuth(req, reply)) return;
     const { orgId: queryOrgId } = req.query as { orgId?: string };
 
-    const orgId = targetOrg(req, queryOrgId);
-    if (!orgId) return reply.code(403).send({ error: "Insufficient permissions" });
+    const orgId = targetOrgOrReply(req, reply, queryOrgId);
+    if (!orgId) return;
 
     const body = parseBody(req, reply, CreateApiKeySchema);
     if (!body) return;

@@ -18,7 +18,7 @@ import { fileURLToPath } from "url";
 // This file is an ES module, so __dirname is not defined.
 const here = dirname(fileURLToPath(import.meta.url));
 
-const BASE = "http://localhost:4000";
+const BASE = process.env.TEST_API_URL ?? "http://localhost:4000";
 const stamp = Date.now();
 
 const catalogue = JSON.parse(

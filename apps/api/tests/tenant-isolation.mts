@@ -12,7 +12,7 @@ import "../src/env";
 import { prisma } from "@stackfox/prisma";
 import * as ids from "../src/lib/id";
 
-const BASE = "http://localhost:4000";
+const BASE = process.env.TEST_API_URL ?? "http://localhost:4000";
 const stamp = Date.now();
 
 async function makeClient(tag: string) {

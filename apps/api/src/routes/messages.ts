@@ -4,10 +4,14 @@ import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { isInternalRole } from "@stackfox/core";
 import { toJson } from "../lib/json";
-import { resolveOrgId } from "../lib/scope";
+import { clientScope, resolveOrgId } from "../lib/scope";
 import { LIST_CAP } from "../lib/http";
 import { parseBody } from "../lib/validate";
-import { SendMessageSchema, StartConversationSchema } from "./opsSchemas";
+import {
+  SendMessageSchema,
+  StartConversationSchema,
+  StartTeamConversationSchema,
+} from "./opsSchemas";
 
 /**
  * Client <-> StackFox messaging.
@@ -35,6 +39,27 @@ type Receipts = Record<string, string>;
 
 function readReceiptsOf(convo: { readReceipts: unknown }): Receipts {
   return (convo.readReceipts as Receipts | null) ?? {};
+}
+
+async function findOrCreateDirect(
+  me: string,
+  otherId: string,
+  title?: string,
+  projectId?: string,
+) {
+  const existing = await prisma.conversation.findFirst({
+    where: { participantIds: { hasEvery: [me, otherId] } },
+  });
+  if (existing) return { ...existing, _id: existing.id };
+  const convo = await prisma.conversation.create({
+    data: {
+      title,
+      projectId: projectId ?? null,
+      participantIds: [me, otherId],
+      lastMessageAt: new Date(),
+    },
+  });
+  return { ...convo, _id: convo.id };
 }
 
 export async function messageRoutes(app: FastifyInstance) {
@@ -111,20 +136,68 @@ export async function messageRoutes(app: FastifyInstance) {
       }
     }
 
-    const existing = await prisma.conversation.findFirst({
-      where: { participantIds: { hasEvery: [me, userId] } },
-    });
-    if (existing) return { data: { ...existing, _id: existing.id } };
+    return { data: await findOrCreateDirect(me, userId, title, projectId) };
+  });
 
-    const convo = await prisma.conversation.create({
-      data: {
-        title,
-        projectId: projectId ?? null,
-        participantIds: [me, userId],
-        lastMessageAt: new Date(),
+  // A client cannot see the staff directory, so it cannot choose a recipient.
+  // This starts a conversation with the person who owns the project: its PM,
+  // or an administrator when none is assigned. Staff callers should use
+  // /messages/start with a chosen user instead.
+  app.post("/messages/start-team", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    if (isInternalRole(req.user!.role)) {
+      return reply
+        .code(400)
+        .send({ message: "Staff choose a recipient with /messages/start." });
+    }
+    const body = parseBody(req, reply, StartTeamConversationSchema);
+    if (!body) return;
+    const scope = await clientScope(req, reply);
+    if (scope === undefined) return;
+
+    // The client's own projects only; the newest one when none is named.
+    const project = await prisma.project.findFirst({
+      where: {
+        ...(body.projectId ? { id: body.projectId } : {}),
+        engagement: { clientId: scope as string },
       },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true, pmUserId: true },
     });
-    return { data: { ...convo, _id: convo.id } };
+    if (body.projectId && !project) {
+      return reply.code(404).send({ message: "Project not found" });
+    }
+
+    let recipientId: string | null = null;
+    if (project?.pmUserId) {
+      const pm = await prisma.user.findUnique({
+        where: { id: project.pmUserId },
+        select: { id: true, isActive: true, role: true },
+      });
+      if (pm?.isActive && isInternalRole(pm.role)) recipientId = pm.id;
+    }
+    if (!recipientId) {
+      const admin = await prisma.user.findFirst({
+        where: { role: "ADMIN", isActive: true },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      });
+      recipientId = admin?.id ?? null;
+    }
+    if (!recipientId) {
+      return reply
+        .code(503)
+        .send({ message: "No one is available to message right now." });
+    }
+
+    return {
+      data: await findOrCreateDirect(
+        req.user!.sub,
+        recipientId,
+        project ? `Your project: ${project.name}` : "Message your StackFox team",
+        project?.id,
+      ),
+    };
   });
 
   // Messages within a conversation. Opening it marks it read for this user.

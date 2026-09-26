@@ -31,7 +31,7 @@ export interface CheckoutSession {
   resultOrderId?: string;
 }
 
-function fromRow(row: {
+export function checkoutSessionFromRow(row: {
   estimateId: string;
   tier: string;
   step: number;
@@ -91,15 +91,20 @@ export async function readSession(sid: string): Promise<CheckoutSession | null> 
   if (!row) return null;
   if (row.expiresAt < new Date()) return null;
 
-  const session = fromRow(row);
+  const session = checkoutSessionFromRow(row);
   await cacheWrite(sid, session);
   return session;
 }
 
 export async function writeSession(sid: string, session: CheckoutSession): Promise<void> {
   const { estimateId, tier, step, razorpayOrderId, data } = splitForRow(session);
-  await prisma.checkoutSession.update({
-    where: { id: sid },
+  const updated = await prisma.checkoutSession.updateMany({
+    where: {
+      id: sid,
+      consumedAt: null,
+      razorpayOrderId: null,
+      expiresAt: { gt: new Date() },
+    },
     data: {
       estimateId,
       tier,
@@ -109,7 +114,12 @@ export async function writeSession(sid: string, session: CheckoutSession): Promi
       expiresAt: new Date(Date.now() + TTL_SEC * 1000),
     },
   });
-  await cacheWrite(sid, session);
+  if (updated.count !== 1)
+    throw Object.assign(new Error("Checkout is expired or locked to its payment order"), {
+      statusCode: 409,
+    });
+  // Never publish a stale snapshot after a concurrent payment initiation.
+  await invalidateSession(sid);
 }
 
 async function cacheWrite(sid: string, session: CheckoutSession): Promise<void> {

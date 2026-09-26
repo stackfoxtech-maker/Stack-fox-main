@@ -29,8 +29,20 @@ export const QuoteFromCartSchema = strictObject({
 });
 
 export const UpdateQuoteSchema = strictObject({
-  // Free-form checkout answers written to a Json column.
-  checkoutDetails: z.record(z.string().max(120), z.unknown()).optional(),
+  // Customer answers only. Payment state is owned exclusively by settlement.
+  checkoutDetails: strictObject({
+    account: z.record(z.string().max(120), z.unknown()).optional(),
+    project: z.record(z.string().max(120), z.unknown()).optional(),
+    paymentMode: z.enum(["UPFRONT", "MILESTONE", "FULL"]).optional(),
+    engagementModel: z.string().max(40).optional(),
+    docsAccepted: z.boolean().optional(),
+    step: z.number().int().min(0).max(20).optional(),
+    contractSigned: z.boolean().optional(),
+    signatureName: z.string().trim().min(3).max(200).optional(),
+    signedAt: z.string().datetime().optional(),
+    contractTypes: z.array(z.string().max(40)).max(20).optional(),
+    clauseSelections: z.record(z.string().max(120), z.unknown()).optional(),
+  }).optional(),
   tier: z.enum(["STARTER", "GROWTH", "PREMIUM"]).optional(),
 }).refine((b) => Object.keys(b).length > 0, {
   message: "Provide checkoutDetails or tier",

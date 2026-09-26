@@ -36,7 +36,19 @@ export async function projectRoutes(app: FastifyInstance) {
     const [items, total] = await Promise.all([
       prisma.project.findMany({
         where,
-        include: { milestones: { orderBy: { number: "asc" } }, service: true },
+        include: {
+          milestones: { orderBy: { number: "asc" } },
+          service: true,
+          // Team > Clients groups projects by client; without this every
+          // project landed under "Unknown Client".
+          engagement: {
+            select: {
+              id: true,
+              clientId: true,
+              client: { select: { id: true, name: true } },
+            },
+          },
+        },
         skip,
         take: l,
         orderBy: { createdAt: "desc" },

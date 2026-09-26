@@ -1,10 +1,17 @@
+import { queueInvoiceEmail } from "../lib/businessMail";
+import { isDeepStrictEqual } from "node:util";
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { estimateInputHash } from "../lib/hash";
-import { createRazorpayOrder, verifyRazorpaySignature } from "../lib/payments";
-import { recordInvoicePayment } from "../lib/billing";
+import {
+  createRazorpayOrder,
+  verifyRazorpaySignature,
+  fetchCapturedPayment,
+  assertPaymentInitiationEnabled,
+} from "../lib/payments";
+import { recordInvoicePaymentRows, enqueuePaymentSideEffects } from "../lib/billing";
 import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import { cache } from "../lib/redis";
@@ -14,6 +21,7 @@ import {
   readSession,
   writeSession,
   invalidateSession,
+  checkoutSessionFromRow,
 } from "../lib/checkoutSession";
 import { toJson } from "../lib/json";
 import { resolveGstType, splitGst } from "../lib/gst";
@@ -24,13 +32,29 @@ import {
 } from "@stackfox/core";
 import { parseBody } from "../lib/validate";
 import { StartCheckoutSchema, CompleteCheckoutSchema } from "./moneySchemas";
-import {
-  CheckoutSignSchema,
-  CheckoutStepSchema,
-  ExpressCheckoutSchema,
-} from "./opsSchemas";
+import { CheckoutSignSchema, CheckoutStepSchema } from "./opsSchemas";
 
 export async function checkoutRoutes(app: FastifyInstance) {
+  app.addHook("preHandler", async (req, reply) => {
+    if (req.method === "POST" && req.url.endsWith("/complete")) {
+      if (!parseBody(req, reply, CompleteCheckoutSchema)) return;
+    }
+    const sid = (req.params as { sid?: string }).sid;
+    if (!sid) return;
+    const row = await prisma.checkoutSession.findUnique({ where: { id: sid } });
+    if (!row) return reply.code(404).send({ error: "Session not found" });
+    const estimate = await prisma.estimate.findUnique({
+      where: { id: row.estimateId },
+      include: { workspace: true },
+    });
+    const owner = row.userId ?? estimate?.workspace.userId;
+    if (owner && owner !== req.user?.sub)
+      return reply.code(404).send({ error: "Session not found" });
+    if (row.consumedAt && req.method !== "GET" && !req.url.endsWith("/complete"))
+      return reply.code(409).send({ error: "Checkout already completed" });
+    if (row.razorpayOrderId && req.method === "PATCH")
+      return reply.code(409).send({ error: "Checkout is locked to its payment order" });
+  });
   // POST /checkout/start — hash guard G-039
   app.post("/checkout/start", async (req, reply) => {
     const started = parseBody(req, reply, StartCheckoutSchema);
@@ -40,7 +64,11 @@ export async function checkoutRoutes(app: FastifyInstance) {
       where: { id: estimateId },
       include: { workspace: { include: { customLineItems: true } } },
     });
-    if (!estimate) return reply.code(404).send({ error: "Estimate not found" });
+    if (
+      !estimate ||
+      (estimate.workspace.userId && estimate.workspace.userId !== req.user?.sub)
+    )
+      return reply.code(404).send({ error: "Estimate not found" });
 
     if (estimate.status !== "ACTIVE") {
       return reply.code(409).send({ error: "Estimate is no longer active" });
@@ -197,25 +225,49 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
   // POST /checkout/:sid/pay — create Razorpay order
   app.post("/checkout/:sid/pay", async (req, reply) => {
+    assertPaymentInitiationEnabled();
     const { sid } = req.params as { sid: string };
-    const session = await readSession(sid);
-    if (!session) return reply.code(404).send({ error: "Session expired" });
-    const totals = await getEstimateTotals(session.estimateId);
-    if (!totals) return reply.code(500).send({ error: "Cannot read estimate totals" });
+    const result = await prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM checkout_sessions WHERE id = ${sid} FOR UPDATE`;
+        const row = await tx.checkoutSession.findUnique({ where: { id: sid } });
+        if (!row || row.expiresAt <= new Date())
+          throw Object.assign(new Error("Session expired"), { statusCode: 404 });
+        if (row.consumedAt)
+          throw Object.assign(new Error("Checkout already completed"), {
+            statusCode: 409,
+          });
+        const session = checkoutSessionFromRow(row);
+        const totals = await getEstimateTotals(session.estimateId);
+        if (!totals) throw new Error("Cannot read estimate totals");
 
-    const paymentMode = (session.paymentTerms as any)?.mode ?? "MILESTONE";
-    const amount = paymentModeAmount(totals.grand, paymentMode);
+        const paymentMode = (session.paymentTerms as any)?.mode ?? "MILESTONE";
+        const amount = paymentModeAmount(totals.grand, paymentMode);
 
-    const order = await createRazorpayOrder(amount, "INR", `ckout_${sid}`);
-    session.razorpayOrderId = order.id;
-    await writeSession(sid, session);
+        if (session.razorpayOrderId)
+          return {
+            razorpayOrderId: session.razorpayOrderId,
+            amount,
+            currency: "INR",
+            keyId: process.env.RAZORPAY_KEY_ID,
+          };
+        const order = await createRazorpayOrder(amount, "INR", sid.slice(0, 40));
+        await tx.checkoutSession.update({
+          where: { id: sid },
+          data: { razorpayOrderId: order.id },
+        });
 
-    return {
-      razorpayOrderId: order.id,
-      amount,
-      currency: "INR",
-      keyId: process.env.RAZORPAY_KEY_ID,
-    };
+        return {
+          razorpayOrderId: order.id,
+          amount,
+          currency: "INR",
+          keyId: process.env.RAZORPAY_KEY_ID,
+        };
+      },
+      { timeout: 30_000 },
+    );
+    await invalidateSession(sid);
+    return result;
   });
 
   // POST /checkout/:sid/complete — create order + engagement + projects + contracts
@@ -299,6 +351,10 @@ export async function checkoutRoutes(app: FastifyInstance) {
       const hasHandshake = Boolean(pay.razorpay_payment_id && pay.razorpay_signature);
       const rzpOrderId = pay.razorpay_order_id ?? session.razorpayOrderId;
       if (hasHandshake) {
+        if (!session.razorpayOrderId || rzpOrderId !== session.razorpayOrderId)
+          return reply
+            .code(400)
+            .send({ error: "Payment order does not belong to checkout" });
         const valid =
           !!rzpOrderId &&
           verifyRazorpaySignature(
@@ -311,8 +367,46 @@ export async function checkoutRoutes(app: FastifyInstance) {
         }
       }
 
+      if (hasHandshake) {
+        const captured = await fetchCapturedPayment(
+          pay.razorpay_payment_id!,
+          rzpOrderId!,
+        );
+        if (captured.amount !== invoiceAmount)
+          return reply.code(400).send({ error: "Captured amount differs from checkout" });
+      }
       const result = await prisma.$transaction(
         async (tx) => {
+          await tx.$queryRaw`SELECT id FROM checkout_sessions WHERE id = ${sid} FOR UPDATE`;
+          const durable = await tx.checkoutSession.findUniqueOrThrow({
+            where: { id: sid },
+          });
+          if (durable.consumedAt)
+            throw Object.assign(
+              new Error("Checkout already completed; reload its status"),
+              { statusCode: 409 },
+            );
+          const current = checkoutSessionFromRow(durable);
+          const commitmentFields = [
+            "estimateId",
+            "tier",
+            "accountDetails",
+            "engagementDetails",
+            "paymentTerms",
+            "clauseSelections",
+            "signed",
+            "razorpayOrderId",
+          ] as const;
+          if (
+            commitmentFields.some(
+              (field) => !isDeepStrictEqual(current[field], session[field]),
+            )
+          ) {
+            throw Object.assign(
+              new Error("Checkout changed while completing; reload its status"),
+              { statusCode: 409 },
+            );
+          }
           const engagement = await tx.engagement.create({
             data: {
               id: engId,
@@ -338,6 +432,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
               tier: session.tier,
               referralCode: payload.referralCode,
               status: "ACCEPTED",
+              razorpayOrderId: session.razorpayOrderId,
             },
           });
 
@@ -428,7 +523,16 @@ export async function checkoutRoutes(app: FastifyInstance) {
             data: { consumedAt: new Date(), resultOrderId: ordId },
           });
 
-          return { order, engagement, projects, contracts, invoice };
+          await queueInvoiceEmail(tx, invoice.id, "issued", invoice.id);
+          const fx = hasHandshake
+            ? await recordInvoicePaymentRows(tx, invoice, {
+                gateway: "RAZORPAY",
+                gatewayPaymentId: pay.razorpay_payment_id!,
+                gatewayOrderId: rzpOrderId,
+                amount: invoiceAmount,
+              })
+            : null;
+          return { order, engagement, projects, contracts, invoice, fx };
         },
         { timeout: 30_000, maxWait: 10_000 },
       );
@@ -437,11 +541,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
       await invalidateSession(sid);
 
       if (hasHandshake) {
-        await recordInvoicePayment(result.invoice, {
-          gateway: "RAZORPAY",
-          gatewayPaymentId: pay.razorpay_payment_id!,
-          gatewayOrderId: rzpOrderId,
-        });
+        if (result.fx) await enqueuePaymentSideEffects(result.fx);
         await emitEvent({
           code: "INVOICE_PAID",
           payload: {
@@ -504,7 +604,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
           .catch(() => {});
       }
 
-      const { contracts: _contracts, ...response } = result;
+      const { contracts: _contracts, fx: _fx, ...response } = result;
       return response;
     } finally {
       await cache.unlock(lockKey);
@@ -513,6 +613,10 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
   // POST /checkout/express — Starter tier 3-field checkout
   app.post("/checkout/express", async (req, reply) => {
+    return reply.code(503).send({
+      error: "Express checkout is temporarily unavailable. Please use cart checkout.",
+    });
+    /*
     const expBody = parseBody(req, reply, ExpressCheckoutSchema);
     if (!expBody) return;
     const { name, phone, email, packageId, addOns } = expBody;
@@ -553,6 +657,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
       keyId: process.env.RAZORPAY_KEY_ID,
       userId: user.id,
     };
+    */
   });
 }
 

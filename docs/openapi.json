@@ -2553,6 +2553,17 @@
         ],
         "additionalProperties": false
       },
+      "StartTeamConversationSchema": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateEngagementStatusSchema": {
         "type": "object",
         "properties": {
@@ -2710,7 +2721,61 @@
         "properties": {
           "checkoutDetails": {
             "type": "object",
-            "additionalProperties": {}
+            "properties": {
+              "account": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "project": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "paymentMode": {
+                "type": "string",
+                "enum": [
+                  "UPFRONT",
+                  "MILESTONE",
+                  "FULL"
+                ]
+              },
+              "engagementModel": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "docsAccepted": {
+                "type": "boolean"
+              },
+              "step": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 20
+              },
+              "contractSigned": {
+                "type": "boolean"
+              },
+              "signatureName": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 200
+              },
+              "signedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "contractTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                "maxItems": 20
+              },
+              "clauseSelections": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "additionalProperties": false
           },
           "tier": {
             "type": "string",
@@ -7996,6 +8061,31 @@
     "/messages/start": {
       "post": {
         "summary": "POST /messages/start",
+        "tags": [
+          "messages"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
+    "/messages/start-team": {
+      "post": {
+        "summary": "POST /messages/start-team",
         "tags": [
           "messages"
         ],
