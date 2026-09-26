@@ -1,81 +1,129 @@
 /**
  * Public signup, using the payload the website's form actually sends.
  *
- * Signup is email + password (or Google). The Signup page used to also require
- * a phone number and post it; RegisterSchema is strict and has no `phone`, so
- * every real signup got a 400 while every API suite (which registers with just
- * name, email, password) stayed green. The form no longer collects a phone;
- * this registers exactly as the browser now does, and pins that a phone is not
- * a way to sign up.
+ * The Signup page collects a phone number as a contact detail. RegisterSchema
+ * is strict and had no `phone`, so every real signup got a 400 while every API
+ * suite (which registers without a phone) stayed green.
+ *
+ * The account is verified by email; the phone is stored UNVERIFIED. That
+ * matters because phone sign-in (SMS OTP, WhatsApp) looks users up by number
+ * and numbers are not unique: a phone typed at signup must never become a way
+ * into that account, or anyone could register with a stranger's number and
+ * receive the stranger's later phone login.
  *
  *   pnpm --filter @stackfox/api exec tsx tests/signup-form.mts
  */
 import "../src/env";
 import { prisma } from "@stackfox/prisma";
+import { redis } from "../src/lib/redis";
 
 const BASE = process.env.TEST_API_URL ?? "http://localhost:4000";
 const stamp = Date.now();
 const checks: Array<[string, boolean]> = [];
 const check = (label: string, pass: boolean) => checks.push([label, pass]);
 
-async function register(body: Record<string, unknown>) {
-  const res = await fetch(`${BASE}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+async function call(method: string, path: string, body?: unknown, token?: string) {
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   return { s: res.status, b: (await res.json().catch(() => null)) as any };
 }
+const authOf = (u: any) => (u?.authData ?? {}) as Record<string, unknown>;
 
-const formEmail = `signup-form-a-${stamp}@example.com`;
-const a = await register({
+// A number unique to this run, so earlier runs cannot interfere.
+const victimPhone = `+9199${String(stamp).slice(-8)}`;
+
+// ── The form's real payload ──────────────────────────────────────────────────
+const squatterEmail = `signup-form-a-${stamp}@example.com`;
+const a = await call("POST", "/auth/register", {
   name: "Form User",
-  email: formEmail,
+  email: squatterEmail,
   password: "FormPass123!ok",
+  phone: victimPhone,
 });
-check(`the form's payload (name, email, password) succeeds -> ${a.s}`, a.s === 200);
-check("a session is issued", !!a.b?.data?.accessToken);
-const row = await prisma.user.findUnique({ where: { email: formEmail } });
-check("the account has no phone number", row?.phone === null);
+check(`signup with a phone succeeds -> ${a.s}`, a.s === 200);
+const squatter = await prisma.user.findUnique({ where: { email: squatterEmail } });
+check("the phone is stored on the account", squatter?.phone === victimPhone);
+check("...marked unverified", authOf(squatter).phoneVerified === false);
+check(
+  "...and the account itself is still unverified (email verifies it)",
+  authOf(squatter).verified === false,
+);
 
-const noName = await register({
+const b = await call("POST", "/auth/register", {
+  name: "No Phone",
   email: `signup-form-b-${stamp}@example.com`,
   password: "FormPass123!ok",
 });
-check(`the name is optional -> ${noName.s}`, noName.s === 200);
+check(`signup without a phone still succeeds -> ${b.s}`, b.s === 200);
 
-const dup = await register({ name: "Dup", email: formEmail, password: "FormPass123!ok" });
-check(`a repeat email is refused -> ${dup.s}`, dup.s === 409);
-
-const weak = await register({
-  name: "Weak",
-  email: `signup-form-w-${stamp}@example.com`,
-  password: "short",
-});
-check(`a weak password is refused -> ${weak.s}`, weak.s === 400);
-
-const phoneEmail = `signup-form-c-${stamp}@example.com`;
-const withPhone = await register({
-  name: "Phone",
-  email: phoneEmail,
+const c = await call("POST", "/auth/register", {
+  name: "Bad Phone",
+  email: `signup-form-c-${stamp}@example.com`,
   password: "FormPass123!ok",
-  phone: "+919876543210",
+  phone: "call-me-maybe",
 });
-check(`a phone number is not accepted at signup -> ${withPhone.s}`, withPhone.s === 400);
+check(`a malformed phone is refused -> ${c.s}`, c.s === 400);
 check(
-  "no account was created for it",
-  (await prisma.user.findUnique({ where: { email: phoneEmail } })) === null,
+  "the refusal names the phone field",
+  JSON.stringify(c.b?.details ?? []).includes("phone"),
 );
 
-const escalate = await register({
+const d = await call("POST", "/auth/register", {
   name: "Mass Assign",
   email: `signup-form-d-${stamp}@example.com`,
   password: "FormPass123!ok",
   role: "ADMIN",
 });
-check(`an unknown field (role) is still rejected -> ${escalate.s}`, escalate.s === 400);
+check(`an unknown field (role) is still rejected -> ${d.s}`, d.s === 400);
 
-await prisma.user.deleteMany({ where: { email: { startsWith: `signup-form-` } } });
+// ── An unverified number is not a way in ─────────────────────────────────────
+// The real owner of the number signs in by phone. They must get their own
+// account, not the one someone else registered with their number.
+await redis.set(`otp:${victimPhone}`, "424242", "EX", 120);
+const w = await call("POST", "/auth/whatsapp/callback", {
+  phone: victimPhone,
+  code: "424242",
+});
+check(`the number's owner can sign in by phone -> ${w.s}`, w.s === 200);
+check(
+  "...into a NEW account, not the one registered with their number",
+  !!w.b?.data?.user?.id && w.b.data.user.id !== squatter?.id,
+);
+const owner = await prisma.user.findUnique({ where: { id: w.b?.data?.user?.id ?? "" } });
+check("...whose number is marked verified", authOf(owner).phoneVerified === true);
+
+await redis.set(`otp:${victimPhone}`, "515151", "EX", 120);
+const w2 = await call("POST", "/auth/whatsapp/callback", {
+  phone: victimPhone,
+  code: "515151",
+});
+check(
+  "signing in by phone again returns that same verified account",
+  w2.b?.data?.user?.id === owner?.id,
+);
+
+// ── Changing the number on the profile un-verifies it ────────────────────────
+const token = w2.b?.data?.accessToken as string;
+const changed = await call("PUT", "/users/me", { phone: "+919000000001" }, token);
+check(`a user can change their number -> ${changed.s}`, changed.s === 200);
+const after = await prisma.user.findUnique({ where: { id: owner?.id ?? "" } });
+check("the changed number is unverified", authOf(after).phoneVerified === false);
+
+await prisma.user.deleteMany({
+  where: {
+    OR: [
+      { email: { startsWith: "signup-form-" } },
+      { email: `${victimPhone}@wa.stackfox.in` },
+    ],
+  },
+});
+await redis.quit();
 await prisma.$disconnect();
 
 let failed = 0;

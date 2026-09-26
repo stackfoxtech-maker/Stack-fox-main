@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users as UsersIcon, Plus, Search, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePageTitle, useDebounce } from '@lib/hooks';
-import { formatDate, capitalize, cn } from '@lib/utils';
+import { formatDate, cn } from '@lib/utils';
 import {
   Spinner,
   Badge,
@@ -14,6 +14,36 @@ import {
 } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
+
+// Every value here must be a role the API accepts (packages/core/src/roles).
+// The form used to offer "TEAM", which is not one, so every create with the
+// default role failed with "Unknown role".
+const ROLE_OPTIONS = [
+  { value: 'INDIVIDUAL_CLIENT', label: 'Client (individual)' },
+  { value: 'ORG_OWNER', label: 'Client (organisation owner)' },
+  { value: 'PM', label: 'Project Manager' },
+  { value: 'SENIOR_PM', label: 'Senior Project Manager' },
+  { value: 'SE', label: 'Solutions Engineer' },
+  { value: 'DEVELOPER', label: 'Developer' },
+  { value: 'DESIGNER', label: 'Designer' },
+  { value: 'QA', label: 'QA' },
+  { value: 'DEVOPS', label: 'DevOps' },
+  { value: 'SALES', label: 'Sales' },
+  { value: 'FINANCE', label: 'Finance' },
+  { value: 'ADMIN', label: 'Admin' },
+];
+const DEFAULT_ROLE = 'INDIVIDUAL_CLIENT';
+
+// The filter used to send "team" and "freelancer", which are not roles, so
+// those chips always showed an empty list.
+const ROLE_FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'INDIVIDUAL_CLIENT', label: 'Clients' },
+  { value: 'PM', label: 'PM' },
+  { value: 'DEVELOPER', label: 'Developers' },
+  { value: 'SALES', label: 'Sales' },
+  { value: 'ADMIN', label: 'Admins' },
+];
 
 const roleBadge = {
   admin: 'fox',
@@ -35,8 +65,13 @@ export default function AdminUsers() {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editUser, setEditUser] = useState(null);
-  const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', role: 'TEAM' });
-  const [editForm, setEditForm] = useState({ name: '', email: '', role: 'TEAM' });
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: DEFAULT_ROLE,
+  });
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: DEFAULT_ROLE });
   const q = useDebounce(search, 200);
   const queryClient = useQueryClient();
 
@@ -70,14 +105,15 @@ export default function AdminUsers() {
     onSuccess: () => {
       toast.success('User created.');
       setShowCreate(false);
-      setCreateForm({ name: '', email: '', password: '', role: 'TEAM' });
+      setCreateForm({ name: '', email: '', password: '', role: DEFAULT_ROLE });
       invalidateUsers();
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Failed.'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, patch }) => api.put(`/users/${id}`, patch),
+    mutationFn: ({ id, patch, admin }) =>
+      admin ? api.patch(`/admin/users/${id}`, patch) : api.put(`/users/${id}`, patch),
     onError: (err) => toast.error(err.response?.data?.message || 'Failed.'),
   });
 
@@ -91,7 +127,11 @@ export default function AdminUsers() {
 
   const openEdit = (user) => {
     setEditUser(user);
-    setEditForm({ name: user.name, email: user.email, role: user.role?.toUpperCase() || 'TEAM' });
+    setEditForm({
+      name: user.name,
+      email: user.email,
+      role: user.role?.toUpperCase() || DEFAULT_ROLE,
+    });
     setShowEdit(true);
   };
 
@@ -100,7 +140,14 @@ export default function AdminUsers() {
     updateMutation.mutate(
       {
         id: editUser._id,
-        patch: { name: editForm.name, email: editForm.email, role: editForm.role },
+        admin: true,
+        // PUT /users/:id accepts only role and isActive, so sending name and
+        // email made every save fail. The admin endpoint takes name and role;
+        // email is not editable anywhere, so it is shown read-only.
+        patch: {
+          name: editForm.name,
+          ...(editForm.role !== editUser.role ? { role: editForm.role } : {}),
+        },
       },
       {
         onSuccess: () => {
@@ -119,21 +166,6 @@ export default function AdminUsers() {
       {
         onSuccess: () => {
           toast.success(user.isActive ? 'Deactivated.' : 'Activated.');
-          invalidateUsers();
-        },
-      },
-    );
-  };
-
-  const isTeamMember = (user) => user.role?.toLowerCase() === 'team';
-
-  const toggleTeamMember = (user) => {
-    const nextRole = isTeamMember(user) ? 'CLIENT' : 'TEAM';
-    updateMutation.mutate(
-      { id: user._id, patch: { role: nextRole } },
-      {
-        onSuccess: () => {
-          toast.success(isTeamMember(user) ? 'Removed from team.' : 'Added as team member.');
           invalidateUsers();
         },
       },
@@ -171,7 +203,7 @@ export default function AdminUsers() {
           />
         </div>
         <div className="flex gap-1">
-          {['all', 'client', 'team', 'admin', 'freelancer'].map((r) => (
+          {ROLE_FILTERS.map(({ value: r, label }) => (
             <button
               key={r}
               onClick={() => {
@@ -183,7 +215,7 @@ export default function AdminUsers() {
                 roleFilter === r ? 'bg-fox-500 text-white' : 'bg-warm-100 text-warm-600',
               )}
             >
-              {capitalize(r)}
+              {label}
             </button>
           ))}
         </div>
@@ -228,12 +260,6 @@ export default function AdminUsers() {
                       className="text-xs text-fox-500 hover:underline inline-flex items-center gap-1"
                     >
                       <Pencil size={12} /> Edit
-                    </button>
-                    <button
-                      onClick={() => toggleTeamMember(u)}
-                      className="text-xs text-fox-500 hover:underline"
-                    >
-                      {isTeamMember(u) ? 'Remove from team' : 'Make team member'}
                     </button>
                     <button
                       onClick={() => toggleActive(u)}
@@ -295,13 +321,7 @@ export default function AdminUsers() {
             label="Role"
             value={createForm.role}
             onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-            options={[
-              { value: 'TEAM', label: 'Team' },
-              { value: 'CLIENT', label: 'Client' },
-              { value: 'DEVELOPER', label: 'Developer' },
-              { value: 'PM', label: 'Project Manager' },
-              { value: 'ADMIN', label: 'Admin' },
-            ]}
+            options={ROLE_OPTIONS}
           />
           <Button variant="primary" onClick={createUser}>
             Create User
@@ -316,23 +336,12 @@ export default function AdminUsers() {
             value={editForm.name}
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
           />
-          <Input
-            label="Email"
-            type="email"
-            value={editForm.email}
-            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-          />
+          <Input label="Email" type="email" value={editForm.email} disabled readOnly />
           <Select
             label="Role"
             value={editForm.role}
             onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-            options={[
-              { value: 'TEAM', label: 'Team' },
-              { value: 'CLIENT', label: 'Client' },
-              { value: 'DEVELOPER', label: 'Developer' },
-              { value: 'PM', label: 'Project Manager' },
-              { value: 'ADMIN', label: 'Admin' },
-            ]}
+            options={ROLE_OPTIONS}
           />
           <Button variant="primary" onClick={updateUser}>
             Save Changes
