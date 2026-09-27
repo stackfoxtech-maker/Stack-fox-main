@@ -9,7 +9,7 @@ import GoogleButton from '@components/auth/GoogleButton';
 
 export default function Signup() {
   usePageTitle('Sign up');
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
   const [showPw, setShowPw] = useState(false);
   const { register, isLoading } = useAuthStore();
   const navigate = useNavigate();
@@ -18,7 +18,11 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await register(form);
+    // "+91 98765-43210" -> "+919876543210": the API accepts digits with an
+    // optional leading +. The number is a contact detail; the account is
+    // verified by email.
+    const phone = form.phone.replace(/(?!^\+)[^\d]/g, '');
+    const result = await register({ ...form, phone: phone || undefined });
     if (result.success) navigate('/app/client');
   };
 
@@ -64,6 +68,17 @@ export default function Signup() {
               value={form.email}
               onChange={set('email')}
               placeholder="you@example.com"
+              required
+            />
+            <Input
+              label="Phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={form.phone}
+              onChange={set('phone')}
+              placeholder="+91 98765 43210"
+              helperText="So your project team can reach you. We verify your account by email."
               required
             />
             <div className="relative">

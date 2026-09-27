@@ -50,6 +50,9 @@ export const RegisterSchema = strictObject({
   name: z.string().trim().min(1).max(200).optional(),
   email,
   password,
+  // A contact number. Stored unverified: the account itself is verified by
+  // email, and a phone only becomes a way to sign in once a code proves it.
+  phone: phone.optional(),
 });
 
 /**
