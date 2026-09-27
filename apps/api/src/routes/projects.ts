@@ -3,7 +3,14 @@ import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
-import { canTransition, PROJECT_TRANSITIONS } from "@stackfox/core";
+import {
+  canTransition,
+  PROJECT_TRANSITIONS,
+  MILESTONE_TRANSITIONS,
+  MILESTONE_APPROVE_ROLES,
+  MILESTONE_WORK_ROLES,
+} from "@stackfox/core";
+import { requireRole } from "../plugins/auth";
 import { clientScope, clientWriteScope, assertProjectInScope } from "../lib/scope";
 import { LIST_CAP, pageParams, paginated } from "../lib/http";
 import { parseBody } from "../lib/validate";
@@ -12,6 +19,7 @@ import {
   AssessChangeRequestSchema,
   CreateChangeRequestSchema,
   MilestoneFeedbackSchema,
+  UpdateMilestoneStatusSchema,
   UpdateProjectStatusSchema,
 } from "./deliverySchemas";
 
@@ -137,22 +145,32 @@ export async function projectRoutes(app: FastifyInstance) {
 
   // PATCH /projects/:id/milestones/:n/approve
   app.patch("/projects/:id/milestones/:n/approve", async (req, reply) => {
-    const scope = await clientWriteScope(req, reply);
-    if (scope === undefined) return;
+    // Approval raises the milestone invoice, so it is a PM or admin decision
+    // on work the team has submitted, not the client's.
+    if (!requireRole(req, reply, MILESTONE_APPROVE_ROLES)) return;
     const { id, n } = req.params as { id: string; n: string };
-    if (!(await assertProjectInScope(id, scope, reply))) return;
 
     const milestone = await prisma.milestone.findUnique({
       where: { projectId_number: { projectId: id, number: parseInt(n) } },
     });
     if (!milestone) return reply.code(404).send({ error: "Milestone not found" });
     if (milestone.status !== "IN_REVIEW") {
-      return reply.code(409).send({ error: "Milestone must be IN_REVIEW to approve" });
+      return reply.code(409).send({
+        error: "Only a milestone the team has submitted for review can be approved",
+      });
     }
 
-    const updated = await prisma.milestone.update({
-      where: { id: milestone.id },
+    // Conditional on the status, so two approvers at once cannot both pass
+    // the check above and raise the invoice twice.
+    const claimed = await prisma.milestone.updateMany({
+      where: { id: milestone.id, status: "IN_REVIEW" },
       data: { status: "APPROVED", approvedAt: new Date() },
+    });
+    if (claimed.count !== 1) {
+      return reply.code(409).send({ error: "This milestone was already approved" });
+    }
+    const updated = await prisma.milestone.findUniqueOrThrow({
+      where: { id: milestone.id },
     });
 
     await emitEvent({
@@ -179,6 +197,44 @@ export async function projectRoutes(app: FastifyInstance) {
     return updated;
   });
 
+  // PATCH /projects/:id/milestones/:n/status — the team starts work and
+  // submits it for review. Approval and revision have their own routes.
+  app.patch("/projects/:id/milestones/:n/status", async (req, reply) => {
+    if (!requireRole(req, reply, MILESTONE_WORK_ROLES)) return;
+    const { id, n } = req.params as { id: string; n: string };
+    const body = parseBody(req, reply, UpdateMilestoneStatusSchema);
+    if (!body) return;
+
+    const milestone = await prisma.milestone.findUnique({
+      where: { projectId_number: { projectId: id, number: parseInt(n) } },
+    });
+    if (!milestone) return reply.code(404).send({ error: "Milestone not found" });
+    if (!canTransition(milestone.status as any, body.status, MILESTONE_TRANSITIONS)) {
+      return reply.code(409).send({
+        error: `Cannot move a milestone from ${milestone.status} to ${body.status}`,
+      });
+    }
+
+    const moved = await prisma.milestone.updateMany({
+      where: { id: milestone.id, status: milestone.status },
+      data: { status: body.status },
+    });
+    if (moved.count !== 1) {
+      return reply
+        .code(409)
+        .send({ error: "This milestone changed; refresh and try again" });
+    }
+
+    await emitEvent({
+      code: body.status === "IN_REVIEW" ? "MILESTONE_SUBMITTED" : "MILESTONE_STARTED",
+      payload: { projectId: id, milestone: parseInt(n), from: milestone.status },
+      actor: req.user!.sub,
+      projectId: id,
+    });
+
+    return prisma.milestone.findUniqueOrThrow({ where: { id: milestone.id } });
+  });
+
   // PATCH /projects/:id/milestones/:n/request-revision
   app.patch("/projects/:id/milestones/:n/request-revision", async (req, reply) => {
     const scope = await clientWriteScope(req, reply);
@@ -193,6 +249,11 @@ export async function projectRoutes(app: FastifyInstance) {
       where: { projectId_number: { projectId: id, number: parseInt(n) } },
     });
     if (!milestone) return reply.code(404).send({ error: "Milestone not found" });
+    if (milestone.status !== "IN_REVIEW") {
+      return reply
+        .code(409)
+        .send({ error: "Revisions can only be requested on work submitted for review" });
+    }
 
     const newRound = milestone.feedbackRound + 1;
 

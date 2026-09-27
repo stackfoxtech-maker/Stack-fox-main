@@ -67,6 +67,11 @@ export const UpdateProjectStatusSchema = strictObject({
   status: z.string().trim().min(1).max(50),
 });
 
+/** The team's own moves. Approval and revision have their own routes. */
+export const UpdateMilestoneStatusSchema = strictObject({
+  status: z.enum(["IN_PROGRESS", "IN_REVIEW"]),
+});
+
 export const MilestoneFeedbackSchema = strictObject({
   feedback: z.string().trim().min(1, "feedback is required").max(10_000),
 });

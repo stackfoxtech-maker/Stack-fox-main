@@ -6,6 +6,7 @@ import { formatDate, capitalize, getStatusBadge } from '@lib/utils';
 import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
+import MilestoneActions from '@components/project/MilestoneActions';
 
 export default function Projects() {
   usePageTitle('Team Projects');
@@ -13,6 +14,12 @@ export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const reloadProject = () =>
+    api
+      .get(`/projects/${id}`)
+      .then((r) => setProject(r.data.data.project))
+      .catch(() => toast.error('Failed to load project.'));
 
   useEffect(() => {
     setLoading(true);
@@ -65,8 +72,9 @@ export default function Projects() {
             >
               <span className="text-sm flex-1">{ms.name || ms.title}</span>
               <Badge variant={getStatusBadge(ms.status)?.replace('badge-', '') || 'neutral'}>
-                {capitalize(ms.status)}
+                {capitalize((ms.status || '').replace(/_/g, ' ').toLowerCase())}
               </Badge>
+              <MilestoneActions projectId={project.id} milestone={ms} onChanged={reloadProject} />
             </div>
           ))}
         </div>
