@@ -150,7 +150,7 @@ function buildCallScript(pitch) {
 }
 
 function formatWhatsApp(text) {
-  return text.replace(/\*\*(.*?)\*\*/g, '*$1*').replace(/\n/g, '\n');
+  return text.replace(/\*\*(.*?)\*\*/g, '*$1*');
 }
 
 export default function PitchStudio() {

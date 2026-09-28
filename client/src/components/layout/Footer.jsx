@@ -43,7 +43,7 @@ export default function Footer() {
               Open the builder, add the pieces you need, and see the number in a couple of minutes.
             </p>
           </div>
-          <Link to="/builder" className="btn-fox text-base px-8 shrink-0">
+          <Link to="/builder" className="btn-fox w-full shrink-0 px-8 text-base md:w-auto">
             Start building <ArrowUpRight size={18} />
           </Link>
         </div>
@@ -67,16 +67,16 @@ export default function Footer() {
             <p className="text-sm text-warm-300 mb-5 leading-relaxed">
               Smart Code, Swift Delivery. A premium product of Artwall Labs.
             </p>
-            <div className="space-y-2.5 text-sm">
+            <div className="space-y-0 text-sm md:space-y-2.5">
               <a
                 href="mailto:stackfox.tech@gmail.com"
-                className="flex items-center gap-2 hover:text-fox-400 transition-colors"
+                className="flex min-h-11 items-center gap-2 transition-colors hover:text-fox-400 md:min-h-0"
               >
                 <Mail size={14} /> stackfox.tech@gmail.com
               </a>
               <a
                 href="tel:+918209395894"
-                className="flex items-center gap-2 hover:text-fox-400 transition-colors"
+                className="flex min-h-11 items-center gap-2 transition-colors hover:text-fox-400 md:min-h-0"
               >
                 <Phone size={14} /> +91 82093 95894
               </a>
@@ -89,13 +89,13 @@ export default function Footer() {
           {/* Link columns */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-label text-warm-300 mb-4 uppercase">{title}</h4>
-              <ul className="space-y-2.5">
+              <h4 className="text-label text-warm-300 mb-2 uppercase md:mb-4">{title}</h4>
+              <ul className="md:space-y-2.5">
                 {links.map((link) => (
                   <li key={link.href}>
                     <Link
                       to={link.href}
-                      className="text-sm text-warm-300 hover:text-fox-400 transition-colors"
+                      className="flex min-h-11 items-center text-sm text-warm-300 transition-colors hover:text-fox-400 md:inline-flex md:min-h-0"
                     >
                       {link.label}
                     </Link>

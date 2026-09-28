@@ -87,8 +87,8 @@ export default function Calendar() {
     <div className="space-y-5">
       <h2 className="text-lg font-semibold text-warm-900">Team Calendar</h2>
 
-      <div className="flex gap-5">
-        <div className="flex-1 bg-white rounded-2xl border border-warm-200 p-6">
+      <div className="flex flex-col gap-5 lg:flex-row">
+        <div className="flex-1 bg-white rounded-2xl border border-warm-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-5">
             <button onClick={prev} className="p-1.5 rounded-lg hover:bg-warm-100 transition">
               <ChevronLeft size={18} className="text-warm-600" />
@@ -138,7 +138,7 @@ export default function Calendar() {
           </div>
         </div>
 
-        <div className="w-72 bg-white rounded-2xl border border-warm-200 p-6">
+        <div className="w-full bg-white rounded-2xl border border-warm-200 p-4 sm:p-6 lg:w-72">
           <h3 className="font-medium text-warm-900 text-sm mb-4 flex items-center gap-2">
             <Clock size={15} className="text-fox-500" /> Today's Schedule
           </h3>

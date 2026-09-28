@@ -39,7 +39,7 @@ const useCartStore = create((set, get) => ({
   },
 
   // Local-only cart for non-authenticated users
-  localAdd: (item) => {
+  localAdd: (item, silent = false) => {
     const items = [...get().items];
     const idx = items.findIndex((i) => i.itemId === item.itemId && i.itemType === item.itemType);
 
@@ -66,10 +66,10 @@ const useCartStore = create((set, get) => ({
       gstAmount,
       total: subtotal + gstAmount,
       itemCount: items.reduce((c, i) => c + i.quantity, 0),
-      isOpen: true,
+      ...(silent ? {} : { isOpen: true }),
     });
 
-    toast.success('Added to cart');
+    if (!silent) toast.success('Added to cart');
   },
 
   localRemove: (localId) => {
@@ -103,18 +103,23 @@ const useCartStore = create((set, get) => ({
     }
   },
 
+  // `silent` (phone builder): update the cart without popping the drawer or a
+  // toast, so a person can add many pieces in a row. Never sent to the API.
   addItem: async (item, isAuthenticated) => {
+    const { silent = false, ...payload } = item;
     if (!isAuthenticated) {
-      get().localAdd(item);
+      get().localAdd(payload, silent);
       return;
     }
 
     set({ isLoading: true });
     try {
-      const res = await api.post('/cart/add', item);
+      const res = await api.post('/cart/add', payload);
       get().syncFromApi(res.data.data.cart);
-      set({ isOpen: true });
-      toast.success('Added to cart');
+      if (!silent) {
+        set({ isOpen: true });
+        toast.success('Added to cart');
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to add item.');
     } finally {

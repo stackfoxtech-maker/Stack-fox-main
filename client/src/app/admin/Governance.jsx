@@ -204,8 +204,8 @@ export function Pricing() {
       ) : items.length === 0 ? (
         <EmptyState icon={IndianRupee} title="No rate cards yet" />
       ) : (
-        <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-2xl border border-warm-200 overflow-x-auto">
+          <table className="w-full min-w-[32rem] text-sm">
             <thead>
               <tr className="bg-warm-50 border-b border-warm-200">
                 <th className="text-left py-3 px-4 font-semibold text-warm-700">Type</th>

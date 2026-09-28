@@ -196,8 +196,8 @@ export default function AdminUsers() {
       ) : users.length === 0 ? (
         <EmptyState icon={UsersIcon} title="No users found" />
       ) : (
-        <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-2xl border border-warm-200 overflow-x-auto">
+          <table className="w-full min-w-[36rem] text-sm">
             <thead>
               <tr className="bg-warm-50 border-b border-warm-200">
                 <th className="text-left py-3 px-4 font-semibold text-warm-700">Name</th>

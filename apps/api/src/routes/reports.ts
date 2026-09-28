@@ -355,7 +355,7 @@ export async function reportRoutes(app: FastifyInstance) {
     if (scope === undefined) return;
 
     const { type } = req.params as { type: string };
-    if (!REPORT_TYPES.includes(type as ReportType)) {
+    if (!Object.hasOwn(BUILDERS, type)) {
       return reply.code(404).send({
         message: `Unknown report "${type}". Available: ${REPORT_TYPES.join(", ")}.`,
       });
@@ -377,7 +377,7 @@ export async function reportRoutes(app: FastifyInstance) {
     const repBody = parseBody(req, reply, GenerateReportSchema);
     if (!repBody) return;
     const { type } = repBody;
-    if (!type || !REPORT_TYPES.includes(type as ReportType)) {
+    if (!type || !Object.hasOwn(BUILDERS, type)) {
       return reply.code(400).send({
         message: `A report type is required. Available: ${REPORT_TYPES.join(", ")}.`,
       });

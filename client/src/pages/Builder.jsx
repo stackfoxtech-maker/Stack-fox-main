@@ -11,9 +11,10 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  X,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { usePageTitle, useDebounce } from '@lib/hooks';
+import { usePageTitle, useDebounce, useMediaQuery } from '@lib/hooks';
 import { cn } from '@lib/utils';
 import { CURRENCIES, FBT_PAIRS } from '@lib/constants';
 
@@ -21,6 +22,12 @@ import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
 import { Button, Section } from '@components/ui/Primitives';
 import SF_DATA from '@data/stackfox-data.json';
+import {
+  ServiceRow,
+  ServiceSheet,
+  CartBar,
+  SuggestionStrip,
+} from '@components/builder/MobileBuilder';
 import toast from 'react-hot-toast';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -34,8 +41,8 @@ function Tour({ steps, active, onComplete }) {
   const current = steps[step];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-md shadow-2xl max-w-md w-full overflow-hidden border border-warm-200 animate-scale-in">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-warm-900/60 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4">
+      <div className="w-full max-w-md animate-slide-up overflow-hidden rounded-t-3xl border border-warm-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl sm:animate-scale-in sm:rounded-md sm:pb-0">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <span className="text-3xl">{current.icon}</span>
@@ -56,7 +63,7 @@ function Tour({ steps, active, onComplete }) {
           <div className="flex items-center justify-between gap-3">
             <button
               onClick={onComplete}
-              className="text-xs font-medium text-warm-400 hover:text-warm-600 transition-colors"
+              className="min-h-11 px-1 text-xs font-medium text-warm-400 transition-colors hover:text-warm-600"
             >
               Skip Tour
             </button>
@@ -189,6 +196,10 @@ export default function Builder() {
     bundles: [],
   });
   const [isLoading, setIsLoading] = useState(true);
+  const isMobile = useMediaQuery('(max-width: 639px)');
+  const [sheetSvc, setSheetSvc] = useState(null);
+  const resultsRef = useRef(null);
+  const firstCat = useRef(true);
 
   // Category chip rail: horizontal scroll controls
   const catRailRef = useRef(null);
@@ -242,6 +253,33 @@ export default function Builder() {
     window.addEventListener('resize', syncRailScroll);
     return () => window.removeEventListener('resize', syncRailScroll);
   }, [catalog.categories.length, isLoading]);
+
+  // Phones: centre the active chip in the rail, and if the list is scrolled
+  // past the top, jump back to the start of the new category's results.
+  useEffect(() => {
+    const rail = catRailRef.current;
+    const chip = rail?.querySelector(`[data-chip="${activeCat}"]`);
+    if (rail && chip) {
+      rail.scrollTo({
+        left: chip.offsetLeft - (rail.clientWidth - chip.offsetWidth) / 2,
+        behavior: 'smooth',
+      });
+    }
+    if (firstCat.current) {
+      firstCat.current = false;
+      return;
+    }
+    const el = resultsRef.current;
+    if (el && el.getBoundingClientRect().top < 180) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [activeCat]);
+
+  // Lets the FoxBot fab lift itself above the phone cart bar.
+  useEffect(() => {
+    document.body.classList.toggle('has-cartbar', itemCount > 0);
+    return () => document.body.classList.remove('has-cartbar');
+  }, [itemCount]);
 
   // Initialization: Load catalog data.
   //
@@ -437,16 +475,52 @@ export default function Builder() {
       .slice(0, 3);
   }, [items, catalog, cartItemIds]);
 
-  // Handlers
+  // Handlers. On phones adds are silent (no drawer pop-up, no toast) so a
+  // person can add several pieces in a row; the CartBar shows the result.
   const handleAdd = useCallback(
     (svc) => {
       addItem(
-        { itemId: svc.id, itemType: 'service', name: svc.name, price: svc.price },
+        { itemId: svc.id, itemType: 'service', name: svc.name, price: svc.price, silent: isMobile },
         isAuthenticated,
       );
     },
-    [addItem, isAuthenticated],
+    [addItem, isAuthenticated, isMobile],
   );
+
+  // Phone rows toggle: tapping a piece already in the project removes it.
+  const handleToggle = useCallback(
+    (svc) => {
+      const inCart = useCartStore.getState().items.find((i) => i.itemId === svc.id);
+      if (inCart) removeItem(inCart._id, isAuthenticated);
+      else handleAdd(svc);
+    },
+    [removeItem, isAuthenticated, handleAdd],
+  );
+
+  const addMany = (ids) => {
+    let n = 0;
+    (ids || []).forEach((id) => {
+      const svc = catalog.services.find((s) => s.id === id);
+      if (!svc) return;
+      n += 1;
+      handleAdd(svc);
+    });
+    if (isMobile && n) toast.success(`Added ${n} piece${n > 1 ? 's' : ''}`);
+  };
+
+  const cartTotalLabel = fmt(cartSubtotal || items.reduce((s, i) => s + i.price * i.quantity, 0));
+  const chips = [
+    { id: 'all', label: 'All Services', count: catalog.services.length },
+    { id: 'industry-bundles', label: 'Special Bundles', count: catalog.bundles.length },
+    { id: 'service-packages', label: 'Packages', count: catalog.packages.length },
+    'divider',
+    ...catalog.categories.map((c) => ({
+      id: c.dataId,
+      label: c.name,
+      count: catCounts.get(c.dataId) || 0,
+    })),
+  ];
+  const nameOf = (id) => catalog.services.find((s) => s.id === id)?.name || id;
 
   const handleShare = () => {
     if (items.length === 0) {
@@ -464,7 +538,7 @@ export default function Builder() {
   };
 
   return (
-    <Section className="relative">
+    <Section className="relative !pb-44 !pt-5 md:!pb-24 md:!pt-24">
       <Tour
         steps={SF_DATA.tourSteps}
         active={showTour}
@@ -482,7 +556,7 @@ export default function Builder() {
         and non-functional. Admins get a shortcut to the real editor instead.
       */}
       {isAuthenticated && isAdmin() && (
-        <div className="fixed top-24 right-4 z-40">
+        <div className="fixed right-4 top-24 z-40 hidden sm:block">
           <Link
             to="/app/admin/catalog"
             className="flex items-center gap-2 bg-white border border-warm-200 px-3 py-2 rounded-xl shadow-sm text-xs font-semibold text-warm-600 hover:text-fox-600"
@@ -492,39 +566,40 @@ export default function Builder() {
         </div>
       )}
 
-      {/* Header — Calm Guidance, matches the marketing pages */}
-      <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+      {/* Header — compact on phones so services show in the first screen */}
+      <div className="mb-4 flex flex-col gap-4 md:mb-8 md:flex-row md:items-end md:justify-between md:gap-6">
         <div className="max-w-xl">
-          <span className="eyebrow mb-4">Build &amp; price</span>
-          <h1 className="text-3xl text-warm-900 md:text-display-lg">
+          <span className="eyebrow mb-4 hidden md:inline-flex">Build &amp; price</span>
+          <h1 className="text-[1.65rem] leading-tight text-warm-900 md:text-display-lg">
             Assemble your project, piece by piece
           </h1>
-          <p className="mt-3 text-body-lg text-warm-600">
+          <p className="mt-3 hidden text-body-lg text-warm-600 md:block">
             {catalog.services.length}+ individually priced pieces across {catalog.categories.length}{' '}
             domains. Add what you need and watch the total update — GST and all.
           </p>
+          <p className="mt-1.5 text-body-sm text-warm-600 md:hidden">
+            {catalog.services.length}+ priced pieces. Add what you need — the total updates live.
+          </p>
         </div>
 
-        {/* Right slot: the running total once there's a cart, otherwise the
-            first-run tour prompt — never both, never empty churn. */}
+        {/* Right slot (tablet/desktop): the running total once there's a cart,
+            otherwise the first-run tour prompt. Phones get CartBar + the strip. */}
         {itemCount > 0 ? (
           <button
             onClick={toggleCart}
-            className="flex shrink-0 items-center gap-3 self-start rounded-md border border-warm-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md md:self-auto"
+            className="hidden shrink-0 items-center gap-3 self-start rounded-md border border-warm-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md md:flex md:self-auto"
           >
             <ShoppingCart size={18} className="text-fox-600" />
             <span className="text-left">
               <span className="block text-caption uppercase tracking-wide text-warm-500">
                 {itemCount} piece{itemCount > 1 ? 's' : ''}
               </span>
-              <span className="price-tag block text-body-md text-warm-900">
-                {fmt(cartSubtotal || items.reduce((s, i) => s + i.price * i.quantity, 0))}
-              </span>
+              <span className="price-tag block text-body-md text-warm-900">{cartTotalLabel}</span>
             </span>
             <ArrowRight size={15} className="text-warm-400" />
           </button>
         ) : !tourHintDismissed && !showTour ? (
-          <div className="w-full shrink-0 rounded-lg border border-fox-200 bg-fox-50 p-4 md:w-80 md:self-auto">
+          <div className="hidden w-full shrink-0 rounded-lg border border-fox-200 bg-fox-50 p-4 md:block md:w-80 md:self-auto">
             <p className="text-body-sm text-warm-700">
               New here? Pick exactly the services you need and watch your total update live.
             </p>
@@ -543,23 +618,58 @@ export default function Builder() {
         ) : null}
       </div>
 
-      {/* Search + currency */}
-      <div className="mb-8 flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-warm-400" />
-          <input
-            type="text"
-            placeholder="Search 255 services…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-fx pl-11 pr-4"
-          />
+      {/* Phone helper strip: one slim line instead of a tall card */}
+      {!tourHintDismissed && !showTour && itemCount === 0 && (
+        <div className="mb-3 flex items-center rounded-2xl bg-fox-50 pl-4 md:hidden">
+          <Sparkles size={16} className="mr-2 shrink-0 text-fox-500" />
+          <button
+            onClick={() => setShowTour(true)}
+            className="min-h-11 flex-1 whitespace-nowrap px-1 text-left text-[13px] font-semibold text-fox-700"
+          >
+            Take the tour
+          </button>
+          <Link
+            to="/advisor"
+            className="flex min-h-11 items-center whitespace-nowrap px-2 text-[13px] font-semibold text-fox-700"
+          >
+            Ask the advisor
+          </Link>
+          <button
+            onClick={dismissTourHint}
+            aria-label="Dismiss"
+            className="grid h-11 w-11 place-items-center text-warm-400"
+          >
+            <X size={16} />
+          </button>
         </div>
-        <div className="flex gap-2">
+      )}
+
+      {/* Toolbar — sticks under the navbar on phones so search and categories
+          stay one thumb-reach away however deep the list is. */}
+      <div className="sticky top-[4.25rem] z-30 -mx-6 mb-4 border-b border-warm-200/70 bg-warm-white/95 px-6 pb-2 pt-3 backdrop-blur-md md:static md:mx-0 md:mb-0 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+        <div className="mb-3 flex gap-2 md:mb-8 md:gap-3">
+          <div className="relative flex-1">
+            <Search
+              size={18}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-warm-400"
+            />
+            <input
+              type="search"
+              enterKeyHint="search"
+              placeholder={
+                isMobile ? 'Search services…' : `Search ${catalog.services.length || 255} services…`
+              }
+              aria-label="Search services"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="input-fx pl-11 pr-4"
+            />
+          </div>
           <select
             value={curIdx}
             onChange={(e) => setCurIdx(Number(e.target.value))}
-            className="rounded-sm border border-warm-200 bg-white px-3 text-body-sm font-semibold text-warm-700"
+            aria-label="Currency"
+            className="min-h-11 rounded-sm border border-warm-200 bg-white px-2 text-base font-semibold text-warm-700 md:px-3 md:text-body-sm"
           >
             {CURRENCIES.map((c, i) => (
               <option key={c.code} value={i}>
@@ -567,125 +677,87 @@ export default function Builder() {
               </option>
             ))}
           </select>
-          <Button variant="ghost" onClick={handleShare} aria-label="Copy a shareable link">
-            <Share2 size={16} />
+          <Button
+            variant="ghost"
+            onClick={handleShare}
+            aria-label="Copy a shareable link"
+            className="!px-3"
+          >
+            <Share2 size={18} />
           </Button>
         </div>
-      </div>
 
-      {/* Category Chips */}
-      <div className="relative mb-8">
-        {/* Left scroll control */}
-        <div
-          className={cn(
-            'pointer-events-none absolute left-0 top-0 bottom-6 z-10 flex items-center pr-10 transition-opacity duration-200',
-            'bg-gradient-to-r from-warm-white via-warm-white/90 to-transparent',
-            railScroll.left ? 'opacity-100' : 'opacity-0',
-          )}
-        >
-          <button
-            type="button"
-            aria-label="Scroll categories left"
-            tabIndex={railScroll.left ? 0 : -1}
-            onClick={() => scrollRail(-1)}
-            className={cn(
-              'grid place-items-center h-10 w-10 rounded-full bg-white text-warm-600 shadow-md border border-warm-200',
-              'hover:text-warm-900 hover:border-warm-300 active:scale-95 transition-all',
-              railScroll.left && 'pointer-events-auto',
-            )}
-          >
-            <ChevronLeft size={18} />
-          </button>
-        </div>
-
-        {/* Right scroll control */}
-        <div
-          className={cn(
-            'pointer-events-none absolute right-0 top-0 bottom-6 z-10 flex items-center pl-10 transition-opacity duration-200',
-            'bg-gradient-to-l from-warm-white via-warm-white/90 to-transparent',
-            railScroll.right ? 'opacity-100' : 'opacity-0',
-          )}
-        >
-          <button
-            type="button"
-            aria-label="Scroll categories right"
-            tabIndex={railScroll.right ? 0 : -1}
-            onClick={() => scrollRail(1)}
-            className={cn(
-              'grid place-items-center h-10 w-10 rounded-full bg-white text-warm-600 shadow-md border border-warm-200',
-              'hover:text-warm-900 hover:border-warm-300 active:scale-95 transition-all',
-              railScroll.right && 'pointer-events-auto',
-            )}
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-
-        <div
-          ref={catRailRef}
-          onScroll={syncRailScroll}
-          className="flex gap-3 overflow-x-auto pb-6 hide-scrollbar scroll-smooth"
-        >
-          <button
-            onClick={() => setActiveCat('all')}
-            className={cn(
-              'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0',
-              activeCat === 'all'
-                ? 'bg-warm-900 text-white'
-                : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300',
-            )}
-          >
-            All Services <span className="opacity-50 ml-1">({catalog.services.length})</span>
-          </button>
-          <button
-            onClick={() => setActiveCat('industry-bundles')}
-            className={cn(
-              'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
-              activeCat === 'industry-bundles'
-                ? 'bg-fox-500 text-white ring-4 ring-fox-50'
-                : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300',
-            )}
-          >
-            Special Bundles <span className="opacity-50 ml-1">({catalog.bundles.length})</span>
-          </button>
-          <button
-            onClick={() => setActiveCat('service-packages')}
-            className={cn(
-              'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
-              activeCat === 'service-packages'
-                ? 'bg-fox-500 text-white ring-4 ring-fox-50'
-                : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300',
-            )}
-          >
-            Packages <span className="opacity-50 ml-1">({catalog.packages.length})</span>
-          </button>
-          <div className="w-px h-8 bg-warm-100 mx-2 shrink-0" />
-          {catalog.categories.map((cat) => (
-            <button
-              key={cat.dataId}
-              onClick={() => setActiveCat(cat.dataId)}
+        {/* Category chips — swipe on phones, arrows from md up */}
+        <div className="relative md:mb-8">
+          {['left', 'right'].map((side) => (
+            <div
+              key={side}
               className={cn(
-                'px-5 py-2.5 rounded-md text-sm font-semibold transition-all shrink-0 whitespace-nowrap',
-                activeCat === cat.dataId
-                  ? 'bg-fox-500 text-white ring-4 ring-fox-50'
-                  : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300',
+                'pointer-events-none absolute bottom-6 top-0 z-10 hidden items-center transition-opacity duration-200 md:flex',
+                side === 'left'
+                  ? 'left-0 bg-gradient-to-r pr-10'
+                  : 'right-0 bg-gradient-to-l pl-10',
+                'from-warm-white via-warm-white/90 to-transparent',
+                railScroll[side] ? 'opacity-100' : 'opacity-0',
               )}
             >
-              {cat.name} <span className="opacity-50 ml-1">({catCounts.get(cat.dataId) || 0})</span>
-            </button>
+              <button
+                type="button"
+                aria-label={`Scroll categories ${side}`}
+                tabIndex={railScroll[side] ? 0 : -1}
+                onClick={() => scrollRail(side === 'left' ? -1 : 1)}
+                className={cn(
+                  'grid h-10 w-10 place-items-center rounded-full border border-warm-200 bg-white text-warm-600 shadow-md transition-all',
+                  'hover:border-warm-300 hover:text-warm-900 active:scale-95',
+                  railScroll[side] && 'pointer-events-auto',
+                )}
+              >
+                {side === 'left' ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+              </button>
+            </div>
           ))}
+
+          <div
+            ref={catRailRef}
+            onScroll={syncRailScroll}
+            className="hide-scrollbar relative flex snap-x gap-2 overflow-x-auto scroll-smooth pb-1 md:gap-3 md:pb-6"
+          >
+            {chips.map((chip, i) =>
+              chip === 'divider' ? (
+                <div key={`d${i}`} className="mx-1 h-8 w-px shrink-0 self-center bg-warm-100" />
+              ) : (
+                <button
+                  key={chip.id}
+                  data-chip={chip.id}
+                  onClick={() => setActiveCat(chip.id)}
+                  className={cn(
+                    'min-h-11 shrink-0 snap-start whitespace-nowrap rounded-md border px-4 py-2.5 text-sm font-semibold transition-all md:min-h-0 md:px-5',
+                    activeCat === chip.id
+                      ? chip.id === 'all'
+                        ? 'border-warm-900 bg-warm-900 text-white'
+                        : 'border-fox-500 bg-fox-500 text-white md:ring-4 md:ring-fox-50'
+                      : 'border-warm-200 bg-white text-warm-600 hover:border-warm-300',
+                  )}
+                >
+                  {chip.label} <span className="ml-1 opacity-50">({chip.count})</span>
+                </button>
+              ),
+            )}
+          </div>
         </div>
       </div>
+
+      <SuggestionStrip suggestions={suggestions} fmt={fmt} onAdd={handleAdd} />
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-8 space-y-12">
+        <div ref={resultsRef} className="scroll-mt-44 space-y-12 md:scroll-mt-24 lg:col-span-8">
           {isLoading ? (
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4">
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className="h-24 animate-pulse rounded-md border border-warm-100 bg-white sm:h-40"
+                  className="h-[76px] animate-pulse rounded-2xl border border-warm-100 bg-white sm:h-40 sm:rounded-md"
                 />
               ))}
             </div>
@@ -704,7 +776,7 @@ export default function Builder() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-16">
+            <div className="space-y-8 md:space-y-16">
               {activeCat === 'industry-bundles' && (
                 <div className="space-y-6">
                   <h2 className="text-2xl font-semibold text-warm-900">
@@ -722,25 +794,7 @@ export default function Builder() {
                         </p>
                         <div className="mt-4 flex items-center justify-between">
                           <span className="text-xl font-semibold">{fmt(b.price)}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              (b.items || []).forEach((id) => {
-                                const svc = catalog.services.find((s) => s.id === id);
-                                if (svc)
-                                  addItem(
-                                    {
-                                      itemId: id,
-                                      itemType: 'service',
-                                      name: svc.name,
-                                      price: svc.price,
-                                    },
-                                    isAuthenticated,
-                                  );
-                              })
-                            }
-                          >
+                          <Button size="sm" variant="outline" onClick={() => addMany(b.items)}>
                             Select All
                           </Button>
                         </div>
@@ -764,25 +818,7 @@ export default function Builder() {
                         </p>
                         <div className="mt-4 flex items-center justify-between">
                           <span className="text-xl font-semibold">{fmt(p.price)}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              (p.items || []).forEach((id) => {
-                                const svc = catalog.services.find((s) => s.id === id);
-                                if (svc)
-                                  addItem(
-                                    {
-                                      itemId: id,
-                                      itemType: 'service',
-                                      name: svc.name,
-                                      price: svc.price,
-                                    },
-                                    isAuthenticated,
-                                  );
-                              })
-                            }
-                          >
+                          <Button size="sm" variant="outline" onClick={() => addMany(p.items)}>
                             Add to Cart
                           </Button>
                         </div>
@@ -806,16 +842,18 @@ export default function Builder() {
                   // straight into that category. A search already narrows things,
                   // so show every match then.
                   const isOverview = activeCat === 'all' && !debouncedSearch;
-                  const shown = isOverview ? catServices.slice(0, PREVIEW_COUNT) : catServices;
+                  const shown = isOverview
+                    ? catServices.slice(0, isMobile ? 4 : PREVIEW_COUNT)
+                    : catServices;
                   const hidden = catServices.length - shown.length;
 
                   return (
-                    <div key={cat.dataId} className="space-y-6">
-                      <div className="border-b border-warm-100 pb-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h2 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
+                    <div key={cat.dataId} className="space-y-3 md:space-y-6">
+                      <div className="border-b border-warm-100 pb-3 md:pb-4">
+                        <div className="flex items-center justify-between gap-2 md:flex-wrap">
+                          <h2 className="flex items-center gap-2 text-xl font-semibold text-warm-900 md:text-2xl">
                             {cat.name}
-                            <span className="text-caption bg-warm-100 text-warm-600 px-2 py-0.5 rounded-full">
+                            <span className="hidden rounded-full bg-warm-100 px-2 py-0.5 text-caption text-warm-600 md:inline">
                               {catServices.length} items
                             </span>
                           </h2>
@@ -823,9 +861,8 @@ export default function Builder() {
                             <button
                               onClick={() => {
                                 setActiveCat(cat.dataId);
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
                               }}
-                              className="text-body-sm font-semibold text-fox-600 hover:text-fox-700 inline-flex items-center gap-1"
+                              className="inline-flex min-h-11 items-center gap-1 text-body-sm font-semibold text-fox-600 hover:text-fox-700"
                             >
                               View all {catServices.length} <ArrowRight size={14} />
                             </button>
@@ -838,25 +875,39 @@ export default function Builder() {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4">
-                        {shown.map((svc) => (
-                          <ServiceCard
-                            key={svc.id}
-                            svc={svc}
-                            price={fmt(svc.price)}
-                            inCart={cartItemIds.has(svc.id)}
-                            onAdd={handleAdd}
-                          />
-                        ))}
-                      </div>
+                      {isMobile ? (
+                        <div className="space-y-2.5">
+                          {shown.map((svc) => (
+                            <ServiceRow
+                              key={svc.id}
+                              svc={svc}
+                              price={fmt(svc.price)}
+                              inCart={cartItemIds.has(svc.id)}
+                              onToggle={handleToggle}
+                              onOpen={setSheetSvc}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                          {shown.map((svc) => (
+                            <ServiceCard
+                              key={svc.id}
+                              svc={svc}
+                              price={fmt(svc.price)}
+                              inCart={cartItemIds.has(svc.id)}
+                              onAdd={handleAdd}
+                            />
+                          ))}
+                        </div>
+                      )}
 
                       {isOverview && hidden > 0 && (
                         <button
                           onClick={() => {
                             setActiveCat(cat.dataId);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
                           }}
-                          className="w-full rounded-md border border-dashed border-warm-300 py-3 text-body-sm font-medium text-warm-600 hover:border-fox-300 hover:text-fox-600 transition-colors"
+                          className="min-h-12 w-full rounded-md border border-dashed border-warm-300 py-3 text-body-sm font-medium text-warm-600 hover:border-fox-300 hover:text-fox-600 transition-colors"
                         >
                           + {hidden} more in {cat.name}
                         </button>
@@ -871,7 +922,7 @@ export default function Builder() {
         {/* Right Sidebar */}
         <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
           {suggestions.length > 0 && (
-            <div className="rounded-lg border border-warm-200 bg-white p-6">
+            <div className="hidden rounded-lg border border-warm-200 bg-white p-6 md:block">
               <h3 className="mb-4 flex items-center gap-2 text-title text-warm-900">
                 <Sparkles size={16} className="text-fox-500" /> Often added together
               </h3>
@@ -927,20 +978,16 @@ export default function Builder() {
         </div>
       </div>
 
-      {itemCount > 0 && (
-        <div className="fixed left-0 right-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 p-3 md:hidden">
-          <div
-            className="bg-fox-600 text-white rounded-lg p-4 flex items-center justify-between"
-            onClick={toggleCart}
-          >
-            <div className="flex items-center gap-3">
-              <ShoppingCart size={24} />
-              <div className="font-bold">{itemCount} items Selected</div>
-            </div>
-            <div className="font-semibold text-lg">→</div>
-          </div>
-        </div>
-      )}
+      <CartBar count={itemCount} total={cartTotalLabel} onOpen={toggleCart} />
+      <ServiceSheet
+        svc={sheetSvc}
+        catName={catalog.categories.find((c) => c.dataId === sheetSvc?.catId)?.name}
+        price={sheetSvc ? fmt(sheetSvc.price) : ''}
+        inCart={!!sheetSvc && cartItemIds.has(sheetSvc.id)}
+        nameOf={nameOf}
+        onToggle={handleToggle}
+        onClose={() => setSheetSvc(null)}
+      />
     </Section>
   );
 }
