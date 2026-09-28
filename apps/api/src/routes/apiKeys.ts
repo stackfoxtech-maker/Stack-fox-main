@@ -138,7 +138,7 @@ export async function apiKeyRoutes(app: FastifyInstance) {
       select: KEY_SELECT,
     });
 
-    req.log.info({ apiKeyId: record.id, orgId, scopes: record.scopes }, "API key issued");
+    req.log.info({ keyId: record.id, orgId, scopes: record.scopes }, "API key issued");
 
     return reply.code(201).send({
       ...record,
@@ -176,7 +176,7 @@ export async function apiKeyRoutes(app: FastifyInstance) {
     if (key.revokedAt) return { success: true, alreadyRevoked: true };
 
     await prisma.apiKey.update({ where: { id }, data: { revokedAt: new Date() } });
-    req.log.warn({ apiKeyId: id, orgId: key.orgId }, "API key revoked");
+    req.log.warn({ keyId: id, orgId: key.orgId }, "API key revoked");
 
     return { success: true };
   });

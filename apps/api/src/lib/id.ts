@@ -8,7 +8,7 @@ function pad(n: number, len = 4): string {
  * Unambiguous alphabet — no O/0, no I/1. These ids get read aloud, typed into
  * support tickets and pasted into emails.
  */
-const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 32 symbols: a byte & 31 is uniform, no modulo bias
 
 /**
  * Random suffix for a business identifier.
@@ -32,7 +32,7 @@ const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function nextSeq(): string {
   const bytes = randomBytes(8);
   let out = "";
-  for (let i = 0; i < 8; i++) out += ALPHABET[bytes[i] % ALPHABET.length];
+  for (let i = 0; i < 8; i++) out += ALPHABET[bytes[i] & 31];
   return out;
 }
 

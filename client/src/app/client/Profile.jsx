@@ -24,6 +24,7 @@ export default function Profile() {
   const [pw, setPw] = useState({ current: '', new: '' });
   const set = (path, val) => {
     const keys = path.split('.');
+    if (keys.some((k) => k === '__proto__' || k === 'constructor' || k === 'prototype')) return;
     setForm((prev) => {
       const next = { ...prev };
       let obj = next;
