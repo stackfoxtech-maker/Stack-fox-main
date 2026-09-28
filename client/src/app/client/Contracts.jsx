@@ -17,6 +17,7 @@ import { usePageTitle } from '@lib/hooks';
 import { formatDate } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
 import api from '@lib/api';
+import { downloadFromUrl, downloadErrorMessage } from '@lib/download';
 import toast from 'react-hot-toast';
 
 const CONTRACT_TYPE_LABELS = {
@@ -135,14 +136,17 @@ export default function Contracts() {
                   setDownloading(true);
                   try {
                     const res = await api.get(`/contracts/${id}/pdf`);
-                    window.open(res.data.url, '_blank', 'noopener');
+                    downloadFromUrl(
+                      res.data.url,
+                      `agreements-${selected.engagementId || selected.id}.pdf`,
+                    );
                   } catch (err) {
-                    toast.error(err.response?.data?.error || 'Could not open the contract PDF.');
+                    toast.error(downloadErrorMessage(err, 'Could not download the contract PDF.'));
                   }
                   setDownloading(false);
                 }}
               >
-                <Download size={14} /> Download PDF
+                <Download size={14} /> Download all agreements (PDF)
               </Button>
             </div>
           </div>
