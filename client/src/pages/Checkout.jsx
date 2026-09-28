@@ -265,7 +265,8 @@ export default function Checkout() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-            setQuote(quoteForDisplay(verifyRes.data.data));
+            const paidQuote = quoteForDisplay(verifyRes.data.data);
+            setQuote(paidQuote);
             // Let the overlay land before the celebration page takes over.
             await new Promise((r) => setTimeout(r, 900));
             navigate(`/payment-confirmation?quote=${quoteId}`);
