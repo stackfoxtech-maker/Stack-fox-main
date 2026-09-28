@@ -31,6 +31,15 @@ const CONTRACT_TYPE_LABELS = {
   MICRO_SOW: 'Micro Statement of Work',
 };
 
+const CONTRACT_SUMMARIES = {
+  SOW: 'Scope, deliverables, timelines, change management, and warranties',
+  MSA: 'Payment terms, confidentiality, liability limits, termination, and disputes',
+  NDA: 'Protects proprietary information exchanged between both parties',
+  IP_WFH: 'You own all custom work product upon full payment',
+  DPA: 'Data protection compliance under DPDP Act and GDPR',
+  MICRO_SOW: 'Simplified scope, payment, revisions, and IP terms for Starter tier',
+};
+
 const CONTRACT_CLAUSES = {
   SOW: {
     title: 'Statement of Work (SOW)',
@@ -505,7 +514,7 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
             {contractTypes.map((type) => {
               const doc = CONTRACT_CLAUSES[type];
               if (!doc) return null;
-              const isExpanded = expandedTypes[type] !== false; // Default open
+              const isExpanded = expandedTypes[type] === true;
 
               return (
                 <div key={type} className="border border-warm-200 rounded-xl overflow-hidden">
@@ -513,15 +522,29 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
                     onClick={() => toggleType(type)}
                     className="w-full flex items-center justify-between px-4 py-3 bg-warm-50 hover:bg-warm-100 transition text-left"
                   >
-                    <div className="flex items-center gap-2">
-                      <FileText size={14} className="text-fox-500" />
-                      <span className="text-sm font-bold text-warm-900">{doc.title}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <FileText size={14} className="text-fox-500 shrink-0" />
+                        <span className="text-sm font-bold text-warm-900">{doc.title}</span>
+                      </div>
+                      {!isExpanded && CONTRACT_SUMMARIES[type] && (
+                        <p className="text-[11px] text-warm-400 mt-0.5 ml-[22px] truncate">
+                          {CONTRACT_SUMMARIES[type]}
+                        </p>
+                      )}
                     </div>
-                    {isExpanded ? (
-                      <ChevronUp size={16} className="text-warm-400" />
-                    ) : (
-                      <ChevronDown size={16} className="text-warm-400" />
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {!isExpanded && (
+                        <span className="text-[10px] text-warm-400 font-medium">
+                          {doc.sections.length} sections
+                        </span>
+                      )}
+                      {isExpanded ? (
+                        <ChevronUp size={16} className="text-warm-400" />
+                      ) : (
+                        <ChevronDown size={16} className="text-warm-400" />
+                      )}
+                    </div>
                   </button>
 
                   {isExpanded && (

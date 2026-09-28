@@ -121,7 +121,7 @@ export default function Overview() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-display-sm text-warm-900">Dashboard</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
             value={range.from}

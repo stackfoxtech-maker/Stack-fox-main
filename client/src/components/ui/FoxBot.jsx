@@ -53,7 +53,7 @@ export function FoxBot() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
+    <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-3 z-40 sm:right-6 lg:bottom-6">
       {open && (
         <div
           className="mb-3 w-76 bg-white rounded-2xl border border-warm-200 shadow-[0_16px_64px_rgba(0,0,0,0.12)] p-4 animate-scale-in flex flex-col"

@@ -40,7 +40,6 @@ const STEP_NAMES = {
     'Contract',
     'Docs & E-Sign',
     'Pay',
-    'Confirm',
   ],
 };
 
@@ -84,6 +83,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
   const [paying, setPaying] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [account, setAccount] = useState({
     name: '',
     phone: '',
@@ -171,7 +171,6 @@ export default function Checkout() {
   const tier = quote.tier || 'GROWTH';
   const steps = STEP_NAMES[tier];
   const range = quote.estimateRange || {};
-  const isLastStep = step === steps.length - 1;
 
   const saveDetails = async (nextStep = step) => {
     try {
@@ -259,23 +258,19 @@ export default function Checkout() {
         description: `Payment for ${order.quoteNumber}`,
         order_id: order.orderId,
         handler: async (response) => {
+          setConfirming(true);
           try {
             const verifyRes = await api.post(`/quotes/${quoteId}/verify`, {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-            const paidQuote = quoteForDisplay(verifyRes.data.data);
-            setQuote(paidQuote);
-            if (paidQuote.status === 'partially_paid') {
-              toast.success('Payment received — the remaining balance is still due.');
-              if (tier === 'PREMIUM') setStep(steps.length - 1);
-            } else {
-              toast.success('Payment successful!');
-              if (tier === 'PREMIUM') setStep(steps.length - 1);
-              else navigate('/app/client/quotes');
-            }
+            setQuote(quoteForDisplay(verifyRes.data.data));
+            // Let the overlay land before the celebration page takes over.
+            await new Promise((r) => setTimeout(r, 900));
+            navigate(`/payment-confirmation?quote=${quoteId}`);
           } catch {
+            setConfirming(false);
             toast.error('Payment verification failed.');
           }
         },
@@ -301,7 +296,27 @@ export default function Checkout() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
+    <div className="min-h-screen bg-warm-white max-w-2xl mx-auto py-12 px-4">
+      {confirming && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-0 z-[70] grid place-items-center bg-warm-white/90 px-6 backdrop-blur-md animate-fade-in"
+        >
+          <div className="text-center">
+            <div className="relative mx-auto mb-6 h-20 w-20">
+              <span className="absolute inset-0 rounded-full bg-fox-500/25 animate-ring-out" />
+              <div className="absolute inset-0 rounded-full border-4 border-fox-100" />
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-fox-500 animate-spin" />
+              <ShieldCheck className="absolute inset-0 m-auto text-fox-600" size={26} />
+            </div>
+            <p className="font-display text-xl font-bold text-warm-900">Confirming your payment</p>
+            <p className="mt-1 text-sm text-warm-500">
+              Securing your order. Please don't close this window.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="text-center mb-8">
         <span className="text-xs font-bold text-fox-500 uppercase tracking-widest">
           {TIER_LABELS[tier]} Checkout
@@ -309,356 +324,371 @@ export default function Checkout() {
         <h1 className="text-2xl font-bold text-warm-900 mt-1">{quote.quoteNumber}</h1>
       </div>
 
-      <div className="flex items-center gap-2 mb-8">
-        {steps.map((name, i) => (
-          <div key={name} className="flex-1 text-center">
-            <div
-              className={`h-1.5 rounded-full mb-2 ${i <= step ? 'bg-fox-500' : 'bg-warm-200'}`}
-            />
-            <span
-              className={`text-[10px] font-bold uppercase tracking-wide ${i === step ? 'text-fox-600' : 'text-warm-400'}`}
-            >
-              {name}
-            </span>
-          </div>
-        ))}
+      <div className="flex items-center gap-1.5 mb-8">
+        {steps.map((name, i) => {
+          const done = i < step;
+          const active = i === step;
+          return (
+            <div key={name} className="flex-1 text-center">
+              <div className="flex items-center justify-center mb-2 gap-1">
+                <div
+                  className={`h-1.5 flex-1 rounded-full transition-colors duration-medium ${
+                    done ? 'bg-sage-500' : active ? 'bg-fox-500' : 'bg-warm-200'
+                  }`}
+                />
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <span
+                  className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center transition-colors duration-medium ${
+                    done
+                      ? 'bg-sage-500 text-white'
+                      : active
+                        ? 'bg-fox-500 text-white'
+                        : 'bg-warm-100 text-warm-400'
+                  }`}
+                >
+                  {done ? <CheckCircle2 size={12} /> : i + 1}
+                </span>
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wide hidden sm:block ${
+                    active ? 'text-fox-600' : done ? 'text-sage-600' : 'text-warm-400'
+                  }`}
+                >
+                  {name}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="bg-white rounded-3xl border border-warm-200 p-6 md:p-8 space-y-6">
-        {/* Step 0: Review Scope / Confirm Package */}
-        {step === 0 && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-warm-900">{steps[0]}</h2>
-            <TierPicker quote={quote} />
-            <div className="space-y-2">
-              {quote.items.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex justify-between text-sm py-2 border-b border-warm-100 last:border-0"
-                >
-                  <span className="text-warm-700">
-                    {item.name} {item.quantity > 1 && `×${item.quantity}`}
-                  </span>
-                  <span className="font-mono text-warm-600">
-                    {formatINR(item.price * item.quantity)}
-                  </span>
+        {/* Step content with transition */}
+        <div key={step} className="animate-fade-up">
+          {/* Step 0: Review Scope / Confirm Package */}
+          {step === 0 && (
+            <div className="space-y-4">
+              <h2 className="font-bold text-warm-900">{steps[0]}</h2>
+              <TierPicker quote={quote} />
+              <div className="space-y-2">
+                {quote.items.map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex justify-between text-sm py-2 border-b border-warm-100 last:border-0"
+                  >
+                    <span className="text-warm-700">
+                      {item.name} {item.quantity > 1 && `×${item.quantity}`}
+                    </span>
+                    <span className="font-mono text-warm-600">
+                      {formatINR(item.price * item.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-fox-50 rounded-2xl p-4">
+                <div className="text-xs font-bold text-fox-700 uppercase tracking-wide mb-1">
+                  {range.format === 'flat' ? 'Fixed Price' : 'Estimated Range'}
                 </div>
-              ))}
-            </div>
-            <div className="bg-fox-50 rounded-2xl p-4">
-              <div className="text-xs font-bold text-fox-700 uppercase tracking-wide mb-1">
-                {range.format === 'flat' ? 'Fixed Price' : 'Estimated Range'}
+                <div className="text-xl font-black text-fox-900">
+                  {range.format === 'flat'
+                    ? formatINR(range.mid)
+                    : `${formatINR(range.low)} – ${formatINR(range.high)}`}
+                </div>
+                {tier === 'GROWTH' && (
+                  <p className="text-[11px] text-fox-600 mt-1">
+                    ±15% tolerance from mid-range. Final quote confirmed after review.
+                  </p>
+                )}
+                {tier === 'PREMIUM' && (
+                  <p className="text-[11px] text-fox-600 mt-1">
+                    Premium is quoted as a range that firms up after discovery. Final quote
+                    confirmed after review.
+                  </p>
+                )}
               </div>
-              <div className="text-xl font-black text-fox-900">
-                {range.format === 'flat'
-                  ? formatINR(range.mid)
-                  : `${formatINR(range.low)} – ${formatINR(range.high)}`}
-              </div>
-              {tier === 'GROWTH' && (
-                <p className="text-[11px] text-fox-600 mt-1">
-                  ±15% tolerance from mid-range. Final quote confirmed after review.
-                </p>
-              )}
-              {tier === 'PREMIUM' && (
-                <p className="text-[11px] text-fox-600 mt-1">
-                  Premium is quoted as a range that firms up after discovery. Final quote confirmed
-                  after review.
-                </p>
-              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Step 1: Account / Your Details / Organisation */}
-        {(steps[step] === 'Your Details' ||
-          steps[step] === 'Account' ||
-          steps[step] === 'Organisation') && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-warm-900">{steps[step]}</h2>
-            <p className="text-xs text-warm-500">
-              Fields marked <span className="text-danger-500">*</span> are required.
-            </p>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Full name" required>
-                <input
-                  placeholder="Full Name"
-                  value={account.name}
-                  onChange={(e) => setAccount({ ...account, name: e.target.value })}
-                  className="input-fx w-full"
-                />
-              </Field>
-              <Field label="Phone" required>
-                <input
-                  placeholder="Phone"
-                  value={account.phone}
-                  onChange={(e) => setAccount({ ...account, phone: e.target.value })}
-                  className="input-fx w-full"
-                />
-              </Field>
-              <Field label="Email" required className="sm:col-span-2">
-                <input
-                  placeholder="Email"
-                  value={account.email}
-                  onChange={(e) => setAccount({ ...account, email: e.target.value })}
-                  className="input-fx w-full"
-                />
-              </Field>
-              {tier !== 'STARTER' && (
-                <>
-                  <Field label="Organisation name" required hint="Printed on the tax invoice.">
-                    <input
-                      placeholder="Organisation Name"
-                      value={account.orgName}
-                      onChange={(e) => setAccount({ ...account, orgName: e.target.value })}
-                      className="input-fx w-full"
-                    />
-                  </Field>
-                  <Field label="GSTIN" hint="Add it to claim input tax credit.">
-                    <input
-                      placeholder="22AAAAA0000A1Z5"
-                      value={account.gstin}
-                      onChange={(e) => setAccount({ ...account, gstin: e.target.value })}
-                      className="input-fx w-full"
-                    />
-                  </Field>
-                </>
-              )}
-            </div>
-            {tier === 'STARTER' && (
-              <p className="text-xs text-warm-400">
-                No GSTIN, org details, or KYC required for Starter packages.
+          {/* Step 1: Account / Your Details / Organisation */}
+          {(steps[step] === 'Your Details' ||
+            steps[step] === 'Account' ||
+            steps[step] === 'Organisation') && (
+            <div className="space-y-4">
+              <h2 className="font-bold text-warm-900">{steps[step]}</h2>
+              <p className="text-xs text-warm-500">
+                Fields marked <span className="text-danger-500">*</span> are required.
               </p>
-            )}
-          </div>
-        )}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="Full name" required>
+                  <input
+                    placeholder="Full Name"
+                    value={account.name}
+                    onChange={(e) => setAccount({ ...account, name: e.target.value })}
+                    className="input-fx w-full"
+                  />
+                </Field>
+                <Field label="Phone" required>
+                  <input
+                    placeholder="Phone"
+                    value={account.phone}
+                    onChange={(e) => setAccount({ ...account, phone: e.target.value })}
+                    className="input-fx w-full"
+                  />
+                </Field>
+                <Field label="Email" required className="sm:col-span-2">
+                  <input
+                    placeholder="Email"
+                    value={account.email}
+                    onChange={(e) => setAccount({ ...account, email: e.target.value })}
+                    className="input-fx w-full"
+                  />
+                </Field>
+                {tier !== 'STARTER' && (
+                  <>
+                    <Field label="Organisation name" required hint="Printed on the tax invoice.">
+                      <input
+                        placeholder="Organisation Name"
+                        value={account.orgName}
+                        onChange={(e) => setAccount({ ...account, orgName: e.target.value })}
+                        className="input-fx w-full"
+                      />
+                    </Field>
+                    <Field label="GSTIN" hint="Add it to claim input tax credit.">
+                      <input
+                        placeholder="22AAAAA0000A1Z5"
+                        value={account.gstin}
+                        onChange={(e) => setAccount({ ...account, gstin: e.target.value })}
+                        className="input-fx w-full"
+                      />
+                    </Field>
+                  </>
+                )}
+              </div>
+              {tier === 'STARTER' && (
+                <p className="text-xs text-warm-400">
+                  No GSTIN, org details, or KYC required for Starter packages.
+                </p>
+              )}
+            </div>
+          )}
 
-        {/* Step 2: Project Setup / Engagement */}
-        {(steps[step] === 'Project Setup' || steps[step] === 'Engagement') && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-warm-900">{steps[step]}</h2>
-            <p className="text-xs text-warm-500">
-              Fields marked <span className="text-danger-500">*</span> are required.
-            </p>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Project name" required>
-                <input
-                  placeholder="Project Name"
-                  value={project.projectName}
-                  onChange={(e) => setProject({ ...project, projectName: e.target.value })}
-                  className="input-fx w-full"
-                />
-              </Field>
-              <Field label="Preferred start date">
-                <input
-                  type="date"
-                  value={project.startDate}
-                  onChange={(e) => setProject({ ...project, startDate: e.target.value })}
-                  className="input-fx w-full"
-                />
-              </Field>
-              <Field label="Communication preference" hint="Defaults to email.">
-                <select
-                  value={project.commsPreference}
-                  onChange={(e) => setProject({ ...project, commsPreference: e.target.value })}
-                  className="input-fx w-full"
-                >
-                  <option>Email</option>
-                  <option>WhatsApp</option>
-                  <option>Slack</option>
-                </select>
-              </Field>
-              {tier === 'PREMIUM' && (
-                <Field
-                  label="Engagement model"
-                  required
-                  hint="Determines how the work is contracted and billed."
-                >
+          {/* Step 2: Project Setup / Engagement */}
+          {(steps[step] === 'Project Setup' || steps[step] === 'Engagement') && (
+            <div className="space-y-4">
+              <h2 className="font-bold text-warm-900">{steps[step]}</h2>
+              <p className="text-xs text-warm-500">
+                Fields marked <span className="text-danger-500">*</span> are required.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="Project name" required>
+                  <input
+                    placeholder="Project Name"
+                    value={project.projectName}
+                    onChange={(e) => setProject({ ...project, projectName: e.target.value })}
+                    className="input-fx w-full"
+                  />
+                </Field>
+                <Field label="Preferred start date">
+                  <input
+                    type="date"
+                    value={project.startDate}
+                    onChange={(e) => setProject({ ...project, startDate: e.target.value })}
+                    className="input-fx w-full"
+                  />
+                </Field>
+                <Field label="Communication preference" hint="Defaults to email.">
                   <select
-                    value={engagementModel}
-                    onChange={(e) => setEngagementModel(e.target.value)}
+                    value={project.commsPreference}
+                    onChange={(e) => setProject({ ...project, commsPreference: e.target.value })}
                     className="input-fx w-full"
                   >
-                    <option value="FPM">Fixed Price Model</option>
-                    <option value="TNM">Time &amp; Materials</option>
-                    <option value="RET">Retainer</option>
-                    <option value="DED">Dedicated Team</option>
-                    <option value="DSC">Discovery</option>
+                    <option>Email</option>
+                    <option>WhatsApp</option>
+                    <option>Slack</option>
                   </select>
                 </Field>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Step: Payment Terms */}
-        {steps[step] === 'Payment Terms' && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-warm-900">Payment Terms</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setPaymentMode('MILESTONE')}
-                className={`p-4 rounded-2xl border-2 text-left ${paymentMode === 'MILESTONE' ? 'border-fox-500 bg-fox-50' : 'border-warm-200'}`}
-              >
-                <div className="font-bold text-sm text-warm-900">Milestone</div>
-                <div className="text-xs text-warm-500 mt-1">30% now, rest on delivery</div>
-              </button>
-              <button
-                onClick={() => setPaymentMode('UPFRONT')}
-                className={`p-4 rounded-2xl border-2 text-left ${paymentMode === 'UPFRONT' ? 'border-fox-500 bg-fox-50' : 'border-warm-200'}`}
-              >
-                <div className="font-bold text-sm text-warm-900">Upfront</div>
-                <div className="text-xs text-warm-500 mt-1">5% discount — pay 95% now</div>
-              </button>
-            </div>
-            <div className="bg-warm-50 rounded-xl p-3 text-sm flex justify-between">
-              <span className="text-warm-600">Due now</span>
-              <span className="font-mono font-bold">{formatINR(payAmount)}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Step: Invoice Preview */}
-        {steps[step] === 'Invoice' && (
-          <InvoicePreview
-            quote={quote}
-            account={account}
-            paymentMode={effectivePaymentMode}
-            onContinue={() => setStep((s) => s + 1)}
-            onBack={back}
-          />
-        )}
-
-        {/* Step: Contract Signing */}
-        {steps[step] === 'Contract' && (
-          <ContractSigning
-            quote={quote}
-            account={account}
-            tier={tier}
-            onContinue={() => setStep((s) => s + 1)}
-            onBack={back}
-          />
-        )}
-
-        {/* Step: Docs & Pay (Growth) */}
-        {steps[step] === 'Docs & Pay' && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-warm-900">Documents &amp; Pay</h2>
-            <div className="bg-warm-50 rounded-2xl p-4 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-warm-500 uppercase tracking-wide mb-1">
-                <FileText size={14} /> Documents generated for this order
+                {tier === 'PREMIUM' && (
+                  <Field
+                    label="Engagement model"
+                    required
+                    hint="Determines how the work is contracted and billed."
+                  >
+                    <select
+                      value={engagementModel}
+                      onChange={(e) => setEngagementModel(e.target.value)}
+                      className="input-fx w-full"
+                    >
+                      <option value="FPM">Fixed Price Model</option>
+                      <option value="TNM">Time &amp; Materials</option>
+                      <option value="RET">Retainer</option>
+                      <option value="DED">Dedicated Team</option>
+                      <option value="DSC">Discovery</option>
+                    </select>
+                  </Field>
+                )}
               </div>
-              <p className="text-xs text-emerald-700 flex items-center gap-1.5">
-                <CheckCircle2 size={12} /> Contract reviewed and signed in previous step
+            </div>
+          )}
+
+          {/* Step: Payment Terms */}
+          {steps[step] === 'Payment Terms' && (
+            <div className="space-y-4">
+              <h2 className="font-bold text-warm-900">Payment Terms</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setPaymentMode('MILESTONE')}
+                  className={`p-4 rounded-2xl border-2 text-left ${paymentMode === 'MILESTONE' ? 'border-fox-500 bg-fox-50' : 'border-warm-200'}`}
+                >
+                  <div className="font-bold text-sm text-warm-900">Milestone</div>
+                  <div className="text-xs text-warm-500 mt-1">30% now, rest on delivery</div>
+                </button>
+                <button
+                  onClick={() => setPaymentMode('UPFRONT')}
+                  className={`p-4 rounded-2xl border-2 text-left ${paymentMode === 'UPFRONT' ? 'border-fox-500 bg-fox-50' : 'border-warm-200'}`}
+                >
+                  <div className="font-bold text-sm text-warm-900">Upfront</div>
+                  <div className="text-xs text-warm-500 mt-1">5% discount — pay 95% now</div>
+                </button>
+              </div>
+              <div className="bg-warm-50 rounded-xl p-3 text-sm flex justify-between">
+                <span className="text-warm-600">Due now</span>
+                <span className="font-mono font-bold">{formatINR(payAmount)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Step: Invoice Preview */}
+          {steps[step] === 'Invoice' && (
+            <InvoicePreview
+              quote={quote}
+              account={account}
+              paymentMode={effectivePaymentMode}
+              onContinue={() => setStep((s) => s + 1)}
+              onBack={back}
+            />
+          )}
+
+          {/* Step: Contract Signing */}
+          {steps[step] === 'Contract' && (
+            <ContractSigning
+              quote={quote}
+              account={account}
+              tier={tier}
+              onContinue={() => setStep((s) => s + 1)}
+              onBack={back}
+            />
+          )}
+
+          {/* Step: Docs & Pay (Growth) */}
+          {steps[step] === 'Docs & Pay' && (
+            <div className="space-y-4">
+              <h2 className="font-bold text-warm-900">Documents &amp; Pay</h2>
+              <div className="bg-warm-50 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-warm-500 uppercase tracking-wide mb-1">
+                  <FileText size={14} /> Documents generated for this order
+                </div>
+                <p className="text-xs text-emerald-700 flex items-center gap-1.5">
+                  <CheckCircle2 size={12} /> Contract reviewed and signed in previous step
+                </p>
+              </div>
+              <div className="bg-warm-50 rounded-xl p-4 flex justify-between items-center">
+                <span className="text-sm text-warm-600">Amount due</span>
+                <span className="font-mono font-black text-xl">{formatINR(payAmount)}</span>
+              </div>
+              <p className="text-xs text-warm-400">
+                UPI, card, netbanking, or EMI (orders ≥₹15,000). Payment confirms the documents
+                accepted in the previous step.
+              </p>
+              <Button variant="primary" className="w-full" isLoading={paying} onClick={handlePay}>
+                <CreditCard size={16} className="mr-2" /> Pay {formatINR(payAmount)}
+              </Button>
+              <p className="text-[11px] text-warm-400 text-center flex items-center justify-center gap-1">
+                <ShieldCheck size={12} /> 256-bit encrypted · Razorpay secure
               </p>
             </div>
-            <div className="bg-warm-50 rounded-xl p-4 flex justify-between items-center">
-              <span className="text-sm text-warm-600">Amount due</span>
-              <span className="font-mono font-black text-xl">{formatINR(payAmount)}</span>
-            </div>
-            <p className="text-xs text-warm-400">
-              UPI, card, netbanking, or EMI (orders ≥₹15,000). Payment confirms the documents
-              accepted in the previous step.
-            </p>
-            <Button variant="primary" className="w-full" isLoading={paying} onClick={handlePay}>
-              <CreditCard size={16} className="mr-2" /> Pay {formatINR(payAmount)}
-            </Button>
-          </div>
-        )}
+          )}
 
-        {/* Step: Docs & E-Sign (Premium) */}
-        {steps[step] === 'Docs & E-Sign' && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-warm-900">Docs &amp; E-Sign</h2>
-            <div className="bg-warm-50 rounded-2xl p-4 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-warm-500 uppercase tracking-wide mb-1">
-                <FileText size={14} /> Documents generated for this order
-              </div>
-              {['SOW', 'MSA', 'NDA', 'IP Assignment Deed', 'DPA'].map((doc) => (
-                <div key={doc} className="text-sm text-warm-700 flex items-center gap-2">
-                  <CheckCircle2 size={14} className="text-emerald-500" /> {doc}
+          {/* Step: Docs & E-Sign (Premium) */}
+          {steps[step] === 'Docs & E-Sign' && (
+            <div className="space-y-4">
+              <h2 className="font-bold text-warm-900">Docs &amp; E-Sign</h2>
+              <div className="bg-warm-50 rounded-2xl p-4 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-warm-500 uppercase tracking-wide mb-1">
+                  <FileText size={14} /> Documents generated for this order
                 </div>
-              ))}
-            </div>
-            <label className="flex items-start gap-3 text-sm text-warm-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={docsAccepted}
-                onChange={(e) => setDocsAccepted(e.target.checked)}
-                className="mt-1"
-              />
-              <span>
-                I've reviewed and accept the full document suite. Aadhaar e-sign follows for orders
-                ≥₹5L.
-              </span>
-            </label>
-            <Button
-              variant="primary"
-              className="w-full gap-1"
-              disabled={!docsAccepted}
-              onClick={next}
-            >
-              Continue to Payment <ArrowRight size={14} />
-            </Button>
-          </div>
-        )}
-
-        {/* Step: Pay (Starter step 3, Premium step 7) */}
-        {steps[step] === 'Pay' && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-warm-900">Pay</h2>
-            <div className="bg-warm-50 rounded-xl p-4 flex justify-between items-center">
-              <span className="text-sm text-warm-600">Amount due</span>
-              <span className="font-mono font-black text-xl">{formatINR(payAmount)}</span>
-            </div>
-            <p className="text-xs text-warm-400">
-              UPI, card, netbanking, or EMI (orders ≥₹15,000).{' '}
-              {tier === 'STARTER'
-                ? 'Agreement auto-accepted on payment.'
-                : 'Payment confirms the documents accepted in the previous step.'}
-            </p>
-            <Button variant="primary" className="w-full" isLoading={paying} onClick={handlePay}>
-              <CreditCard size={16} className="mr-2" /> Pay {formatINR(payAmount)}
-            </Button>
-          </div>
-        )}
-
-        {/* Confirm step (Premium, post-payment) */}
-        {steps[step] === 'Confirm' && (
-          <div className="space-y-4 text-center py-4">
-            <ShieldCheck className="w-12 h-12 text-emerald-500 mx-auto" />
-            <h2 className="font-bold text-warm-900 text-lg">Payment confirmed</h2>
-            <p className="text-sm text-warm-600">
-              Your dedicated PM will reach out within 24 hours to schedule the kickoff call.
-            </p>
-            <Link to="/app/client/quotes" className="btn-fox inline-flex mt-2">
-              Go to My Quotes
-            </Link>
-          </div>
-        )}
-
-        {/* Nav buttons — hidden on steps that render their own CTA above */}
-        {!['Pay', 'Confirm', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(
-          steps[step],
-        ) && (
-          <div className="flex justify-between pt-2">
-            <Button variant="ghost" onClick={back} disabled={step === 0} className="gap-1">
-              <ArrowLeft size={14} /> Back
-            </Button>
-            <Button variant="primary" onClick={next} className="gap-1">
-              Continue <ArrowRight size={14} />
-            </Button>
-          </div>
-        )}
-        {['Pay', 'Confirm', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(
-          steps[step],
-        ) &&
-          step > 0 && (
-            <div className="flex justify-start">
-              <Button variant="ghost" onClick={back} className="gap-1">
-                <ArrowLeft size={14} /> Back
+                {['SOW', 'MSA', 'NDA', 'IP Assignment Deed', 'DPA'].map((doc) => (
+                  <div key={doc} className="text-sm text-warm-700 flex items-center gap-2">
+                    <CheckCircle2 size={14} className="text-emerald-500" /> {doc}
+                  </div>
+                ))}
+              </div>
+              <label className="flex items-start gap-3 text-sm text-warm-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={docsAccepted}
+                  onChange={(e) => setDocsAccepted(e.target.checked)}
+                  className="mt-1"
+                />
+                <span>
+                  I've reviewed and accept the full document suite. Aadhaar e-sign follows for
+                  orders ≥₹5L.
+                </span>
+              </label>
+              <Button
+                variant="primary"
+                className="w-full gap-1"
+                disabled={!docsAccepted}
+                onClick={next}
+              >
+                Continue to Payment <ArrowRight size={14} />
               </Button>
             </div>
           )}
+
+          {/* Step: Pay (Starter step 3, Premium step 7) */}
+          {steps[step] === 'Pay' && (
+            <div className="space-y-4">
+              <h2 className="font-bold text-warm-900">Pay</h2>
+              <div className="bg-warm-50 rounded-xl p-4 flex justify-between items-center">
+                <span className="text-sm text-warm-600">Amount due</span>
+                <span className="font-mono font-black text-xl">{formatINR(payAmount)}</span>
+              </div>
+              <p className="text-xs text-warm-400">
+                UPI, card, netbanking, or EMI (orders ≥₹15,000).{' '}
+                {tier === 'STARTER'
+                  ? 'Agreement auto-accepted on payment.'
+                  : 'Payment confirms the documents accepted in the previous step.'}
+              </p>
+              <Button variant="primary" className="w-full" isLoading={paying} onClick={handlePay}>
+                <CreditCard size={16} className="mr-2" /> Pay {formatINR(payAmount)}
+              </Button>
+              <p className="text-[11px] text-warm-400 text-center flex items-center justify-center gap-1">
+                <ShieldCheck size={12} /> 256-bit encrypted · Razorpay secure
+              </p>
+            </div>
+          )}
+
+          {/* Nav buttons — hidden on steps that render their own CTA above */}
+          {!['Pay', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(steps[step]) && (
+            <div className="flex justify-between pt-2">
+              <Button variant="ghost" onClick={back} disabled={step === 0} className="gap-1">
+                <ArrowLeft size={14} /> Back
+              </Button>
+              <Button variant="primary" onClick={next} className="gap-1">
+                Continue <ArrowRight size={14} />
+              </Button>
+            </div>
+          )}
+          {['Pay', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(steps[step]) &&
+            step > 0 && (
+              <div className="flex justify-start">
+                <Button variant="ghost" onClick={back} className="gap-1">
+                  <ArrowLeft size={14} /> Back
+                </Button>
+              </div>
+            )}
+        </div>
+        {/* end animate-fade-up wrapper */}
       </div>
     </div>
   );

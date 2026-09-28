@@ -928,7 +928,7 @@ export default function Builder() {
       </div>
 
       {itemCount > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 md:hidden">
+        <div className="fixed left-0 right-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 p-3 md:hidden">
           <div
             className="bg-fox-600 text-white rounded-lg p-4 flex items-center justify-between"
             onClick={toggleCart}
