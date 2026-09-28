@@ -4,7 +4,16 @@ import { cn } from '@lib/utils';
 import useAuthStore from '@store/authStore';
 import useCartStore from '@store/cartStore';
 
-const HIDDEN_ON = ['/app/', '/checkout', '/esign', '/login', '/signup', '/forgot-password', '/reset-password', '/verify-email'];
+const HIDDEN_ON = [
+  '/app/',
+  '/checkout',
+  '/esign',
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+];
 
 export const tabBarVisible = (pathname) => !HIDDEN_ON.some((p) => pathname.startsWith(p));
 
@@ -41,44 +50,53 @@ export default function MobileTabBar() {
 
   return (
     <>
-    <div aria-hidden className="lg:hidden" style={{ height: 'calc(3.5rem + env(safe-area-inset-bottom))' }} />
-    <nav
-      aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-warm-200 bg-white/95 shadow-[0_-6px_24px_-12px_rgba(26,25,24,0.18)] backdrop-blur-lg lg:hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-    >
-      {tabs.map(({ label, icon: Icon, to, end }) => (
-        <NavLink key={to} to={to} end={end} className={({ isActive }) => tabClass(isActive)}>
-          {({ isActive }) => (
-            <>
-              <Indicator active={isActive} />
-              <Icon size={21} strokeWidth={isActive ? 2.4 : 2} />
-              {label}
-            </>
-          )}
-        </NavLink>
-      ))}
-
-      <button type="button" onClick={toggleCart} aria-label={`Cart, ${itemCount} items`} className={tabClass(false)}>
-        <span className="relative">
-          <ShoppingCart size={21} />
-          {itemCount > 0 && (
-            <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-fox-500 px-1 text-[9px] font-bold text-white">
-              {itemCount > 99 ? '99+' : itemCount}
-            </span>
-          )}
-        </span>
-        Cart
-      </button>
-
-      <NavLink
-        to={isAuthenticated ? getDashboardPath() : '/login'}
-        className={({ isActive }) => tabClass(isActive && isAuthenticated)}
+      <div
+        aria-hidden
+        className="lg:hidden"
+        style={{ height: 'calc(3.5rem + env(safe-area-inset-bottom))' }}
+      />
+      <nav
+        aria-label="Primary"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-warm-200 bg-white/95 shadow-[0_-6px_24px_-12px_rgba(26,25,24,0.18)] backdrop-blur-lg lg:hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <User size={21} />
-        {isAuthenticated ? 'Account' : 'Log in'}
-      </NavLink>
-    </nav>
+        {tabs.map(({ label, icon: Icon, to, end }) => (
+          <NavLink key={to} to={to} end={end} className={({ isActive }) => tabClass(isActive)}>
+            {({ isActive }) => (
+              <>
+                <Indicator active={isActive} />
+                <Icon size={21} strokeWidth={isActive ? 2.4 : 2} />
+                {label}
+              </>
+            )}
+          </NavLink>
+        ))}
+
+        <button
+          type="button"
+          onClick={toggleCart}
+          aria-label={`Cart, ${itemCount} items`}
+          className={tabClass(false)}
+        >
+          <span className="relative">
+            <ShoppingCart size={21} />
+            {itemCount > 0 && (
+              <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-fox-500 px-1 text-[9px] font-bold text-white">
+                {itemCount > 99 ? '99+' : itemCount}
+              </span>
+            )}
+          </span>
+          Cart
+        </button>
+
+        <NavLink
+          to={isAuthenticated ? getDashboardPath() : '/login'}
+          className={({ isActive }) => tabClass(isActive && isAuthenticated)}
+        >
+          <User size={21} />
+          {isAuthenticated ? 'Account' : 'Log in'}
+        </NavLink>
+      </nav>
     </>
   );
 }

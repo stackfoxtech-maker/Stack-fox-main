@@ -528,12 +528,16 @@ export default function ContractSigning({ quote, account, tier, onContinue, onBa
                         <span className="text-sm font-bold text-warm-900">{doc.title}</span>
                       </div>
                       {!isExpanded && CONTRACT_SUMMARIES[type] && (
-                        <p className="text-[11px] text-warm-400 mt-0.5 ml-[22px] truncate">{CONTRACT_SUMMARIES[type]}</p>
+                        <p className="text-[11px] text-warm-400 mt-0.5 ml-[22px] truncate">
+                          {CONTRACT_SUMMARIES[type]}
+                        </p>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {!isExpanded && (
-                        <span className="text-[10px] text-warm-400 font-medium">{doc.sections.length} sections</span>
+                        <span className="text-[10px] text-warm-400 font-medium">
+                          {doc.sections.length} sections
+                        </span>
                       )}
                       {isExpanded ? (
                         <ChevronUp size={16} className="text-warm-400" />
