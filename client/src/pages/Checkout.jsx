@@ -40,7 +40,6 @@ const STEP_NAMES = {
     'Contract',
     'Docs & E-Sign',
     'Pay',
-    'Confirm',
   ],
 };
 
@@ -84,6 +83,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
   const [paying, setPaying] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [account, setAccount] = useState({
     name: '',
     phone: '',
@@ -171,7 +171,6 @@ export default function Checkout() {
   const tier = quote.tier || 'GROWTH';
   const steps = STEP_NAMES[tier];
   const range = quote.estimateRange || {};
-  const isLastStep = step === steps.length - 1;
 
   const saveDetails = async (nextStep = step) => {
     try {
@@ -259,23 +258,19 @@ export default function Checkout() {
         description: `Payment for ${order.quoteNumber}`,
         order_id: order.orderId,
         handler: async (response) => {
+          setConfirming(true);
           try {
             const verifyRes = await api.post(`/quotes/${quoteId}/verify`, {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-            const paidQuote = quoteForDisplay(verifyRes.data.data);
-            setQuote(paidQuote);
-            if (paidQuote.status === 'partially_paid') {
-              toast.success('Payment received — the remaining balance is still due.');
-              if (tier === 'PREMIUM') setStep(steps.length - 1);
-            } else {
-              toast.success('Payment successful!');
-              if (tier === 'PREMIUM') setStep(steps.length - 1);
-              else navigate('/app/client/quotes');
-            }
+            setQuote(quoteForDisplay(verifyRes.data.data));
+            // Let the overlay land before the celebration page takes over.
+            await new Promise((r) => setTimeout(r, 900));
+            navigate(`/payment-confirmation?quote=${quoteId}`);
           } catch {
+            setConfirming(false);
             toast.error('Payment verification failed.');
           }
         },
@@ -301,7 +296,25 @@ export default function Checkout() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
+    <div className="min-h-screen bg-warm-white max-w-2xl mx-auto py-12 px-4">
+      {confirming && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-0 z-[70] grid place-items-center bg-warm-white/90 px-6 backdrop-blur-md animate-fade-in"
+        >
+          <div className="text-center">
+            <div className="relative mx-auto mb-6 h-20 w-20">
+              <span className="absolute inset-0 rounded-full bg-fox-500/25 animate-ring-out" />
+              <div className="absolute inset-0 rounded-full border-4 border-fox-100" />
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-fox-500 animate-spin" />
+              <ShieldCheck className="absolute inset-0 m-auto text-fox-600" size={26} />
+            </div>
+            <p className="font-display text-xl font-bold text-warm-900">Confirming your payment</p>
+            <p className="mt-1 text-sm text-warm-500">Securing your order. Please don't close this window.</p>
+          </div>
+        </div>
+      )}
       <div className="text-center mb-8">
         <span className="text-xs font-bold text-fox-500 uppercase tracking-widest">
           {TIER_LABELS[tier]} Checkout
@@ -309,22 +322,52 @@ export default function Checkout() {
         <h1 className="text-2xl font-bold text-warm-900 mt-1">{quote.quoteNumber}</h1>
       </div>
 
-      <div className="flex items-center gap-2 mb-8">
-        {steps.map((name, i) => (
-          <div key={name} className="flex-1 text-center">
-            <div
-              className={`h-1.5 rounded-full mb-2 ${i <= step ? 'bg-fox-500' : 'bg-warm-200'}`}
-            />
-            <span
-              className={`text-[10px] font-bold uppercase tracking-wide ${i === step ? 'text-fox-600' : 'text-warm-400'}`}
-            >
-              {name}
-            </span>
-          </div>
-        ))}
+      <div className="flex items-center gap-1.5 mb-8">
+        {steps.map((name, i) => {
+          const done = i < step;
+          const active = i === step;
+          return (
+            <div key={name} className="flex-1 text-center">
+              <div className="flex items-center justify-center mb-2 gap-1">
+                <div
+                  className={`h-1.5 flex-1 rounded-full transition-colors duration-medium ${
+                    done ? 'bg-sage-500' : active ? 'bg-fox-500' : 'bg-warm-200'
+                  }`}
+                />
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <span
+                  className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center transition-colors duration-medium ${
+                    done
+                      ? 'bg-sage-500 text-white'
+                      : active
+                        ? 'bg-fox-500 text-white'
+                        : 'bg-warm-100 text-warm-400'
+                  }`}
+                >
+                  {done ? (
+                    <CheckCircle2 size={12} />
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wide hidden sm:block ${
+                    active ? 'text-fox-600' : done ? 'text-sage-600' : 'text-warm-400'
+                  }`}
+                >
+                  {name}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="bg-white rounded-3xl border border-warm-200 p-6 md:p-8 space-y-6">
+        {/* Step content with transition */}
+        <div key={step} className="animate-fade-up">
+
         {/* Step 0: Review Scope / Confirm Package */}
         {step === 0 && (
           <div className="space-y-4">
@@ -562,6 +605,9 @@ export default function Checkout() {
             <Button variant="primary" className="w-full" isLoading={paying} onClick={handlePay}>
               <CreditCard size={16} className="mr-2" /> Pay {formatINR(payAmount)}
             </Button>
+            <p className="text-[11px] text-warm-400 text-center flex items-center justify-center gap-1">
+              <ShieldCheck size={12} /> 256-bit encrypted · Razorpay secure
+            </p>
           </div>
         )}
 
@@ -619,25 +665,14 @@ export default function Checkout() {
             <Button variant="primary" className="w-full" isLoading={paying} onClick={handlePay}>
               <CreditCard size={16} className="mr-2" /> Pay {formatINR(payAmount)}
             </Button>
-          </div>
-        )}
-
-        {/* Confirm step (Premium, post-payment) */}
-        {steps[step] === 'Confirm' && (
-          <div className="space-y-4 text-center py-4">
-            <ShieldCheck className="w-12 h-12 text-emerald-500 mx-auto" />
-            <h2 className="font-bold text-warm-900 text-lg">Payment confirmed</h2>
-            <p className="text-sm text-warm-600">
-              Your dedicated PM will reach out within 24 hours to schedule the kickoff call.
+            <p className="text-[11px] text-warm-400 text-center flex items-center justify-center gap-1">
+              <ShieldCheck size={12} /> 256-bit encrypted · Razorpay secure
             </p>
-            <Link to="/app/client/quotes" className="btn-fox inline-flex mt-2">
-              Go to My Quotes
-            </Link>
           </div>
         )}
 
         {/* Nav buttons — hidden on steps that render their own CTA above */}
-        {!['Pay', 'Confirm', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(
+        {!['Pay', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(
           steps[step],
         ) && (
           <div className="flex justify-between pt-2">
@@ -649,7 +684,7 @@ export default function Checkout() {
             </Button>
           </div>
         )}
-        {['Pay', 'Confirm', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(
+        {['Pay', 'Docs & Pay', 'Docs & E-Sign', 'Invoice', 'Contract'].includes(
           steps[step],
         ) &&
           step > 0 && (
@@ -659,6 +694,8 @@ export default function Checkout() {
               </Button>
             </div>
           )}
+
+        </div>{/* end animate-fade-up wrapper */}
       </div>
     </div>
   );

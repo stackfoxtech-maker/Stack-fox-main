@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 import { apiPost } from '@lib/api';
 import data from '@data/stackfox-data.json';
 
@@ -55,10 +56,10 @@ export default function ExpressCheckout() {
   };
 
   return (
-    <div className="max-w-md mx-auto px-6 py-16">
-      <p className="text-sm font-semibold text-orange-600 mb-2">Starter Tier · Express Checkout</p>
+    <div className="min-h-screen bg-warm-white max-w-md mx-auto px-6 py-16">
+      <p className="text-sm font-semibold text-fox-600 mb-2">Starter Tier · Express Checkout</p>
       <h1 className="text-3xl font-bold mb-2">Almost done!</h1>
-      <p className="text-gray-600 mb-8">
+      <p className="text-warm-600 mb-8">
         3 fields. No account needed. Your agreement is generated automatically.
       </p>
 
@@ -69,7 +70,7 @@ export default function ExpressCheckout() {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-fox-500"
           />
         </div>
         <div>
@@ -81,7 +82,7 @@ export default function ExpressCheckout() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="10-digit mobile number"
-            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-fox-500"
           />
         </div>
         <div>
@@ -91,16 +92,16 @@ export default function ExpressCheckout() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-fox-500"
           />
         </div>
 
-        <div className="bg-gray-50 rounded-xl p-4">
+        <div className="bg-warm-50 rounded-xl p-4">
           <div className="flex justify-between mb-1">
             <span className="font-medium">{service?.name}</span>
             <span className="font-bold">₹{basePrice.toLocaleString('en-IN')}</span>
           </div>
-          <div className="text-xs text-gray-500 mb-3">{service?.est}</div>
+          <div className="text-xs text-warm-500 mb-3">{service?.est}</div>
 
           <div className="text-sm font-semibold mb-2">Optional add-ons</div>
           <div className="space-y-2">
@@ -113,7 +114,7 @@ export default function ExpressCheckout() {
                   className="w-4 h-4"
                 />
                 <span className="flex-1">{a.name}</span>
-                <span className="text-gray-600">₹{(a.price ?? 0).toLocaleString('en-IN')}</span>
+                <span className="text-warm-600">₹{(a.price ?? 0).toLocaleString('en-IN')}</span>
               </label>
             ))}
           </div>
@@ -122,22 +123,26 @@ export default function ExpressCheckout() {
             <span>Total</span>
             <span>₹{total.toLocaleString('en-IN')}</span>
           </div>
-          <div className="text-xs text-gray-500 mt-1">+ GST 18% at payment</div>
+          <div className="text-xs text-warm-500 mt-1">+ GST 18% at payment</div>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          className="w-full py-3 bg-fox-500 text-white rounded-xl font-semibold hover:bg-fox-600 disabled:opacity-50 transition-colors"
         >
           {loading ? 'Processing…' : 'Pay & Start Project'}
         </button>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        <p className="flex items-center justify-center gap-1 text-xs text-warm-400 mt-2">
+          <Lock className="w-3 h-3" />
+          256-bit encrypted · Razorpay secure
+        </p>
+        {error && <p className="text-sm text-danger-500">{error}</p>}
       </form>
 
-      <p className="text-xs text-gray-400 text-center">
+      <p className="text-xs text-warm-400 text-center">
         By paying, you accept the{' '}
-        <Link to="/legal" className="text-orange-600 underline">
+        <Link to="/legal" className="text-fox-600 underline">
           StackFox Service Agreement
         </Link>
         . Click-accept with phone OTP.

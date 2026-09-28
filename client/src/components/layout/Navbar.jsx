@@ -338,16 +338,16 @@ export default function Navbar() {
             {/* Builder (Mobile Shortcut) */}
             <Link
               to="/builder"
-              className="lg:hidden p-3 rounded-xl hover:bg-warm-100 transition-colors text-warm-700"
+              className="hidden sm:block lg:hidden p-3 rounded-xl hover:bg-warm-100 transition-colors text-warm-700"
               aria-label="Builder"
             >
               <Hammer size={20} />
             </Link>
 
-            {/* Cart */}
+            {/* Cart — on phones it lives in the bottom tab bar */}
             <button
               onClick={toggleCart}
-              className="relative p-3 rounded-xl hover:bg-warm-100 transition-colors"
+              className="relative hidden sm:block p-3 rounded-xl hover:bg-warm-100 transition-colors"
               aria-label="Cart"
             >
               <ShoppingCart size={20} className="text-warm-700" />
@@ -360,7 +360,9 @@ export default function Navbar() {
 
             {/* Auth */}
             {isAuthenticated ? (
-              <UserMenu />
+              <div className="hidden sm:block">
+                <UserMenu />
+              </div>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
                 <Link to="/login">

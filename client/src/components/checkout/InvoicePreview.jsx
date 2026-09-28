@@ -8,7 +8,7 @@ const downloadInvoicePDF = (inv) =>
   import('@lib/pdfExport').then((m) => m.exportTaxInvoicePDF(inv));
 
 const Label = ({ children }) => (
-  <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#1F4FA0]">
+  <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-fox-700">
     {children}
   </div>
 );

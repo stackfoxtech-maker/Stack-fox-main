@@ -186,7 +186,10 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
         </header>
 
         {/* Scrollable content — pad past the fixed bottom bar on mobile */}
-        <main className="flex-1 overflow-y-auto p-4 pb-24 lg:p-6 lg:pb-6">
+        <main
+          className="min-w-0 flex-1 overflow-x-hidden p-4 lg:p-6 lg:!pb-6"
+          style={{ paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
+        >
           <Outlet />
         </main>
 
@@ -202,19 +205,30 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
               end={item.path === base}
               className={({ isActive: a }) =>
                 cn(
-                  'flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
+                  'relative flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors active:scale-95',
                   a ? 'text-fox-600' : 'text-warm-500',
                 )
               }
             >
-              <item.icon size={20} strokeWidth={2} />
-              {item.label}
+              {({ isActive: a }) => (
+                <>
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'absolute left-1/2 top-0 h-0.5 -translate-x-1/2 rounded-full bg-fox-500 transition-all duration-medium ease-enter',
+                      a ? 'w-8 opacity-100' : 'w-0 opacity-0',
+                    )}
+                  />
+                  <item.icon size={21} strokeWidth={a ? 2.4 : 2} />
+                  {item.label}
+                </>
+              )}
             </NavLink>
           ))}
           <button
             onClick={() => setDrawerOpen(true)}
             className={cn(
-              'flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
+              'flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors active:scale-95',
               drawerOpen ? 'text-fox-600' : 'text-warm-500',
             )}
           >

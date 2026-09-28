@@ -11,6 +11,7 @@ import useAuthStore from '@store/authStore';
 import { Spinner } from '@components/ui/Primitives';
 import Navbar from '@components/layout/Navbar';
 import Footer from '@components/layout/Footer';
+import MobileTabBar from '@components/layout/MobileTabBar';
 // Home is the LCP page and the most-visited route — ship it in the entry
 // bundle so it paints immediately with no Suspense spinner → content swap (CLS).
 import Home from '@pages/Home';
@@ -204,6 +205,7 @@ const PublicLayout = () => (
       </Suspense>
     </main>
     <Footer />
+    <MobileTabBar />
   </>
 );
 
