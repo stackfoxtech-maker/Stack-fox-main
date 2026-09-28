@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { isStorageConfigured } from "../lib/storage";
-import { buildContractPdf } from "../lib/documents";
+import { buildAgreementPack, buildContractPdf } from "../lib/documents";
 import { clientScope } from "../lib/scope";
 import { LIST_CAP, ok, withId, withIds } from "../lib/http";
 import { DELIVERY_ROLES } from "@stackfox/core";
@@ -66,7 +66,14 @@ export async function contractRoutes(app: FastifyInstance) {
     // client the PDF does not exist. The contract row is the source of truth;
     // the file is derived from it.
     try {
-      const key = contract.fileKey ?? (await buildContractPdf(contract.id));
+      // The default download is the whole set of agreements for the engagement
+      // in one PDF, so a client never has to collect them one at a time.
+      // ?single=1 returns just this contract.
+      const single = (req.query as { single?: string }).single === "1";
+      const key =
+        !single && contract.engagementId
+          ? await buildAgreementPack(contract.engagementId)
+          : (contract.fileKey ?? (await buildContractPdf(contract.id)));
       if (!key) return reply.code(404).send({ error: "Contract not found" });
       return {
         url: await issueDownload(req, {
@@ -77,7 +84,12 @@ export async function contractRoutes(app: FastifyInstance) {
       };
     } catch (err) {
       req.log.error({ err, contractId: id }, "contract pdf download failed");
-      return reply.code(500).send({ error: "Could not prepare the contract PDF." });
+      return reply
+        .code(500)
+        .send({
+          error: "Could not prepare the contract PDF.",
+          requestId: String(req.id),
+        });
     }
   });
 

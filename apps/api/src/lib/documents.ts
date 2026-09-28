@@ -2,8 +2,9 @@ import { createHash } from "crypto";
 import { prisma } from "@stackfox/prisma";
 import { uploadFile, copyToWorm } from "./storage";
 import { recordDocument } from "./documentIntegrity";
-import { renderDocument } from "./pdf";
-import { asString } from "./json";
+import { renderAgreementPack, type PackContract, type Pack } from "./contractPdf";
+import { PACK_ORDER } from "./contractText";
+import { inr2 } from "./companyInvoice";
 import { log } from "./logger";
 import {
   renderCompanyInvoicePdf,
@@ -171,54 +172,149 @@ export async function buildInvoicePdf(
   return key;
 }
 
+const packKey = (engagementId: string) => `contracts/${engagementId}/agreement-pack.pdf`;
+
+function addressLine(a: unknown): string | null {
+  if (!a || typeof a !== "object") return null;
+  const o = a as Record<string, unknown>;
+  const parts = [o.line1, o.line2, o.street, o.city, o.state, o.pincode ?? o.postalCode]
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter(Boolean);
+  return parts.length ? parts.join(", ") : null;
+}
+
+const paise = (v: unknown): number | null => {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n / 100 : null;
+};
+
+/** Everything a contract's wording and signature blocks are filled from. */
+async function loadPack(
+  engagementId: string,
+  only?: string,
+  cover = true,
+): Promise<Pack | null> {
+  const eng = await prisma.engagement.findUnique({
+    where: { id: engagementId },
+    include: {
+      client: true,
+      contracts: {
+        include: { signatures: { include: { signer: { select: { name: true } } } } },
+      },
+      projects: {
+        include: {
+          milestones: { orderBy: { number: "asc" } },
+          service: { select: { name: true } },
+        },
+      },
+    },
+  });
+  if (!eng) return null;
+
+  const commercial = (eng.commercial ?? {}) as Record<string, unknown>;
+  const total = paise(commercial.total);
+  const tax = paise(commercial.gst);
+  const schedule = (eng.projects[0]?.milestones ?? []).map((m) => ({
+    name: m.name,
+    pct: m.paymentPct,
+  }));
+  const rounds = eng.projects.flatMap((p) => p.milestones.map((m) => m.maxRounds));
+  const context = {
+    clientName: eng.client.name,
+    clientKind: eng.client.type,
+    clientGstin: eng.client.gstin,
+    clientAddress: addressLine(eng.client.billingAddress),
+    engagementId: eng.id,
+    projects: eng.projects.map((p) => p.name || p.service?.name || p.id),
+    schedule,
+    feeTotal: total ? `Rs ${inr2(total)}` : null,
+    feeTax: tax ? `Rs ${inr2(tax)}` : null,
+    revisionRounds: rounds.length ? Math.min(...rounds) : 2,
+    effectiveDate: "",
+  };
+
+  const rank = (t: string) =>
+    PACK_ORDER.includes(t) ? PACK_ORDER.indexOf(t) : PACK_ORDER.length;
+  const contracts: PackContract[] = eng.contracts
+    .filter((c) => !only || c.id === only)
+    .sort(
+      (a, b) =>
+        rank(a.type) - rank(b.type) || a.createdAt.getTime() - b.createdAt.getTime(),
+    )
+    .map((c) => ({
+      id: c.id,
+      type: c.type,
+      status: c.status,
+      createdAt: c.createdAt,
+      executedAt: c.executedAt,
+      signatures: c.signatures.map((sg) => {
+        const ev = (sg.evidence ?? {}) as Record<string, unknown>;
+        return {
+          side: sg.side,
+          name: typeof ev.name === "string" ? ev.name : (sg.signer?.name ?? undefined),
+          signedAt: sg.signedAt,
+        };
+      }),
+      context,
+    }));
+
+  return {
+    clientName: eng.client.name,
+    clientKind: eng.client.type,
+    clientGstin: eng.client.gstin,
+    clientAddress: addressLine(eng.client.billingAddress),
+    engagementId: eng.id,
+    generatedOn: new Date(),
+    contracts,
+    cover,
+  };
+}
+
 /**
- * Renders a contract, stores it in both the working and write-once buckets, and
- * records the key and hash. Returns the storage key, or null when the contract
- * does not exist.
+ * One PDF holding every contract of an engagement: a cover with the contents,
+ * then each contract on its own pages with its own signature block.
+ *
+ * It is rebuilt on every request rather than cached, because it must show the
+ * signatures as they stand now; each build is recorded in the document ledger.
+ * Returns the storage key, or null when the engagement has no contracts.
+ */
+export async function buildAgreementPack(engagementId: string): Promise<string | null> {
+  const pack = await loadPack(engagementId);
+  if (!pack || pack.contracts.length === 0) return null;
+
+  const pdf = await renderAgreementPack(pack);
+  const key = packKey(engagementId);
+  await uploadFile(key, pdf, "application/pdf");
+  await recordDocument({
+    documentType: "CONTRACT",
+    documentId: `pack:${engagementId}`,
+    bytes: pdf,
+    storageKey: key,
+  });
+  return key;
+}
+
+/**
+ * Renders (or re-renders) one contract, stores it, and records the key on the
+ * row. The executed copy is also placed in write-once storage.
  */
 export async function buildContractPdf(contractId: string): Promise<string | null> {
-  const contract = await prisma.contract.findUnique({
-    where: { id: contractId },
-    include: { engagement: { include: { client: true } }, order: true },
-  });
+  const contract = await prisma.contract.findUnique({ where: { id: contractId } });
   if (!contract) return null;
+  if (!contract.engagementId) return null;
 
-  const clauses = (contract.clauseConfig ?? {}) as Record<string, unknown>;
-  const clauseLines = Object.entries(clauses).map(
-    ([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : asString(v)}`,
-  );
+  const pack = await loadPack(contract.engagementId, contract.id, false);
+  if (!pack || pack.contracts.length === 0) return null;
 
-  const pdf = await renderDocument({
-    title: `${contract.type} Agreement`,
-    subtitle: contract.engagement?.client?.name,
-    reference: contract.id,
-    meta: [
-      { label: "Type", value: contract.type },
-      { label: "Engagement", value: contract.engagementId ?? "—" },
-      { label: "Order", value: contract.orderId ?? "—" },
-      { label: "Template version", value: String(contract.templateVer) },
-      { label: "Status", value: contract.status },
-      { label: "Date", value: new Date().toISOString().slice(0, 10) },
-    ],
-    body: [
-      `This ${contract.type} is entered into between StackFox and ${
-        contract.engagement?.client?.name ?? "the Client"
-      } and governs the engagement referenced above. The parties agree to the Statement of Deliverable Practice (SDP) versions pinned to this contract and to the clause configuration recorded below.`,
-      ...(clauseLines.length ? ["Clause configuration:", ...clauseLines] : []),
-      "Execution of this document is recorded via the StackFox e-signature ledger; the signed copy is retained in write-once storage as the contract of record.",
-    ],
-    footer: "Draft pending signature unless marked EXECUTED above.",
-  });
-
+  const pdf = await renderAgreementPack(pack);
   const key = contractKey(contract);
   const wormKey = `contracts/${contract.engagementId}/${contract.id}.worm.pdf`;
   const docHash = createHash("sha256").update(pdf).digest("hex");
 
   await uploadFile(key, pdf, "application/pdf");
 
-  // This was `.catch(() => {})`. If the archive copy never landed, nothing said
-  // so — while the contract text asserts the signed copy is retained in
-  // write-once storage. Surface it instead.
+  // If the archive copy never landed, nothing would say so while the contract
+  // text asserts the signed copy is retained. Surface it.
   let contractArchived: string | undefined;
   try {
     await copyToWorm(wormKey, pdf);

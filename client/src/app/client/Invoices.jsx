@@ -4,6 +4,7 @@ import { usePageTitle } from '@lib/hooks';
 import { formatDate, capitalize, getStatusBadge, cn, formatPaise } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
 import api from '@lib/api';
+import { downloadFromUrl, downloadErrorMessage } from '@lib/download';
 import { loadRazorpay } from '@lib/razorpay';
 import toast from 'react-hot-toast';
 
@@ -78,9 +79,9 @@ export default function Invoices() {
     setDownloading(invoice._id);
     try {
       const { data } = await api.get(`/invoices/${invoice._id}/pdf`);
-      window.open(data.url, '_blank', 'noopener');
+      downloadFromUrl(data.url, `${invoice._id}.pdf`);
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Could not open the invoice PDF.');
+      toast.error(downloadErrorMessage(err, 'Could not download the invoice PDF.'));
     }
     setDownloading(null);
   };
