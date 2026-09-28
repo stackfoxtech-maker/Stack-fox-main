@@ -777,13 +777,28 @@ export async function settleQuote(
     // quote is fully paid off — not on an UPFRONT/MILESTONE installment.
     const referralCode = (result.quote.checkoutDetails as any)?.referralCode;
     if (referralCode && result.quote.status === "paid") {
+      const purchaser = await prisma.user.findUnique({
+        where: { id: result.quote.userId },
+        select: { email: true },
+      });
       await queues.referralProcessor
         .add("convert", {
           referralCode,
           orderId: quoteId,
           amount: Number(result.quote.total),
+          purchaserId: result.quote.userId,
+          purchaserEmail: purchaser?.email,
         })
-        .catch(() => {});
+        .catch((err) => {
+          // This branch runs once, right when the quote settles fully paid —
+          // no retry path exists, so a swallowed failure here loses the
+          // referrer's commission for good with nothing in the logs to find
+          // it by.
+          log().error(
+            { err, quoteId, referralCode },
+            "referral conversion enqueue failed",
+          );
+        });
     }
   }
   return result.quote;

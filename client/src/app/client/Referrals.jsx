@@ -97,7 +97,7 @@ export default function Referrals() {
           <div>
             <h3 className="font-medium text-warm-900">Invite a friend</h3>
             <p className="text-xs text-warm-500">
-              Earn 10% commission when they pay for their first order.
+              Earn a commission on the order they pay once it converts.
             </p>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 import { isMailConfigured, referralInviteEmail, sendMail } from "../lib/mailer";
 import { log } from "../lib/logger";
+import { resolveCommissionPct } from "../lib/referralCommission";
 
 interface ProcessJob {
   referralId: string;
@@ -13,6 +14,9 @@ interface ConvertJob {
   orderId: string;
   /** The paid order/quote total in paise — commission is a percentage of this. */
   amount: number;
+  /** Whoever completed the paid order — used to block a self-referral. */
+  purchaserId?: string;
+  purchaserEmail?: string;
 }
 
 /**
@@ -88,8 +92,13 @@ async function handleProcess({ referralId }: ProcessJob) {
   });
 }
 
-async function handleConvert({ referralCode, orderId, amount }: ConvertJob) {
-  const referral = await prisma.referral.findUnique({ where: { code: referralCode } });
+async function handleConvert({ referralCode, orderId, amount, purchaserId }: ConvertJob) {
+  // Codes are minted uppercase (see lib/id.ts referralCode), but this is the
+  // one place every conversion path funnels through regardless of how the
+  // code reached us — typed by hand, restored from a saved draft, or pasted
+  // — so normalise here rather than trust every caller to have done it.
+  const code = referralCode.trim().toUpperCase();
+  const referral = await prisma.referral.findUnique({ where: { code } });
   if (!referral) {
     log().warn({ referralCode, orderId }, "referral conversion: unknown code");
     return;
@@ -102,17 +111,38 @@ async function handleConvert({ referralCode, orderId, amount }: ConvertJob) {
   // A referral that resolved to an existing/duplicate account never earns a
   // commission — there was no genuine new signup to attribute the order to.
   if (referral.status === "DUPLICATE" || referral.status === "EXPIRED") return;
-  if (!Number.isSafeInteger(amount) || amount <= 0) {
-    log().warn({ referralCode, orderId, amount }, "referral conversion: invalid amount");
+
+  // A referrer cannot earn a commission on their own purchase: invite a
+  // throwaway email, apply the returned code to your own order. The email on
+  // the referral row is deliberately not enforced as a hard match — a code is
+  // meant to be shareable (the invited person may check out with a different
+  // address than the one the invite was sent to), so only self-referral by
+  // account id is blocked.
+  if (purchaserId && referral.referrerId === purchaserId) {
+    log().warn(
+      { referralCode: code, orderId, purchaserId },
+      "referral conversion: blocked self-referral",
+    );
     return;
   }
 
-  const commissionPct =
-    referral.commissionPct ?? Number(process.env.REFERRAL_COMMISSION_PCT ?? 10);
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    log().warn(
+      { referralCode: code, orderId, amount },
+      "referral conversion: invalid amount",
+    );
+    return;
+  }
+
+  const commissionPct = resolveCommissionPct(referral.commissionPct);
   const commissionAmount = Math.round((amount * commissionPct) / 100);
 
-  await prisma.referral.update({
-    where: { id: referral.id },
+  // Conditional on status so two concurrent "convert" jobs for the same code
+  // (e.g. a duplicate enqueue, or a retry racing the original) cannot both
+  // pass the status checks above and then both write — only one update can
+  // match a row still in PENDING/SENT, so only one can ever flip it.
+  const result = await prisma.referral.updateMany({
+    where: { id: referral.id, status: { in: ["PENDING", "SENT"] } },
     data: {
       status: "CONVERTED",
       referredOrderId: orderId,
@@ -120,6 +150,7 @@ async function handleConvert({ referralCode, orderId, amount }: ConvertJob) {
       commissionAmount,
     },
   });
+  if (result.count !== 1) return;
 
   await emitEvent({
     code: "REFERRAL_CONVERTED",

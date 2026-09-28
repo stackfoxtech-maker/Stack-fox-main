@@ -131,7 +131,11 @@ export default function Checkout() {
         if (saved.paymentMode) setPaymentMode(saved.paymentMode);
         if (saved.engagementModel) setEngagementModel(saved.engagementModel);
         if (typeof saved.docsAccepted === 'boolean') setDocsAccepted(saved.docsAccepted);
-        if (saved.referralCode) setReferralCode(saved.referralCode);
+        // The worker looks the code up with an exact match; a mixed-case
+        // value saved by some other path would otherwise fail that lookup
+        // silently as "unknown code" (the server also normalises on lookup,
+        // but there's no reason to hand it a wrong-case value to begin with).
+        if (saved.referralCode) setReferralCode(saved.referralCode.trim().toUpperCase());
 
         // Clamp: the tier (and so the step count) can change between visits,
         // and payment is always re-confirmed, so never restore onto the final

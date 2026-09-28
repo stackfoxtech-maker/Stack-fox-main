@@ -606,8 +606,19 @@ export async function checkoutRoutes(app: FastifyInstance) {
             referralCode: payload.referralCode,
             orderId: ordId,
             amount: invoiceAmount,
+            purchaserId: req.user!.sub,
+            purchaserEmail: user.email,
           })
-          .catch(() => {});
+          .catch((err) => {
+            // This branch runs once, right after the paid order commits — no
+            // retry path exists, so a swallowed failure here loses the
+            // referrer's commission for good with nothing in the logs to
+            // find it by.
+            req.log.error(
+              { err, orderId: ordId, referralCode: payload.referralCode },
+              "referral conversion enqueue failed",
+            );
+          });
       }
 
       const { contracts: _contracts, fx: _fx, ...response } = result;
