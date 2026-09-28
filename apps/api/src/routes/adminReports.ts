@@ -444,7 +444,7 @@ export async function adminReportRoutes(app: FastifyInstance) {
     if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
 
     const { type } = req.params as { type: string };
-    if (!TYPES.includes(type as ReportType)) {
+    if (!Object.hasOwn(BUILDERS, type)) {
       return reply
         .code(404)
         .send({ message: `Unknown report "${type}". Available: ${TYPES.join(", ")}.` });
@@ -472,7 +472,7 @@ export async function adminReportRoutes(app: FastifyInstance) {
     if (!requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
 
     const { type } = req.params as { type: string };
-    if (!TYPES.includes(type as ReportType)) {
+    if (!Object.hasOwn(BUILDERS, type)) {
       return reply.code(404).send({ message: `Unknown report "${type}".` });
     }
 
