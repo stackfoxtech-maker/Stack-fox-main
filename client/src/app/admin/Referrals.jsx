@@ -101,7 +101,7 @@ export default function Referrals() {
     <div className="space-y-5">
       <h2 className="text-lg font-semibold text-warm-900">Referral Program</h2>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         {statCards.map((s) => (
           <div key={s.label} className="bg-white rounded-2xl border border-warm-200 p-5">
             <div className="flex items-center gap-3 mb-3">

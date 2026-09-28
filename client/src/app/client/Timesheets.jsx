@@ -83,8 +83,8 @@ export default function Timesheets() {
               </div>
 
               {ts.lines && ts.lines.length > 0 && (
-                <div className="mt-3 border-t border-warm-100 pt-3">
-                  <table className="w-full text-sm">
+                <div className="mt-3 overflow-x-auto border-t border-warm-100 pt-3">
+                  <table className="w-full min-w-[20rem] text-sm">
                     <thead>
                       <tr className="text-warm-500 text-left">
                         <th className="pb-2">Date</th>

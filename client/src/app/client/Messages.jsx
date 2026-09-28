@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MessageCircle, Send } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Send } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { timeAgo, getInitials, getAvatarColor } from '@lib/utils';
 import { Spinner, EmptyState, Button } from '@components/ui/Primitives';
@@ -92,16 +92,18 @@ export default function Messages() {
           description="Use Message your team to reach your project manager."
         />
       ) : (
-        <div className="flex gap-4 h-[calc(100vh-220px)] min-h-[400px]">
-          {/* List */}
-          <div className="w-72 shrink-0 bg-white rounded-2xl border border-warm-200 overflow-y-auto hidden md:block">
+        <div className="flex h-[calc(100dvh-16rem)] min-h-[360px] gap-4 md:h-[calc(100dvh-220px)]">
+          {/* List — on phones it is the whole screen until a thread is open */}
+          <div
+            className={`w-full shrink-0 overflow-y-auto rounded-2xl border border-warm-200 bg-white md:block md:w-72 ${activeConv ? 'hidden' : 'block'}`}
+          >
             {conversations.map((c) => {
               const other = c.participants?.find((p) => p._id !== user?.id);
               return (
                 <button
                   key={c._id}
                   onClick={() => openConv(c)}
-                  className={`w-full text-left px-4 py-3 border-b border-warm-100 hover:bg-warm-50 transition-colors ${activeConv?._id === c._id ? 'bg-fox-50' : ''}`}
+                  className={`w-full min-h-[3.5rem] text-left px-4 py-3 border-b border-warm-100 hover:bg-warm-50 transition-colors ${activeConv?._id === c._id ? 'bg-fox-50' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -124,9 +126,26 @@ export default function Messages() {
           </div>
 
           {/* Chat */}
-          <div className="flex-1 bg-white rounded-2xl border border-warm-200 flex flex-col">
+          <div
+            className={`min-w-0 flex-1 flex-col rounded-2xl border border-warm-200 bg-white md:flex ${activeConv ? 'flex' : 'hidden'}`}
+          >
             {activeConv ? (
               <>
+                <div className="flex items-center gap-2 border-b border-warm-100 px-2 py-2 md:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setActiveConv(null)}
+                    aria-label="Back to conversations"
+                    className="grid h-10 w-10 place-items-center rounded-lg text-warm-600 hover:bg-warm-100"
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+                  <p className="truncate text-sm font-semibold text-warm-900">
+                    {activeConv.participants?.find((p) => p._id !== user?.id)?.name ||
+                      activeConv.title ||
+                      'Conversation'}
+                  </p>
+                </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {messages.map((m) => {
                     const isMine = m.sender?._id === user?.id;
@@ -136,7 +155,7 @@ export default function Messages() {
                         className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${isMine ? 'bg-fox-500 text-white' : 'bg-warm-100 text-warm-900'}`}
+                          className={`max-w-[85%] rounded-2xl md:max-w-[70%] px-4 py-2.5 ${isMine ? 'bg-fox-500 text-white' : 'bg-warm-100 text-warm-900'}`}
                         >
                           {!isMine && (
                             <p className="text-xs font-medium mb-0.5 opacity-70">
@@ -162,7 +181,7 @@ export default function Messages() {
                     onChange={(e) => setNewMsg(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                     placeholder="Type a message..."
-                    className="input-fx flex-1"
+                    className="input-fx min-w-0 flex-1"
                   />
                   <Button variant="primary" size="icon" onClick={sendMessage} isLoading={sending}>
                     <Send size={18} />

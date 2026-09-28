@@ -125,7 +125,7 @@ export default function Invoices() {
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 bg-warm-50 rounded-xl p-3 text-center mb-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 bg-warm-50 rounded-xl p-3 text-center mb-3">
                   <div>
                     <div className="text-xs text-warm-500">Total</div>
                     <div className="font-mono text-sm font-bold text-warm-900">

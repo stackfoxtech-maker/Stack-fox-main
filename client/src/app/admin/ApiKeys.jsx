@@ -213,8 +213,8 @@ export default function ApiKeys() {
               />
             </div>
           ) : (
-            <div className="bg-white rounded-3xl border border-warm-200 shadow-elevated overflow-hidden">
-              <table className="w-full text-sm text-left">
+            <div className="bg-white rounded-3xl border border-warm-200 shadow-elevated overflow-x-auto">
+              <table className="w-full min-w-[34rem] text-sm text-left">
                 <thead>
                   <tr className="bg-warm-50/50 border-b border-warm-200">
                     <th className="py-3 px-5 font-bold text-warm-700 uppercase tracking-wider text-xs">

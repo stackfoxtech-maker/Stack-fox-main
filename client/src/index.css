@@ -65,6 +65,9 @@
   }
 
   html {
+    /* Stops sideways pan on iOS when a decorative blob pokes out. `clip` (not
+       hidden) so it never turns the root into a scroll container. */
+    overflow-x: clip;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
@@ -77,8 +80,46 @@
     color: var(--color-text);
     background-color: var(--color-bg);
     line-height: 1.6;
-    overflow-x: hidden;
+    /* No overflow-x here: with html clipping, a hidden body becomes its own
+       scroll container and breaks window scroll + position:sticky. */
     min-height: 100vh;
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* The builder's phone cart bar sits above the tab bar; lift the FoxBot fab over it. */
+  @media (max-width: 767px) {
+    body.has-cartbar .foxbot-fab {
+      bottom: calc(8.25rem + env(safe-area-inset-bottom));
+    }
+  }
+
+  /* Kill the 300ms double-tap-zoom delay on anything tappable. */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  summary,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+
+  /* Touch screens: fingertip-sized controls (44px, Apple/WCAG) and a tactile press. */
+  @media (pointer: coarse) {
+    .input-fx,
+    .btn-fox {
+      min-height: 3rem;
+    }
+    input[type="checkbox"],
+    input[type="radio"] {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+    .btn-fox:active {
+      transform: scale(0.98);
+    }
   }
 
   /* Bricolage Grotesque is the display face; body + prices stay DM Sans. */
