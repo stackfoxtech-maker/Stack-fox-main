@@ -598,9 +598,15 @@ export async function checkoutRoutes(app: FastifyInstance) {
         });
       }
 
-      if (payload.referralCode) {
+      // Only a paid order earns the referrer a commission — an unsigned/unpaid
+      // checkout has no money to take a percentage of.
+      if (payload.referralCode && hasHandshake) {
         await queues.referralProcessor
-          .add("convert", { referralCode: payload.referralCode, orderId: ordId })
+          .add("convert", {
+            referralCode: payload.referralCode,
+            orderId: ordId,
+            amount: invoiceAmount,
+          })
           .catch(() => {});
       }
 

@@ -99,6 +99,12 @@ export default function Checkout() {
   const [paymentMode, setPaymentMode] = useState('MILESTONE');
   const [engagementModel, setEngagementModel] = useState('FPM');
   const [docsAccepted, setDocsAccepted] = useState(true);
+  // Prefilled from a referral invite link (see auth/Signup.jsx), but always
+  // editable — someone may land on the builder directly and enter a friend's
+  // code by hand instead.
+  const [referralCode, setReferralCode] = useState(
+    () => localStorage.getItem('stackfox_referral_code') || '',
+  );
 
   // Resuming a quote restores what was already answered and drops the client
   // back on the step they left. Every `next()` persists the wizard state to the
@@ -125,6 +131,7 @@ export default function Checkout() {
         if (saved.paymentMode) setPaymentMode(saved.paymentMode);
         if (saved.engagementModel) setEngagementModel(saved.engagementModel);
         if (typeof saved.docsAccepted === 'boolean') setDocsAccepted(saved.docsAccepted);
+        if (saved.referralCode) setReferralCode(saved.referralCode);
 
         // Clamp: the tier (and so the step count) can change between visits,
         // and payment is always re-confirmed, so never restore onto the final
@@ -182,6 +189,7 @@ export default function Checkout() {
           paymentMode,
           engagementModel,
           docsAccepted,
+          referralCode: referralCode.trim() || undefined,
           step: nextStep,
         },
       });
@@ -464,6 +472,18 @@ export default function Checkout() {
                     </Field>
                   </>
                 )}
+                <Field
+                  label="Referral code"
+                  hint="Have a friend's invite code? Enter it here — they'll earn a commission once this order is paid."
+                  className="sm:col-span-2"
+                >
+                  <input
+                    placeholder="SF1234"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    className="input-fx w-full uppercase"
+                  />
+                </Field>
               </div>
               {tier === 'STARTER' && (
                 <p className="text-xs text-warm-400">

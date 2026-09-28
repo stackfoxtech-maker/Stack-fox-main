@@ -1,54 +1,83 @@
 import { useEffect, useState } from 'react';
-import { Gift, Copy, Check, Users } from 'lucide-react';
+import { Gift, Users, UserPlus } from 'lucide-react';
 import { Badge, EmptyState, Spinner } from '@components/ui/Primitives';
-import { formatINR, formatPaise, formatDate, copyToClipboard } from '@lib/utils';
+import { formatINR, formatPaise, formatDate } from '@lib/utils';
 import api from '@lib/api';
+import toast from 'react-hot-toast';
 
-const statusMap = { pending: 'warning', signed_up: 'info', converted: 'success' };
-const statusLabel = { pending: 'Pending', signed_up: 'Signed Up', converted: 'Converted' };
+// Referral.status is written in upper case by the API (PENDING|SENT|DUPLICATE|
+// CONVERTED|PAID|EXPIRED) — these keys used to be lower case with different
+// words ('signed_up' for what the API calls SENT), so every badge fell
+// through to the 'neutral'/raw-code fallback below.
+const statusMap = {
+  PENDING: 'warning',
+  SENT: 'info',
+  CONVERTED: 'success',
+  PAID: 'success',
+  DUPLICATE: 'neutral',
+  EXPIRED: 'neutral',
+};
+const statusLabel = {
+  PENDING: 'Pending',
+  SENT: 'Invite Sent',
+  CONVERTED: 'Converted',
+  PAID: 'Paid Out',
+  DUPLICATE: 'Already a Member',
+  EXPIRED: 'Expired',
+};
 
 export default function Referrals() {
-  const [copied, setCopied] = useState(false);
   const [referrals, setReferrals] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [invite, setInvite] = useState({ referredName: '', referredEmail: '' });
+  const [inviting, setInviting] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [refRes, statsRes] = await Promise.all([
-          api.get('/referrals'),
-          api.get('/referrals/stats'),
-        ]);
+  const fetchData = async () => {
+    try {
+      const [refRes, statsRes] = await Promise.all([
+        api.get('/referrals'),
+        api.get('/referrals/stats'),
+      ]);
 
-        const refData = refRes.data.data || refRes.data.items || refRes.data || [];
-        setReferrals(Array.isArray(refData) ? refData : []);
+      const refData = refRes.data.data || refRes.data.items || refRes.data || [];
+      setReferrals(Array.isArray(refData) ? refData : []);
 
-        const statsData = statsRes.data.data || statsRes.data.items || statsRes.data || {};
-        setStats(statsData);
-      } catch {
-        setReferrals([]);
-        setStats(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const copyLink = async () => {
-    const link =
-      stats?.referralLink || `https://stackfox.com/ref/${stats?.referralCode || 'CLIENT'}`;
-    const success = await copyToClipboard(link);
-    setCopied(success);
-    if (success) {
-      setTimeout(() => setCopied(false), 2000);
+      const statsData = statsRes.data.data || statsRes.data.items || statsRes.data || {};
+      setStats(statsData);
+    } catch {
+      setReferrals([]);
+      setStats(null);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const totalEarnings = referrals.reduce((s, r) => s + (r.earning || r.rewardAmount || 0), 0);
-  const converted = referrals.filter((r) => r.status === 'converted').length;
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const sendInvite = async (e) => {
+    e.preventDefault();
+    if (!invite.referredEmail.trim()) {
+      toast.error('An email is required.');
+      return;
+    }
+    setInviting(true);
+    try {
+      await api.post('/referrals', invite);
+      toast.success(`Invite sent to ${invite.referredEmail}`);
+      setInvite({ referredName: '', referredEmail: '' });
+      await fetchData();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not send that invite.');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const converted = referrals.filter((r) => r.status === 'CONVERTED' || r.status === 'PAID')
+    .length;
 
   if (loading)
     return (
@@ -67,30 +96,44 @@ export default function Referrals() {
             <Gift size={20} className="text-fox-500" />
           </div>
           <div>
-            <h3 className="font-medium text-warm-900">Your Referral Link</h3>
+            <h3 className="font-medium text-warm-900">Invite a friend</h3>
             <p className="text-xs text-warm-500">
-              Earn {formatINR(stats?.rewardAmount || 5000)} for every converted referral
+              Earn 10% commission when they pay for their first order.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <code className="flex-1 bg-warm-50 rounded-xl px-4 py-2.5 text-sm text-warm-600 truncate">
-            {stats?.referralLink || 'Loading...'}
-          </code>
+        <form onSubmit={sendInvite} className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            placeholder="Their name (optional)"
+            value={invite.referredName}
+            onChange={(e) => setInvite({ ...invite, referredName: e.target.value })}
+            className="input-fx flex-1"
+          />
+          <input
+            type="email"
+            required
+            placeholder="Their email"
+            value={invite.referredEmail}
+            onChange={(e) => setInvite({ ...invite, referredEmail: e.target.value })}
+            className="input-fx flex-1"
+          />
           <button
-            onClick={copyLink}
-            className="shrink-0 px-4 py-2.5 rounded-xl bg-fox-500 text-white text-sm font-medium hover:bg-fox-600 transition flex items-center gap-1.5"
+            type="submit"
+            disabled={inviting}
+            className="shrink-0 px-4 py-2.5 rounded-xl bg-fox-500 text-white text-sm font-medium hover:bg-fox-600 transition flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
-            {copied ? <Check size={16} /> : <Copy size={16} />} {copied ? 'Copied' : 'Copy'}
+            {inviting ? <Spinner size="sm" /> : <UserPlus size={16} />}
+            {inviting ? 'Sending…' : 'Send invite'}
           </button>
-        </div>
+        </form>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         {[
-          { label: 'Total Referrals', value: stats?.totalReferrals ?? referrals.length },
+          { label: 'Total Referrals', value: stats?.total ?? referrals.length },
           { label: 'Converted', value: stats?.converted ?? converted },
-          { label: 'Total Earnings', value: formatINR(stats?.totalEarnings ?? totalEarnings) },
+          { label: 'Total Earnings', value: formatINR(stats?.totalEarnings ?? 0) },
         ].map((s) => (
           <div
             key={s.label}
@@ -113,17 +156,15 @@ export default function Referrals() {
           {referrals.map((r) => (
             <div key={r._id || r.id} className="px-6 py-4 flex items-center justify-between">
               <div>
-                <p className="font-medium text-warm-900 text-sm">{r.name || r.clientName}</p>
+                <p className="font-medium text-warm-900 text-sm">
+                  {r.referredName || r.referredEmail}
+                </p>
                 <p className="text-xs text-warm-500">
-                  {r.email} &middot; {formatDate(r.createdAt || r.date)}
+                  {r.referredEmail} &middot; {formatDate(r.createdAt)}
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                {/* r.earning / r.rewardAmount do not exist on the Referral model
-                    (the field is commissionAmount) -- this always read undefined
-                    and showed nothing, or once "fixed" naively would have shown
-                    every commission as raw paise through formatINR. Two separate
-                    bugs on one line: wrong field name, wrong formatter. */}
+                {/* commissionAmount is paise — formatPaise, not formatINR. */}
                 {(r.commissionAmount || 0) > 0 && (
                   <span className="text-sm font-mono font-semibold text-green-600">
                     +{formatPaise(r.commissionAmount || 0)}

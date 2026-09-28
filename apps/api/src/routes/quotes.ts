@@ -26,6 +26,7 @@ import {
 } from "../lib/billing";
 import { catalogPrice } from "../lib/pricing";
 import { quotePaymentTerms } from "../lib/quotePayment";
+import { queues } from "../lib/queue";
 import {
   QuoteFromCartSchema,
   QuotePaySchema,
@@ -771,6 +772,19 @@ export async function settleQuote(
       engagementId: result.fx.engagementId ?? undefined,
       payload: { invoiceId: result.fx.invoiceId, quoteId, amount },
     });
+
+    // Commission is earned on the full order value, so only fire once the
+    // quote is fully paid off — not on an UPFRONT/MILESTONE installment.
+    const referralCode = (result.quote.checkoutDetails as any)?.referralCode;
+    if (referralCode && result.quote.status === "paid") {
+      await queues.referralProcessor
+        .add("convert", {
+          referralCode,
+          orderId: quoteId,
+          amount: Number(result.quote.total),
+        })
+        .catch(() => {});
+    }
   }
   return result.quote;
 }

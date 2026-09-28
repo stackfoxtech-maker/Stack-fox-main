@@ -42,6 +42,7 @@ export const UpdateQuoteSchema = strictObject({
     signedAt: z.string().datetime().optional(),
     contractTypes: z.array(z.string().max(40)).max(20).optional(),
     clauseSelections: z.record(z.string().max(120), z.unknown()).optional(),
+    referralCode: z.string().trim().max(32).optional(),
   }).optional(),
   tier: z.enum(["STARTER", "GROWTH", "PREMIUM"]).optional(),
 }).refine((b) => Object.keys(b).length > 0, {

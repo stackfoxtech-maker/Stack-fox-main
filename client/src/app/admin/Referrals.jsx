@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Users, TrendingUp, Award, IndianRupee } from 'lucide-react';
 import { Badge, EmptyState, Spinner } from '@components/ui/Primitives';
-import { formatINR, formatDate, getInitials, capitalize } from '@lib/utils';
+import { formatINR, formatPaise, formatDate, getInitials, capitalize } from '@lib/utils';
 import api from '@lib/api';
+import toast from 'react-hot-toast';
 
 const payoutVariant = (status) =>
   status === 'PAID' || status === 'CONVERTED'
@@ -16,10 +17,11 @@ export default function Referrals() {
   const [referrals, setReferrals] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [payingId, setPayingId] = useState(null);
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true);
-    Promise.all([
+    return Promise.all([
       api.get('/referrals').catch(() => ({ data: { data: [] } })),
       api.get('/referrals/stats').catch(() => ({ data: {} })),
     ])
@@ -28,7 +30,24 @@ export default function Referrals() {
         setStats(s.data || {});
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
+
+  const markPaid = async (id) => {
+    setPayingId(id);
+    try {
+      await api.post(`/referrals/${id}/pay`);
+      toast.success('Commission marked as paid.');
+      await load();
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Could not mark that commission paid.');
+    } finally {
+      setPayingId(null);
+    }
+  };
 
   // Aggregate referrals into a per-referrer leaderboard
   const leaderboard = useMemo(() => {
@@ -176,27 +195,39 @@ export default function Referrals() {
           />
         ) : (
           <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden">
-            <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-6 py-3 bg-warm-50 text-xs font-semibold text-warm-500 uppercase tracking-wide">
+            <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-6 py-3 bg-warm-50 text-xs font-semibold text-warm-500 uppercase tracking-wide">
               <span>Referrer</span>
               <span>Amount</span>
               <span>Status</span>
               <span>Date</span>
+              <span />
             </div>
             {payouts.map((p) => (
               <div
                 key={p.id}
-                className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 px-6 py-4 border-t border-warm-100 items-center"
+                className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 px-6 py-4 border-t border-warm-100 items-center"
               >
                 <span className="text-sm font-medium text-warm-900">
                   {p.referrer?.name || 'Unknown'}
                 </span>
                 <span className="text-sm font-mono text-warm-800">
-                  {formatINR(p.commissionAmount || 0)}
+                  {formatPaise(p.commissionAmount || 0)}
                 </span>
                 <Badge variant={payoutVariant(p.status)}>
                   {capitalize(p.status.toLowerCase())}
                 </Badge>
                 <span className="text-xs text-warm-500">{formatDate(p.sentAt || p.createdAt)}</span>
+                {p.status === 'CONVERTED' ? (
+                  <button
+                    onClick={() => markPaid(p.id)}
+                    disabled={payingId === p.id}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-fox-500 text-white text-xs font-medium hover:bg-fox-600 transition disabled:opacity-60"
+                  >
+                    {payingId === p.id ? 'Marking…' : 'Mark Paid'}
+                  </button>
+                ) : (
+                  <span />
+                )}
               </div>
             ))}
           </div>

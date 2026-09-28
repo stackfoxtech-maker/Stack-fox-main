@@ -6,6 +6,7 @@ import { LIST_CAP, ok, withIds } from "../lib/http";
 import * as ids from "../lib/id";
 import { queues } from "../lib/queue";
 import { parseBody } from "../lib/validate";
+import { emitEvent } from "../lib/events";
 import { ReferralSchema } from "./opsSchemas";
 
 /**
@@ -128,6 +129,34 @@ export async function referralRoutes(app: FastifyInstance) {
       });
 
     return ok({ ...referral, _id: referral.id });
+  });
+
+  /** Ops marks a converted referral's commission as paid out (e.g. after a bank transfer). */
+  app.post("/referrals/:id/pay", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    if (!isInternalRole(req.user!.role))
+      return reply.code(403).send({ error: "Only staff can mark a commission paid" });
+
+    const { id } = req.params as { id: string };
+    const referral = await prisma.referral.findUnique({ where: { id } });
+    if (!referral) return reply.code(404).send({ error: "Referral not found" });
+    if (referral.status !== "CONVERTED")
+      return reply
+        .code(409)
+        .send({ error: "Only a converted referral with an unpaid commission can be marked paid" });
+
+    const updated = await prisma.referral.update({
+      where: { id },
+      data: { status: "PAID" },
+    });
+
+    await emitEvent({
+      code: "REFERRAL_PAID",
+      payload: { referralId: id, commissionAmount: Number(updated.commissionAmount ?? 0) },
+      actor: req.user!.sub,
+    });
+
+    return ok({ ...updated, _id: updated.id });
   });
 }
 

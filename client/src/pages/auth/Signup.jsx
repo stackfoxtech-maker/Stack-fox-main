@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Mail, Phone, User } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import useAuthStore from '@store/authStore';
@@ -12,6 +12,15 @@ export default function Signup() {
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
   const { register, isLoading } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // A referral invite email links here with ?ref=CODE. Stash it so the
+  // checkout wizard (pages/Checkout.jsx) can prefill it later — the person
+  // is signing up now, not necessarily checking out in the same visit.
+  useEffect(() => {
+    const ref = searchParams.get('ref')?.trim();
+    if (ref) localStorage.setItem('stackfox_referral_code', ref.toUpperCase());
+  }, [searchParams]);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
