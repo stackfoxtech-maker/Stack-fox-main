@@ -76,8 +76,7 @@ export default function Referrals() {
     }
   };
 
-  const converted = referrals.filter((r) => r.status === 'CONVERTED' || r.status === 'PAID')
-    .length;
+  const converted = referrals.filter((r) => r.status === 'CONVERTED' || r.status === 'PAID').length;
 
   if (loading)
     return (

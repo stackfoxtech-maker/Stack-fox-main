@@ -23,9 +23,12 @@ interface ConvertJob {
  * silently did nothing: no status change, no commission, no payout. Referrals
  * could be sent but never actually convert.
  */
+// job.data is `any` here (createWorker's default generic) — it needs no
+// assertion to reach a function expecting ProcessJob/ConvertJob; adding one
+// is what tripped @typescript-eslint/no-unnecessary-type-assertion.
 createWorker(QUEUE.referralProcessor, async (job) => {
-  if (job.name === "convert") return handleConvert(job.data as unknown as ConvertJob);
-  return handleProcess(job.data as unknown as ProcessJob);
+  if (job.name === "convert") return handleConvert(job.data);
+  return handleProcess(job.data);
 });
 
 async function handleProcess({ referralId }: ProcessJob) {
@@ -104,7 +107,8 @@ async function handleConvert({ referralCode, orderId, amount }: ConvertJob) {
     return;
   }
 
-  const commissionPct = referral.commissionPct ?? Number(process.env.REFERRAL_COMMISSION_PCT ?? 10);
+  const commissionPct =
+    referral.commissionPct ?? Number(process.env.REFERRAL_COMMISSION_PCT ?? 10);
   const commissionAmount = Math.round((amount * commissionPct) / 100);
 
   await prisma.referral.update({

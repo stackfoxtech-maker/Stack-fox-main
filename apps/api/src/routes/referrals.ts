@@ -141,9 +141,9 @@ export async function referralRoutes(app: FastifyInstance) {
     const referral = await prisma.referral.findUnique({ where: { id } });
     if (!referral) return reply.code(404).send({ error: "Referral not found" });
     if (referral.status !== "CONVERTED")
-      return reply
-        .code(409)
-        .send({ error: "Only a converted referral with an unpaid commission can be marked paid" });
+      return reply.code(409).send({
+        error: "Only a converted referral with an unpaid commission can be marked paid",
+      });
 
     const updated = await prisma.referral.update({
       where: { id },
@@ -152,7 +152,10 @@ export async function referralRoutes(app: FastifyInstance) {
 
     await emitEvent({
       code: "REFERRAL_PAID",
-      payload: { referralId: id, commissionAmount: Number(updated.commissionAmount ?? 0) },
+      payload: {
+        referralId: id,
+        commissionAmount: Number(updated.commissionAmount ?? 0),
+      },
       actor: req.user!.sub,
     });
 
