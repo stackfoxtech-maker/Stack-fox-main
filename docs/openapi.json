@@ -753,6 +753,10 @@
             "type": "string",
             "minLength": 8,
             "maxLength": 200
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+?[1-9]\\d{7,14}$"
           }
         },
         "required": [

@@ -46,6 +46,7 @@ import {
   otpEmail,
 } from "../lib/mailer";
 import { sendPhoneOtp, verifyPhoneOtp, isSmsConfigured } from "../lib/sms";
+import { findPhoneLoginUser } from "../lib/phoneLogin";
 import { authorizeUrl, exchangeCode, isGoogleConfigured } from "../lib/googleOAuth";
 import { getSessionEpoch, bumpSessionEpoch } from "../lib/session";
 import { webAppUrl } from "../lib/urls";
@@ -131,7 +132,7 @@ export async function authRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const body = parseBody(req, reply, RegisterSchema);
       if (!body) return;
-      const { name, email, password } = body;
+      const { name, email, password, phone } = body;
 
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) return reply.code(409).send({ message: "Email already registered" });
@@ -140,11 +141,14 @@ export async function authRoutes(app: FastifyInstance) {
         data: {
           name: name || email.split("@")[0],
           email,
+          phone: phone ?? null,
           role: "INDIVIDUAL_CLIENT",
           authData: toJson({
             provider: "email",
             passwordHash: await hashPassword(password),
             verified: false,
+            // Contact only. See lib/phoneLogin.ts for why this matters.
+            phoneVerified: false,
           }),
         },
       });
@@ -586,9 +590,9 @@ export async function authRoutes(app: FastifyInstance) {
         );
       }
 
-      let user = await prisma.user.findFirst({
-        where: email ? { email } : { phone },
-      });
+      let user = email
+        ? await prisma.user.findFirst({ where: { email } })
+        : await findPhoneLoginUser(phone!);
 
       if (!user) {
         user = await prisma.user.create({
@@ -597,6 +601,7 @@ export async function authRoutes(app: FastifyInstance) {
             email: email ?? `${phone}@phone.stackfox.in`,
             phone,
             role: "INDIVIDUAL_CLIENT",
+            ...(phone && !email ? { authData: toJson({ phoneVerified: true }) } : {}),
           },
         });
       }
@@ -801,7 +806,7 @@ export async function authRoutes(app: FastifyInstance) {
         undefined,
       );
 
-      let user = await prisma.user.findFirst({ where: { phone } });
+      let user = await findPhoneLoginUser(phone);
       if (user && isInternalRole(user.role)) {
         // A staff account must not be reachable through an unauthenticated phone
         // callback. Staff sign in with a password.
@@ -814,6 +819,7 @@ export async function authRoutes(app: FastifyInstance) {
             email: `${phone}@wa.stackfox.in`,
             phone,
             role: "INDIVIDUAL_CLIENT",
+            authData: toJson({ phoneVerified: true }),
           },
         });
       }

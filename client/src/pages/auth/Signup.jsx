@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Mail, User } from 'lucide-react';
+import { Lock, Mail, Phone, User } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import useAuthStore from '@store/authStore';
 import GoogleButton from '@components/auth/GoogleButton';
@@ -9,7 +9,7 @@ import AuthField, { isEmail } from '@components/auth/AuthField';
 
 export default function Signup() {
   usePageTitle('Sign up');
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
   const { register, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
@@ -17,7 +17,11 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await register(form);
+    // "+91 98765-43210" -> "+919876543210": the API accepts digits with an
+    // optional leading +. The number is a contact detail; the account is
+    // verified by email.
+    const phone = form.phone.replace(/(?!^\+)[^\d]/g, '');
+    const result = await register({ ...form, phone: phone || undefined });
     if (result.success) navigate('/app/client');
   };
 
@@ -66,6 +70,20 @@ export default function Signup() {
             onChange={set('email')}
             placeholder="you@example.com"
             autoComplete="email"
+            required
+          />
+        </Item>
+        <Item>
+          <AuthField
+            label="Phone"
+            type="tel"
+            inputMode="tel"
+            icon={Phone}
+            value={form.phone}
+            onChange={set('phone')}
+            placeholder="+91 98765 43210"
+            helperText="So your project team can reach you. We verify your account by email."
+            autoComplete="tel"
             required
           />
         </Item>

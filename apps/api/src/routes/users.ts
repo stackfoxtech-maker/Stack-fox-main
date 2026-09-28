@@ -136,7 +136,21 @@ export async function userRoutes(app: FastifyInstance) {
 
     const data: Record<string, unknown> = {};
     if (body.name !== undefined) data.name = body.name;
-    if (body.phone !== undefined) data.phone = body.phone || null;
+    if (body.phone !== undefined) {
+      data.phone = body.phone || null;
+      // A changed number is unproven until a code confirms it, so it must not
+      // remain a way to sign in (see lib/phoneLogin.ts).
+      const current = await prisma.user.findUnique({
+        where: { id: req.user!.sub },
+        select: { phone: true, authData: true },
+      });
+      if (current && current.phone !== data.phone) {
+        data.authData = toJson({
+          ...((current.authData as Record<string, unknown>) ?? {}),
+          phoneVerified: false,
+        });
+      }
+    }
     if (body.designation !== undefined) data.designation = body.designation || null;
     if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl || null;
     if (body.skills !== undefined) data.skills = body.skills;
