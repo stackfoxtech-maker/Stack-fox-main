@@ -182,36 +182,28 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
           </div>
 
           {/* Line items */}
-          <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[560px] border-collapse text-[11px]">
+          <div className="mt-5 overflow-x-auto rounded-md">
+            <table className="w-full border-collapse text-[11px]">
               <thead>
                 <tr className="bg-[#1F4FA0] text-left text-[9px] font-bold uppercase tracking-wide text-white">
-                  <th className="px-2 py-1.5">S.No</th>
-                  <th className="px-2 py-1.5">Description</th>
-                  <th className="px-2 py-1.5">SAC</th>
-                  <th className="px-2 py-1.5 text-right">Qty</th>
-                  <th className="px-2 py-1.5 text-center">Unit</th>
-                  <th className="px-2 py-1.5 text-right">Rate</th>
-                  <th className="px-2 py-1.5 text-right">Disc</th>
-                  <th className="px-2 py-1.5 text-right">Amount</th>
+                  <th className="px-2 py-2">S.No</th>
+                  <th className="px-2 py-2">Description</th>
+                  <th className="whitespace-nowrap px-2 py-2 text-right">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {inv.lines.map((l, i) => (
                   <tr key={i} className="border-b border-warm-100 align-top">
-                    <td className="px-2 py-2 text-warm-500">{i + 1}</td>
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-2.5 text-warm-500">{i + 1}</td>
+                    <td className="px-2 py-2.5">
                       <div className="font-semibold text-warm-900">{l.name}</div>
                       <div className="text-[10px] text-warm-500">{l.sacDesc}</div>
+                      <div className="mt-0.5 text-[10px] tabular-nums text-warm-400">
+                        SAC {l.sacCode} · {l.qty} {l.unit} × {inr2(l.rate)}
+                        {l.discount ? ` · Disc ${inr2(l.discount)}` : ''}
+                      </div>
                     </td>
-                    <td className="px-2 py-2 tabular-nums">{l.sacCode}</td>
-                    <td className="px-2 py-2 text-right tabular-nums">{l.qty}</td>
-                    <td className="px-2 py-2 text-center">{l.unit}</td>
-                    <td className="px-2 py-2 text-right tabular-nums">{inr2(l.rate)}</td>
-                    <td className="px-2 py-2 text-right tabular-nums text-warm-500">
-                      {l.discount ? inr2(l.discount) : '—'}
-                    </td>
-                    <td className="px-2 py-2 text-right font-semibold tabular-nums text-[#1F4FA0]">
+                    <td className="whitespace-nowrap px-2 py-2.5 text-right font-semibold tabular-nums text-[#1F4FA0]">
                       {inr2(l.amount)}
                     </td>
                   </tr>
