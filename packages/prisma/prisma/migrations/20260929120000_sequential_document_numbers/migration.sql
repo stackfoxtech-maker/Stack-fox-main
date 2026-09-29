@@ -29,6 +29,15 @@ CREATE FUNCTION pg_temp.fy_of(ts TIMESTAMPTZ) RETURNS TEXT AS $$
                      ELSE extract(year FROM ts AT TIME ZONE 'Asia/Kolkata')::int - 1 END + 1) % 100)::text, 2, '0');
 $$ LANGUAGE sql IMMUTABLE;
 
+-- Two guards protect PAID invoices, and a handful of legacy test invoices (PAID, amount_paid 0,
+-- no captured payment) break both. They are skipped for existing rows but still enforced when
+-- one is UPDATEd, so numbering those rows failed with 23514:
+--   * invoices_paid_amount_check, a NOT VALID CHECK;
+--   * the deferred trigger invoice_payment_evidence.
+-- Both are lifted for the backfill and restored below with their identical definitions.
+ALTER TABLE invoices DROP CONSTRAINT IF EXISTS invoices_paid_amount_check;
+ALTER TABLE invoices DISABLE TRIGGER invoice_payment_evidence;
+
 -- Backfill in creation order, per financial year. Existing invoices carried a number derived
 -- from their random id (AWL/INV/<FY>/<1-3 digits>); those are renumbered. Drafts stay
 -- unnumbered until they are issued.
@@ -55,6 +64,10 @@ WITH n AS (
   FROM (SELECT id, created_at, pg_temp.fy_of(created_at) AS fy FROM payments WHERE status IN ('CAPTURED', 'REFUNDED')) x
 )
 UPDATE payments p SET receipt_no = n.no FROM n WHERE p.id = n.id;
+
+ALTER TABLE invoices ENABLE TRIGGER invoice_payment_evidence;
+ALTER TABLE invoices ADD CONSTRAINT invoices_paid_amount_check
+  CHECK (status <> 'PAID' OR (grand_total > 0 AND amount_paid >= grand_total)) NOT VALID;
 
 -- Counters resume after the highest number handed out.
 INSERT INTO document_counters (kind, fy, last)
