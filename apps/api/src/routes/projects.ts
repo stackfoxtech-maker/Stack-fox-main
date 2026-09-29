@@ -1,3 +1,4 @@
+import { nextDocNumber } from "../lib/docNumber";
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
@@ -385,20 +386,23 @@ export async function projectRoutes(app: FastifyInstance) {
         include: { engagement: true },
       });
       if (project) {
-        const invoice = await prisma.invoice.create({
-          data: {
-            id: ids.invoiceId(),
-            engagementId: project.engagementId,
-            orgId: project.engagement.clientId,
-            milestoneRef: `CR-${crId}`,
-            sacCode: "998314",
-            gstType: "IGST",
-            subtotal: costDelta,
-            igst: Math.round(costDelta * 0.18),
-            grandTotal: costDelta + Math.round(costDelta * 0.18),
-            status: "SENT",
-          },
-        });
+        const invoice = await prisma.$transaction(async (tx) =>
+          tx.invoice.create({
+            data: {
+              id: ids.invoiceId(),
+              invoiceNo: await nextDocNumber(tx, "INV"),
+              engagementId: project.engagementId,
+              orgId: project.engagement.clientId,
+              milestoneRef: `CR-${crId}`,
+              sacCode: "998314",
+              gstType: "IGST",
+              subtotal: costDelta,
+              igst: Math.round(costDelta * 0.18),
+              grandTotal: costDelta + Math.round(costDelta * 0.18),
+              status: "SENT",
+            },
+          }),
+        );
         await prisma.changeRequest.update({
           where: { id: crId },
           data: { invoiceId: invoice.id },
@@ -452,6 +456,7 @@ export async function projectRoutes(app: FastifyInstance) {
     // Create micro-SOW contract
     const contract = await prisma.contract.create({
       data: {
+        contractNo: await nextDocNumber(prisma, "CON"),
         engagementId: project.engagementId,
         type: "MICRO_SOW",
         status: "DRAFT",

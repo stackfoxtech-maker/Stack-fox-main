@@ -1,3 +1,4 @@
+import { nextDocNumber } from "../lib/docNumber";
 import { queueInvoiceEmail } from "../lib/businessMail";
 import { isDeepStrictEqual } from "node:util";
 import type { FastifyInstance } from "fastify";
@@ -474,6 +475,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
             contracts.push(
               await tx.contract.create({
                 data: {
+                  contractNo: await nextDocNumber(tx, "CON"),
                   orderId: ordId,
                   engagementId: engId,
                   type,
@@ -492,6 +494,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
           const invoice = await tx.invoice.create({
             data: {
               id: ids.invoiceId(),
+              invoiceNo: await nextDocNumber(tx, "INV"),
               orderId: ordId,
               engagementId: engId,
               orgId,

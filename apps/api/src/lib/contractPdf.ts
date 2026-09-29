@@ -32,6 +32,8 @@ export interface PackSignature {
 
 export interface PackContract {
   id: string;
+  /** Printed number, AWL/CON/<FY>/NNNN. */
+  contractNo: string;
   type: string;
   status: string;
   createdAt: Date;
@@ -244,7 +246,7 @@ function cover(sheet: Sheet, pack: Pack) {
     const t = templateFor(c.type, c.context);
     sheet.draw(String(i + 1).padStart(2, "0"), MX, 10, { color: ACCENT, bold: true });
     sheet.draw(t.title, MX + 34, 11.5, { bold: true });
-    sheet.drawRight(statusLabel(c), W - MX, 9, { color: MUTED });
+    sheet.drawRight(`${c.contractNo}   ${statusLabel(c)}`, W - MX, 8.5, { color: MUTED });
     sheet.y -= 4;
   });
   sheet.y -= 10;
@@ -421,6 +423,7 @@ function contractPages(sheet: Sheet, pack: Pack, c: PackContract) {
   sheet.newPage(t.title);
   sheet.y = TOP;
   sheet.draw(t.label.toUpperCase(), MX, 8, { bold: true, color: ACCENT, spacing: 2 });
+  sheet.drawRight(`No. ${c.contractNo}`, W - MX, 9, { bold: true });
   sheet.y -= 34;
   sheet.draw(t.title, MX, 24, { bold: true });
   sheet.y -= 22;

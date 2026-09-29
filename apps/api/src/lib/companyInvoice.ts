@@ -136,15 +136,8 @@ export function fyLabel(d = new Date()): string {
   return `${start}-${String(start + 1).slice(-2)}`;
 }
 
-/**
- * `AWL/INV/2026-27/914` — the number printed on the document, distinct from the
- * `INV-YYYY-MM-NNNN` primary key. Statutory numbering must be FY-scoped and
- * gapless-looking; the primary key is an internal handle and is not.
- */
-export function awlInvoiceNumber(seq: number, date = new Date()): string {
-  const n = Math.abs(Math.trunc(seq)) % 1000;
-  return `AWL/INV/${fyLabel(date)}/${String(n).padStart(3, "0")}`;
-}
+// The number printed on a tax invoice (AWL/INV/<FY>/NNNN) comes from lib/docNumber.ts. The
+// `INV-YYYY-MM-XXXXXXXX` primary key is an internal handle and is never printed.
 
 const fmtDate = (d: Date) =>
   d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });

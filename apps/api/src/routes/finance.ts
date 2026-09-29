@@ -1,3 +1,4 @@
+import { ensureInvoiceNo, nextDocNumber } from "../lib/docNumber";
 import { queueInvoiceEmail } from "../lib/businessMail";
 import { settleQuote } from "./quotes";
 import type { FastifyInstance } from "fastify";
@@ -13,7 +14,7 @@ import {
 import { clientScope } from "../lib/scope";
 import { LIST_CAP, pageParams } from "../lib/http";
 import { isStorageConfigured } from "../lib/storage";
-import { buildInvoicePdf } from "../lib/documents";
+import { buildInvoicePdf, buildReceiptPdf } from "../lib/documents";
 import { requireRole } from "../plugins/auth";
 import { ADMIN_ROLES, FINANCE_ROLES, FINANCE_VIEW_ROLES } from "@stackfox/core";
 import { issueDownload } from "../lib/documentIntegrity";
@@ -33,6 +34,13 @@ const INVOICE_STATUSES = [
 ];
 /** Statuses that represent a live receivable (issued, not settled or void). */
 const OPEN_RECEIVABLE = ["SENT", "VIEWED", "OVERDUE", "PARTIALLY_PAID", "DISPUTED"];
+
+/** Captured payments, oldest first: what the client's receipts list is built from. */
+const RECEIPT_SELECT = {
+  where: { status: "CAPTURED" },
+  orderBy: { createdAt: "asc" as const },
+  select: { id: true, receiptNo: true, amount: true, method: true, createdAt: true },
+};
 
 // Shapes a raw Prisma invoice into the fields the client dashboard reads
 // (total/paidAmount/invoiceNumber/gst/clientDetails), and lowercases status
@@ -71,6 +79,14 @@ function serializeInvoice(inv: any) {
       gstin: inv.org?.gstin ?? "",
     },
     project: inv.engagement ? { projectNumber: inv.engagement.id } : null,
+    // One numbered receipt per captured payment; each has its own PDF.
+    receipts: (inv.payments ?? []).map((p: any) => ({
+      id: p.id,
+      receiptNo: p.receiptNo,
+      amount: p.amount,
+      method: p.method,
+      at: p.createdAt,
+    })),
   };
 }
 
@@ -96,7 +112,7 @@ export async function financeRoutes(app: FastifyInstance) {
     const [items, total] = await Promise.all([
       prisma.invoice.findMany({
         where,
-        include: { org: true, engagement: true },
+        include: { org: true, engagement: true, payments: RECEIPT_SELECT },
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
@@ -120,7 +136,7 @@ export async function financeRoutes(app: FastifyInstance) {
     const { id } = req.params as { id: string };
     const invoice = await prisma.invoice.findFirst({
       where: { id, ...(scope !== null ? { orgId: scope } : {}) },
-      include: { org: true, engagement: true },
+      include: { org: true, engagement: true, payments: RECEIPT_SELECT },
     });
     if (!invoice) return reply.code(404).send({ error: "Invoice not found" });
     return { data: serializeInvoice(invoice) };
@@ -163,6 +179,44 @@ export async function financeRoutes(app: FastifyInstance) {
     } catch (err) {
       req.log.error({ err, invoiceId: id }, "invoice pdf download failed");
       return reply.code(500).send({ error: "Could not prepare the invoice PDF." });
+    }
+  });
+
+  // GET /payments/:id/receipt — signed download link for one payment's numbered receipt.
+  // Same access rule as the invoice it was paid against.
+  app.get("/payments/:id/receipt", async (req, reply) => {
+    const scope = await clientScope(req, reply);
+    if (scope === undefined) return;
+    if (scope === null && !requireRole(req, reply, FINANCE_VIEW_ROLES)) return;
+
+    const { id } = req.params as { id: string };
+    const payment = await prisma.payment.findFirst({
+      where: {
+        id,
+        status: { in: ["CAPTURED", "REFUNDED"] },
+        ...(scope !== null ? { invoice: { orgId: scope } } : {}),
+      },
+      select: { id: true, invoiceId: true },
+    });
+    if (!payment) return reply.code(404).send({ error: "Receipt not found" });
+
+    if (!isStorageConfigured()) {
+      return reply.code(503).send({ error: "Document storage is not configured." });
+    }
+
+    try {
+      const key = await buildReceiptPdf(payment.id);
+      if (!key) return reply.code(404).send({ error: "Receipt not found" });
+      return {
+        url: await issueDownload(req, {
+          documentType: "RECEIPT",
+          documentId: payment.id,
+          storageKey: key,
+        }),
+      };
+    } catch (err) {
+      req.log.error({ err, paymentId: id }, "receipt pdf download failed");
+      return reply.code(500).send({ error: "Could not prepare the receipt PDF." });
     }
   });
 
@@ -317,6 +371,9 @@ export async function financeRoutes(app: FastifyInstance) {
         },
       });
 
+      // A draft has no number; it gets the next one the moment it is issued.
+      if (normalized !== "DRAFT" && normalized !== "CANCELLED")
+        await ensureInvoiceNo(tx, id);
       if (normalized === "SENT" && existing.status !== "SENT")
         await queueInvoiceEmail(tx, id, "issued", id);
       const fx = becomingPaid
@@ -448,6 +505,7 @@ export async function financeRoutes(app: FastifyInstance) {
 
           await tx.payment.create({
             data: {
+              receiptNo: await nextDocNumber(tx, "RCP"),
               orderId: order.id,
               gateway: "RAZORPAY",
               gatewayPaymentId: entity.id,

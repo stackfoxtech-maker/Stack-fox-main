@@ -48,6 +48,8 @@ model User {
   name              String
   email             String   @unique
   phone             String?
+  // Personal referral code for the shareable link (?ref=CODE). Minted the first time it is asked for.
+  referralCode      String?  @unique @map("referral_code")
   role              String // 18 roles (11 internal + 7 external)
   isActive          Boolean  @default(true) @map("is_active")
   // Staff profile — surfaced on the team dashboard and capacity planning.
@@ -347,6 +349,8 @@ model Contract {
   docHash        String?   @map("doc_hash") // SHA-256
   evidencePack   Json?     @map("evidence_pack")
   status         String    @default("DRAFT") // DRAFT|CLIENT_SIGNED|EXECUTED|AMENDED|TERMINATED
+  // Printed number, AWL/CON/<FY>/NNNN. Assigned once, from document_counters.
+  contractNo     String?   @unique @map("contract_no")
   createdAt      DateTime  @default(now()) @map("created_at")
   executedAt     DateTime? @map("executed_at")
 
@@ -1199,6 +1203,8 @@ model Payment {
   status           String   @default("PENDING") // PENDING|CAPTURED|FAILED|REFUNDED
   method           String? // upi|card|netbanking|wallet
   metadata         Json?
+  // Printed on the payment receipt, AWL/RCP/<FY>/NNNN. Set when the payment is captured.
+  receiptNo        String?  @unique @map("receipt_no")
   createdAt        DateTime @default(now()) @map("created_at")
 
   order Order? @relation(fields: [orderId], references: [id], onDelete: Restrict)
@@ -1431,4 +1437,16 @@ model DocumentAccess {
   @@index([documentType, documentId, issuedAt])
   @@index([userId, issuedAt])
   @@map("document_access")
+}
+
+/// One counter per document kind and Indian financial year. Numbers are handed out by an
+/// atomic upsert (see apps/api/src/lib/docNumber.ts), so they are sequential, unique, and
+/// roll back with the transaction that asked for them.
+model DocumentCounter {
+  kind String // INV | CON | RCP
+  fy   String // 2026-27
+  last Int    @default(0)
+
+  @@id([kind, fy])
+  @@map("document_counters")
 }

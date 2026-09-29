@@ -19,7 +19,14 @@ import { getPresignedDownload } from "./storage";
  */
 
 export type DocumentType =
-  "INVOICE" | "CONTRACT" | "QUOTE" | "REPORT" | "FILE" | "ESTIMATE" | "HANDOVER";
+  | "INVOICE"
+  | "RECEIPT"
+  | "CONTRACT"
+  | "QUOTE"
+  | "REPORT"
+  | "FILE"
+  | "ESTIMATE"
+  | "HANDOVER";
 
 /**
  * Signed-URL lifetime.

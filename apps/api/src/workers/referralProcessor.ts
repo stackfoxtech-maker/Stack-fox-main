@@ -5,6 +5,7 @@ import { isMailConfigured, referralInviteEmail, sendMail } from "../lib/mailer";
 import { log } from "../lib/logger";
 import { resolveCommissionPct } from "../lib/referralCommission";
 import { toJson } from "../lib/json";
+import { claimPersonalCode } from "../lib/referralLink";
 
 interface ProcessJob {
   referralId: string;
@@ -103,9 +104,16 @@ async function handleConvert({ referralCode, orderId, amount, purchaserId }: Con
   // code reached us — typed by hand, restored from a saved draft, or pasted
   // — so normalise here rather than trust every caller to have done it.
   const code = referralCode.trim().toUpperCase();
-  const referral = await prisma.referral.findUnique({ where: { code } });
+  // The code is either one invite's own (a Referral row) or a user's personal share-link
+  // code, which creates the row on first paid order (see lib/referralLink.ts).
+  const referral =
+    (await prisma.referral.findUnique({ where: { code } })) ??
+    (await claimPersonalCode(code, purchaserId, orderId));
   if (!referral) {
-    log().warn({ referralCode, orderId }, "referral conversion: unknown code");
+    log().warn(
+      { referralCode, orderId },
+      "referral conversion: unknown or unclaimable code",
+    );
     return;
   }
 
