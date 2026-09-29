@@ -121,6 +121,36 @@ async function collectSchemas(): Promise<Record<string, unknown>> {
 const routes = scanRoutes();
 const schemas = await collectSchemas();
 
+/**
+ * The document-level `security` default below applies to every operation
+ * unless overridden — but these genuinely take no credential (health, the
+ * pre-login auth flows, and webhooks that verify a gateway signature instead
+ * of a bearer token/API key). The generator only scans route signatures
+ * (see ROUTE_RE above), not handler bodies, so it cannot detect
+ * "this handler never calls requireAuth" on its own; guessing that from
+ * source would risk the exact false negative this list exists to prevent
+ * (an actually-protected route wrongly marked public). This is a maintained
+ * allowlist instead — short enough to review by eye, and it only needs an
+ * entry added when a new public route is added.
+ */
+const PUBLIC_ROUTES = new Set([
+  "GET /health",
+  "POST /auth/register",
+  "POST /auth/login",
+  "POST /auth/refresh-token",
+  "POST /auth/forgot-password",
+  "POST /auth/reset-password",
+  "POST /auth/verify-email",
+  "POST /auth/otp/send",
+  "POST /auth/otp/verify",
+  "GET /auth/google",
+  "GET /auth/google/callback",
+  "POST /auth/whatsapp/callback",
+  "POST /webhooks/razorpay",
+  "POST /webhooks/stripe",
+  "POST /webhooks/whatsapp",
+]);
+
 const paths: Record<string, Record<string, unknown>> = {};
 for (const r of routes) {
   const { path, params } = toOpenApiPath(r.path);
@@ -128,6 +158,9 @@ for (const r of routes) {
   paths[path][r.method.toLowerCase()] = {
     summary: `${r.method} ${r.path}`,
     tags: [r.file],
+    // Overrides the document-level default with "no credential" — an empty
+    // array, not an absent key, is what OpenAPI 3 uses to mean that.
+    ...(PUBLIC_ROUTES.has(`${r.method} ${r.path}`) ? { security: [] } : {}),
     ...(params.length
       ? {
           parameters: params.map((name) => ({

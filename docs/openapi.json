@@ -4734,6 +4734,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -4759,6 +4760,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -4784,6 +4786,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -4809,6 +4812,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -4884,6 +4888,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -4909,6 +4914,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -4934,6 +4940,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -4959,6 +4966,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -4984,6 +4992,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -5009,6 +5018,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -5034,6 +5044,7 @@
         "tags": [
           "auth"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -7267,6 +7278,7 @@
         "tags": [
           "server"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -11746,6 +11758,7 @@
         "tags": [
           "finance"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -11771,6 +11784,7 @@
         "tags": [
           "finance"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
@@ -11796,6 +11810,7 @@
         "tags": [
           "tools"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Success"
