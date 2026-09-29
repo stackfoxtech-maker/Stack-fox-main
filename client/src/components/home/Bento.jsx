@@ -10,7 +10,7 @@ function Tile({ className = '', icon: Icon, title, body, children }) {
   return (
     <Reveal.Item
       {...spotlightProps}
-      className={`group relative overflow-hidden rounded-lg border border-warm-200 bg-white p-6 shadow-sm transition-shadow duration-medium hover:shadow-md ${className}`}
+      className={`group relative overflow-hidden rounded-2xl border border-warm-200 bg-white p-5 shadow-sm md:rounded-lg md:p-6 transition-shadow duration-medium hover:shadow-md ${className}`}
     >
       <SpotlightGlow />
       <div className="relative">
@@ -214,7 +214,7 @@ function ShieldDemo() {
 
 export function Bento() {
   return (
-    <Reveal stagger className="mt-12 grid gap-4 lg:grid-cols-6">
+    <Reveal stagger className="mt-8 grid gap-3.5 md:mt-12 md:gap-4 lg:grid-cols-6">
       <Tile
         className="lg:col-span-3"
         icon={Check}

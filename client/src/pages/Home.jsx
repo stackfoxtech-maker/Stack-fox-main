@@ -88,6 +88,16 @@ const iconMap = {
 
 const inr = (n) => '₹' + new Intl.NumberFormat('en-IN').format(n);
 
+/* Phone-only shortcuts under the hero: tap what you are building, land in that part of the Builder. */
+const QUICK_STARTS = [
+  { label: 'Website', icon: Globe, cat: 'web-dev' },
+  { label: 'Mobile app', icon: Smartphone, cat: 'mobile-dev' },
+  { label: 'Online store', icon: ShoppingCart, cat: 'ecommerce' },
+  { label: 'AI chatbot', icon: Brain, cat: 'ai-genai' },
+  { label: 'Logo & design', icon: Palette, cat: 'ui-ux' },
+  { label: 'SEO & ads', icon: TrendingUp, cat: 'seo-marketing' },
+];
+
 const CALL_NUMBER = '+91 82093 95894';
 
 const STEPS = [
@@ -244,13 +254,13 @@ export default function Home() {
       {/* ── 1 · Hero ─────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-warm-white">
         <HeroBackdrop />
-        <div className="container-fx relative py-12 sm:py-16 lg:py-24">
+        <div className="container-fx relative py-8 sm:py-16 lg:py-24">
           <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
             <motion.div
               variants={heroStagger}
               initial="hidden"
               animate="show"
-              className="lg:col-span-6 xl:col-span-7"
+              className="min-w-0 lg:col-span-6 xl:col-span-7"
             >
               <motion.span variants={fadeUp} className="chip-sage mb-6">
                 <Zap size={14} className="text-sage-600" /> 240 services · one live total
@@ -299,9 +309,26 @@ export default function Home() {
                 </Link>
               </motion.div>
 
+              <motion.div variants={fadeUp} className="mt-7 sm:hidden">
+                <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-warm-500">
+                  What are you building?
+                </p>
+                <div className="no-scrollbar -mx-6 flex gap-2 overflow-x-auto px-6 pb-1">
+                  {QUICK_STARTS.map(({ label, icon: Icon, cat }) => (
+                    <Link
+                      key={cat}
+                      to={`/builder?category=${cat}`}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-full border border-warm-200 bg-white px-4 py-3 text-sm font-semibold text-warm-800 shadow-sm transition-transform active:scale-95"
+                    >
+                      <Icon size={16} className="text-fox-500" /> {label}
+                    </Link>
+                  ))}
+                </div>
+              </motion.div>
+
               <motion.div
                 variants={fadeUp}
-                className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-warm-200 pt-6"
+                className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-warm-200 pt-5 sm:mt-10 sm:pt-6"
               >
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-2.5">
@@ -337,7 +364,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 18, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.18, ease: EASE }}
-              className="relative lg:col-span-6 xl:col-span-5"
+              className="relative min-w-0 lg:col-span-6 xl:col-span-5"
             >
               <FloatBadge icon={FileText} className="-left-8 top-[60%]" delay={0} drift={7}>
                 GST invoice ready
@@ -577,7 +604,10 @@ export default function Home() {
             </Link>
           </Reveal>
 
-          <Reveal stagger className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <Reveal
+            stagger
+            className="no-scrollbar -mx-6 mt-8 grid scroll-pl-6 snap-x snap-mandatory auto-cols-[46%] grid-flow-col grid-rows-2 gap-3 overflow-x-auto px-6 pb-3 sm:mx-0 sm:mt-12 sm:auto-cols-auto sm:grid-flow-row sm:grid-rows-none sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
+          >
             {categories.map((cat) => {
               const Icon = iconMap[cat.icon] || Globe;
               const count = cat.count;
@@ -587,7 +617,7 @@ export default function Home() {
                   as={Link}
                   to={`/builder?category=${cat.id}`}
                   {...spotlightProps}
-                  className="group relative flex h-full flex-col overflow-hidden rounded-md border border-warm-200 bg-white p-5 shadow-sm transition-all duration-short hover:-translate-y-1 hover:border-fox-200 hover:shadow-md"
+                  className="group relative flex h-full snap-start flex-col overflow-hidden rounded-2xl border border-warm-200 bg-white p-4 shadow-sm transition-all sm:rounded-md sm:p-5 duration-short hover:-translate-y-1 hover:border-fox-200 hover:shadow-md"
                 >
                   <SpotlightGlow />
                   <ArrowRight
