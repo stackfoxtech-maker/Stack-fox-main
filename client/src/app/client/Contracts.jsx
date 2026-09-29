@@ -120,6 +120,9 @@ export default function Contracts() {
                   {CONTRACT_TYPE_LABELS[selected.type] || selected.type}
                 </h2>
                 <ContractTypeTag type={selected.type} />
+                {selected.contractNo && (
+                  <p className="mt-1 font-mono text-xs text-warm-500">No. {selected.contractNo}</p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -318,6 +321,7 @@ export default function Contracts() {
                       <ContractTypeTag type={c.type} />
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-warm-500">
+                      {c.contractNo && <span className="font-mono">{c.contractNo}</span>}
                       <span className="flex items-center gap-1">
                         <Clock size={10} /> {formatDate(c.createdAt)}
                       </span>

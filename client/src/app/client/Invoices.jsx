@@ -75,11 +75,25 @@ export default function Invoices() {
   // The PDF is fetched as a short-lived signed URL rather than linked to
   // directly; the API builds the document on first request if the queue has
   // not produced one yet.
+  // Files are named by their printed number (AWL/INV/2026-27/0007 -> AWL-INV-2026-27-0007.pdf).
+  const fileName = (no, fallback) => `${String(no || fallback).replace(/[^\w.-]+/g, '-')}.pdf`;
+
+  const handleReceipt = async (receipt) => {
+    setDownloading(receipt.id);
+    try {
+      const { data } = await api.get(`/payments/${receipt.id}/receipt`);
+      downloadFromUrl(data.url, fileName(receipt.receiptNo, receipt.id));
+    } catch (err) {
+      toast.error(downloadErrorMessage(err, 'Could not download the receipt.'));
+    }
+    setDownloading(null);
+  };
+
   const handleDownload = async (invoice) => {
     setDownloading(invoice._id);
     try {
       const { data } = await api.get(`/invoices/${invoice._id}/pdf`);
-      downloadFromUrl(data.url, `${invoice._id}.pdf`);
+      downloadFromUrl(data.url, fileName(invoice.invoiceNumber, invoice._id));
     } catch (err) {
       toast.error(downloadErrorMessage(err, 'Could not download the invoice PDF.'));
     }
@@ -178,8 +192,19 @@ export default function Invoices() {
                     isLoading={downloading === inv._id}
                     onClick={() => handleDownload(inv)}
                   >
-                    <Download size={16} /> {inv.status === 'paid' ? 'Receipt' : 'Invoice'} PDF
+                    <Download size={16} /> Invoice PDF
                   </Button>
+                  {(inv.receipts || []).map((r) => (
+                    <Button
+                      key={r.id}
+                      variant="outline"
+                      size="sm"
+                      isLoading={downloading === r.id}
+                      onClick={() => handleReceipt(r)}
+                    >
+                      <Receipt size={16} /> Receipt {r.receiptNo || ''}
+                    </Button>
+                  ))}
                 </div>
               </div>
             );

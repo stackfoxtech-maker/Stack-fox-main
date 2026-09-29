@@ -51,6 +51,8 @@ const SUITES = [
   "milestone-flow.mts",
   "contract-pack.mts",
   "assistant-knowledge.mts",
+  "document-numbers.mts",
+  "referral-link.mts",
 ];
 
 function run(file: string): Promise<number> {

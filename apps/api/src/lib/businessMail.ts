@@ -17,6 +17,8 @@ export async function queueInvoiceEmail(
   kind: "issued" | "receipt",
   reference: string,
   amount?: number,
+  /** Printed receipt number (AWL/RCP/...), quoted in the receipt email. */
+  receiptNo?: string | null,
 ) {
   const invoice = await db.invoice.findUniqueOrThrow({
     where: { id: invoiceId },
@@ -28,11 +30,11 @@ export async function queueInvoiceEmail(
     );
   const subject =
     kind === "receipt"
-      ? `Payment receipt — ${invoice.invoiceNo ?? invoice.id}`
+      ? `Payment receipt ${receiptNo ?? ""} — invoice ${invoice.invoiceNo ?? invoice.id}`.replace("  ", " ")
       : `Invoice issued — ${invoice.invoiceNo ?? invoice.id}`;
   const body =
     kind === "receipt"
-      ? `We received ${rupees(amount ?? 0)} against invoice ${invoice.invoiceNo ?? invoice.id}. Reference: ${reference}.`
+      ? `We received ${rupees(amount ?? 0)} against invoice ${invoice.invoiceNo ?? invoice.id}. ${receiptNo ? `Receipt no. ${receiptNo}. ` : ""}Reference: ${reference}.`
       : `Invoice ${invoice.invoiceNo ?? invoice.id} is ready. Total: ${rupees(Number(invoice.grandTotal))}.`;
   for (const user of invoice.org.users) {
     if (!user.email) continue;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Gift, Users, UserPlus } from 'lucide-react';
+import { Gift, Users, UserPlus, Copy, Check, Share2, MessageCircle, Mail } from 'lucide-react';
 import { Badge, EmptyState, Spinner } from '@components/ui/Primitives';
 import { formatINR, formatPaise, formatDate } from '@lib/utils';
 import api from '@lib/api';
@@ -32,6 +32,8 @@ export default function Referrals() {
   const [loading, setLoading] = useState(true);
   const [invite, setInvite] = useState({ referredName: '', referredEmail: '' });
   const [inviting, setInviting] = useState(false);
+  const [share, setShare] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -55,7 +57,25 @@ export default function Referrals() {
 
   useEffect(() => {
     fetchData();
+    api
+      .get('/referrals/link')
+      .then((r) => setShare(r.data.data))
+      .catch(() => {});
   }, []);
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(share.url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error('Could not copy. Select the link and copy it by hand.');
+    }
+  };
+
+  // The phone's own share sheet (WhatsApp, Messages, anything installed), where it exists.
+  const nativeShare = () =>
+    navigator.share({ title: 'StackFox', text: share.message, url: share.url }).catch(() => {});
 
   const sendInvite = async (e) => {
     e.preventDefault();
@@ -88,6 +108,61 @@ export default function Referrals() {
   return (
     <div className="space-y-5">
       <h2 className="text-lg font-semibold text-warm-900">Referral Program</h2>
+
+      {share && (
+        <div className="rounded-2xl border border-fox-200 bg-fox-50/60 p-5 sm:p-6">
+          <h3 className="font-semibold text-warm-900">Your referral link</h3>
+          <p className="mt-0.5 text-xs text-warm-600">
+            Send it to anyone, on WhatsApp or anywhere else. You earn a commission when they pay for
+            their first order.
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <input
+              readOnly
+              value={share.url}
+              onFocus={(e) => e.target.select()}
+              aria-label="Your referral link"
+              className="input-fx min-w-0 flex-1 font-mono text-sm"
+            />
+            <button
+              type="button"
+              onClick={copyLink}
+              className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-warm-200 bg-white px-4 text-sm font-semibold text-warm-800 transition hover:border-fox-300"
+            >
+              {copied ? <Check size={16} className="text-success-500" /> : <Copy size={16} />}
+              {copied ? 'Copied' : 'Copy link'}
+            </button>
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            <a
+              href={share.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-h-11 items-center gap-1.5 rounded-xl bg-[#25D366] px-4 text-sm font-semibold text-white transition hover:brightness-95"
+            >
+              <MessageCircle size={16} /> Share on WhatsApp
+            </a>
+            {typeof navigator !== 'undefined' && navigator.share && (
+              <button
+                type="button"
+                onClick={nativeShare}
+                className="flex min-h-11 items-center gap-1.5 rounded-xl border border-warm-200 bg-white px-4 text-sm font-semibold text-warm-800"
+              >
+                <Share2 size={16} /> Share…
+              </button>
+            )}
+            <a
+              href={share.mailtoUrl}
+              className="flex min-h-11 items-center gap-1.5 rounded-xl border border-warm-200 bg-white px-4 text-sm font-semibold text-warm-800"
+            >
+              <Mail size={16} /> Email
+            </a>
+          </div>
+          <p className="mt-2.5 text-[11px] text-warm-500">
+            Your code: <span className="font-mono font-semibold text-warm-700">{share.code}</span>
+          </p>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-warm-200 p-6">
         <div className="flex items-center gap-3 mb-4">

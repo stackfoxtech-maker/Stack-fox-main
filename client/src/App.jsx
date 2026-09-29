@@ -27,6 +27,22 @@ function ScrollToTop() {
   return null;
 }
 
+/* A shared referral link is `<site>/?ref=CODE`, so any page can be the landing page. Remember
+   the code (checkout pre-fills it) and leave the URL as it is. */
+function CaptureReferral() {
+  const { search } = useLocation();
+  useEffect(() => {
+    const ref = new URLSearchParams(search).get('ref')?.trim().toUpperCase();
+    if (!ref || !/^[A-Z0-9]{4,32}$/.test(ref)) return;
+    try {
+      localStorage.setItem('stackfox_referral_code', ref);
+    } catch {
+      /* storage blocked: the code can still be typed at checkout */
+    }
+  }, [search]);
+  return null;
+}
+
 export default function App() {
   const { pathname } = useLocation();
   const { isAuthenticated, fetchMe } = useAuthStore();
@@ -57,6 +73,7 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <ScrollToTop />
+      <CaptureReferral />
       <AppRoutes />
       {!NO_BOT.test(pathname) && (
         <Suspense fallback={null}>
