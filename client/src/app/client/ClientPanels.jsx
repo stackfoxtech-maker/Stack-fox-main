@@ -36,6 +36,7 @@ import {
   Badge,
 } from '@components/ui/Primitives';
 import api from '@lib/api';
+import { downloadFromUrl, downloadErrorMessage } from '@lib/download';
 import toast from 'react-hot-toast';
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -442,7 +443,7 @@ export function Reports() {
       const res = await api.post('/reports/generate', { type });
       const url = res.data?.data?.downloadUrl;
       if (url) {
-        window.open(url, '_blank', 'noopener');
+        downloadFromUrl(url);
         toast.success('Report generated.');
       } else {
         toast.error(res.data?.meta?.warning || 'Report generated, but no download is available.');
@@ -749,9 +750,9 @@ export function Handover() {
       const res = await api.get(`/handover/${selectedId}/deliverables/${fileId}/download`);
       const url = res.data?.data?.url;
       if (!url) throw new Error('no url');
-      window.open(url, '_blank', 'noopener');
+      downloadFromUrl(url, name);
     } catch (err) {
-      toast.error(err.response?.data?.error || `Could not download ${name}.`);
+      toast.error(downloadErrorMessage(err, `Could not download ${name}.`));
     } finally {
       setBusy(null);
     }

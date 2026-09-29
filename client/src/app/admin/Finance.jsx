@@ -12,6 +12,7 @@ import { usePageTitle } from '@lib/hooks';
 import { formatDate, formatPaise } from '@lib/utils';
 import { Spinner, Badge, EmptyState, Button, Modal, Input } from '@components/ui/Primitives';
 import api from '@lib/api';
+import { downloadFromUrl, downloadErrorMessage } from '@lib/download';
 import toast from 'react-hot-toast';
 
 const STATUS_TO_VARIANT = {
@@ -183,9 +184,9 @@ export default function Finance() {
   const downloadInvoice = async (inv) => {
     try {
       const { data } = await api.get(`/invoices/${inv.id}/pdf`);
-      window.open(data.url, '_blank', 'noopener');
+      downloadFromUrl(data.url, `${inv.id}.pdf`);
     } catch (err) {
-      toast.error(err?.response?.data?.error || 'Could not open the invoice PDF.');
+      toast.error(downloadErrorMessage(err, 'Could not download the invoice PDF.'));
     }
   };
 

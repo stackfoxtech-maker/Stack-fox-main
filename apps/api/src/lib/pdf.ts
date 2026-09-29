@@ -14,7 +14,7 @@ import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf
  * outside it. Real data (client names, clause JSON) can carry anything, so map
  * the common offenders and drop the rest rather than crash the doc worker.
  */
-function ansi(s: string): string {
+export function ansi(s: string): string {
   return s
     .replace(/₹/g, "Rs")
     .replace(/[‘’‚]/g, "'")
