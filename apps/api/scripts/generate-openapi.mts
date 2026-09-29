@@ -194,6 +194,13 @@ const spec = {
     },
     schemas,
   },
+  // Document-wide default: nearly every route takes one of these two, and
+  // the "Authentication" section above already says so in prose — this is
+  // the machine-readable form of the same fact. A handful of routes (health,
+  // login, signup) are genuinely public; a generic scanner reading only the
+  // schemes list without per-route exceptions is exactly the audience this
+  // is for, not the source of truth on any one endpoint (which is the code).
+  security: [{ bearerAuth: [] }, { apiKey: [] }],
   paths,
 };
 

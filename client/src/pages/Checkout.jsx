@@ -99,6 +99,12 @@ export default function Checkout() {
   const [paymentMode, setPaymentMode] = useState('MILESTONE');
   const [engagementModel, setEngagementModel] = useState('FPM');
   const [docsAccepted, setDocsAccepted] = useState(true);
+  // Prefilled from a referral invite link (see auth/Signup.jsx), but always
+  // editable — someone may land on the builder directly and enter a friend's
+  // code by hand instead.
+  const [referralCode, setReferralCode] = useState(
+    () => localStorage.getItem('stackfox_referral_code') || '',
+  );
 
   // Resuming a quote restores what was already answered and drops the client
   // back on the step they left. Every `next()` persists the wizard state to the
@@ -125,6 +131,11 @@ export default function Checkout() {
         if (saved.paymentMode) setPaymentMode(saved.paymentMode);
         if (saved.engagementModel) setEngagementModel(saved.engagementModel);
         if (typeof saved.docsAccepted === 'boolean') setDocsAccepted(saved.docsAccepted);
+        // The worker looks the code up with an exact match; a mixed-case
+        // value saved by some other path would otherwise fail that lookup
+        // silently as "unknown code" (the server also normalises on lookup,
+        // but there's no reason to hand it a wrong-case value to begin with).
+        if (saved.referralCode) setReferralCode(saved.referralCode.trim().toUpperCase());
 
         // Clamp: the tier (and so the step count) can change between visits,
         // and payment is always re-confirmed, so never restore onto the final
@@ -182,6 +193,7 @@ export default function Checkout() {
           paymentMode,
           engagementModel,
           docsAccepted,
+          referralCode: referralCode.trim() || undefined,
           step: nextStep,
         },
       });
@@ -265,7 +277,8 @@ export default function Checkout() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-            setQuote(quoteForDisplay(verifyRes.data.data));
+            const paidQuote = quoteForDisplay(verifyRes.data.data);
+            setQuote(paidQuote);
             // Let the overlay land before the celebration page takes over.
             await new Promise((r) => setTimeout(r, 900));
             navigate(`/payment-confirmation?quote=${quoteId}`);
@@ -463,6 +476,18 @@ export default function Checkout() {
                     </Field>
                   </>
                 )}
+                <Field
+                  label="Referral code"
+                  hint="Have a friend's invite code? Enter it here — they'll earn a commission once this order is paid."
+                  className="sm:col-span-2"
+                >
+                  <input
+                    placeholder="SF1234"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    className="input-fx w-full uppercase"
+                  />
+                </Field>
               </div>
               {tier === 'STARTER' && (
                 <p className="text-xs text-warm-400">

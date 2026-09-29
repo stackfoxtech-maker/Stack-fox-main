@@ -26,6 +26,7 @@ import {
 } from "../lib/billing";
 import { catalogPrice } from "../lib/pricing";
 import { quotePaymentTerms } from "../lib/quotePayment";
+import { queues } from "../lib/queue";
 import {
   QuoteFromCartSchema,
   QuotePaySchema,
@@ -771,6 +772,35 @@ export async function settleQuote(
       engagementId: result.fx.engagementId ?? undefined,
       payload: { invoiceId: result.fx.invoiceId, quoteId, amount },
     });
+
+    // Commission is earned on the full order value, so only fire once the
+    // quote is fully paid off — not on an UPFRONT/MILESTONE installment.
+    const referralCode = (result.quote.checkoutDetails as any)?.referralCode;
+    if (referralCode && result.quote.status === "paid") {
+      // No purchaser-email lookup here: handleConvert never reads
+      // purchaserEmail (see referralProcessor.ts), and a lookup that can
+      // reject would make settleQuote reject too — after the payment
+      // transaction already committed. A webhook retry on that error takes
+      // the `prior` branch above with `fx: null`, which skips this block
+      // entirely, silently dropping the conversion for good.
+      await queues.referralProcessor
+        .add("convert", {
+          referralCode,
+          orderId: quoteId,
+          amount: Number(result.quote.total),
+          purchaserId: result.quote.userId,
+        })
+        .catch((err) => {
+          // This branch runs once, right when the quote settles fully paid —
+          // no retry path exists, so a swallowed failure here loses the
+          // referrer's commission for good with nothing in the logs to find
+          // it by.
+          log().error(
+            { err, quoteId, referralCode },
+            "referral conversion enqueue failed",
+          );
+        });
+    }
   }
   return result.quote;
 }

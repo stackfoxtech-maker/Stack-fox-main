@@ -135,6 +135,27 @@ export function otpEmail(to: string, code: string): MailMessage {
   };
 }
 
+export function referralInviteEmail(
+  to: string,
+  code: string,
+  referrerName: string,
+  referredName?: string | null,
+): MailMessage {
+  const url = `${webAppUrl()}/signup?ref=${encodeURIComponent(code)}`;
+  const greeting = referredName ? `Hi ${referredName},` : "Hi,";
+  return {
+    to,
+    subject: `${referrerName} thinks StackFox is worth a look`,
+    html: SHELL(
+      `${referrerName} invited you to StackFox`,
+      `${greeting} ${referrerName} thought you'd like StackFox for building and shipping your next project. Sign up with their link and it's on record as their referral.`,
+      { label: "Create your account", url },
+      `Referral code: ${code}`,
+    ),
+    text: `${greeting}\n\n${referrerName} invited you to StackFox.\n\nCreate your account: ${url}\n\nReferral code: ${code}`,
+  };
+}
+
 export function verifyEmailMessage(to: string, token: string): MailMessage {
   const url = `${webAppUrl()}/verify-email?token=${encodeURIComponent(token)}`;
   return {

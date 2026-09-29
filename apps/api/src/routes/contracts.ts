@@ -84,12 +84,10 @@ export async function contractRoutes(app: FastifyInstance) {
       };
     } catch (err) {
       req.log.error({ err, contractId: id }, "contract pdf download failed");
-      return reply
-        .code(500)
-        .send({
-          error: "Could not prepare the contract PDF.",
-          requestId: String(req.id),
-        });
+      return reply.code(500).send({
+        error: "Could not prepare the contract PDF.",
+        requestId: String(req.id),
+      });
     }
   });
 

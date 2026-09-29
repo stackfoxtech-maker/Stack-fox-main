@@ -6,6 +6,8 @@ import { LIST_CAP, ok, withIds } from "../lib/http";
 import * as ids from "../lib/id";
 import { queues } from "../lib/queue";
 import { parseBody } from "../lib/validate";
+import { emitEvent } from "../lib/events";
+import { resolveCommissionPct } from "../lib/referralCommission";
 import { ReferralSchema } from "./opsSchemas";
 
 /**
@@ -117,7 +119,7 @@ export async function referralRoutes(app: FastifyInstance) {
         referredEmail: email,
         referredName: referredName ?? null,
         status: "PENDING",
-        commissionPct: Number(process.env.REFERRAL_COMMISSION_PCT ?? 10),
+        commissionPct: resolveCommissionPct(),
       },
     });
 
@@ -128,6 +130,43 @@ export async function referralRoutes(app: FastifyInstance) {
       });
 
     return ok({ ...referral, _id: referral.id });
+  });
+
+  /** Ops marks a converted referral's commission as paid out (e.g. after a bank transfer). */
+  app.post("/referrals/:id/pay", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    if (!isInternalRole(req.user!.role))
+      return reply.code(403).send({ error: "Only staff can mark a commission paid" });
+
+    const { id } = req.params as { id: string };
+
+    // Conditional on status so two concurrent "mark paid" clicks cannot both
+    // read CONVERTED, both write, and both emit a payout event for the same
+    // commission — only one updateMany can match a row still CONVERTED.
+    const result = await prisma.referral.updateMany({
+      where: { id, status: "CONVERTED" },
+      data: { status: "PAID" },
+    });
+    if (result.count === 0) {
+      const referral = await prisma.referral.findUnique({ where: { id } });
+      if (!referral) return reply.code(404).send({ error: "Referral not found" });
+      return reply.code(409).send({
+        error: "Only a converted referral with an unpaid commission can be marked paid",
+      });
+    }
+
+    const updated = await prisma.referral.findUniqueOrThrow({ where: { id } });
+
+    await emitEvent({
+      code: "REFERRAL_PAID",
+      payload: {
+        referralId: id,
+        commissionAmount: Number(updated.commissionAmount ?? 0),
+      },
+      actor: req.user!.sub,
+    });
+
+    return ok({ ...updated, _id: updated.id });
   });
 }
 

@@ -598,10 +598,26 @@ export async function checkoutRoutes(app: FastifyInstance) {
         });
       }
 
-      if (payload.referralCode) {
+      // Only a paid order earns the referrer a commission — an unsigned/unpaid
+      // checkout has no money to take a percentage of.
+      if (payload.referralCode && hasHandshake) {
         await queues.referralProcessor
-          .add("convert", { referralCode: payload.referralCode, orderId: ordId })
-          .catch(() => {});
+          .add("convert", {
+            referralCode: payload.referralCode,
+            orderId: ordId,
+            amount: invoiceAmount,
+            purchaserId: req.user!.sub,
+          })
+          .catch((err) => {
+            // This branch runs once, right after the paid order commits — no
+            // retry path exists, so a swallowed failure here loses the
+            // referrer's commission for good with nothing in the logs to
+            // find it by.
+            req.log.error(
+              { err, orderId: ordId, referralCode: payload.referralCode },
+              "referral conversion enqueue failed",
+            );
+          });
       }
 
       const { contracts: _contracts, fx: _fx, ...response } = result;
