@@ -777,17 +777,18 @@ export async function settleQuote(
     // quote is fully paid off — not on an UPFRONT/MILESTONE installment.
     const referralCode = (result.quote.checkoutDetails as any)?.referralCode;
     if (referralCode && result.quote.status === "paid") {
-      const purchaser = await prisma.user.findUnique({
-        where: { id: result.quote.userId },
-        select: { email: true },
-      });
+      // No purchaser-email lookup here: handleConvert never reads
+      // purchaserEmail (see referralProcessor.ts), and a lookup that can
+      // reject would make settleQuote reject too — after the payment
+      // transaction already committed. A webhook retry on that error takes
+      // the `prior` branch above with `fx: null`, which skips this block
+      // entirely, silently dropping the conversion for good.
       await queues.referralProcessor
         .add("convert", {
           referralCode,
           orderId: quoteId,
           amount: Number(result.quote.total),
           purchaserId: result.quote.userId,
-          purchaserEmail: purchaser?.email,
         })
         .catch((err) => {
           // This branch runs once, right when the quote settles fully paid —

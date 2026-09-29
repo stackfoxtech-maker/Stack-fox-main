@@ -1,9 +1,10 @@
-import { createWorker, QUEUE } from "../lib/queue";
+import { createWorker, QUEUE, queues } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
 import { isMailConfigured, referralInviteEmail, sendMail } from "../lib/mailer";
 import { log } from "../lib/logger";
 import { resolveCommissionPct } from "../lib/referralCommission";
+import { toJson } from "../lib/json";
 
 interface ProcessJob {
   referralId: string;
@@ -16,7 +17,6 @@ interface ConvertJob {
   amount: number;
   /** Whoever completed the paid order — used to block a self-referral. */
   purchaserId?: string;
-  purchaserEmail?: string;
 }
 
 /**
@@ -58,9 +58,12 @@ async function handleProcess({ referralId }: ProcessJob) {
   const referrerName = referral.referrer?.name ?? "A StackFox user";
 
   // The actual invite: without this landing in the invitee's inbox, the
-  // referral code never reaches anyone and can never be redeemed. Best-effort
-  // — a bounce or missing mail provider shouldn't fail the job, since the
-  // referral itself was still recorded and can be re-sent.
+  // referral code never reaches anyone and can never be redeemed. A failed
+  // send must not be reported as SENT — the queue has no `attempts`
+  // configured, so nothing would ever retry it, and the referral would sit
+  // marked "sent" forever with an invitee who never got the code. Leaving it
+  // PENDING is what makes a manual resend (or a future retry path) visible
+  // as necessary instead of silently skipped.
   if (isMailConfigured()) {
     const result = await sendMail(
       referralInviteEmail(
@@ -75,9 +78,11 @@ async function handleProcess({ referralId }: ProcessJob) {
         { referralId, err: result.error },
         "referral invite email failed to send",
       );
+      return;
     }
   } else {
     log().warn({ referralId }, "referral invite not sent — no mail provider configured");
+    return;
   }
 
   await prisma.referral.update({
@@ -136,25 +141,56 @@ async function handleConvert({ referralCode, orderId, amount, purchaserId }: Con
 
   const commissionPct = resolveCommissionPct(referral.commissionPct);
   const commissionAmount = Math.round((amount * commissionPct) / 100);
+  const payload = { referralId: referral.id, orderId, commissionAmount };
 
-  // Conditional on status so two concurrent "convert" jobs for the same code
-  // (e.g. a duplicate enqueue, or a retry racing the original) cannot both
-  // pass the status checks above and then both write — only one update can
-  // match a row still in PENDING/SENT, so only one can ever flip it.
-  const result = await prisma.referral.updateMany({
-    where: { id: referral.id, status: { in: ["PENDING", "SENT"] } },
-    data: {
-      status: "CONVERTED",
-      referredOrderId: orderId,
-      commissionPct,
-      commissionAmount,
-    },
+  // The CONVERTED transition and its REFERRAL_CONVERTED event row commit
+  // together. emitEvent() in its usual form writes the event as a separate
+  // statement after this one, so the updateMany below could succeed and the
+  // event write fail independently — a referral silently stuck CONVERTED
+  // with no event a webhook subscriber would ever see, and no BullMQ retry
+  // configured on this queue to repair it. Conditional on status for the
+  // same reason as elsewhere in this file: two concurrent "convert" jobs for
+  // the same code cannot both pass the status checks above and both write —
+  // only one update can match a row still in PENDING/SENT.
+  const event = await prisma.$transaction(async (tx) => {
+    const result = await tx.referral.updateMany({
+      where: { id: referral.id, status: { in: ["PENDING", "SENT"] } },
+      data: {
+        status: "CONVERTED",
+        referredOrderId: orderId,
+        commissionPct,
+        commissionAmount,
+      },
+    });
+    if (result.count !== 1) return null;
+    return tx.event.create({
+      data: {
+        code: "REFERRAL_CONVERTED",
+        payload: toJson(payload),
+        actor: referral.referrerId,
+      },
+    });
   });
-  if (result.count !== 1) return;
+  if (!event) return;
 
-  await emitEvent({
-    code: "REFERRAL_CONVERTED",
-    payload: { referralId: referral.id, orderId, commissionAmount },
-    actor: referral.referrerId,
+  // Job dispatch has no transactional guarantee either way (see emitEvent),
+  // so it stays outside, after commit — mirrors emitEvent's own fan-out.
+  await Promise.all([
+    queues.notifications.add("notify", {
+      eventSeq: Number(event.seq),
+      code: "REFERRAL_CONVERTED",
+      payload,
+      actor: referral.referrerId,
+    }),
+    queues.webhookDispatcher.add("dispatch", {
+      eventSeq: Number(event.seq),
+      code: "REFERRAL_CONVERTED",
+      payload,
+    }),
+  ]).catch((err) => {
+    log().warn(
+      { err, referralId: referral.id },
+      "REFERRAL_CONVERTED event persisted but queue dispatch failed; it will not be retried",
+    );
   });
 }

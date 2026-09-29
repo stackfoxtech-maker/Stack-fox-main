@@ -607,7 +607,6 @@ export async function checkoutRoutes(app: FastifyInstance) {
             orderId: ordId,
             amount: invoiceAmount,
             purchaserId: req.user!.sub,
-            purchaserEmail: user.email,
           })
           .catch((err) => {
             // This branch runs once, right after the paid order commits — no
