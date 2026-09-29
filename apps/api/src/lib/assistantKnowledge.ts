@@ -303,7 +303,9 @@ const ALIASES: Record<string, string> = {
 };
 
 export function findServices(message: string, limit = 3): Service[] {
-  const words = tokens(message).flatMap((w) => (ALIASES[w] ? [w, ...tokens(ALIASES[w])] : [w]));
+  const words = tokens(message).flatMap((w) =>
+    ALIASES[w] ? [w, ...tokens(ALIASES[w])] : [w],
+  );
   if (words.length === 0) return [];
   const { categories, services } = catalogue();
   return services
@@ -564,7 +566,10 @@ export async function answerQuestion(
 
   if (asksPrice && parseBudget(message)) {
     const pk = packageAnswer(message);
-    return { ...pk, reply: `I couldn't match that to one service, but by budget: ${pk.reply}` };
+    return {
+      ...pk,
+      reply: `I couldn't match that to one service, but by budget: ${pk.reply}`,
+    };
   }
   if (CATALOG.test(lower)) return categoryAnswer();
   if (asksPrice)
