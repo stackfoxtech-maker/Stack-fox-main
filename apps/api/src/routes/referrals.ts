@@ -6,7 +6,8 @@ import { LIST_CAP, ok, withIds } from "../lib/http";
 import * as ids from "../lib/id";
 import { queues } from "../lib/queue";
 import { parseBody } from "../lib/validate";
-import { emitEvent } from "../lib/events";
+import { toJson } from "../lib/json";
+import { log } from "../lib/logger";
 import { resolveCommissionPct } from "../lib/referralCommission";
 import { ReferralSchema } from "./opsSchemas";
 
@@ -139,15 +140,32 @@ export async function referralRoutes(app: FastifyInstance) {
       return reply.code(403).send({ error: "Only staff can mark a commission paid" });
 
     const { id } = req.params as { id: string };
+    const actor = req.user!.sub;
 
-    // Conditional on status so two concurrent "mark paid" clicks cannot both
-    // read CONVERTED, both write, and both emit a payout event for the same
-    // commission — only one updateMany can match a row still CONVERTED.
-    const result = await prisma.referral.updateMany({
-      where: { id, status: "CONVERTED" },
-      data: { status: "PAID" },
+    // The PAID transition and its REFERRAL_PAID event row commit together —
+    // emitEvent() in its usual form writes the event as a separate statement
+    // after this one, so a rejected event write would leave the referral
+    // PAID with no event, and no way to retry: a second /pay call would 409
+    // because it only matches CONVERTED, not PAID. Same conditional-status
+    // guard as before against two concurrent "mark paid" clicks.
+    const result = await prisma.$transaction(async (tx) => {
+      const updateResult = await tx.referral.updateMany({
+        where: { id, status: "CONVERTED" },
+        data: { status: "PAID" },
+      });
+      if (updateResult.count === 0) return null;
+      const updated = await tx.referral.findUniqueOrThrow({ where: { id } });
+      const payload = {
+        referralId: id,
+        commissionAmount: Number(updated.commissionAmount ?? 0),
+      };
+      const event = await tx.event.create({
+        data: { code: "REFERRAL_PAID", payload: toJson(payload), actor },
+      });
+      return { updated, event, payload };
     });
-    if (result.count === 0) {
+
+    if (!result) {
       const referral = await prisma.referral.findUnique({ where: { id } });
       if (!referral) return reply.code(404).send({ error: "Referral not found" });
       return reply.code(409).send({
@@ -155,18 +173,28 @@ export async function referralRoutes(app: FastifyInstance) {
       });
     }
 
-    const updated = await prisma.referral.findUniqueOrThrow({ where: { id } });
-
-    await emitEvent({
-      code: "REFERRAL_PAID",
-      payload: {
-        referralId: id,
-        commissionAmount: Number(updated.commissionAmount ?? 0),
-      },
-      actor: req.user!.sub,
+    // Job dispatch has no transactional guarantee either way (see emitEvent),
+    // so it stays outside, after commit — mirrors emitEvent's own fan-out.
+    await Promise.all([
+      queues.notifications.add("notify", {
+        eventSeq: Number(result.event.seq),
+        code: "REFERRAL_PAID",
+        payload: result.payload,
+        actor,
+      }),
+      queues.webhookDispatcher.add("dispatch", {
+        eventSeq: Number(result.event.seq),
+        code: "REFERRAL_PAID",
+        payload: result.payload,
+      }),
+    ]).catch((err) => {
+      log().warn(
+        { err, referralId: id },
+        "REFERRAL_PAID event persisted but queue dispatch failed; it will not be retried",
+      );
     });
 
-    return ok({ ...updated, _id: updated.id });
+    return ok({ ...result.updated, _id: result.updated.id });
   });
 }
 
