@@ -2793,6 +2793,10 @@
               "clauseSelections": {
                 "type": "object",
                 "additionalProperties": {}
+              },
+              "referralCode": {
+                "type": "string",
+                "maxLength": 32
               }
             },
             "additionalProperties": false
@@ -9501,6 +9505,41 @@
         "summary": "POST /referrals",
         "tags": [
           "referrals"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
+    "/referrals/{id}/pay": {
+      "post": {
+        "summary": "POST /referrals/:id/pay",
+        "tags": [
+          "referrals"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {

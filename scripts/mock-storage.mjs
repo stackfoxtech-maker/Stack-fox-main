@@ -32,7 +32,8 @@ createServer((req, res) => {
     if (req.method === "POST" && parts[0] === "sign") {
       const [, bucket, ...rest] = parts;
       const key = `${bucket}/${rest.join("/")}`;
-      if (!objects.has(key)) return json(404, { error: "Object not found", statusCode: "404" });
+      if (!objects.has(key))
+        return json(404, { error: "Object not found", statusCode: "404" });
       return json(200, {
         signedURL: `/object/sign/${key}?token=mock&download=`,
       });
@@ -54,7 +55,10 @@ createServer((req, res) => {
       if (objects.has(key) && req.headers["x-upsert"] !== "true") {
         return json(409, { error: "The resource already exists", statusCode: "409" });
       }
-      objects.set(key, { body, type: req.headers["content-type"] ?? "application/octet-stream" });
+      objects.set(key, {
+        body,
+        type: req.headers["content-type"] ?? "application/octet-stream",
+      });
       console.log(`stored ${key} (${body.length} bytes)`);
       return json(200, { Key: key });
     }
