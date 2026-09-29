@@ -86,7 +86,10 @@ check(
   /Mobile App/i.test(app.reply),
 );
 const ai = await answerQuestion("Need AI");
-check("an AI question finds AI services", /AI (Agent|Readiness|Data)/.test(ai.reply) && ai.intent === "service");
+check(
+  "an AI question finds AI services",
+  /AI (Agent|Readiness|Data)/.test(ai.reply) && ai.intent === "service",
+);
 check(
   "no internal test row is ever offered",
   !(
@@ -97,7 +100,9 @@ check(
 );
 // Every package the site sells is quoted at its listed price.
 const pk = await answerQuestion("Show me packages");
-for (const p of [...(raw.packages as any[])].sort((a, b) => a.price - b.price).slice(0, 4)) {
+for (const p of [...(raw.packages as any[])]
+  .sort((a, b) => a.price - b.price)
+  .slice(0, 4)) {
   check(
     `package "${p.name}" is listed at its price`,
     pk.reply.includes("₹" + new Intl.NumberFormat("en-IN").format(p.price)),

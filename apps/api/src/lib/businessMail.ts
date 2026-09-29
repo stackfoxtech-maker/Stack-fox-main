@@ -30,7 +30,10 @@ export async function queueInvoiceEmail(
     );
   const subject =
     kind === "receipt"
-      ? `Payment receipt ${receiptNo ?? ""} — invoice ${invoice.invoiceNo ?? invoice.id}`.replace("  ", " ")
+      ? `Payment receipt ${receiptNo ?? ""} — invoice ${invoice.invoiceNo ?? invoice.id}`.replace(
+          "  ",
+          " ",
+        )
       : `Invoice issued — ${invoice.invoiceNo ?? invoice.id}`;
   const body =
     kind === "receipt"
