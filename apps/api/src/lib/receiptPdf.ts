@@ -134,9 +134,9 @@ export async function renderReceiptPdf(r: ReceiptModel): Promise<Buffer> {
     line("This payment", `Rs ${inr2(r.amount)}`);
     y -= 6;
     rule(y, INK, MX, W - MX, 0.8);
-    r.invoice.balance > 0
-      ? line("Balance due", `Rs ${inr2(r.invoice.balance)}`, true, ACCENT)
-      : line("Balance due", "Nil - paid in full", true, GREEN);
+    if (r.invoice.balance > 0)
+      line("Balance due", `Rs ${inr2(r.invoice.balance)}`, true, ACCENT);
+    else line("Balance due", "Nil - paid in full", true, GREEN);
   }
 
   // Footer
