@@ -3483,6 +3483,14 @@
       }
     }
   },
+  "security": [
+    {
+      "bearerAuth": []
+    },
+    {
+      "apiKey": []
+    }
+  ],
   "paths": {
     "/admin/bundles": {
       "get": {
