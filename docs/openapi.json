@@ -1919,6 +1919,10 @@
               "additionalProperties": false
             },
             "maxItems": 40
+          },
+          "page": {
+            "type": "string",
+            "maxLength": 200
           }
         },
         "required": [
@@ -4706,6 +4710,31 @@
     "/assistant/chat": {
       "post": {
         "summary": "POST /assistant/chat",
+        "tags": [
+          "assistant"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
+    "/assistant/suggestions": {
+      "get": {
+        "summary": "GET /assistant/suggestions",
         "tags": [
           "assistant"
         ],
@@ -8380,6 +8409,41 @@
         }
       }
     },
+    "/payments/{id}/receipt": {
+      "get": {
+        "summary": "GET /payments/:id/receipt",
+        "tags": [
+          "finance"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
     "/payments/create-order": {
       "post": {
         "summary": "POST /payments/create-order",
@@ -9560,6 +9624,31 @@
               "type": "string"
             }
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
+    "/referrals/link": {
+      "get": {
+        "summary": "GET /referrals/link",
+        "tags": [
+          "referrals"
         ],
         "responses": {
           "200": {
