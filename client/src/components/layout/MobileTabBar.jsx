@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Home, Hammer, Package, ShoppingCart, User } from 'lucide-react';
 import { cn } from '@lib/utils';
 import useAuthStore from '@store/authStore';
@@ -19,21 +20,48 @@ export const tabBarVisible = (pathname) => !HIDDEN_ON.some((p) => pathname.start
 
 const tabClass = (active) =>
   cn(
-    'relative flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors active:scale-95',
+    'relative flex min-h-[3.5rem] flex-1 select-none flex-col items-center justify-center gap-0.5 rounded-2xl text-[11px] font-semibold transition-colors',
     active ? 'text-fox-600' : 'text-warm-500',
   );
 
-function Indicator({ active }) {
+/** The soft pill that slides behind whichever tab is active. */
+function Pill() {
   return (
-    <span
+    <motion.span
+      layoutId="tab-pill"
       aria-hidden
-      className={cn(
-        'absolute left-1/2 top-0 h-0.5 -translate-x-1/2 rounded-full bg-fox-500 transition-all duration-medium ease-enter',
-        active ? 'w-8 opacity-100' : 'w-0 opacity-0',
-      )}
+      className="absolute inset-x-1.5 inset-y-1 rounded-2xl bg-fox-50"
+      transition={{ type: 'spring', stiffness: 460, damping: 34 }}
     />
   );
 }
+
+const Tab = ({ active, icon: Icon, children, badge }) => (
+  <>
+    {active && <Pill />}
+    <motion.span
+      className="relative flex flex-col items-center gap-0.5"
+      whileTap={{ scale: 0.88 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+    >
+      <span className="relative">
+        <Icon size={22} strokeWidth={active ? 2.4 : 1.9} />
+        {badge > 0 && (
+          <motion.span
+            key={badge}
+            initial={{ scale: 0.4 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 14 }}
+            className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-fox-500 px-1 text-[10px] font-bold text-white ring-2 ring-white"
+          >
+            {badge > 99 ? '99+' : badge}
+          </motion.span>
+        )}
+      </span>
+      {children}
+    </motion.span>
+  </>
+);
 
 export default function MobileTabBar() {
   const { pathname } = useLocation();
@@ -53,21 +81,20 @@ export default function MobileTabBar() {
       <div
         aria-hidden
         className="lg:hidden"
-        style={{ height: 'calc(3.5rem + env(safe-area-inset-bottom))' }}
+        style={{ height: 'calc(4.75rem + env(safe-area-inset-bottom))' }}
       />
+      {/* A floating bar, inset from the screen edge, in place of a full-width strip. */}
       <nav
         aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-warm-200 bg-white/95 shadow-[0_-6px_24px_-12px_rgba(26,25,24,0.18)] backdrop-blur-lg lg:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className="fixed inset-x-3 z-40 flex rounded-[1.6rem] border border-warm-200/80 bg-white/90 p-1 shadow-[0_10px_32px_-8px_rgba(26,25,24,0.28)] backdrop-blur-xl lg:hidden"
+        style={{ bottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
       >
-        {tabs.map(({ label, icon: Icon, to, end }) => (
+        {tabs.map(({ label, icon, to, end }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => tabClass(isActive)}>
             {({ isActive }) => (
-              <>
-                <Indicator active={isActive} />
-                <Icon size={21} strokeWidth={isActive ? 2.4 : 2} />
+              <Tab active={isActive} icon={icon}>
                 {label}
-              </>
+              </Tab>
             )}
           </NavLink>
         ))}
@@ -78,23 +105,20 @@ export default function MobileTabBar() {
           aria-label={`Cart, ${itemCount} items`}
           className={tabClass(false)}
         >
-          <span className="relative">
-            <ShoppingCart size={21} />
-            {itemCount > 0 && (
-              <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-fox-500 px-1 text-[9px] font-bold text-white">
-                {itemCount > 99 ? '99+' : itemCount}
-              </span>
-            )}
-          </span>
-          Cart
+          <Tab active={false} icon={ShoppingCart} badge={itemCount}>
+            Cart
+          </Tab>
         </button>
 
         <NavLink
           to={isAuthenticated ? getDashboardPath() : '/login'}
           className={({ isActive }) => tabClass(isActive && isAuthenticated)}
         >
-          <User size={21} />
-          {isAuthenticated ? 'Account' : 'Log in'}
+          {({ isActive }) => (
+            <Tab active={isActive && isAuthenticated} icon={User}>
+              {isAuthenticated ? 'Account' : 'Log in'}
+            </Tab>
+          )}
         </NavLink>
       </nav>
     </>

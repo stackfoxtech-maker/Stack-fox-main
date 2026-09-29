@@ -2,103 +2,35 @@ import { TIMEOUT } from "../lib/timeouts";
 import type { FastifyInstance } from "fastify";
 import { parseBody } from "../lib/validate";
 import { AssistantChatSchema, AssistantRecommendSchema } from "./opsSchemas";
+import { answerQuestion, starterSuggestions } from "../lib/assistantKnowledge";
 
 const GEMINI_MODEL = "gemini-3.6-flash";
 
-const SYSTEM_PROMPT = `You are FoxBot, the AI assistant on the StackFox website (stackfox.com).
-
-StackFox is a full-lifecycle IT-services marketplace: browse services, configure them, get an
-instant estimate, get a legally structured contract generated automatically, pay, and track
-delivery end-to-end — all backed by a human-delivered team augmented by AI.
-
-Service categories (242 individual service units across these): Web Development, Mobile App
-Development, AI & GenAI, Automation, E-Commerce, UI/UX Design, Backend & APIs, DevOps & Cloud,
-Cybersecurity, SEO & Digital Marketing, IT Consultancy, SaaS Products, Maintenance & Support.
-
-Popular bundled packages:
-- Starter Website Package — ₹35,000
-- Business Website Package — ₹65,000
-- E-Commerce Launchpad — ₹85,000
-- Mobile App Launch Package — ₹1,10,000
-- SaaS Starter Kit — ₹2,50,000
-- AI Integration Package — ₹90,000
-- Security Hardening Package — ₹95,000
-- Digital Growth Package — ₹70,000
-
-Every service comes in three tiers — Starter, Growth, Premium — with transparent pricing at
-each tier. Clients can also build a custom scope in the Builder and get an instant estimate.
-
-Your job: help visitors figure out what they need, explain how StackFox works, and point them
-toward the right next step (the Service Builder, a specific package, the instant estimator, or
-booking a free call at /contact). Keep answers short (2-4 sentences), friendly, and concrete —
-prefer naming a specific package or category over vague reassurance. If asked something totally
-unrelated to StackFox or software/IT services, gently redirect back to what StackFox can help
-with. Never invent a specific price beyond what's listed above — for anything more specific,
-point them to the estimator or Builder.`;
-
 export async function assistantRoutes(app: FastifyInstance) {
+  // POST /assistant/chat: FoxBot. Answers come from StackFox's own data and written
+  // policies (see lib/assistantKnowledge.ts), never from a language model.
   app.post(
     "/assistant/chat",
-    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
     async (req, reply) => {
       const body = parseBody(req, reply, AssistantChatSchema);
       if (!body) return;
-      const { message, history } = body;
-
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey)
-        return reply.code(500).send({ message: "AI assistant is not configured" });
-
-      const contents = [
-        ...(history ?? [])
-          .slice(-10)
-          .map((h) => ({ role: h.role, parts: [{ text: h.text }] })),
-        { role: "user", parts: [{ text: message }] },
-      ];
-
       try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-          {
-            method: "POST",
-            signal: AbortSignal.timeout(TIMEOUT.llm),
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-              contents,
-              // gemini-3.6-flash spends part of the output budget on internal
-              // "thinking" tokens before the visible answer — too low a cap
-              // here truncates mid-thought and returns garbled/partial text.
-              generationConfig: { maxOutputTokens: 2048 },
-            }),
-          },
-        );
-
-        const data = (await res.json()) as any;
-        if (!res.ok) {
-          req.log.error({ geminiError: data?.error }, "Gemini request failed");
-          return reply.code(502).send({
-            message: data?.error?.message ?? "AI assistant is temporarily unavailable",
-          });
-        }
-
-        const reply_text: string | undefined =
-          data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!reply_text) {
-          return reply
-            .code(502)
-            .send({ message: "AI assistant returned an empty response" });
-        }
-
-        return { data: { reply: reply_text } };
+        return { data: await answerQuestion(body.message, { page: body.page }) };
       } catch (err: any) {
         req.log.error(err);
         return reply
-          .code(502)
-          .send({ message: "AI assistant is temporarily unavailable" });
+          .code(503)
+          .send({ message: "FoxBot is unavailable right now, try again shortly" });
       }
     },
   );
+
+  // GET /assistant/suggestions?page=/pricing: the opening chips for that page.
+  app.get("/assistant/suggestions", async (req) => {
+    const { page } = req.query as { page?: string };
+    return { data: { suggestions: starterSuggestions(page?.slice(0, 200)) } };
+  });
 
   // POST /assistant/advise — AI Scope Advisor (Product Bible §4.2).
   // Takes the 10-question flow's answers plus the client's own catalog
