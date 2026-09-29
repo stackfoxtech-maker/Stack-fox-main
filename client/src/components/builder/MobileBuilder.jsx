@@ -168,7 +168,7 @@ export function CartBar({ count, total, onOpen }) {
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 400, damping: 34 }}
           className="fixed inset-x-3 z-30 flex items-center gap-3 rounded-2xl bg-warm-900 py-2.5 pl-3 pr-4 text-left text-white shadow-modal active:scale-[0.99] md:hidden"
-          style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom) + 0.5rem)' }}
+          style={{ bottom: 'calc(4.75rem + env(safe-area-inset-bottom))' }}
         >
           <span className="relative grid h-10 w-10 place-items-center rounded-xl bg-white/10">
             <ShoppingCart size={20} />
