@@ -1,3 +1,4 @@
+import { nextDocNumber } from "./docNumber";
 import { queueInvoiceEmail } from "./businessMail";
 import { prisma } from "@stackfox/prisma";
 import { queues } from "./queue";
@@ -72,6 +73,7 @@ export async function recordInvoicePaymentRows(
     if (!already) {
       const payment = await db.payment.create({
         data: {
+          receiptNo: await nextDocNumber(db, "RCP"),
           orderId: invoice.orderId,
           invoiceId: invoice.id,
           gateway: facts.gateway,
@@ -91,6 +93,7 @@ export async function recordInvoicePaymentRows(
         "receipt",
         facts.gatewayPaymentId ?? payment.id,
         amount,
+        payment.receiptNo,
       );
       // Mirror onto the order so a fully-paid order stops looking PENDING.
       //

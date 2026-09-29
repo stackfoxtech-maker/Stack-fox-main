@@ -1,3 +1,4 @@
+import { nextDocNumber } from "../lib/docNumber";
 import { createWorker, QUEUE } from "../lib/queue";
 import { prisma } from "@stackfox/prisma";
 import { uploadFile } from "../lib/storage";
@@ -47,24 +48,27 @@ createWorker(QUEUE.docGen, async (job) => {
     });
 
     if (!invoice && invoiceGross > 0) {
-      invoice = await prisma.invoice.create({
-        data: {
-          id: ids.invoiceId(),
-          orderId: project.orderId,
-          engagementId: project.engagementId,
-          orgId: project.engagement.clientId,
-          milestoneRef,
-          sacCode: "998314",
-          gstType,
-          subtotal,
-          cgst,
-          sgst,
-          igst,
-          grandTotal: invoiceGross,
-          status: "SENT",
-          dueDate: new Date(Date.now() + 7 * 86400000),
-        },
-      });
+      invoice = await prisma.$transaction(async (tx) =>
+        tx.invoice.create({
+          data: {
+            id: ids.invoiceId(),
+            invoiceNo: await nextDocNumber(tx, "INV"),
+            orderId: project.orderId,
+            engagementId: project.engagementId,
+            orgId: project.engagement.clientId,
+            milestoneRef,
+            sacCode: "998314",
+            gstType,
+            subtotal,
+            cgst,
+            sgst,
+            igst,
+            grandTotal: invoiceGross,
+            status: "SENT",
+            dueDate: new Date(Date.now() + 7 * 86400000),
+          },
+        }),
+      );
       await emitEvent({
         code: "INVOICE_CREATED",
         payload: { invoiceId: invoice.id, milestoneRef, projectId },

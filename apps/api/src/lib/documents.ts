@@ -6,9 +6,10 @@ import { renderAgreementPack, type PackContract, type Pack } from "./contractPdf
 import { PACK_ORDER } from "./contractText";
 import { inr2 } from "./companyInvoice";
 import { log } from "./logger";
+import { ensureContractNo, ensureInvoiceNo, ensureReceiptNo } from "./docNumber";
+import { renderReceiptPdf } from "./receiptPdf";
 import {
   renderCompanyInvoicePdf,
-  awlInvoiceNumber,
   SUPPLIER,
   type CompanyInvoiceLine,
 } from "./companyInvoice";
@@ -71,26 +72,11 @@ export async function buildInvoicePdf(
   const rate = invoice.gstRate ?? 18;
   const isInterState = invoice.gstType === "IGST";
 
-  // The printed number is assigned once and then never changes — reissuing a
-  // tax invoice under a new number would break the buyer's ITC trail. The
-  // numeric part is derived from the row's own sequence so a re-render is
-  // stable, and the column is unique so a collision surfaces instead of
-  // silently duplicating a statutory number.
-  let printedNo = invoice.invoiceNo;
-  if (!printedNo) {
-    const seq = Number(invoice.id.replace(/\D/g, "").slice(-4)) || 0;
-    printedNo = awlInvoiceNumber(seq, invoice.createdAt);
-    try {
-      await prisma.invoice.update({
-        where: { id: invoice.id },
-        data: { invoiceNo: printedNo },
-      });
-    } catch {
-      // Unique-constraint clash: fall back to the row id so the PDF still
-      // renders with a number that is unambiguously this invoice's.
-      printedNo = invoice.id;
-    }
-  }
+  // The printed number is assigned once and never changes: reissuing a tax invoice under a new
+  // number would break the buyer's ITC trail. It normally already exists (set when the invoice
+  // was issued); a draft that reaches a PDF first is numbered here, from the same series.
+  const printedNo =
+    invoice.invoiceNo ?? (await ensureInvoiceNo(prisma, invoice.id)) ?? invoice.id;
 
   const billing = (invoice.org?.billingAddress ?? {}) as Record<string, unknown>;
   const addressLine = [billing.line1, billing.city, billing.state, billing.pincode]
@@ -211,6 +197,10 @@ async function loadPack(
   });
   if (!eng) return null;
 
+  // Every contract carries its printed number by now; number any that predate that.
+  for (const c of eng.contracts)
+    if (!c.contractNo) c.contractNo = (await ensureContractNo(prisma, c.id)) ?? c.id;
+
   const commercial = (eng.commercial ?? {}) as Record<string, unknown>;
   const total = paise(commercial.total);
   const tax = paise(commercial.gst);
@@ -243,6 +233,7 @@ async function loadPack(
     )
     .map((c) => ({
       id: c.id,
+      contractNo: c.contractNo ?? c.id,
       type: c.type,
       status: c.status,
       createdAt: c.createdAt,
@@ -335,5 +326,75 @@ export async function buildContractPdf(contractId: string): Promise<string | nul
     data: { fileKey: key, wormKey, docHash },
   });
 
+  return key;
+}
+
+export function receiptKey(p: { id: string; invoiceId: string | null }): string {
+  return `receipts/${p.invoiceId ?? "unassigned"}/${p.id}.pdf`;
+}
+
+/**
+ * Renders the receipt for one captured payment and stores it. The receipt is a record of what
+ * was received at that moment, so the balance shown is the invoice's position right after this
+ * payment, not today's. Returns the storage key, or null when there is no such payment.
+ */
+export async function buildReceiptPdf(paymentId: string): Promise<string | null> {
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    include: { invoice: { include: { org: true } } },
+  });
+  if (!payment || !["CAPTURED", "REFUNDED"].includes(payment.status)) return null;
+
+  const receiptNo =
+    payment.receiptNo ?? (await ensureReceiptNo(prisma, payment.id)) ?? payment.id;
+  const rupees = (v: bigint | number) => Math.round(Number(v)) / 100;
+
+  let invoice: { invoiceNo: string; total: number; balance: number } | null = null;
+  if (payment.invoice) {
+    const inv = payment.invoice;
+    const invoiceNo = inv.invoiceNo ?? (await ensureInvoiceNo(prisma, inv.id)) ?? inv.id;
+    const upTo = await prisma.payment.aggregate({
+      where: {
+        invoiceId: inv.id,
+        status: "CAPTURED",
+        OR: [
+          { createdAt: { lt: payment.createdAt } },
+          { createdAt: payment.createdAt, id: { lte: payment.id } },
+        ],
+      },
+      _sum: { amount: true },
+    });
+    const total = rupees(inv.grandTotal);
+    invoice = {
+      invoiceNo,
+      total,
+      balance: Math.max(0, total - rupees(upTo._sum.amount ?? 0)),
+    };
+  }
+
+  const org = payment.invoice?.org;
+  const pdf = await renderReceiptPdf({
+    receiptNo,
+    receivedOn: payment.createdAt,
+    amount: rupees(payment.amount),
+    method: payment.method,
+    gateway: payment.gateway,
+    reference: payment.gatewayPaymentId,
+    payer: {
+      name: org?.name ?? "Client",
+      email: org?.contactEmail,
+      gstin: org?.gstin,
+    },
+    invoice,
+  });
+
+  const key = receiptKey(payment);
+  await uploadFile(key, pdf, "application/pdf");
+  await recordDocument({
+    documentType: "RECEIPT",
+    documentId: payment.id,
+    bytes: pdf,
+    storageKey: key,
+  });
   return key;
 }

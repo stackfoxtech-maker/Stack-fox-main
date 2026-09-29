@@ -299,49 +299,63 @@ export default function AuthShell({ variant = 'login', title, subtitle, children
   return (
     <div className="flex min-h-screen bg-warm-white">
       <BrandPanel variant={variant} />
-      <main className="relative flex flex-1 items-center justify-center px-5 pb-10 pt-6 sm:px-10 lg:py-16">
+      <main className="relative flex flex-1 flex-col lg:items-center lg:justify-center lg:px-10 lg:py-16">
         <Link
           to="/"
           className="absolute left-10 top-5 hidden items-center gap-1.5 text-sm text-warm-500 transition hover:text-warm-900 lg:inline-flex"
         >
           <ArrowLeft size={15} /> Home
         </Link>
+
+        {/* Phones and tablets: a full-bleed photo header with the brand and headline; the
+            form then rises over its bottom edge as a sheet, like a native sign-in screen. */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="relative h-[15.5rem] shrink-0 overflow-hidden bg-warm-900 sm:h-[18rem] lg:hidden"
+        >
+          <motion.img
+            src={VARIANTS[variant].image}
+            alt=""
+            initial={{ scale: 1.18 }}
+            animate={{ scale: 1.04 }}
+            transition={{ duration: 6, ease: 'easeOut' }}
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ objectPosition: VARIANTS[variant].position }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-warm-900 via-warm-900/45 to-warm-900/10" />
+          <Link
+            to="/"
+            className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-2xl bg-white/90 py-1 pl-1 pr-3.5 shadow-md backdrop-blur"
+          >
+            <BrandLogo size={20} withBackground />
+            <span className="text-[15px] font-semibold text-warm-900">
+              stack<span className="text-fox-500">fox</span>
+            </span>
+          </Link>
+          <p className="absolute inset-x-5 bottom-12 font-display text-[1.7rem] font-semibold leading-tight text-white sm:text-3xl">
+            {VARIANTS[variant].words.map(({ w, hi }, i) => (
+              <motion.span
+                key={w}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.2 + i * 0.07, ease }}
+                className={`mr-[0.25em] inline-block ${hi ? 'text-fox-400' : ''}`}
+              >
+                {w}
+              </motion.span>
+            ))}
+          </p>
+        </motion.div>
+
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="show"
-          className="w-full max-w-[26rem]"
+          className="relative z-10 -mt-8 w-full flex-1 rounded-t-[2rem] bg-warm-white px-5 pb-12 pt-8 shadow-[0_-14px_36px_-18px_rgba(26,25,24,0.45)] sm:mx-auto sm:max-w-[30rem] sm:px-8 lg:mt-0 lg:max-w-[26rem] lg:flex-none lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none"
         >
-          {/* phones: compact photo banner stands in for the brand panel */}
-          <motion.div
-            variants={fadeUp}
-            className="relative -mx-1 mb-6 h-36 overflow-hidden rounded-3xl bg-warm-900 shadow-md lg:hidden"
-          >
-            <img
-              src={VARIANTS[variant].image}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-              style={{ objectPosition: VARIANTS[variant].position }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-warm-900/90 via-warm-900/30 to-transparent" />
-            <Link
-              to="/"
-              className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-xl bg-white/90 py-1 pl-1 pr-3 backdrop-blur"
-            >
-              <BrandLogo size={18} withBackground />
-              <span className="text-sm font-semibold text-warm-900">
-                stack<span className="text-fox-500">fox</span>
-              </span>
-            </Link>
-            <p className="absolute bottom-3 left-4 right-4 font-display text-xl font-semibold text-white">
-              {VARIANTS[variant].words.map(({ w, hi }) => (
-                <span key={w} className={`mr-[0.25em] ${hi ? 'text-fox-400' : ''}`}>
-                  {w}
-                </span>
-              ))}
-            </p>
-          </motion.div>
-          <motion.div variants={fadeUp} className="mb-8">
+          <motion.div variants={fadeUp} className="mb-6 lg:mb-8">
             <h1 className="font-display text-display-lg text-warm-900">{title}</h1>
             <p className="mt-2 text-body-md text-warm-500">{subtitle}</p>
           </motion.div>

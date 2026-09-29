@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { MotionConfig } from 'framer-motion';
+import { useLocation, useNavigationType } from 'react-router-dom';
 import AppRoutes from './routes';
 import useAuthStore from '@store/authStore';
 import useCartStore from '@store/cartStore';
@@ -7,8 +8,43 @@ import useCartStore from '@store/cartStore';
 // Deferred: the cart drawer (and its estimate/pricing deps) only matters once
 // the visitor has a cart or opens it — no reason to ship it on the landing page.
 const CartDrawer = lazy(() => import('@components/ui/CartDrawer'));
+// The assistant loads after the page is interactive and stays out of sign-in, payment and
+// staff screens, where a floating sales bot only gets in the way.
+const FoxBot = lazy(() => import('@components/ui/FoxBot').then((m) => ({ default: m.FoxBot })));
+const NO_BOT =
+  /^\/(login|signup|forgot-password|reset-password|verify-email|esign|checkout|payment-confirmation|oauth|app\/(admin|team))/;
+
+/* A new page opens at its top. Without this the browser keeps the old scroll position, so
+   tapping a link from the footer opened the next page at ITS footer. Back/forward (POP)
+   is left alone so the browser can restore where the person was; a #hash scrolls to its target. */
+function ScrollToTop() {
+  const { pathname, hash } = useLocation();
+  const type = useNavigationType();
+  useEffect(() => {
+    if (type === 'POP' || hash) return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname, hash, type]);
+  return null;
+}
+
+/* A shared referral link is `<site>/?ref=CODE`, so any page can be the landing page. Remember
+   the code (checkout pre-fills it) and leave the URL as it is. */
+function CaptureReferral() {
+  const { search } = useLocation();
+  useEffect(() => {
+    const ref = new URLSearchParams(search).get('ref')?.trim().toUpperCase();
+    if (!ref || !/^[A-Z0-9]{4,32}$/.test(ref)) return;
+    try {
+      localStorage.setItem('stackfox_referral_code', ref);
+    } catch {
+      /* storage blocked: the code can still be typed at checkout */
+    }
+  }, [search]);
+  return null;
+}
 
 export default function App() {
+  const { pathname } = useLocation();
   const { isAuthenticated, fetchMe } = useAuthStore();
   const { fetchCart, syncLocalToServer } = useCartStore();
   const isOpen = useCartStore((s) => s.isOpen);
@@ -36,7 +72,14 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
+      <ScrollToTop />
+      <CaptureReferral />
       <AppRoutes />
+      {!NO_BOT.test(pathname) && (
+        <Suspense fallback={null}>
+          <FoxBot />
+        </Suspense>
+      )}
       {cartActive && (
         <Suspense fallback={null}>
           <CartDrawer />

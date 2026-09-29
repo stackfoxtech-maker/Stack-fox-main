@@ -10,6 +10,7 @@ import { toJson } from "../lib/json";
 import { log } from "../lib/logger";
 import { resolveCommissionPct } from "../lib/referralCommission";
 import { ReferralSchema } from "./opsSchemas";
+import { ensureReferralCode, referralLink } from "../lib/referralLink";
 
 /**
  * Referral programme.
@@ -20,6 +21,14 @@ import { ReferralSchema } from "./opsSchemas";
  * platform-wide total.
  */
 export async function referralRoutes(app: FastifyInstance) {
+  // The caller's shareable link: one permanent code, stable across calls.
+  app.get("/referrals/link", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    const code = await ensureReferralCode(req.user!.sub);
+    if (!code) return reply.code(404).send({ error: "User not found" });
+    return ok(referralLink(code));
+  });
+
   app.get("/referrals", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
 

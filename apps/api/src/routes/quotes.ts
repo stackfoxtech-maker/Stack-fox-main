@@ -1,3 +1,4 @@
+import { nextDocNumber } from "../lib/docNumber";
 import { queueInvoiceEmail } from "../lib/businessMail";
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
@@ -155,6 +156,7 @@ async function provisionQuote(quote: any, userId: string, tx: Db, orgId: string)
   for (const type of getContractTypes(tier)) {
     const contract = await tx.contract.create({
       data: {
+        contractNo: await nextDocNumber(tx, "CON"),
         engagementId: engId,
         type,
         clauseConfig: toJson(checkoutDetails.clauseSelections ?? {}),
@@ -185,6 +187,7 @@ async function provisionQuote(quote: any, userId: string, tx: Db, orgId: string)
   const invoice = await tx.invoice.create({
     data: {
       id: ids.invoiceId(),
+      invoiceNo: await nextDocNumber(tx, "INV"),
       engagementId: engId,
       orgId,
       milestoneRef: "M1",
@@ -273,6 +276,7 @@ export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
           for (const type of contractTypes) {
             await prisma.contract.create({
               data: {
+                contractNo: await nextDocNumber(prisma, "CON"),
                 engagementId: eng.id,
                 type,
                 clauseConfig: toJson(checkoutDetails.clauseSelections ?? {}),

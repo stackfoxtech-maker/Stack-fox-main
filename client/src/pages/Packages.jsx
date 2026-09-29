@@ -1,6 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ArrowRight, ShoppingCart, ChevronRight, X } from 'lucide-react';
+import {
+  Check,
+  ArrowRight,
+  ShoppingCart,
+  ChevronRight,
+  X,
+  Globe,
+  ShoppingBag,
+  Smartphone,
+  Layers,
+  Brain,
+  Shield,
+  TrendingUp,
+  Sparkles,
+} from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { usePageTitle, useMediaQuery } from '@lib/hooks';
 import { formatINR, formatINRRounded } from '@lib/utils';
 import { Section, SectionHeading, Button, Spinner } from '@components/ui/Primitives';
@@ -10,48 +25,131 @@ import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
 import { useCatalogue } from '@lib/useStorefrontData';
 
-/* Phone card: name · price up top, one-line pitch, savings, and two 44px
-   actions. The included-services list lives in a sheet, not inline, so cards
-   stay a fixed, scannable height. */
-function PackageCard({ pkg, individualTotal, count, onDetails, onAdd }) {
+const PKG_ICON = {
+  'pkg-starter': Globe,
+  'pkg-business': Globe,
+  'pkg-ecommerce': ShoppingBag,
+  'pkg-mobile': Smartphone,
+  'pkg-saas': Layers,
+  'pkg-ai': Brain,
+  'pkg-security': Shield,
+  'pkg-growth': TrendingUp,
+};
+
+/* Phone card, laid out like an app store listing: an icon tile, the name and one-line pitch,
+   the price with the saving as a badge, the first few included services as chips, and two
+   48px actions. The full list lives in a sheet, so cards stay a scannable height.
+   "Add" confirms itself in place (a tick for a moment) instead of silently changing the cart. */
+function PackageCard({ pkg, individualTotal, items, onDetails, onAdd }) {
+  const Icon = PKG_ICON[pkg.id] || Sparkles;
+  const [added, setAdded] = useState(false);
+  const pct = individualTotal > 0 ? Math.round((pkg.savings / individualTotal) * 100) : 0;
+  const shown = items.slice(0, 3);
+  const handleAdd = () => {
+    onAdd();
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1600);
+  };
   return (
     <div
-      className={`relative rounded-2xl border bg-white p-4 ${
-        pkg.popular ? 'border-fox-500 ring-1 ring-fox-500/30' : 'border-warm-200'
+      className={`relative overflow-hidden rounded-3xl border bg-white p-4 shadow-[0_2px_14px_-6px_rgba(26,25,24,0.16)] ${
+        pkg.popular ? 'border-fox-300 pt-9' : 'border-warm-200'
       }`}
     >
       {pkg.popular && (
-        <span className="badge-fx badge-fox absolute -top-2.5 left-4 px-3 py-0.5 text-[11px]">
-          Most Popular
+        <span className="absolute right-0 top-0 rounded-bl-2xl bg-fox-500 px-3 py-1 text-[11px] font-bold tracking-wide text-white">
+          MOST POPULAR
         </span>
       )}
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="min-w-0 text-[17px] font-semibold leading-snug text-warm-900">{pkg.name}</h3>
-        <div className="shrink-0 text-right">
-          <p className="price-tag text-xl leading-tight text-warm-900">
-            {formatINRRounded(pkg.price)}
+      <div className="flex items-start gap-3.5">
+        <span
+          className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${
+            pkg.popular ? 'bg-fox-500 text-white' : 'bg-fox-50 text-fox-600'
+          }`}
+        >
+          <Icon size={22} />
+        </span>
+        <div className="min-w-0 flex-1 pt-0.5">
+          <h3 className="text-[17px] font-semibold leading-snug text-warm-900">{pkg.name}</h3>
+          <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-warm-500">
+            {pkg.description}
           </p>
-          <p className="text-xs text-warm-400 line-through">{formatINRRounded(individualTotal)}</p>
         </div>
       </div>
-      <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-warm-500">
-        {pkg.description}
-      </p>
-      <div className="mt-3 flex items-center gap-2">
-        <span className="badge-fx badge-success">Save {formatINRRounded(pkg.savings)}</span>
-        <span className="text-xs text-warm-500">{count} services · + 18% GST</span>
+
+      <div className="mt-4 flex items-end justify-between gap-3">
+        <div>
+          <p className="price-tag text-[1.65rem] font-bold leading-none tracking-tight text-warm-900">
+            {formatINRRounded(pkg.price)}
+          </p>
+          <p className="mt-1.5 text-xs text-warm-500">
+            <span className="line-through">{formatINRRounded(individualTotal)}</span> · + 18% GST
+          </p>
+        </div>
+        {pct > 0 && (
+          <span className="rounded-full bg-success-50 px-3 py-1.5 text-[13px] font-bold text-success-700">
+            Save {pct}%
+          </span>
+        )}
       </div>
-      <div className="mt-3 flex gap-2">
+
+      <div className="mt-3.5 flex flex-wrap gap-1.5">
+        {shown.map((s) => (
+          <span
+            key={s.id}
+            className="max-w-[11.5rem] truncate rounded-full bg-warm-50 px-2.5 py-1 text-xs text-warm-600"
+          >
+            {s.name}
+          </span>
+        ))}
+        {items.length > shown.length && (
+          <button
+            type="button"
+            onClick={onDetails}
+            className="rounded-full bg-fox-50 px-2.5 py-1 text-xs font-semibold text-fox-600"
+          >
+            +{items.length - shown.length} more
+          </button>
+        )}
+      </div>
+
+      <div className="mt-4 flex gap-2.5">
         <button
           type="button"
           onClick={onDetails}
-          className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-full border border-warm-200 text-sm font-semibold text-warm-700 active:bg-warm-50"
+          className="flex min-h-12 flex-1 items-center justify-center gap-1 rounded-2xl border border-warm-200 text-[15px] font-semibold text-warm-700 transition-colors active:bg-warm-50"
         >
           Details <ChevronRight size={16} />
         </button>
-        <Button variant="primary" className="flex-1" onClick={onAdd}>
-          <ShoppingCart size={16} /> Add
-        </Button>
+        <motion.button
+          type="button"
+          onClick={handleAdd}
+          whileTap={{ scale: 0.96 }}
+          className={`flex min-h-12 flex-[1.3] items-center justify-center gap-2 rounded-2xl text-[15px] font-bold text-white shadow-md transition-colors ${
+            added ? 'bg-sage-600' : 'bg-fox-500'
+          }`}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={added ? 'added' : 'add'}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.14 }}
+              className="flex items-center gap-2"
+            >
+              {added ? (
+                <>
+                  <Check size={18} strokeWidth={3} /> Added
+                </>
+              ) : (
+                <>
+                  <ShoppingCart size={17} /> Add to cart
+                </>
+              )}
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
       </div>
     </div>
   );
@@ -178,7 +276,7 @@ export default function Packages() {
       </div>
 
       {isMobile ? (
-        <div className="space-y-5 pt-2">
+        <div className="space-y-4 pt-1">
           {packages.map((pkg) => {
             const r = resolve(pkg);
             return (
@@ -186,7 +284,7 @@ export default function Packages() {
                 key={pkg.id}
                 pkg={pkg}
                 individualTotal={r.individualTotal}
-                count={r.items.length}
+                items={r.items}
                 onDetails={() => setSheet(r)}
                 onAdd={() => {
                   haptic();

@@ -36,6 +36,8 @@ export const AssistantChatSchema = strictObject({
     )
     .max(40)
     .optional(),
+  // The page the visitor is on, so replies and suggestions can fit it.
+  page: z.string().trim().max(200).optional(),
 });
 
 /**

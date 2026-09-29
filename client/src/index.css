@@ -90,7 +90,7 @@
   /* The builder's phone cart bar sits above the tab bar; lift the FoxBot fab over it. */
   @media (max-width: 767px) {
     body.has-cartbar .foxbot-fab {
-      bottom: calc(8.25rem + env(safe-area-inset-bottom));
+      bottom: calc(9.25rem + env(safe-area-inset-bottom));
     }
   }
 
@@ -200,6 +200,14 @@
 }
 
 @layer components {
+  /* Hide the scrollbar on swipe rows; the row still scrolls. */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .container-fx {
     width: 100%;
     max-width: var(--container-max);
@@ -210,8 +218,8 @@
   }
 
   .section-padding {
-    padding-top: 3.5rem;
-    padding-bottom: 3.5rem;
+    padding-top: 2.75rem;
+    padding-bottom: 2.75rem;
   }
 
   @media (min-width: 768px) {
@@ -728,5 +736,26 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Homepage service ticker — pure CSS, pauses on hover, stopped by reduced motion. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee 48s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
   }
 }
