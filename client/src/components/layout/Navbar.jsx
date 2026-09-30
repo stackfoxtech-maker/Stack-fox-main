@@ -28,7 +28,7 @@ import useAuthStore from '@store/authStore';
 import useCartStore from '@store/cartStore';
 import useUiStore from '@store/uiStore';
 import { Button } from '@components/ui/Primitives';
-import { BrandLogo } from '@components/ui/BrandLogo';
+import { BrandLogo, Wordmark } from '@components/ui/BrandLogo';
 // Deferred: the search overlay pulls the storefront catalogue — don't load it
 // (or fire that fetch) until someone actually opens search.
 const SearchOverlay = lazy(() => import('@components/ui/SearchOverlay'));
@@ -83,10 +83,7 @@ const FoxLogo = () => (
       containerClassName="group-hover:scale-105 transition-transform"
     />
     <div className="flex flex-col">
-      <span className="text-xl font-semibold leading-none">
-        <span className="text-warm-900">stack</span>
-        <span className="text-fox-500">fox</span>
-      </span>
+      <Wordmark className="text-[1.4rem]" />
       <span className="text-[10px] font-bold text-warm-400 leading-none mt-0.5 tracking-tighter">
         by ARTWALL LABS
       </span>

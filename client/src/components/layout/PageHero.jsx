@@ -48,7 +48,7 @@ export function PageHero({ eyebrow, title, accent, description, stats, children 
         >
           {before}
           {accent && (
-            <span className="relative inline-block">
+            <span className="accent-serif relative inline-block">
               {accent}
               <DrawnUnderline delay={0.6} />
             </span>

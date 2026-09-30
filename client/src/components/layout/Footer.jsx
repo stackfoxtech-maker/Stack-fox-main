@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Mail, Phone, MapPin } from 'lucide-react';
-import { BrandLogo } from '@components/ui/BrandLogo';
+import { BrandLogo, Wordmark } from '@components/ui/BrandLogo';
 
 const footerLinks = {
   Services: [
@@ -55,10 +55,7 @@ export default function Footer() {
             <div className="flex items-center gap-2 mb-4">
               <BrandLogo size={16} withBackground />
               <div className="flex flex-col">
-                <span className="text-lg font-semibold leading-none">
-                  <span className="text-white">stack</span>
-                  <span className="text-fox-500">fox</span>
-                </span>
+                <Wordmark dark className="text-xl" />
                 <span className="text-[10px] font-bold text-warm-300 leading-none mt-1 tracking-tight">
                   by ARTWALL LABS
                 </span>

@@ -125,9 +125,7 @@ function PackageCard({ pkg, individualTotal, items, onDetails, onAdd }) {
           type="button"
           onClick={handleAdd}
           whileTap={{ scale: 0.96 }}
-          className={`flex min-h-12 flex-[1.3] items-center justify-center gap-2 rounded-2xl text-[15px] font-bold text-white shadow-md transition-colors ${
-            added ? 'bg-sage-600' : 'bg-fox-500'
-          }`}
+          className={`btn-fox !min-h-12 flex-[1.3] ${added ? 'btn-fox--done' : ''}`}
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.span

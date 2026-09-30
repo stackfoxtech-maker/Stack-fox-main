@@ -28,17 +28,14 @@ export default function Contact() {
         accent="talk"
         description="Have a project in mind? Get in touch and we'll respond within 24 hours."
       >
-        <a
-          href="tel:+918209395894"
-          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-fox-500 px-5 text-sm font-semibold text-white shadow-md shadow-fox-500/25 transition-transform active:scale-95"
-        >
+        <a href="tel:+918209395894" className="btn-fox">
           <Phone size={16} /> Call +91 82093 95894
         </a>
         <a
           href="https://wa.me/918209395894?text=Hi%20StackFox%2C%20I%27d%20like%20to%20talk%20about%20a%20project."
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-semibold text-white shadow-md transition-transform active:scale-95"
+          className="inline-flex min-h-11 items-center gap-2 rounded-[0.875rem] border border-[#1da851] bg-gradient-to-b from-[#3bdc7c] to-[#25D366] px-5 font-display text-[15px] font-semibold tracking-tight text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_10px_22px_-10px_rgba(37,211,102,0.7)] transition-transform hover:-translate-y-px active:translate-y-px"
         >
           <MessageCircle size={16} /> WhatsApp
         </a>

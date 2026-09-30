@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
-import { BrandLogo } from '@components/ui/BrandLogo';
+import { BrandLogo, Wordmark } from '@components/ui/BrandLogo';
 import { Button } from '@components/ui/Primitives';
 import { fadeUp, stagger } from '@components/motion';
 
@@ -245,9 +245,7 @@ function BrandPanel({ variant }) {
             className="inline-flex items-center gap-2.5 rounded-2xl bg-white/90 py-1.5 pl-1.5 pr-4 shadow-md backdrop-blur"
           >
             <BrandLogo size={24} withBackground />
-            <span className="text-lg font-semibold text-warm-900">
-              stack<span className="text-fox-500">fox</span>
-            </span>
+            <Wordmark className="text-xl" />
           </Link>
         </motion.div>
 
@@ -330,9 +328,7 @@ export default function AuthShell({ variant = 'login', title, subtitle, children
             className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-2xl bg-white/90 py-1 pl-1 pr-3.5 shadow-md backdrop-blur"
           >
             <BrandLogo size={20} withBackground />
-            <span className="text-[15px] font-semibold text-warm-900">
-              stack<span className="text-fox-500">fox</span>
-            </span>
+            <Wordmark className="text-[1.05rem]" />
           </Link>
           <p className="absolute inset-x-5 bottom-12 font-display text-[1.7rem] font-semibold leading-tight text-white sm:text-3xl">
             {VARIANTS[variant].words.map(({ w, hi }, i) => (
