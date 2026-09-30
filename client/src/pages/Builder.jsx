@@ -1010,7 +1010,7 @@ export default function Builder() {
         </div>
 
         {/* Right Sidebar */}
-        <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+        <div className="space-y-6 lg:sticky lg:top-24 lg:col-span-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-2 lg:[scrollbar-width:thin]">
           <div className="hidden lg:block">
             <PlanPanel
               items={items}
@@ -1045,38 +1045,42 @@ export default function Builder() {
               </div>
             </div>
           )}
-          <Link
-            to="/advisor"
-            className="group block rounded-lg border border-sage-200 bg-sage-50 p-6 transition-transform duration-short hover:-translate-y-0.5"
-          >
-            <div className="mb-2 flex items-center gap-2 text-title text-sage-800">
-              <Sparkles className="h-5 w-5 text-sage-600" />
-              Not sure what you need?
-            </div>
-            <p className="max-w-sm text-body-sm leading-relaxed text-sage-800/90">
-              Answer 10 quick questions and our advisor suggests a configuration for your project.
-            </p>
-            <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-sage-800">
-              Start advisor{' '}
-              <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </Link>
-          <div className="rounded-lg border border-warm-200 bg-white p-6">
-            <h3 className="text-title text-warm-900 mb-4">How building works</h3>
-            <div className="space-y-4">
-              {[
-                'Browse 240+ services and pick exactly what your project needs.',
-                'Watch your indicative quote update as you add or remove pieces.',
-                'Submit your cart to get a detailed proposal within 24 hours.',
-              ].map((text, i) => (
-                <div key={i} className="flex gap-3">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-pill bg-sage-50 font-mono text-[11px] text-sage-700">
-                    {i + 1}
-                  </span>
-                  <p className="text-body-sm leading-relaxed text-warm-600">{text}</p>
-                </div>
-              ))}
-            </div>
+        </div>
+      </div>
+
+      {/* Help cards: below the list, so the sticky plan column stays short */}
+      <div className="mt-10 grid gap-4 md:mt-14 md:grid-cols-2">
+        <Link
+          to="/advisor"
+          className="group block rounded-lg border border-sage-200 bg-sage-50 p-6 transition-transform duration-short hover:-translate-y-0.5"
+        >
+          <div className="mb-2 flex items-center gap-2 text-title text-sage-800">
+            <Sparkles className="h-5 w-5 text-sage-600" />
+            Not sure what you need?
+          </div>
+          <p className="max-w-sm text-body-sm leading-relaxed text-sage-800/90">
+            Answer 10 quick questions and our advisor suggests a configuration for your project.
+          </p>
+          <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-sage-800">
+            Start advisor{' '}
+            <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+        <div className="rounded-lg border border-warm-200 bg-white p-6">
+          <h3 className="text-title text-warm-900 mb-4">How building works</h3>
+          <div className="space-y-4">
+            {[
+              'Browse 240+ services and pick exactly what your project needs.',
+              'Watch your indicative quote update as you add or remove pieces.',
+              'Submit your cart to get a detailed proposal within 24 hours.',
+            ].map((text, i) => (
+              <div key={i} className="flex gap-3">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-pill bg-sage-50 font-mono text-[11px] text-sage-700">
+                  {i + 1}
+                </span>
+                <p className="text-body-sm leading-relaxed text-warm-600">{text}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
