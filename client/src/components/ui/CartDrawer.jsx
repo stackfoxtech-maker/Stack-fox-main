@@ -441,7 +441,7 @@ export default function CartDrawer() {
                   onClick={handleCheckout}
                   disabled={creating}
                   whileTap={{ scale: 0.98 }}
-                  className="mt-1 flex min-h-[3.4rem] w-full items-center justify-center gap-2 rounded-2xl bg-fox-500 text-base font-bold text-white shadow-[0_8px_20px_-8px_rgba(255,77,0,0.55)] transition-colors active:bg-fox-600 disabled:opacity-70"
+                  className="btn-fox mt-1 w-full !min-h-[3.4rem] !text-base"
                 >
                   {creating ? (
                     'Creating your quote…'

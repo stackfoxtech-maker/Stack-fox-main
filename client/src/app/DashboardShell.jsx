@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { LogOut, X, Search, Bell, MoreHorizontal } from 'lucide-react';
 import { cn } from '@lib/utils';
-import { BrandLogo } from '@components/ui/BrandLogo';
+import { BrandLogo, Wordmark } from '@components/ui/BrandLogo';
 import useAuthStore from '@store/authStore';
 
 const SearchOverlay = lazy(() => import('@components/ui/SearchOverlay'));
@@ -111,9 +111,7 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
         >
           <NavLink to="/" className="flex items-center gap-2">
             <BrandLogo size={22} withBackground />
-            <span className={cn('font-semibold', dark ? 'text-white' : 'text-warm-900')}>
-              stack<span className="text-fox-500">fox</span>
-            </span>
+            <Wordmark dark={dark} className="text-[1.05rem]" />
           </NavLink>
         </div>
         <NavList />
@@ -137,9 +135,7 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
                 dark ? 'border-b border-warm-800' : 'border-b border-warm-100',
               )}
             >
-              <span className={cn('font-semibold', dark ? 'text-white' : 'text-warm-900')}>
-                stack<span className="text-fox-500">fox</span>
-              </span>
+              <Wordmark dark={dark} className="text-[1.05rem]" />
               <button
                 onClick={() => setDrawerOpen(false)}
                 className={cn(

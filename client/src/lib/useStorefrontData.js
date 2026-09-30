@@ -21,9 +21,18 @@ function fetchStorefront() {
         cacheValue = r.data;
         return cacheValue;
       })
-      .catch((err) => {
-        cachePromise = null;
-        throw err;
+      .catch(async (err) => {
+        // The storefront catalogue is the same file the client ships (shared/stackfox-data.json),
+        // so if the API is down, slow or rate-limited the pages still render from it instead of
+        // sitting on a spinner or an empty grid.
+        try {
+          const bundled = (await import('@data/stackfox-data.json')).default;
+          cacheValue = bundled;
+          return bundled;
+        } catch {
+          cachePromise = null;
+          throw err;
+        }
       });
   }
   return cachePromise;
