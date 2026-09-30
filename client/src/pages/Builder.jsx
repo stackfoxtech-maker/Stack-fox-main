@@ -12,7 +12,9 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Clock,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { usePageTitle, useDebounce, useMediaQuery } from '@lib/hooks';
 import { cn } from '@lib/utils';
@@ -28,6 +30,8 @@ import {
   CartBar,
   SuggestionStrip,
 } from '@components/builder/MobileBuilder';
+import { PlanPanel, QuickStart, SortBar, categoryIcon } from '@components/builder/BuilderExtras';
+import { DrawnUnderline, SpotlightGlow, spotlightProps } from '@components/home/HomeMotion';
 import toast from 'react-hot-toast';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -104,53 +108,83 @@ const PREVIEW_COUNT = 6; // cards shown per category in the "All" overview
 
 /* Compact 3-up tile on phones (name · price · add), the fuller card from
    sm: up (adds the plain-language blurb, timing, and unit meta). */
-const ServiceCard = memo(function ServiceCard({ svc, price, inCart, onAdd }) {
+const ServiceCard = memo(function ServiceCard({ svc, price, inCart, onAdd, Icon }) {
   return (
-    <div
+    <motion.div
       id={`service-${svc.id}`}
+      {...spotlightProps}
+      whileHover={{ y: -3 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       className={cn(
-        'flex flex-col rounded-md border bg-white p-2.5 transition-colors duration-short sm:min-h-[150px] sm:p-5',
-        inCart ? 'border-sage-300 bg-sage-50/40' : 'border-warm-200 hover:border-warm-300',
+        'group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition-colors duration-short sm:min-h-[172px] sm:p-5',
+        inCart ? 'border-sage-300 bg-sage-50/40' : 'border-warm-200 hover:border-fox-300',
       )}
     >
-      <div className="flex-1 sm:mb-3 sm:flex sm:items-start sm:justify-between sm:gap-3">
+      <SpotlightGlow />
+      <div className="relative flex items-start gap-3">
+        <span
+          className={cn(
+            'grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-all duration-medium group-hover:-rotate-6 group-hover:scale-105',
+            inCart ? 'bg-sage-100 text-sage-700' : 'bg-fox-50 text-fox-600',
+          )}
+        >
+          <Icon size={18} />
+        </span>
         <div className="min-w-0 flex-1">
-          <span className="line-clamp-2 text-[12.5px] font-semibold leading-snug text-warm-900 sm:text-body-md">
+          <h3 className="line-clamp-2 text-body-md font-semibold leading-snug text-warm-900">
             {svc.name}
+          </h3>
+          <span className="mt-1 inline-flex items-center gap-1 text-caption font-medium text-warm-500">
+            <Clock size={11} /> {svc.estimatedTime || svc.est || '3-5 days'}
           </span>
-          <span className="mt-1 hidden text-caption font-medium uppercase tracking-wide text-warm-500 sm:block">
-            {svc.estimatedTime || svc.est || '3-5 days'}
-          </span>
-        </div>
-        <div className="hidden text-right sm:block">
-          <span className="price-tag block text-body-lg text-warm-900">{price}</span>
-          <p className="text-caption uppercase tracking-wide text-warm-500">Starting</p>
         </div>
       </div>
 
-      <p className="mb-4 hidden flex-1 text-body-sm leading-relaxed text-warm-600 sm:block">
+      <p className="relative mt-3 line-clamp-2 flex-1 text-body-sm leading-relaxed text-warm-600">
         {svc.lay || 'A single, individually priced piece of your build.'}
       </p>
 
-      <div className="mt-2 flex items-center justify-between gap-1.5 sm:mt-0 sm:gap-2 sm:border-t sm:border-warm-100 sm:pt-3">
-        <span className="price-tag text-[12.5px] text-warm-900 sm:hidden">{price}</span>
-        <span className="hidden text-caption font-medium uppercase tracking-wide text-warm-500 sm:inline">
-          {svc.unit || 'Standard'}
-        </span>
-        <button
+      <div className="relative mt-4 flex items-center justify-between gap-2 border-t border-warm-100 pt-3">
+        <div>
+          <span className="text-caption font-medium uppercase tracking-wide text-warm-400">
+            From{' '}
+          </span>
+          <span className="price-tag text-body-lg text-warm-900">{price}</span>
+        </div>
+        <motion.button
+          type="button"
           onClick={() => !inCart && onAdd(svc)}
-          aria-label={inCart ? 'Added' : `Add ${svc.name}`}
+          whileTap={{ scale: 0.92 }}
+          aria-label={inCart ? `${svc.name} is in your plan` : `Add ${svc.name}`}
           className={cn(
-            'grid h-7 w-7 shrink-0 place-items-center rounded-sm transition-colors sm:h-8 sm:w-8',
             inCart
-              ? 'bg-sage-100 text-sage-700'
-              : 'bg-fox-50 text-fox-600 hover:bg-fox-500 hover:text-white',
+              ? 'inline-flex min-h-9 items-center rounded-[0.7rem] bg-sage-100 px-3.5 text-[13px] font-semibold text-sage-700'
+              : 'btn-fox btn-fox--sm',
           )}
         >
-          {inCart ? <Check size={14} /> : <Plus size={14} />}
-        </button>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={inCart ? 'in' : 'out'}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.12 }}
+              className="flex items-center gap-1.5"
+            >
+              {inCart ? (
+                <>
+                  <Check size={14} strokeWidth={3} /> Added
+                </>
+              ) : (
+                <>
+                  <Plus size={14} strokeWidth={3} /> Add
+                </>
+              )}
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 });
 
@@ -182,6 +216,8 @@ export default function Builder() {
   const [activeCat, setActiveCat] = useState(params.get('category') || 'all');
   const [search, setSearch] = useState(params.get('q') || '');
   const [showTour, setShowTour] = useState(false);
+  const [sort, setSort] = useState('popular');
+  const [cheap, setCheap] = useState(false);
   const [tourHintDismissed, setTourHintDismissed] = useState(
     () => typeof localStorage !== 'undefined' && localStorage.getItem('fox_tour_seen') === 'true',
   );
@@ -378,8 +414,22 @@ export default function Builder() {
         (s) => s.name.toLowerCase().includes(q) || s.lay?.toLowerCase().includes(q),
       );
     }
+    if (cheap) result = result.filter((sv) => sv.price < 10000);
+    if (sort !== 'popular') {
+      const days = (e) => {
+        const m = String(e || '').match(/\d+/);
+        return m ? Number(m[0]) : 99;
+      };
+      result = [...result].sort((x, y) =>
+        sort === 'low'
+          ? x.price - y.price
+          : sort === 'high'
+            ? y.price - x.price
+            : days(x.est) - days(y.est) || x.price - y.price,
+      );
+    }
     return result;
-  }, [activeCat, debouncedSearch, catalog]);
+  }, [activeCat, debouncedSearch, catalog, cheap, sort]);
 
   const cartItemIds = useMemo(() => new Set(items.map((i) => i.itemId)), [items]);
 
@@ -518,6 +568,7 @@ export default function Builder() {
       id: c.dataId,
       label: c.name,
       count: catCounts.get(c.dataId) || 0,
+      Icon: categoryIcon(c.icon),
     })),
   ];
   const nameOf = (id) => catalog.services.find((s) => s.id === id)?.name || id;
@@ -566,56 +617,82 @@ export default function Builder() {
         </div>
       )}
 
-      {/* Header — compact on phones so services show in the first screen */}
-      <div className="mb-4 flex flex-col gap-4 md:mb-8 md:flex-row md:items-end md:justify-between md:gap-6">
-        <div className="max-w-xl">
-          <span className="eyebrow mb-4 hidden md:inline-flex">Build &amp; price</span>
-          <h1 className="text-[1.65rem] leading-tight text-warm-900 md:text-display-lg">
-            Assemble your project, piece by piece
-          </h1>
-          <p className="mt-3 hidden text-body-lg text-warm-600 md:block">
-            {catalog.services.length}+ individually priced pieces across {catalog.categories.length}{' '}
-            domains. Add what you need and watch the total update — GST and all.
-          </p>
-          <p className="mt-1.5 text-body-sm text-warm-600 md:hidden">
-            {catalog.services.length}+ priced pieces. Add what you need — the total updates live.
-          </p>
-        </div>
-
-        {/* Right slot (tablet/desktop): the running total once there's a cart,
-            otherwise the first-run tour prompt. Phones get CartBar + the strip. */}
-        {itemCount > 0 ? (
-          <button
-            onClick={toggleCart}
-            className="hidden shrink-0 items-center gap-3 self-start rounded-md border border-warm-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md md:flex md:self-auto"
-          >
-            <ShoppingCart size={18} className="text-fox-600" />
-            <span className="text-left">
-              <span className="block text-caption uppercase tracking-wide text-warm-500">
-                {itemCount} piece{itemCount > 1 ? 's' : ''}
-              </span>
-              <span className="price-tag block text-body-md text-warm-900">{cartTotalLabel}</span>
-            </span>
-            <ArrowRight size={15} className="text-warm-400" />
-          </button>
-        ) : !tourHintDismissed && !showTour ? (
-          <div className="hidden w-full shrink-0 rounded-lg border border-fox-200 bg-fox-50 p-4 md:block md:w-80 md:self-auto">
-            <p className="text-body-sm text-warm-700">
-              New here? Pick exactly the services you need and watch your total update live.
-            </p>
-            <div className="mt-3 flex items-center gap-2">
-              <Button variant="primary" size="sm" onClick={() => setShowTour(true)}>
-                Take a 60-second tour <ArrowRight size={14} />
-              </Button>
-              <button
-                onClick={dismissTourHint}
-                className="rounded-sm px-3 py-2 text-body-sm font-medium text-warm-500 transition-colors hover:bg-fox-100 hover:text-warm-800"
-              >
-                Dismiss
-              </button>
+      {/* Hero: what this page is for, and one tap to start in the right part of the catalogue */}
+      <div className="relative mb-5 overflow-hidden rounded-[1.75rem] border border-warm-200 bg-gradient-to-br from-fox-50 via-white to-sage-50 p-5 md:mb-8 md:p-8">
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-fox-200/40 blur-3xl"
+          animate={{ x: [0, -18, 0], y: [0, 14, 0] }}
+          transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-sage-200/40 blur-3xl"
+          animate={{ x: [0, 16, 0], y: [0, -12, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <div className="relative">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-6">
+            <div className="max-w-xl">
+              <span className="eyebrow mb-3 hidden md:inline-flex">Build &amp; price</span>
+              <h1 className="text-[1.65rem] leading-tight text-warm-900 md:text-display-lg">
+                Assemble your project,{' '}
+                <span className="relative inline-block">
+                  piece by piece
+                  <DrawnUnderline delay={0.5} />
+                </span>
+              </h1>
+              <p className="mt-3 hidden text-body-lg text-warm-600 md:block">
+                {catalog.services.length}+ individually priced pieces across{' '}
+                {catalog.categories.length} domains. Add what you need and watch the total update,
+                GST and all.
+              </p>
+              <p className="mt-1.5 text-body-sm text-warm-600 md:hidden">
+                {catalog.services.length}+ priced pieces. Add what you need, the total updates live.
+              </p>
             </div>
+
+            {/* Tablet: the running total (desktop has the full plan panel beside the list). */}
+            {itemCount > 0 ? (
+              <button
+                onClick={toggleCart}
+                className="hidden shrink-0 items-center gap-3 self-start rounded-2xl border border-warm-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md md:flex lg:hidden"
+              >
+                <ShoppingCart size={18} className="text-fox-600" />
+                <span className="text-left">
+                  <span className="block text-caption uppercase tracking-wide text-warm-500">
+                    {itemCount} piece{itemCount > 1 ? 's' : ''}
+                  </span>
+                  <span className="price-tag block text-body-md text-warm-900">
+                    {cartTotalLabel}
+                  </span>
+                </span>
+                <ArrowRight size={15} className="text-warm-400" />
+              </button>
+            ) : !tourHintDismissed && !showTour ? (
+              <div className="hidden w-full shrink-0 rounded-2xl border border-fox-200 bg-white/80 p-4 backdrop-blur md:block md:w-72">
+                <p className="text-body-sm text-warm-700">
+                  New here? A 60-second tour shows how to price your project.
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <Button variant="primary" size="sm" onClick={() => setShowTour(true)}>
+                    Take the tour <ArrowRight size={14} />
+                  </Button>
+                  <button
+                    onClick={dismissTourHint}
+                    className="rounded-sm px-3 py-2 text-body-sm font-medium text-warm-500 transition-colors hover:bg-fox-100 hover:text-warm-800"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
-        ) : null}
+
+          <div className="mt-5 md:mt-6">
+            <QuickStart active={activeCat} onPick={setActiveCat} />
+          </div>
+        </div>
       </div>
 
       {/* Phone helper strip: one slim line instead of a tall card */}
@@ -739,6 +816,7 @@ export default function Builder() {
                       : 'border-warm-200 bg-white text-warm-600 hover:border-warm-300',
                   )}
                 >
+                  {chip.Icon && <chip.Icon size={14} className="mr-1.5 inline -mt-0.5" />}
                   {chip.label} <span className="ml-1 opacity-50">({chip.count})</span>
                 </button>
               ),
@@ -748,6 +826,16 @@ export default function Builder() {
       </div>
 
       <SuggestionStrip suggestions={suggestions} fmt={fmt} onAdd={handleAdd} />
+
+      {activeCat !== 'industry-bundles' && activeCat !== 'service-packages' && (
+        <SortBar
+          sort={sort}
+          onSort={setSort}
+          cheap={cheap}
+          onCheap={setCheap}
+          count={filteredServices.length}
+        />
+      )}
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -897,6 +985,7 @@ export default function Builder() {
                               price={fmt(svc.price)}
                               inCart={cartItemIds.has(svc.id)}
                               onAdd={handleAdd}
+                              Icon={categoryIcon(cat.icon)}
                             />
                           ))}
                         </div>
@@ -920,7 +1009,20 @@ export default function Builder() {
         </div>
 
         {/* Right Sidebar */}
-        <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+        <div className="space-y-6 lg:sticky lg:top-24 lg:col-span-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-2 lg:[scrollbar-width:thin]">
+          <div className="hidden lg:block">
+            <PlanPanel
+              items={items}
+              catalog={catalog}
+              fmt={fmt}
+              subtotal={cartSubtotal || items.reduce((t, i) => t + i.price * i.quantity, 0)}
+              onRemove={(it) => removeItem(it._id, isAuthenticated)}
+              onCheckout={toggleCart}
+              onShare={handleShare}
+              onClear={() => clearCart(isAuthenticated)}
+              onBrowse={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            />
+          </div>
           {suggestions.length > 0 && (
             <div className="hidden rounded-lg border border-warm-200 bg-white p-6 md:block">
               <h3 className="mb-4 flex items-center gap-2 text-title text-warm-900">
@@ -942,38 +1044,42 @@ export default function Builder() {
               </div>
             </div>
           )}
-          <Link
-            to="/advisor"
-            className="group block rounded-lg border border-sage-200 bg-sage-50 p-6 transition-transform duration-short hover:-translate-y-0.5"
-          >
-            <div className="mb-2 flex items-center gap-2 text-title text-sage-800">
-              <Sparkles className="h-5 w-5 text-sage-600" />
-              Not sure what you need?
-            </div>
-            <p className="max-w-sm text-body-sm leading-relaxed text-sage-800/90">
-              Answer 10 quick questions and our advisor suggests a configuration for your project.
-            </p>
-            <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-sage-800">
-              Start advisor{' '}
-              <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </Link>
-          <div className="rounded-lg border border-warm-200 bg-white p-6">
-            <h3 className="text-title text-warm-900 mb-4">How building works</h3>
-            <div className="space-y-4">
-              {[
-                'Browse 240+ services and pick exactly what your project needs.',
-                'Watch your indicative quote update as you add or remove pieces.',
-                'Submit your cart to get a detailed proposal within 24 hours.',
-              ].map((text, i) => (
-                <div key={i} className="flex gap-3">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-pill bg-sage-50 font-mono text-[11px] text-sage-700">
-                    {i + 1}
-                  </span>
-                  <p className="text-body-sm leading-relaxed text-warm-600">{text}</p>
-                </div>
-              ))}
-            </div>
+        </div>
+      </div>
+
+      {/* Help cards: below the list, so the sticky plan column stays short */}
+      <div className="mt-10 grid gap-4 md:mt-14 md:grid-cols-2">
+        <Link
+          to="/advisor"
+          className="group block rounded-lg border border-sage-200 bg-sage-50 p-6 transition-transform duration-short hover:-translate-y-0.5"
+        >
+          <div className="mb-2 flex items-center gap-2 text-title text-sage-800">
+            <Sparkles className="h-5 w-5 text-sage-600" />
+            Not sure what you need?
+          </div>
+          <p className="max-w-sm text-body-sm leading-relaxed text-sage-800/90">
+            Answer 10 quick questions and our advisor suggests a configuration for your project.
+          </p>
+          <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-sage-800">
+            Start advisor{' '}
+            <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+        <div className="rounded-lg border border-warm-200 bg-white p-6">
+          <h3 className="text-title text-warm-900 mb-4">How building works</h3>
+          <div className="space-y-4">
+            {[
+              'Browse 240+ services and pick exactly what your project needs.',
+              'Watch your indicative quote update as you add or remove pieces.',
+              'Submit your cart to get a detailed proposal within 24 hours.',
+            ].map((text, i) => (
+              <div key={i} className="flex gap-3">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-pill bg-sage-50 font-mono text-[11px] text-sage-700">
+                  {i + 1}
+                </span>
+                <p className="text-body-sm leading-relaxed text-warm-600">{text}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
