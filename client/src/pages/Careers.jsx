@@ -1,6 +1,7 @@
 import { Mail, Check } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { Section, SectionHeading } from '@components/ui/Primitives';
+import { PageHero } from '@components/layout/PageHero';
+import { Section } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';
 
 /**
@@ -27,9 +28,10 @@ export default function Careers() {
   return (
     <>
       <Section>
-        <SectionHeading
-          label="Careers"
+        <PageHero
+          eyebrow="Careers"
           title="Build the future with us"
+          accent="with us"
           description="Join a team that ships fast, learns constantly, and trusts its people."
         />
 

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Clock, ArrowRight, Search } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { Section, SectionHeading, Button, Input, Spinner } from '@components/ui/Primitives';
+import { PageHero } from '@components/layout/PageHero';
+import { Section, Button, Input, Spinner } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';
 import { cn } from '@lib/utils';
 import api from '@lib/api';
@@ -42,10 +43,11 @@ export default function Resources() {
     <Section className="bg-warm-50/30">
       <div className="container-fx">
         <div className="max-w-4xl mx-auto mb-16 text-center">
-          <SectionHeading
-            label="Resources"
-            title="Learn, Build & Grow"
-            subtitle="Expert insights on Web Development, AI, and Product Strategy curated by the StackFox team."
+          <PageHero
+            eyebrow="Resources"
+            title="Learn, build and grow"
+            accent="grow"
+            description="Expert insights on web development, AI and product strategy from the StackFox team."
           />
 
           {/* Search and Filters */}

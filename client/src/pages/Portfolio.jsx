@@ -1,8 +1,10 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { SpotlightGlow, spotlightProps } from '@components/home/HomeMotion';
+import { PageHero } from '@components/layout/PageHero';
 import { useState } from 'react';
 import { usePageTitle } from '@lib/hooks';
 import { ArrowRight } from 'lucide-react';
-import { Section, SectionHeading } from '@components/ui/Primitives';
-import { Reveal } from '@components/Reveal';
+import { Section } from '@components/ui/Primitives';
 import CdnImage from '@components/CdnImage';
 import LeadInquiryModal from '@components/LeadInquiryModal';
 
@@ -54,55 +56,106 @@ const projects = [
 export default function Portfolio() {
   usePageTitle('Portfolio');
   const [inquiry, setInquiry] = useState(null);
+  const [industry, setIndustry] = useState('All');
+  const industries = ['All', ...new Set(projects.map((p) => p.industry))];
+  const shown = industry === 'All' ? projects : projects.filter((p) => p.industry === industry);
 
   return (
     <Section>
-      <SectionHeading
-        label="Portfolio"
+      <PageHero
+        eyebrow="Portfolio"
         title="Our work speaks for itself"
-        description="Selected projects across industries. Real clients, real results."
+        accent="speaks for itself"
+        description="Selected projects across industries, from storefronts to patient portals."
+        stats={[
+          { end: projects.length, label: 'projects shown' },
+          { end: industries.length - 1, label: 'industries' },
+          { end: new Set(projects.flatMap((p) => p.tech)).size, label: 'technologies' },
+          { end: 24, suffix: 'h', label: 'to a first reply' },
+        ]}
       />
 
-      <Reveal stagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((p) => (
-          <Reveal.Item key={p.title} className="card-fx-elevated flex flex-col p-5 group">
-            <div className="img-frame img-frame-sm mb-5 aspect-[4/3] transition-transform duration-medium group-hover:-translate-y-0.5">
-              <CdnImage
-                name={p.img}
-                w={720}
-                widths={[400, 560, 720, 1000]}
-                sizes="(min-width: 1024px) 30vw, (min-width: 768px) 45vw, 100vw"
-                width={1000}
-                height={750}
-                alt={`${p.title} — ${p.industry}`}
+      <div className="no-scrollbar -mx-6 mb-6 flex gap-2 overflow-x-auto px-6 md:mx-0 md:flex-wrap md:justify-center md:overflow-visible md:px-0">
+        {industries.map((name) => (
+          <button
+            key={name}
+            type="button"
+            onClick={() => setIndustry(name)}
+            aria-pressed={industry === name}
+            className={`relative min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-semibold transition-colors ${
+              industry === name
+                ? 'border-transparent text-white'
+                : 'border-warm-200 bg-white text-warm-600 hover:border-fox-300'
+            }`}
+          >
+            {industry === name && (
+              <motion.span
+                layoutId="industry-pill"
+                className="absolute inset-0 rounded-full bg-fox-500 shadow-md shadow-fox-500/25"
+                transition={{ type: 'spring', stiffness: 460, damping: 34 }}
               />
-            </div>
-            <span className="badge-fx badge-fox self-start mb-3">{p.industry}</span>
-            <h3 className="text-title text-warm-900 mb-2">{p.title}</h3>
-            <p className="text-body-sm text-warm-600 mb-5 flex-1 leading-relaxed">{p.desc}</p>
-            <div className="flex flex-wrap gap-1.5 mb-5">
-              {p.tech.map((t) => (
-                <span
-                  key={t}
-                  className="rounded-sm bg-warm-50 px-2 py-0.5 font-mono text-caption font-medium text-warm-500 border border-warm-100"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
-            <button
-              onClick={() => setInquiry(p)}
-              className="flex min-h-11 items-center gap-1 self-start text-body-sm font-semibold text-fox-600 hover:text-fox-700 group/link sm:min-h-0"
-            >
-              Discuss a project like this{' '}
-              <ArrowRight
-                size={14}
-                className="transition-transform group-hover/link:translate-x-0.5"
-              />
-            </button>
-          </Reveal.Item>
+            )}
+            <span className="relative">{name}</span>
+          </button>
         ))}
-      </Reveal>
+      </div>
+
+      <motion.div layout className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
+        <AnimatePresence mode="popLayout">
+          {shown.map((p) => (
+            <motion.div
+              key={p.title}
+              layout
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.25 }}
+              {...spotlightProps}
+              className="group relative flex flex-col overflow-hidden rounded-2xl border border-warm-200 bg-white p-4 shadow-sm transition-shadow duration-medium hover:shadow-lg sm:p-5"
+            >
+              <SpotlightGlow />
+              <div className="img-frame img-frame-sm relative mb-5 aspect-[4/3] overflow-hidden">
+                <div className="h-full w-full transition-transform duration-500 group-hover:scale-105">
+                  <CdnImage
+                    name={p.img}
+                    w={720}
+                    widths={[400, 560, 720, 1000]}
+                    sizes="(min-width: 1024px) 30vw, (min-width: 768px) 45vw, 100vw"
+                    width={1000}
+                    height={750}
+                    alt={`${p.title} — ${p.industry}`}
+                  />
+                </div>
+              </div>
+              <span className="badge-fx badge-fox relative mb-3 self-start">{p.industry}</span>
+              <h3 className="relative mb-2 text-title text-warm-900">{p.title}</h3>
+              <p className="relative mb-5 flex-1 text-body-sm leading-relaxed text-warm-600">
+                {p.desc}
+              </p>
+              <div className="relative mb-5 flex flex-wrap gap-1.5">
+                {p.tech.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-sm border border-warm-100 bg-warm-50 px-2 py-0.5 font-mono text-caption font-medium text-warm-500"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+              <button
+                onClick={() => setInquiry(p)}
+                className="group/link relative flex min-h-11 items-center gap-1 self-start text-body-sm font-semibold text-fox-600 hover:text-fox-700 sm:min-h-0"
+              >
+                Discuss a project like this{' '}
+                <ArrowRight
+                  size={14}
+                  className="transition-transform group-hover/link:translate-x-0.5"
+                />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </motion.div>
 
       {inquiry && (
         <LeadInquiryModal

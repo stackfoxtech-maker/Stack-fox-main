@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, MessageCircle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { Section, SectionHeading, Input, Textarea, Button } from '@components/ui/Primitives';
+import { PageHero } from '@components/layout/PageHero';
+import { Section, Input, Textarea, Button } from '@components/ui/Primitives';
 import CdnImage from '@components/CdnImage';
 import toast from 'react-hot-toast';
 
@@ -21,11 +22,27 @@ export default function Contact() {
 
   return (
     <Section>
-      <SectionHeading
-        label="Contact"
+      <PageHero
+        eyebrow="Contact"
         title="Let's talk"
+        accent="talk"
         description="Have a project in mind? Get in touch and we'll respond within 24 hours."
-      />
+      >
+        <a
+          href="tel:+918209395894"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-fox-500 px-5 text-sm font-semibold text-white shadow-md shadow-fox-500/25 transition-transform active:scale-95"
+        >
+          <Phone size={16} /> Call +91 82093 95894
+        </a>
+        <a
+          href="https://wa.me/918209395894?text=Hi%20StackFox%2C%20I%27d%20like%20to%20talk%20about%20a%20project."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-sm font-semibold text-white shadow-md transition-transform active:scale-95"
+        >
+          <MessageCircle size={16} /> WhatsApp
+        </a>
+      </PageHero>
 
       <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-8">
         <div className="md:col-span-3 space-y-4">

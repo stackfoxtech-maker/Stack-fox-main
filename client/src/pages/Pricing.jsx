@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR } from '@lib/utils';
 import { Section, SectionHeading } from '@components/ui/Primitives';
+import { PageHero } from '@components/layout/PageHero';
+import { SpotlightGlow, spotlightProps } from '@components/home/HomeMotion';
 import data from '@data/stackfox-data.json';
 
 // A handful of ₹2 placeholder rows sit in the catalogue; ignore anything that
@@ -17,10 +19,17 @@ export default function Pricing() {
   return (
     <>
       <Section>
-        <SectionHeading
-          label="The catalog"
+        <PageHero
+          eyebrow="The catalog"
           title="Transparent pricing, no surprises"
-          description="Every service is priced individually. Ranges below are indicative and exclude 18% GST — you'll see an exact quote after a free call."
+          accent="no surprises"
+          description="Every service is priced individually. Ranges below are indicative and exclude 18% GST. You'll see an exact quote after a free call."
+          stats={[
+            { end: data.services.length, suffix: '+', label: 'priced services' },
+            { end: data.categories.length, label: 'domains' },
+            { end: data.packages.length, label: 'fixed-price packages' },
+            { end: 18, suffix: '%', label: 'GST, shown upfront' },
+          ]}
         />
 
         <div className="mb-16 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -33,9 +42,11 @@ export default function Pricing() {
               <div key={cat.id}>
                 <Link
                   to={`/catalog?category=${cat.id}`}
-                  className="group flex h-full flex-col rounded-md border border-warm-200 bg-white p-5 shadow-sm transition-transform duration-short hover:-translate-y-1 hover:shadow-md"
+                  {...spotlightProps}
+                  className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-warm-200 bg-white p-5 shadow-sm transition-all duration-short hover:-translate-y-1 hover:border-fox-200 hover:shadow-lg"
                 >
-                  <div className="flex items-start justify-between">
+                  <SpotlightGlow />
+                  <div className="relative flex items-start justify-between">
                     <h3 className="text-title text-warm-900 group-hover:text-fox-700">
                       {cat.name}
                     </h3>
