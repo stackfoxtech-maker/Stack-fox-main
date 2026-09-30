@@ -111,7 +111,7 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
         >
           <NavLink to="/" className="flex items-center gap-2">
             <BrandLogo size={22} withBackground />
-            <Wordmark dark={dark} className="text-[1.05rem]" />
+            <Wordmark dark={dark} />
           </NavLink>
         </div>
         <NavList />
@@ -135,7 +135,7 @@ export default function DashboardShell({ title, navItems, tabItems, dark = false
                 dark ? 'border-b border-warm-800' : 'border-b border-warm-100',
               )}
             >
-              <Wordmark dark={dark} className="text-[1.05rem]" />
+              <Wordmark dark={dark} />
               <button
                 onClick={() => setDrawerOpen(false)}
                 className={cn(

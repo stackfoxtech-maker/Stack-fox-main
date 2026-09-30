@@ -53,10 +53,10 @@ export default function Footer() {
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <BrandLogo size={20} withBackground />
+              <BrandLogo size={16} withBackground />
               <div className="flex flex-col">
-                <Wordmark dark className="text-2xl" />
-                <Tagline dark />
+                <Wordmark dark className="text-lg" />
+                <Tagline dark className="mt-1 tracking-tight" />
               </div>
             </div>
             <p className="text-sm text-warm-300 mb-5 leading-relaxed">

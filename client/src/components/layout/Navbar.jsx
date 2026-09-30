@@ -76,15 +76,15 @@ const MORE_GROUPS = [
 
 // ── Logo ────────────────────────────────────────────────────────────────────
 const FoxLogo = () => (
-  <Link to="/" className="flex items-center gap-2.5 group">
+  <Link to="/" className="flex items-center gap-2 group">
     <BrandLogo
-      size={32}
+      size={28}
       withBackground
       containerClassName="group-hover:scale-105 transition-transform"
     />
-    <div className="flex flex-col gap-1.5">
-      <Wordmark className="text-[1.75rem]" />
-      <Tagline />
+    <div className="flex flex-col">
+      <Wordmark className="text-xl" />
+      <Tagline className="mt-0.5" />
     </div>
   </Link>
 );
