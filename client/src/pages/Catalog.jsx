@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { Search, ArrowRight } from 'lucide-react';
 import { usePageTitle, useDebounce } from '@lib/hooks';
 import { cn, formatINR } from '@lib/utils';
-import { Section, SectionHeading, Spinner } from '@components/ui/Primitives';
+import { PageHero } from '@components/layout/PageHero';
+import { Section, Spinner } from '@components/ui/Primitives';
 import { useCatalogue } from '@lib/useStorefrontData';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
@@ -58,10 +59,17 @@ export default function Catalog() {
 
   return (
     <Section>
-      <SectionHeading
-        label="Catalog"
-        title="All services"
+      <PageHero
+        eyebrow="Catalog"
+        title="Every service, priced"
+        accent="priced"
         description={`${services.length} services across ${categories.length} categories. All prices indicative.`}
+        stats={[
+          { end: services.length, label: 'services' },
+          { end: categories.length, label: 'categories' },
+          { end: 18, suffix: '%', label: 'GST shown upfront' },
+          { end: 24, suffix: 'h', label: 'to a first reply' },
+        ]}
       />
 
       <div className="flex flex-col lg:flex-row gap-8">
