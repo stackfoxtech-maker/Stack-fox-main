@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion';
 import { Sparkles, X, ArrowUp, ArrowRight } from 'lucide-react';
 import { FoxMascot } from '@components/ui/FoxMascot';
 import api from '@lib/api';
@@ -47,7 +47,11 @@ export function FoxBot() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [nudge, setNudge] = useState(false);
-  const [look, setLook] = useState({ x: 0, y: 0 });
+  // Where the fox is looking, as springs: pointer moves update them without re-rendering React.
+  const lookX = useSpring(useMotionValue(0), { stiffness: 170, damping: 14, mass: 0.6 });
+  const lookY = useSpring(useMotionValue(0), { stiffness: 170, damping: 14, mass: 0.6 });
+  // It perks up (grows a little) as the pointer or a finger gets close.
+  const perk = useSpring(1, { stiffness: 220, damping: 16 });
   // On phones the button tucks toward the edge while scrolling down, so it never sits on
   // top of prices or add buttons, and slides back out on scroll up.
   const [tucked, setTucked] = useState(false);
@@ -94,28 +98,72 @@ export function FoxBot() {
     };
   }, []);
 
-  // The fox's eyes follow the pointer (frame-throttled; skipped on touch screens).
+  // The fox follows the pointer, or a finger while it is down, with its whole head. Close by it
+  // perks up; a still pointer for a few seconds and it glances around on its own; scrolling
+  // makes it look the way the page is going. Frame-throttled, and it never re-renders React.
   useEffect(() => {
-    if (window.matchMedia?.('(pointer: coarse)').matches) return undefined;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
     let raf = 0;
-    const onMove = (e) => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const r = fabRef.current?.getBoundingClientRect();
-        if (!r) return;
-        const vx = e.clientX - (r.left + r.width / 2);
-        const vy = e.clientY - (r.top + r.height / 2);
-        const d = Math.hypot(vx, vy) || 1;
-        const k = Math.min(1, d / 260);
-        setLook({ x: (vx / d) * k, y: (vy / d) * k });
-      });
+    let lastMove = Date.now();
+    const aim = (cx, cy) => {
+      const r = fabRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const vx = cx - (r.left + r.width / 2);
+      const vy = cy - (r.top + r.height / 2);
+      const d = Math.hypot(vx, vy) || 1;
+      const k = Math.min(1, d / 200);
+      lookX.set((vx / d) * k);
+      lookY.set((vy / d) * k);
+      perk.set(1 + Math.max(0, 1 - d / 240) * 0.16);
     };
+    const onMove = (e) => {
+      lastMove = Date.now();
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => aim(e.clientX, e.clientY));
+    };
+    const onLeave = () => {
+      lookX.set(0);
+      lookY.set(0);
+      perk.set(1);
+    };
+    let lastY = window.scrollY;
+    let scrollReset;
+    const onScroll = () => {
+      const dy = window.scrollY - lastY;
+      lastY = window.scrollY;
+      if (Math.abs(dy) < 4) return;
+      lastMove = Date.now();
+      lookX.set(0);
+      lookY.set(dy > 0 ? 0.9 : -0.9);
+      clearTimeout(scrollReset);
+      scrollReset = setTimeout(() => lookY.set(0), 450);
+    };
+    // Idle: an occasional look to the side, so it never sits frozen.
+    const glance = setInterval(() => {
+      if (Date.now() - lastMove < 3500) return;
+      lookX.set((Math.random() * 2 - 1) * 0.9);
+      lookY.set((Math.random() * 2 - 1) * 0.4);
+      setTimeout(() => {
+        lookX.set(0);
+        lookY.set(0);
+      }, 900);
+    }, 3200);
     window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointerdown', onMove, { passive: true });
+    window.addEventListener('pointerup', onLeave, { passive: true });
+    document.addEventListener('pointerleave', onLeave);
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerdown', onMove);
+      window.removeEventListener('pointerup', onLeave);
+      document.removeEventListener('pointerleave', onLeave);
+      window.removeEventListener('scroll', onScroll);
+      clearInterval(glance);
+      clearTimeout(scrollReset);
       cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [lookX, lookY, perk]);
 
   // Say hello once per session, a few seconds in, then get out of the way.
   useEffect(() => {
@@ -203,7 +251,12 @@ export function FoxBot() {
           >
             <div className="mb-3 flex items-center gap-2.5">
               <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-fox-50 ring-1 ring-fox-100">
-                <FoxMascot size={30} mood={mood === 'idle' ? 'happy' : mood} look={look} />
+                <FoxMascot
+                  size={30}
+                  mood={mood === 'idle' ? 'happy' : mood}
+                  lookX={lookX}
+                  lookY={lookY}
+                />
               </div>
               <div className="flex-1">
                 <div className="text-sm font-bold text-warm-900">FoxBot</div>
@@ -392,10 +445,17 @@ export function FoxBot() {
         >
           <motion.span
             className="grid place-items-center"
+            style={{ scale: perk }}
             animate={open ? { y: 0 } : { y: [0, -3, 0] }}
             transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <FoxMascot size={40} mood={mood} look={look} className="sm:h-11 sm:w-11" />
+            <FoxMascot
+              size={40}
+              mood={mood}
+              lookX={lookX}
+              lookY={lookY}
+              className="sm:h-11 sm:w-11"
+            />
           </motion.span>
         </motion.button>
       </motion.div>

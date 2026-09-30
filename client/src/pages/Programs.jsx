@@ -94,14 +94,14 @@ export default function Programs() {
               {prog.href ? (
                 <a
                   href={prog.href}
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-fox-500 hover:text-fox-600 transition"
+                  className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-fox-500 hover:text-fox-600 transition sm:min-h-0"
                 >
                   {prog.cta} <ArrowRight size={16} />
                 </a>
               ) : (
                 <button
                   onClick={() => setApplyTo(prog)}
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-fox-500 hover:text-fox-600 transition self-start"
+                  className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-fox-500 hover:text-fox-600 transition sm:min-h-0 self-start"
                 >
                   {prog.cta} <ArrowRight size={16} />
                 </button>

@@ -79,13 +79,13 @@ export default function Contact() {
             <div className="space-y-4 text-sm">
               <a
                 href="mailto:stackfox.tech@gmail.com"
-                className="flex items-center gap-3 text-warm-600 hover:text-fox-500 transition-colors"
+                className="flex min-h-11 items-center gap-3 text-warm-600 hover:text-fox-500 transition-colors sm:min-h-0"
               >
                 <Mail size={18} className="text-fox-500" /> stackfox.tech@gmail.com
               </a>
               <a
                 href="tel:+918209395894"
-                className="flex items-center gap-3 text-warm-600 hover:text-fox-500 transition-colors"
+                className="flex min-h-11 items-center gap-3 text-warm-600 hover:text-fox-500 transition-colors sm:min-h-0"
               >
                 <Phone size={18} className="text-fox-500" /> +91 82093 95894
               </a>

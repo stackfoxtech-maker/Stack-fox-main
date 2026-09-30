@@ -92,7 +92,7 @@ export default function Portfolio() {
             </div>
             <button
               onClick={() => setInquiry(p)}
-              className="flex items-center gap-1 self-start text-body-sm font-semibold text-fox-600 hover:text-fox-700 group/link"
+              className="flex min-h-11 items-center gap-1 self-start text-body-sm font-semibold text-fox-600 hover:text-fox-700 group/link sm:min-h-0"
             >
               Discuss a project like this{' '}
               <ArrowRight
