@@ -157,10 +157,9 @@ const ServiceCard = memo(function ServiceCard({ svc, price, inCart, onAdd, Icon 
           whileTap={{ scale: 0.92 }}
           aria-label={inCart ? `${svc.name} is in your plan` : `Add ${svc.name}`}
           className={cn(
-            'inline-flex min-h-9 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors',
             inCart
-              ? 'bg-sage-100 text-sage-700'
-              : 'bg-fox-500 text-white shadow-sm shadow-fox-500/30 hover:bg-fox-600',
+              ? 'inline-flex min-h-9 items-center rounded-[0.7rem] bg-sage-100 px-3.5 text-[13px] font-semibold text-sage-700'
+              : 'btn-fox btn-fox--sm',
           )}
         >
           <AnimatePresence mode="wait" initial={false}>
