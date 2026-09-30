@@ -19,7 +19,6 @@ import * as ids from "../lib/id";
 import { resolveGstType, splitGst } from "../lib/gst";
 import { log } from "../lib/logger";
 import { parseBody } from "../lib/validate";
-import { randomUUID } from "node:crypto";
 import {
   type Db,
   recordInvoicePaymentRows,
@@ -434,20 +433,27 @@ export async function quoteRoutes(app: FastifyInstance) {
       now.getTime() + (tier === "STARTER" ? 30 : 15) * 24 * 60 * 60 * 1000,
     );
 
-    const quote = await prisma.quote.create({
-      data: {
-        quoteNumber: `SF-Q-${randomUUID()}`,
-        userId,
-        items: toJson(items),
-        subtotal,
-        gstAmount,
-        total: subtotal + gstAmount,
-        tier,
-        estimateRange: computeEstimateRange(subtotal, tier) as any,
-        status: "draft",
-        validUntil,
-      },
-    });
+    // The quote number is the next in the series (AWL/QTN/<FY>/NNNN), taken in the same
+    // transaction as the row. It was `SF-Q-` plus a full random UUID.
+    const quote = await prisma.$transaction(async (tx) =>
+      tx.quote.create({
+        data: {
+          // Same instant for the number and the row, so a quote created across the April
+          // boundary cannot get one financial year's number and the other's created_at.
+          createdAt: now,
+          quoteNumber: await nextDocNumber(tx, "QTN", now),
+          userId,
+          items: toJson(items),
+          subtotal,
+          gstAmount,
+          total: subtotal + gstAmount,
+          tier,
+          estimateRange: computeEstimateRange(subtotal, tier) as any,
+          status: "draft",
+          validUntil,
+        },
+      }),
+    );
 
     return { data: { quote: serializeQuote(quote) } };
   });

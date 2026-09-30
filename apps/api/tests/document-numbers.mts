@@ -264,6 +264,25 @@ check(
     inv.data.receipts[0].receiptNo === payments[0].receiptNo,
 );
 
+// ── Quotes: AWL/QTN numbers, one after another (they were SF-Q- plus a random UUID) ──────────
+const mkQuote = async () =>
+  (
+    (await (
+      await call("/quotes", owner.token, "POST", {
+        items: [{ itemId: "web-001", itemType: "service", quantity: 1 }],
+      })
+    ).json()) as any
+  ).data;
+const q1 = await mkQuote();
+const q2 = await mkQuote();
+const qn = (q: any) => (q?.quote ?? q)?.quoteNumber as string;
+check("a new quote is numbered AWL/QTN/<FY>/NNNN", RE("QTN").test(qn(q1) ?? ""));
+check("the next quote is exactly one higher", seqOf(qn(q2)) === seqOf(qn(q1)) + 1);
+check(
+  "no quote number is a random UUID any more",
+  !/[0-9a-f]{8}-[0-9a-f]{4}/.test(qn(q1) + qn(q2)),
+);
+
 // ── Contracts: numbered in the pack, in creation order ──────────────────────
 const svc = await prisma.serviceUnit.findFirst({ where: { status: "PUBLISHED" } });
 const eng = await prisma.engagement.create({

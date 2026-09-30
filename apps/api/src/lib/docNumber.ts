@@ -4,6 +4,7 @@
  *   AWL/INV/2026-27/0001   tax invoice
  *   AWL/CON/2026-27/0001   contract
  *   AWL/RCP/2026-27/0001   payment receipt
+ *   AWL/QTN/2026-27/0001   quote
  *
  * One series per kind per Indian financial year (April to March, IST). Each number comes from
  * an atomic upsert on `document_counters`, so two requests can never receive the same one, and
@@ -15,7 +16,7 @@
  */
 import { prisma } from "@stackfox/prisma";
 
-export type DocKind = "INV" | "CON" | "RCP";
+export type DocKind = "INV" | "CON" | "RCP" | "QTN";
 
 /** Anything that can run a raw query: the client, or a transaction handed to the caller. */
 type RawDb = Pick<typeof prisma, "$queryRaw">;
