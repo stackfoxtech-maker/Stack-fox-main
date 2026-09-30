@@ -438,6 +438,9 @@ export async function quoteRoutes(app: FastifyInstance) {
     const quote = await prisma.$transaction(async (tx) =>
       tx.quote.create({
         data: {
+          // Same instant for the number and the row, so a quote created across the April
+          // boundary cannot get one financial year's number and the other's created_at.
+          createdAt: now,
           quoteNumber: await nextDocNumber(tx, "QTN", now),
           userId,
           items: toJson(items),
