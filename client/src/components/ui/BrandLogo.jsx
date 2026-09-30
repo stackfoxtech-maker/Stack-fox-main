@@ -7,6 +7,27 @@ import { cn } from '@lib/utils';
  * `withBackground` gives the "app icon" treatment (Navbar, auth pages): the
  * transparent orange fox on a pale fox-tint square with a soft shadow.
  */
+/** The name, set as StackFox: capital S and F, orange Fox. `dark` is for dark backgrounds. */
+export const Wordmark = ({ className, dark = false }) => (
+  <span className={cn('font-semibold leading-none', className)}>
+    <span className={dark ? 'text-white' : 'text-warm-900'}>Stack</span>
+    <span className="text-fox-500">Fox</span>
+  </span>
+);
+
+/** "by ARTWALL LABS", the small bold line under the wordmark. */
+export const Tagline = ({ dark = false, className }) => (
+  <span
+    className={cn(
+      'block text-[10px] font-bold leading-none tracking-tighter',
+      dark ? 'text-warm-300' : 'text-warm-400',
+      className,
+    )}
+  >
+    by ARTWALL LABS
+  </span>
+);
+
 export const BrandLogo = ({ size = 24, className, containerClassName, withBackground = false }) => {
   const box = withBackground ? Math.round(size * 1.5) : size;
   return (

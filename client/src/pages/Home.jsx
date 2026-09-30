@@ -278,7 +278,7 @@ export default function Home() {
                 </motion.span>
                 <motion.span variants={heroLine} className="block">
                   Price{' '}
-                  <span className="relative inline-block">
+                  <span className="accent-serif relative inline-block">
                     every piece.
                     <DrawnUnderline />
                   </span>

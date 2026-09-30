@@ -16,14 +16,15 @@ export const Button = forwardRef(
       primary: 'btn-fox',
       outline: 'btn-outline',
       ghost: 'btn-ghost',
-      danger: 'bg-danger-500 text-white hover:bg-danger-700 rounded-pill min-h-[2.75rem]',
+      danger:
+        'bg-danger-500 text-white hover:bg-danger-700 rounded-[0.875rem] min-h-[2.75rem] font-display',
       link: 'text-fox-600 hover:text-fox-700 underline-offset-4 hover:underline p-0',
     };
 
     const sizes = {
-      sm: 'text-sm px-4 py-2 rounded-pill min-h-[2.25rem]',
-      md: 'text-[15px] px-5 py-2.5 rounded-pill',
-      lg: 'text-base px-7 py-3.5 rounded-pill',
+      sm: 'text-sm px-4 py-2 rounded-[0.7rem] min-h-[2.25rem]',
+      md: 'text-[15px] px-5 py-2.5 rounded-[0.875rem]',
+      lg: 'text-base px-7 py-3.5 rounded-[0.95rem]',
       icon: 'p-3 rounded-md',
     };
 

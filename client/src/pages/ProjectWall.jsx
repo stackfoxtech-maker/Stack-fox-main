@@ -10,7 +10,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { Section, SectionHeading, Button } from '@components/ui/Primitives';
+import { PageHero } from '@components/layout/PageHero';
+import { Section, Button } from '@components/ui/Primitives';
 import { cn } from '@lib/utils';
 import data from '@data/stackfox-data.json';
 import LeadInquiryModal from '@components/LeadInquiryModal';
@@ -41,28 +42,18 @@ export default function ProjectWall() {
   return (
     <Section className="bg-warm-white">
       <div className="container-fx">
-        <div className="max-w-4xl mx-auto mb-16 text-center">
-          <SectionHeading
-            label="Live Engineering"
-            title="The Project Wall"
-            subtitle="A real-time window into the StackFox lab. Explore our ongoing builds, live deployments, and upcoming innovations."
-          />
-
-          <div className="flex flex-wrap items-center justify-center gap-6 mt-10">
-            <div className="flex items-center gap-2 text-xs font-bold text-warm-400 uppercase tracking-widest">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              {projects.filter((p) => p.status === 'live').length} Live
-            </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-warm-400 uppercase tracking-widest">
-              <span className="w-2 h-2 rounded-full bg-fox-500" />
-              {projects.filter((p) => p.status === 'ongoing').length} Ongoing
-            </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-warm-400 uppercase tracking-widest">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
-              {projects.filter((p) => p.status === 'upcoming').length} Planning
-            </div>
-          </div>
-        </div>
+        <PageHero
+          eyebrow="Live engineering"
+          title="The Project Wall"
+          accent="Project Wall"
+          description="A window into the StackFox lab: ongoing builds, live deployments and what is being planned next."
+          stats={[
+            { end: projects.filter((p) => p.status === 'live').length, label: 'live' },
+            { end: projects.filter((p) => p.status === 'ongoing').length, label: 'ongoing' },
+            { end: projects.filter((p) => p.status === 'upcoming').length, label: 'planning' },
+            { end: projects.length, label: 'in total' },
+          ]}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => {
