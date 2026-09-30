@@ -19,7 +19,7 @@ export const Wordmark = ({ className, dark = false }) => (
 export const Tagline = ({ dark = false, className }) => (
   <span
     className={cn(
-      'block text-[9px] font-semibold uppercase leading-none tracking-[0.18em]',
+      'block text-[10px] font-semibold uppercase leading-none tracking-[0.18em]',
       dark ? 'text-warm-300' : 'text-warm-400',
       className,
     )}
