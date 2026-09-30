@@ -307,6 +307,7 @@ export default function GSTInvoice() {
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mt-6">
               <input
                 type="checkbox"
+                className="h-5 w-5 sm:h-4 sm:w-4"
                 checked={reverseCharge}
                 onChange={(e) => setReverseCharge(e.target.checked)}
               />
@@ -431,7 +432,7 @@ export default function GSTInvoice() {
             <button
               type="button"
               onClick={addLine}
-              className="text-sm text-orange-600 font-semibold hover:underline"
+              className="min-h-11 text-sm font-semibold text-orange-600 hover:underline sm:min-h-0"
             >
               + Add line item
             </button>
@@ -527,7 +528,7 @@ export default function GSTInvoice() {
                   <button
                     type="button"
                     onClick={() => removeLine(i)}
-                    className="text-xs text-gray-400 hover:text-red-500"
+                    className="min-h-11 px-2 text-xs text-gray-400 hover:text-red-500 sm:min-h-0 sm:px-0"
                   >
                     Remove
                   </button>

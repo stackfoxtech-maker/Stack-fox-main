@@ -93,7 +93,7 @@ export default function Pricing() {
                   <td className="py-3.5 pl-4 text-right">
                     <Link
                       to="/packages"
-                      className="inline-flex items-center gap-1 text-body-sm font-medium text-fox-600 hover:text-fox-700"
+                      className="inline-flex min-h-11 items-center gap-1 text-body-sm font-medium text-fox-600 hover:text-fox-700 sm:min-h-0"
                     >
                       Details <ArrowRight size={13} />
                     </Link>

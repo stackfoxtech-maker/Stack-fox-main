@@ -89,7 +89,7 @@ export default function Industries() {
                 {bundle.features.length > 4 && (
                   <button
                     onClick={() => setExpanded(isExpanded ? null : bundle.id)}
-                    className="text-body-sm text-fox-600 font-medium hover:underline mt-2"
+                    className="mt-1 inline-flex min-h-11 items-center text-body-sm font-medium text-fox-600 hover:underline sm:min-h-0 sm:mt-2"
                   >
                     {isExpanded ? 'Show less' : `+${bundle.features.length - 4} more features`}
                   </button>
