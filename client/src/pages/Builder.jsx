@@ -695,6 +695,38 @@ export default function Builder() {
         </div>
       </div>
 
+      {/* The advisor, up front: people who do not know what to pick should see this first */}
+      <Link
+        to="/advisor"
+        className="group relative mb-5 flex items-center gap-4 overflow-hidden rounded-2xl border border-sage-200 bg-gradient-to-r from-sage-50 via-white to-fox-50 p-4 shadow-sm transition-all duration-medium hover:-translate-y-0.5 hover:border-sage-300 hover:shadow-md md:mb-8 md:p-5"
+      >
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-sage-500 text-white shadow-md shadow-sage-500/25 transition-transform duration-medium group-hover:-rotate-6 group-hover:scale-105 md:h-12 md:w-12">
+          <Sparkles size={20} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-body-md font-semibold leading-snug text-warm-900 md:text-title">
+            <span className="sm:hidden">Not sure what to pick?</span>
+            <span className="hidden sm:inline">
+              Not sure what to pick? Let our AI advisor fill your cart.
+            </span>
+          </span>
+          <span className="mt-0.5 block text-body-sm leading-snug text-warm-600">
+            <span className="sm:hidden">The AI advisor fills your cart for you.</span>
+            <span className="hidden sm:inline">
+              Answer 10 quick questions about your project. It chooses the services for you and adds
+              them to your cart, and you can change anything afterwards.
+            </span>
+          </span>
+        </span>
+        <span className="btn-fox btn-fox--sm hidden shrink-0 sm:inline-flex md:min-h-11 md:px-5 md:text-[15px]">
+          Ask the advisor <ArrowRight size={15} />
+        </span>
+        <ArrowRight
+          size={18}
+          className="shrink-0 text-sage-600 transition-transform group-hover:translate-x-1 sm:hidden"
+        />
+      </Link>
+
       {/* Phone helper strip: one slim line instead of a tall card */}
       {!tourHintDismissed && !showTour && itemCount === 0 && (
         <div className="mb-3 flex items-center rounded-2xl bg-fox-50 pl-4 md:hidden">
@@ -1048,23 +1080,7 @@ export default function Builder() {
       </div>
 
       {/* Help cards: below the list, so the sticky plan column stays short */}
-      <div className="mt-10 grid gap-4 md:mt-14 md:grid-cols-2">
-        <Link
-          to="/advisor"
-          className="group block rounded-lg border border-sage-200 bg-sage-50 p-6 transition-transform duration-short hover:-translate-y-0.5"
-        >
-          <div className="mb-2 flex items-center gap-2 text-title text-sage-800">
-            <Sparkles className="h-5 w-5 text-sage-600" />
-            Not sure what you need?
-          </div>
-          <p className="max-w-sm text-body-sm leading-relaxed text-sage-800/90">
-            Answer 10 quick questions and our advisor suggests a configuration for your project.
-          </p>
-          <span className="mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-sage-800">
-            Start advisor{' '}
-            <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
-          </span>
-        </Link>
+      <div className="mt-10 md:mt-14">
         <div className="rounded-lg border border-warm-200 bg-white p-6">
           <h3 className="text-title text-warm-900 mb-4">How building works</h3>
           <div className="space-y-4">
