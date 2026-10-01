@@ -39,7 +39,7 @@ export default function ServiceCost() {
   if (loading)
     return (
       <div className="max-w-4xl mx-auto px-6 py-16">
-        <PanelSkeleton variant="dashboard" />
+        <PanelSkeleton variant="cards" rows={3} />
       </div>
     );
   if (!service) {

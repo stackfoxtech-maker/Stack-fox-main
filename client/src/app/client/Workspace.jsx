@@ -85,7 +85,7 @@ export default function Workspace() {
     fetchData();
   }, []);
 
-  if (loading) return <PanelSkeleton variant="dashboard" />;
+  if (loading) return <PanelSkeleton variant="stack" />;
 
   return (
     <div className="space-y-5">

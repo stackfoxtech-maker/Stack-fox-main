@@ -53,7 +53,7 @@ export default function Feedback() {
     }
   };
 
-  if (loading) return <PanelSkeleton variant="list" />;
+  if (loading) return <PanelSkeleton variant="form" />;
 
   if (submitted) {
     return (

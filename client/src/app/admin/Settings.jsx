@@ -40,7 +40,7 @@ export default function AdminSettings() {
     load();
   }, []);
 
-  if (loading) return <PanelSkeleton variant="form" />;
+  if (loading) return <PanelSkeleton variant="list" toolbar={false} />;
 
   if (!config) {
     return (

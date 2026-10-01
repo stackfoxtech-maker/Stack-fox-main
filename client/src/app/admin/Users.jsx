@@ -222,7 +222,7 @@ export default function AdminUsers() {
       </div>
 
       {loading ? (
-        <PanelSkeleton variant="list" />
+        <PanelSkeleton variant="list" toolbar={false} rows={10} />
       ) : users.length === 0 ? (
         <EmptyState icon={UsersIcon} title="No users found" />
       ) : (

@@ -98,7 +98,7 @@ export default function Referrals() {
 
   const converted = referrals.filter((r) => r.status === 'CONVERTED' || r.status === 'PAID').length;
 
-  if (loading) return <PanelSkeleton variant="cards" />;
+  if (loading) return <PanelSkeleton variant="stack" />;
 
   return (
     <div className="space-y-5">

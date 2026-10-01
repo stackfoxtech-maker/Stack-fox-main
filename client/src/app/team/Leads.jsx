@@ -257,97 +257,99 @@ export default function Leads() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-2xl border border-warm-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-warm-100 bg-warm-50/50">
-                  <th className="text-left px-5 py-3.5 font-medium text-warm-600">Business</th>
-                  <th className="text-left px-5 py-3.5 font-medium text-warm-600">Contact</th>
-                  <th className="text-left px-5 py-3.5 font-medium text-warm-600">Category</th>
-                  <th className="text-left px-5 py-3.5 font-medium text-warm-600">Status</th>
-                  <th className="text-left px-5 py-3.5 font-medium text-warm-600">Priority</th>
-                  <th className="text-left px-5 py-3.5 font-medium text-warm-600">Value</th>
-                  <th className="text-left px-5 py-3.5 font-medium text-warm-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-warm-100">
-                {filtered.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    className={cn(
-                      'hover:bg-warm-50/50 transition cursor-pointer',
-                      selectedLead?.id === lead.id ? 'bg-fox-50/50' : '',
-                    )}
-                    onClick={() => setSelectedLead(lead)}
-                  >
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-fox-50 flex items-center justify-center text-fox-600 font-medium text-xs">
-                          {lead.businessName
-                            .split(' ')
-                            .map((w) => w[0])
-                            .join('')
-                            .slice(0, 2)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-warm-900">{lead.businessName}</p>
-                          <p className="text-xs text-warm-500">{lead.ownerName}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex flex-col gap-1">
-                        <span className="flex items-center gap-1.5 text-warm-600 text-xs">
-                          {lead.contact || '—'}
-                        </span>
-                        <span className="flex items-center gap-1.5 text-warm-500 text-xs">
-                          {lead.email}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-warm-600 capitalize">
-                      {lead.category?.replace('-', ' ')}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <Badge variant={getStatusColor(lead.status)}>{lead.status}</Badge>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <Badge variant={getPriorityColor(lead.priority)}>{lead.priority}</Badge>
-                    </td>
-                    <td className="px-5 py-3.5 font-mono text-warm-900">
-                      ₹{lead.value?.toLocaleString()}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            sharePitch(lead);
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-warm-100 text-warm-400 hover:text-fox-500 transition"
-                          title="Share pitch on WhatsApp"
-                        >
-                          <Share2 size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedLead(lead);
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-warm-100 text-warm-400 hover:text-fox-500 transition"
-                          title="View pitch"
-                        >
-                          <MessageSquare size={16} />
-                        </button>
-                      </div>
-                    </td>
+          {!loading && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-warm-100 bg-warm-50/50">
+                    <th className="text-left px-5 py-3.5 font-medium text-warm-600">Business</th>
+                    <th className="text-left px-5 py-3.5 font-medium text-warm-600">Contact</th>
+                    <th className="text-left px-5 py-3.5 font-medium text-warm-600">Category</th>
+                    <th className="text-left px-5 py-3.5 font-medium text-warm-600">Status</th>
+                    <th className="text-left px-5 py-3.5 font-medium text-warm-600">Priority</th>
+                    <th className="text-left px-5 py-3.5 font-medium text-warm-600">Value</th>
+                    <th className="text-left px-5 py-3.5 font-medium text-warm-600">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-warm-100">
+                  {filtered.map((lead) => (
+                    <tr
+                      key={lead.id}
+                      className={cn(
+                        'hover:bg-warm-50/50 transition cursor-pointer',
+                        selectedLead?.id === lead.id ? 'bg-fox-50/50' : '',
+                      )}
+                      onClick={() => setSelectedLead(lead)}
+                    >
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-fox-50 flex items-center justify-center text-fox-600 font-medium text-xs">
+                            {lead.businessName
+                              .split(' ')
+                              .map((w) => w[0])
+                              .join('')
+                              .slice(0, 2)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-warm-900">{lead.businessName}</p>
+                            <p className="text-xs text-warm-500">{lead.ownerName}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex flex-col gap-1">
+                          <span className="flex items-center gap-1.5 text-warm-600 text-xs">
+                            {lead.contact || '—'}
+                          </span>
+                          <span className="flex items-center gap-1.5 text-warm-500 text-xs">
+                            {lead.email}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-warm-600 capitalize">
+                        {lead.category?.replace('-', ' ')}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <Badge variant={getStatusColor(lead.status)}>{lead.status}</Badge>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <Badge variant={getPriorityColor(lead.priority)}>{lead.priority}</Badge>
+                      </td>
+                      <td className="px-5 py-3.5 font-mono text-warm-900">
+                        ₹{lead.value?.toLocaleString()}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              sharePitch(lead);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-warm-100 text-warm-400 hover:text-fox-500 transition"
+                            title="Share pitch on WhatsApp"
+                          >
+                            <Share2 size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedLead(lead);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-warm-100 text-warm-400 hover:text-fox-500 transition"
+                            title="View pitch"
+                          >
+                            <MessageSquare size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           {loading ? (
-            <PanelSkeleton variant="list" />
+            <PanelSkeleton variant="list" toolbar={false} rows={8} className="p-4" />
           ) : filtered.length === 0 ? (
             <div className="p-10 text-center text-warm-500">No leads yet — add your first one.</div>
           ) : null}

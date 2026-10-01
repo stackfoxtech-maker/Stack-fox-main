@@ -229,13 +229,19 @@ export const Skeleton = ({ className, ...props }) => (
 // so the page does not jump when the data arrives. Pick the variant closest to the real layout.
 const SK_BOX = 'rounded-lg border border-warm-200 bg-white';
 
-export const PanelSkeleton = ({ variant = 'list', rows = 6, className }) => (
-  <div role="status" aria-busy="true" aria-live="polite" className={cn('space-y-4', className)}>
+export const PanelSkeleton = ({
+  variant = 'list',
+  rows = 6,
+  stats = 4,
+  toolbar = true,
+  className,
+}) => (
+  <div role="status" aria-busy="true" className={cn('space-y-4', className)}>
     <span className="sr-only">Loading…</span>
     {variant === 'dashboard' && (
       <>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
+          {Array.from({ length: stats }, (_, i) => (
             <div key={i} className={cn(SK_BOX, 'space-y-3 p-4')}>
               <Skeleton className="h-3 w-1/2" />
               <Skeleton className="h-7 w-2/3" />
@@ -274,12 +280,64 @@ export const PanelSkeleton = ({ variant = 'list', rows = 6, className }) => (
         ))}
       </div>
     )}
+    {variant === 'detail' && (
+      <>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-9 w-9 rounded-lg" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-5 w-1/3" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className={cn(SK_BOX, 'space-y-3 p-4')}>
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-6 w-2/3" />
+            </div>
+          ))}
+        </div>
+        <div className={cn(SK_BOX, 'space-y-3 p-5')}>
+          <Skeleton className="h-4 w-1/4" />
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-8 w-full" />
+          ))}
+        </div>
+      </>
+    )}
+    {variant === 'stack' &&
+      [0, 1, 2].map((i) => (
+        <div key={i} className={cn(SK_BOX, 'space-y-3 p-5')}>
+          <Skeleton className="h-4 w-1/4" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-5/6" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
+      ))}
+    {variant === 'board' && (
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="w-[260px] min-w-[260px] shrink-0 space-y-2">
+            <Skeleton className="h-6 w-full" />
+            {[0, 1].map((j) => (
+              <div key={j} className={cn(SK_BOX, 'space-y-2 p-3')}>
+                <Skeleton className="h-4 w-4/5" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    )}
     {variant === 'list' && (
       <>
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-9 w-40 rounded-md" />
-          <Skeleton className="h-9 w-24 rounded-md" />
-        </div>
+        {toolbar && (
+          <div className="flex items-center justify-between gap-3">
+            <Skeleton className="h-9 w-40 rounded-md" />
+            <Skeleton className="h-9 w-24 rounded-md" />
+          </div>
+        )}
         <div className={cn(SK_BOX, 'divide-y divide-warm-100')}>
           {Array.from({ length: rows }, (_, i) => (
             <div key={i} className="flex items-center gap-4 p-4">

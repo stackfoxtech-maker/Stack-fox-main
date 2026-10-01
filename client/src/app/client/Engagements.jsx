@@ -32,7 +32,7 @@ export default function Engagements() {
     }
   }, [id]);
 
-  if (loading) return <PanelSkeleton variant="list" />;
+  if (loading) return <PanelSkeleton variant={id ? 'detail' : 'list'} />;
 
   if (id && selected) {
     return (

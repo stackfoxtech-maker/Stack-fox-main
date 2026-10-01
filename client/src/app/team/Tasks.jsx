@@ -45,7 +45,7 @@ export default function Tasks() {
     }
   };
 
-  if (loading) return <PanelSkeleton variant="list" />;
+  if (loading) return <PanelSkeleton variant={view === 'board' ? 'board' : 'list'} />;
 
   const columns = {};
   Object.keys(columnConfig).forEach((k) => {

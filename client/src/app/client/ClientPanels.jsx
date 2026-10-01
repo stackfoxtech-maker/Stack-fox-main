@@ -448,7 +448,7 @@ export function Reports() {
     }
   };
 
-  if (loading) return <PanelSkeleton variant="list" />;
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   if (error) {
     return (
@@ -797,7 +797,7 @@ export function Handover() {
     }
   };
 
-  if (loading) return <PanelSkeleton variant="list" />;
+  if (loading) return <PanelSkeleton variant="stack" />;
 
   if (error) {
     return (
@@ -848,7 +848,7 @@ export function Handover() {
       )}
 
       {kitLoading || !kit ? (
-        <PanelSkeleton variant="list" />
+        <PanelSkeleton variant="stack" />
       ) : (
         <>
           {/* Readiness checklist — computed from live data, not a stored flag. */}

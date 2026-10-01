@@ -83,7 +83,7 @@ export default function Contracts() {
     }
   }, [id]);
 
-  if (loading) return <PanelSkeleton variant="list" />;
+  if (loading) return <PanelSkeleton variant={id ? 'detail' : 'list'} />;
 
   // Detail view
   if (id && selected) {

@@ -77,7 +77,7 @@ export default function AdminProjects() {
       .finally(() => setActionLoading(null));
   };
 
-  if (loading) return <PanelSkeleton variant="list" />;
+  if (loading) return <PanelSkeleton variant={id ? 'detail' : 'list'} />;
 
   if (error && !id)
     return <EmptyState icon={FolderKanban} title="Something went wrong" description={error} />;

@@ -57,7 +57,7 @@ function ProjectDetail({ id }) {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <PanelSkeleton variant="cards" />;
+  if (loading) return <PanelSkeleton variant="detail" />;
   if (!project) return <EmptyState icon={FolderKanban} title="Project not found" />;
 
   return (
@@ -159,7 +159,7 @@ export default function Projects() {
   }, [id]);
 
   if (id) return <ProjectDetail id={id} />;
-  if (loading) return <PanelSkeleton variant="cards" />;
+  if (loading) return <PanelSkeleton variant={id ? 'detail' : 'list'} />;
 
   return (
     <div className="space-y-4">

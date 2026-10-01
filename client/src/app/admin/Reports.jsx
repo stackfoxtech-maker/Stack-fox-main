@@ -239,7 +239,7 @@ export default function Reports() {
       </div>
 
       {loading ? (
-        <PanelSkeleton variant="list" />
+        <PanelSkeleton variant="dashboard" />
       ) : error ? (
         <div className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">
           {error}

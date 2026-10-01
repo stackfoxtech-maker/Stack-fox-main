@@ -20,7 +20,7 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <PanelSkeleton variant="dashboard" />;
+  if (loading) return <PanelSkeleton variant="dashboard" stats={3} />;
 
   const todo = tasks.filter((t) => t.status === 'todo');
   const inProgress = tasks.filter((t) => t.status === 'in-progress');
