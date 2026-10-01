@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion';
 import { Sparkles, X, ArrowUp, ArrowRight } from 'lucide-react';
 import { FoxMascot } from '@components/ui/FoxMascot';
-import api from '@lib/api';
+import { answer, starters as pageStarters } from '@lib/foxbot';
 
 // Shown until the server's page-specific chips arrive (or if it is unreachable).
 const DEFAULT_STARTERS = [
@@ -62,17 +62,15 @@ export function FoxBot() {
 
   // Opening chips fit the page: pricing questions on /pricing, invoices in the dashboard.
   useEffect(() => {
+    if (!open) return;
     let live = true;
-    api
-      .get('/assistant/suggestions', { params: { page: pathname } })
-      .then(({ data }) => {
-        if (live && data?.data?.suggestions?.length) setStarters(data.data.suggestions);
-      })
+    pageStarters(pathname)
+      .then((s) => live && s?.length && setStarters(s))
       .catch(() => {});
     return () => {
       live = false;
     };
-  }, [pathname]);
+  }, [pathname, open]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -199,20 +197,17 @@ export function FoxBot() {
     setSending(true);
 
     try {
-      const { data } = await api.post('/assistant/chat', { message: trimmed, page: pathname });
-      const a = data.data;
+      const a = await answer(trimmed, pathname);
       setMessages((prev) => [
         ...prev,
         { role: 'bot', text: a.reply, links: a.links, suggestions: a.suggestions },
       ]);
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
           role: 'bot',
-          text:
-            err.response?.data?.message ||
-            "Sorry, I'm having trouble responding right now — try again in a moment.",
+          text: "Sorry, I'm having trouble responding right now — try again in a moment.",
           suggestions: ['Talk to a human'],
         },
       ]);

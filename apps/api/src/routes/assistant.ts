@@ -29,7 +29,7 @@ export async function assistantRoutes(app: FastifyInstance) {
   // GET /assistant/suggestions?page=/pricing: the opening chips for that page.
   app.get("/assistant/suggestions", async (req) => {
     const { page } = req.query as { page?: string };
-    return { data: { suggestions: starterSuggestions(page?.slice(0, 200)) } };
+    return { data: { suggestions: await starterSuggestions(page?.slice(0, 200)) } };
   });
 
   // POST /assistant/advise — AI Scope Advisor (Product Bible §4.2).

@@ -17,6 +17,7 @@ export default defineConfig({
       // The API prices the cart against it and the DB seed reads it too, so the
       // client resolves the same file rather than keeping its own copy. This
       // exact-match alias must come before the generic '@data' below.
+      '@shared': path.resolve(__dirname, '../shared'),
       '@data/stackfox-data.json': path.resolve(__dirname, '../shared/stackfox-data.json'),
       '@data': path.resolve(__dirname, './src/data'),
     },
