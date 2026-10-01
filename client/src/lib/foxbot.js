@@ -7,9 +7,14 @@ function load() {
   enginePromise ??= Promise.all([
     import('@data/stackfox-data.json'),
     import('@shared/foxbot-engine.mjs'),
-  ]).then(([data, { createEngine }]) =>
-    createEngine({ data: data.default, tiers: { STARTER: 1, GROWTH: 1.5, PREMIUM: 2.2 } }),
-  );
+  ])
+    .then(([data, { createEngine }]) =>
+      createEngine({ data: data.default, tiers: { STARTER: 1, GROWTH: 1.5, PREMIUM: 2.2 } }),
+    )
+    .catch((err) => {
+      enginePromise = undefined; // a failed load (flaky network) must not stick until reload
+      throw err;
+    });
   return enginePromise;
 }
 

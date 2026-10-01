@@ -28,6 +28,8 @@ interface Engine {
   findServices(text: string): unknown[];
 }
 
+// Hides the import from tsc's CommonJS rewrite (it would become require(), which cannot load ESM).
+// eslint-disable-next-line @typescript-eslint/no-implied-eval
 const dynamicImport = new Function("p", "return import(p)") as (p: string) => Promise<{
   createEngine(o: { data: unknown; tiers: unknown }): Engine;
 }>;
@@ -36,9 +38,14 @@ let engine: Promise<Engine> | undefined;
 const load = () =>
   (engine ??= dynamicImport(
     pathToFileURL(resolve(__dirname, "../../../../shared/foxbot-engine.mjs")).href,
-  ).then((m) =>
-    m.createEngine({ data: readRawCatalogue() ?? {}, tiers: TIER_MULTIPLIERS }),
-  ));
+  )
+    .then((m) =>
+      m.createEngine({ data: readRawCatalogue() ?? {}, tiers: TIER_MULTIPLIERS }),
+    )
+    .catch((err) => {
+      engine = undefined; // do not cache a failed load
+      throw err;
+    }));
 
 export const answerQuestion = (message: string, ctx?: { page?: string }) =>
   load().then((e) => e.answerQuestion(message, ctx));
