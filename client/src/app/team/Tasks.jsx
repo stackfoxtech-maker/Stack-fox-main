@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CheckSquare } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { capitalize, cn, formatDate } from '@lib/utils';
-import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
+import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 
@@ -45,12 +45,7 @@ export default function Tasks() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant={view === 'board' ? 'board' : 'list'} />;
 
   const columns = {};
   Object.keys(columnConfig).forEach((k) => {

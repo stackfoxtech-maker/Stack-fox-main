@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, formatPaise } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Button, Modal, Input } from '@components/ui/Primitives';
+import { Badge, EmptyState, Button, Modal, Input, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import { downloadFromUrl, downloadErrorMessage } from '@lib/download';
 import toast from 'react-hot-toast';
@@ -199,12 +199,7 @@ export default function Finance() {
     window.open(`mailto:${orgEmail}?subject=${subject}&body=${body}`, '_blank');
   };
 
-  if (loading && invoices.length === 0)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner />
-      </div>
-    );
+  if (loading && invoices.length === 0) return <PanelSkeleton variant="list" />;
 
   const arAgingBuckets = [
     { label: 'Current', key: 'current', color: 'text-emerald-600 bg-emerald-50' },

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Spinner, EmptyState } from '@components/ui/Primitives';
+import { EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import { formatPaise } from '@lib/utils';
 import toast from 'react-hot-toast';
@@ -20,12 +20,7 @@ export function Queue() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   const queue = projects.filter((p) => p.status === 'DRAFT' || p.status === 'PENDING');
 
@@ -94,12 +89,7 @@ export function Sprints() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   const statusGroups = {};
   tasks.forEach((t) => {
@@ -202,12 +192,7 @@ export function Resources() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   const tone = (load) => (load > 90 ? 'red' : load > 70 ? 'orange' : 'green');
 
@@ -322,12 +307,7 @@ export function Quality() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   const openTickets = tickets.filter(
     (t) => t.status === 'open' || t.status === 'acknowledged' || t.status === 'in-progress',
@@ -389,12 +369,7 @@ export function Finance() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   const paidInvoices = invoices.filter((i) => i.status === 'paid');
   const totalRevenue = paidInvoices.reduce((sum, i) => sum + (i.total || i.grandTotal || 0), 0);
@@ -461,12 +436,7 @@ export function Clients() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   const clientMap = {};
   projects.forEach((p) => {
@@ -538,12 +508,7 @@ export function Analysis() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   const maxRevenue = Math.max(...revenue.map((r) => r.value || 0), 1);
 

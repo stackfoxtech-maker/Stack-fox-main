@@ -3,7 +3,7 @@ import { Search, ArrowRight } from 'lucide-react';
 import { usePageTitle, useDebounce } from '@lib/hooks';
 import { cn, formatINR } from '@lib/utils';
 import { PageHero } from '@components/layout/PageHero';
-import { Section, Spinner } from '@components/ui/Primitives';
+import { Section, PanelSkeleton } from '@components/ui/Primitives';
 import { useCatalogue } from '@lib/useStorefrontData';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
@@ -45,9 +45,7 @@ export default function Catalog() {
   if (loading)
     return (
       <Section>
-        <div className="flex justify-center py-20">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="cards" />
       </Section>
     );
   if (error)

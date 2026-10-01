@@ -10,7 +10,7 @@ import {
   Cloud,
   Server,
 } from 'lucide-react';
-import { Badge, Spinner, EmptyState } from '@components/ui/Primitives';
+import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 
@@ -40,12 +40,7 @@ export default function AdminSettings() {
     load();
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" toolbar={false} />;
 
   if (!config) {
     return (

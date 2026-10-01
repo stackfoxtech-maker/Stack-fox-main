@@ -14,7 +14,7 @@ import {
 import { BarChart3, Users, Briefcase, Wrench, Download, Calendar, Loader2 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR } from '@lib/utils';
-import { Spinner } from '@components/ui/Primitives';
+import { PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 
@@ -239,9 +239,7 @@ export default function Reports() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="dashboard" />
       ) : error ? (
         <div className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">
           {error}

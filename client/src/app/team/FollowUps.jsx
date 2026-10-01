@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Plus, Calendar, Phone, MessageCircle, Mail, Copy, CheckCircle, Wand2 } from 'lucide-react';
-import { Button, Input, Textarea, Modal, Badge, Spinner } from '@components/ui/Primitives';
+import { Button, Input, Textarea, Modal, Badge, PanelSkeleton } from '@components/ui/Primitives';
 import { followUpTypes, getPitch } from '@data/salesPitchLibrary';
 import { cn, formatDate } from '@lib/utils';
 import { apiGet, apiPost, apiPatch } from '@lib/api';
@@ -190,9 +190,7 @@ export default function FollowUps() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

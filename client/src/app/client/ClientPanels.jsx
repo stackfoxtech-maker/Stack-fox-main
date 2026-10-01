@@ -31,9 +31,9 @@ import {
   Textarea,
   Select,
   Button,
-  Spinner,
   EmptyState,
   Badge,
+  PanelSkeleton,
 } from '@components/ui/Primitives';
 import api from '@lib/api';
 import { downloadFromUrl, downloadErrorMessage } from '@lib/download';
@@ -125,12 +125,7 @@ export function Activity() {
   const items = unreadOnly ? events.filter(isUnread) : events;
   const unreadCount = events.filter(isUnread).length;
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" />;
 
   return (
     <div className="p-6">
@@ -280,9 +275,7 @@ export function Changes() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : items.length === 0 ? (
         <EmptyState
           icon={GitPullRequest}
@@ -455,12 +448,7 @@ export function Reports() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   if (error) {
     return (
@@ -809,12 +797,7 @@ export function Handover() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="stack" />;
 
   if (error) {
     return (
@@ -865,9 +848,7 @@ export function Handover() {
       )}
 
       {kitLoading || !kit ? (
-        <div className="flex justify-center py-16">
-          <Spinner />
-        </div>
+        <PanelSkeleton variant="stack" />
       ) : (
         <>
           {/* Readiness checklist — computed from live data, not a stored flag. */}

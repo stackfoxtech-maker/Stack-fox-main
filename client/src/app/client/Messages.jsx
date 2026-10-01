@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, MessageCircle, Send } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { timeAgo, getInitials, getAvatarColor } from '@lib/utils';
-import { Spinner, EmptyState, Button } from '@components/ui/Primitives';
+import { EmptyState, Button, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import useAuthStore from '@store/authStore';
 import toast from 'react-hot-toast';
@@ -69,12 +69,7 @@ export default function Messages() {
     setSending(false);
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" />;
 
   return (
     <div className="space-y-4">

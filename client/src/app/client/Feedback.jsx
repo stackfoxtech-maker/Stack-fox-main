@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Star, Send, MessageSquare } from 'lucide-react';
-import { Badge, Spinner, EmptyState } from '@components/ui/Primitives';
+import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import { formatDate } from '@lib/utils';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
@@ -53,12 +53,7 @@ export default function Feedback() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="form" />;
 
   if (submitted) {
     return (

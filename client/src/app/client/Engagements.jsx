@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Handshake, ArrowRight, ChevronRight } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate } from '@lib/utils';
-import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
+import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 
 export default function Engagements() {
@@ -32,12 +32,7 @@ export default function Engagements() {
     }
   }, [id]);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant={id ? 'detail' : 'list'} />;
 
   if (id && selected) {
     return (

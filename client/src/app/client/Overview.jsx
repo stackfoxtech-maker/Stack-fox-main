@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { FolderKanban, Receipt, FileText, ArrowRight } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, getStatusBadge, capitalize } from '@lib/utils';
-import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
+import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import useAuthStore from '@store/authStore';
 
@@ -71,12 +71,7 @@ export default function Overview() {
     fetchData();
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   return (
     <div className="space-y-6">

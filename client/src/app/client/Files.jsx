@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Files as FilesIcon, Upload, Trash2, FileText, Image } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, cn } from '@lib/utils';
-import { Spinner, EmptyState } from '@components/ui/Primitives';
+import { EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import api, { apiUpload } from '@lib/api';
 import toast from 'react-hot-toast';
 
@@ -51,12 +51,7 @@ export default function Files() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="cards" />;
 
   return (
     <div className="space-y-4">

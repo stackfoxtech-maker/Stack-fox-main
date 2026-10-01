@@ -3,7 +3,6 @@ import { Package, Plus, Trash2, Search, Pencil } from 'lucide-react';
 import { usePageTitle, useDebounce } from '@lib/hooks';
 import { cn, formatPaise } from '@lib/utils';
 import {
-  Spinner,
   Button,
   EmptyState,
   Badge,
@@ -11,6 +10,7 @@ import {
   Input,
   Select,
   Textarea,
+  PanelSkeleton,
 } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
@@ -231,9 +231,7 @@ export default function Catalog() {
       )}
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <Spinner size="xl" variant="fox" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : filtered.length === 0 ? (
         <div className="bg-white/50 rounded-3xl border-2 border-dashed border-warm-200 p-20">
           <EmptyState

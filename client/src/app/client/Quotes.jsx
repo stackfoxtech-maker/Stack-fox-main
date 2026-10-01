@@ -4,7 +4,7 @@ import { FileText, Download, Clock, CheckCircle2, AlertCircle, ArrowRight } from
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize, getStatusBadge } from '@lib/utils';
 import { quoteForDisplay } from '@lib/quoteMoney';
-import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
+import { Badge, EmptyState, Button, PanelSkeleton } from '@components/ui/Primitives';
 // Lazy — keeps jsPDF out of the dashboard bundle (PERF_AUDIT P0-3).
 const exportQuotePDF = (...args) => import('@lib/pdfExport').then((m) => m.exportQuotePDF(...args));
 import api from '@lib/api';
@@ -46,12 +46,7 @@ export default function Quotes() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" />;
 
   return (
     <div className="space-y-6">

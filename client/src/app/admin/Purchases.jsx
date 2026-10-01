@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize, getStatusBadge, formatPaise } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Button, Input } from '@components/ui/Primitives';
+import { Badge, EmptyState, Button, Input, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 
 const CONTRACT_TYPE_LABELS = {
@@ -327,9 +327,7 @@ export default function Purchases() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : items.length === 0 ? (
         <EmptyState
           icon={ShoppingBag}

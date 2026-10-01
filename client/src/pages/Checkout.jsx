@@ -12,7 +12,7 @@ import { usePageTitle } from '@lib/hooks';
 import { quoteForDisplay } from '@lib/quoteMoney';
 import { formatINR } from '@lib/utils';
 import { TIER_LABELS } from '@lib/estimate';
-import { Spinner, Button } from '@components/ui/Primitives';
+import { Button, Skeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import { loadRazorpay } from '@lib/razorpay';
 import toast from 'react-hot-toast';
@@ -152,8 +152,28 @@ export default function Checkout() {
 
   if (loading)
     return (
-      <div className="flex justify-center py-24">
-        <Spinner size="lg" />
+      <div
+        role="status"
+        aria-busy="true"
+        className="min-h-screen bg-warm-white max-w-2xl mx-auto py-12 px-4"
+      >
+        <span className="sr-only">Loading your quote…</span>
+        <div className="mb-8 flex flex-col items-center gap-2">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-7 w-44" />
+        </div>
+        <div className="mb-8 flex gap-1.5">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-1.5 flex-1 rounded-full" />
+          ))}
+        </div>
+        <div className="space-y-4 rounded-3xl border border-warm-200 bg-white p-6 md:p-8">
+          <Skeleton className="h-5 w-1/3" />
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+          <Skeleton className="h-20 w-full rounded-2xl" />
+        </div>
       </div>
     );
   if (!quote) {

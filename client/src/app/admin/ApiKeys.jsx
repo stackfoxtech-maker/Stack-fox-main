@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react';
 import { Key, Copy, Trash2, Search, Plus, AlertTriangle } from 'lucide-react';
 import { usePageTitle, useDebounce } from '@lib/hooks';
 import { formatDate, cn } from '@lib/utils';
-import { Button, Input, Modal, Spinner, Badge, EmptyState } from '@components/ui/Primitives';
+import {
+  Button,
+  Input,
+  Modal,
+  Spinner,
+  Badge,
+  EmptyState,
+  PanelSkeleton,
+} from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 
@@ -201,9 +209,7 @@ export default function ApiKeys() {
           </div>
 
           {loadingKeys ? (
-            <div className="flex justify-center py-16">
-              <Spinner size="lg" variant="fox" />
-            </div>
+            <PanelSkeleton variant="list" />
           ) : keys.length === 0 ? (
             <div className="bg-white/50 rounded-3xl border-2 border-dashed border-warm-200 p-16">
               <EmptyState

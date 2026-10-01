@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { BookOpen, Clock, ArrowRight, Search } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { PageHero } from '@components/layout/PageHero';
-import { Section, Button, Input, Spinner } from '@components/ui/Primitives';
+import { Section, Button, Input, PanelSkeleton } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';
 import { cn } from '@lib/utils';
 import api from '@lib/api';
@@ -84,9 +84,7 @@ export default function Resources() {
         </div>
 
         {loading ? (
-          <div className="py-20 flex justify-center">
-            <Spinner size="lg" />
-          </div>
+          <PanelSkeleton variant="cards" />
         ) : filteredPosts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredPosts.map((post, i) => (

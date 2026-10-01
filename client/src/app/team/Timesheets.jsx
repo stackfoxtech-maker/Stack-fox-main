@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Clock } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate } from '@lib/utils';
-import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
+import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 
@@ -24,12 +24,7 @@ export default function Timesheets() {
       });
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" />;
 
   return (
     <div className="space-y-6">

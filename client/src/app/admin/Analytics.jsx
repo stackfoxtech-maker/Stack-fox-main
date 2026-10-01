@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatINRShort } from '@lib/utils';
-import { Spinner, Badge } from '@components/ui/Primitives';
+import { Badge, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 
 export default function Analytics() {
@@ -63,12 +63,7 @@ export default function Analytics() {
     };
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   return (
     <div className="space-y-6">

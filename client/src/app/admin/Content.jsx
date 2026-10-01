@@ -13,7 +13,7 @@ import {
   Loader2,
   Star,
 } from 'lucide-react';
-import { Button, Input, Spinner, Badge } from '@components/ui/Primitives';
+import { Button, Input, Badge, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 import { formatDate } from '@lib/utils';
@@ -165,9 +165,7 @@ export default function Content() {
         </div>
 
         {loading ? (
-          <div className="py-20 flex justify-center">
-            <Spinner />
-          </div>
+          <PanelSkeleton variant="list" />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Users, TrendingUp, Award, IndianRupee } from 'lucide-react';
-import { Badge, EmptyState, Spinner } from '@components/ui/Primitives';
+import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import { formatINR, formatPaise, formatDate, getInitials, capitalize } from '@lib/utils';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
@@ -109,12 +109,7 @@ export default function Referrals() {
     },
   ];
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="cards" />;
 
   return (
     <div className="space-y-5">

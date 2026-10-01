@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Users, Clock, FileText, ListTodo, LayoutDashboard } from 'lucide-react';
-import { Badge, Spinner, EmptyState } from '@components/ui/Primitives';
+import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import { formatDate, timeAgo, getInitials, getAvatarColor } from '@lib/utils';
 import api from '@lib/api';
 
@@ -85,12 +85,7 @@ export default function Workspace() {
     fetchData();
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="stack" />;
 
   return (
     <div className="space-y-5">
