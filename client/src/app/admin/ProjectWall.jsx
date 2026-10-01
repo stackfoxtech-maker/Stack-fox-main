@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { MessageSquare, Search, Filter, Loader2 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, capitalize, getInitials } from '@lib/utils';
-import { Spinner, Badge, Select } from '@components/ui/Primitives';
+import { Badge, Select, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 
@@ -55,12 +55,7 @@ export default function AdminProjectWall() {
     return true;
   });
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="cards" />;
 
   return (
     <div className="space-y-6">

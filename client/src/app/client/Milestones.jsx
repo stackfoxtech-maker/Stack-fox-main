@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDate } from '@lib/utils';
-import { Spinner, EmptyState, Badge } from '@components/ui/Primitives';
+import { EmptyState, Badge, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 
 const statusColors = {
@@ -55,12 +55,7 @@ export default function Milestones() {
       .catch(() => setError(true));
   }, [selectedProjectId]);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" />;
 
   if (error || projects.length === 0) {
     return (

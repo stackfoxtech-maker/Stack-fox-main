@@ -3,7 +3,6 @@ import { Plus, Flag, IndianRupee, Mail, CalendarClock, ShieldCheck } from 'lucid
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, cn, formatPaise } from '@lib/utils';
 import {
-  Spinner,
   Button,
   EmptyState,
   Badge,
@@ -11,6 +10,7 @@ import {
   Input,
   Select,
   Textarea,
+  PanelSkeleton,
 } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
@@ -84,9 +84,7 @@ export function Flags() {
         </Button>
       </div>
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : items.length === 0 ? (
         <EmptyState icon={Flag} title="No flags yet" />
       ) : (
@@ -198,9 +196,7 @@ export function Pricing() {
         </Button>
       </div>
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : items.length === 0 ? (
         <EmptyState icon={IndianRupee} title="No rate cards yet" />
       ) : (
@@ -326,9 +322,7 @@ export function Templates() {
         </Button>
       </div>
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : items.length === 0 ? (
         <EmptyState icon={Mail} title="No templates yet" />
       ) : (
@@ -448,9 +442,7 @@ export function Compliance() {
         </Button>
       </div>
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : items.length === 0 ? (
         <EmptyState icon={CalendarClock} title="No filings tracked" />
       ) : (
@@ -537,9 +529,7 @@ export function Screening() {
         </p>
       </div>
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : items.length === 0 ? (
         <EmptyState icon={ShieldCheck} title="No holds — queue is clear" />
       ) : (

@@ -10,7 +10,7 @@ import {
   Copy,
   MessageCircle,
 } from 'lucide-react';
-import { Button, Input, Textarea, Modal, Badge, Spinner } from '@components/ui/Primitives';
+import { Button, Input, Textarea, Modal, Badge, PanelSkeleton } from '@components/ui/Primitives';
 import { businessCategories, leadStatuses, getPitch } from '@data/salesPitchLibrary';
 import { cn } from '@lib/utils';
 import { apiGet, apiPost } from '@lib/api';
@@ -347,9 +347,7 @@ export default function Leads() {
             </table>
           </div>
           {loading ? (
-            <div className="p-10 flex justify-center">
-              <Spinner />
-            </div>
+            <PanelSkeleton variant="list" />
           ) : filtered.length === 0 ? (
             <div className="p-10 text-center text-warm-500">No leads yet — add your first one.</div>
           ) : null}

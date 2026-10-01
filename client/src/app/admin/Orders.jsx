@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatDate, capitalize } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
+import { Badge, EmptyState, Button, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import { downloadFromUrl, downloadErrorMessage } from '@lib/download';
 import toast from 'react-hot-toast';
@@ -194,9 +194,7 @@ export default function Orders() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : error ? (
         <div className="bg-danger-50 border border-danger-200 rounded-2xl p-6 flex items-start gap-3">
           <AlertTriangle className="text-danger-600 mt-0.5" size={20} />

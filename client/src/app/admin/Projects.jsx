@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { FolderKanban, ArrowLeft } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, capitalize, getStatusBadge } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
+import { Badge, EmptyState, Button, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import MilestoneActions from '@components/project/MilestoneActions';
 
@@ -77,12 +77,7 @@ export default function AdminProjects() {
       .finally(() => setActionLoading(null));
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" />;
 
   if (error && !id)
     return <EmptyState icon={FolderKanban} title="Something went wrong" description={error} />;

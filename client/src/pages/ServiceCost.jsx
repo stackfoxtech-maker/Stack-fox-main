@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { useCatalogue } from '@lib/useStorefrontData';
-import { Spinner } from '@components/ui/Primitives';
+import { PanelSkeleton } from '@components/ui/Primitives';
 
 const TIERS = [
   {
@@ -38,10 +38,8 @@ export default function ServiceCost() {
 
   if (loading)
     return (
-      <div className="max-w-4xl mx-auto px-6 py-24 text-center">
-        <div className="flex justify-center">
-          <Spinner size="lg" />
-        </div>
+      <div className="max-w-4xl mx-auto px-6 py-16">
+        <PanelSkeleton variant="dashboard" />
       </div>
     );
   if (!service) {

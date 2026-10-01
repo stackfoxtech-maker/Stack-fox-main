@@ -4,13 +4,13 @@ import { Users as UsersIcon, Plus, Search, Pencil, ChevronLeft, ChevronRight } f
 import { usePageTitle, useDebounce } from '@lib/hooks';
 import { formatDate, cn } from '@lib/utils';
 import {
-  Spinner,
   Badge,
   EmptyState,
   Button,
   Input,
   Modal,
   Select,
+  PanelSkeleton,
 } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
@@ -222,9 +222,7 @@ export default function AdminUsers() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : users.length === 0 ? (
         <EmptyState icon={UsersIcon} title="No users found" />
       ) : (

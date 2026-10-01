@@ -2,7 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Calendar, Linkedin, Twitter, MessageCircle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { sanitizeHtml } from '@lib/utils';
-import { Section, Spinner } from '@components/ui/Primitives';
+import { Section, Skeleton } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';
 import { useEffect, useState } from 'react';
 import api from '@lib/api';
@@ -39,8 +39,19 @@ export default function BlogPost() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Spinner size="lg" />
+      <div
+        role="status"
+        aria-busy="true"
+        className="mx-auto min-h-[60vh] max-w-3xl space-y-4 px-6 py-16"
+      >
+        <span className="sr-only">Loading…</span>
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-3/4" />
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="mt-6 h-56 w-full" />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-4 w-full" />
+        ))}
       </div>
     );
   }

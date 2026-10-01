@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINRShort, formatDate } from '@lib/utils';
-import { Spinner } from '@components/ui/Primitives';
+import { PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 
@@ -88,12 +88,7 @@ export default function Overview() {
 
   const trend = calcTrend();
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="dashboard" />;
 
   if (error && !data) {
     return (

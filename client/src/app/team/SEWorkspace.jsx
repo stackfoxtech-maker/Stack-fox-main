@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, RotateCcw, Layers, FileText, Clock } from 'lucide-react';
-import { Spinner, Button } from '@components/ui/Primitives';
+import { Button, PanelSkeleton } from '@components/ui/Primitives';
 import { apiGet, apiPost } from '@lib/api';
 import { formatDate } from '@lib/utils';
 import toast from 'react-hot-toast';
@@ -53,9 +53,7 @@ function Queue() {
       </p>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="list" />
       ) : error ? (
         <p className="text-sm text-fox-600 text-center py-10">{error}</p>
       ) : items.length === 0 ? (
@@ -148,12 +146,7 @@ function Detail({ id }) {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" />;
   if (error) return <p className="text-sm text-fox-600 text-center py-10">{error}</p>;
 
   const alreadyDone = ws.seStatus && ws.seStatus !== 'SE_QUEUE';

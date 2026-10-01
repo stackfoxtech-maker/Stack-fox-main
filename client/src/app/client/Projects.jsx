@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { FolderKanban, ArrowLeft, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatPaise, formatDate, capitalize, cn, getStatusBadge } from '@lib/utils';
-import { Spinner, Badge, EmptyState } from '@components/ui/Primitives';
+import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 
 const MilestoneBar = ({ milestones }) => {
@@ -57,12 +57,7 @@ function ProjectDetail({ id }) {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="cards" />;
   if (!project) return <EmptyState icon={FolderKanban} title="Project not found" />;
 
   return (
@@ -164,12 +159,7 @@ export default function Projects() {
   }, [id]);
 
   if (id) return <ProjectDetail id={id} />;
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="cards" />;
 
   return (
     <div className="space-y-4">

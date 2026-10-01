@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FileText, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
-import { EmptyState, Spinner } from '@components/ui/Primitives';
+import { EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import { formatDate, capitalize } from '@lib/utils';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
@@ -65,12 +65,7 @@ export default function RFPs() {
     return true;
   });
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" />;
 
   return (
     <div className="space-y-5">

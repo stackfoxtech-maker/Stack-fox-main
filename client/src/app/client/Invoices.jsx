@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Receipt, CreditCard, Download } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, capitalize, getStatusBadge, cn, formatPaise } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
+import { Badge, EmptyState, Button, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import { downloadFromUrl, downloadErrorMessage } from '@lib/download';
 import { loadRazorpay } from '@lib/razorpay';
@@ -100,12 +100,7 @@ export default function Invoices() {
     setDownloading(null);
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" />;
 
   return (
     <div className="space-y-4">

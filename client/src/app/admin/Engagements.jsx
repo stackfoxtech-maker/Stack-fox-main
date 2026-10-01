@@ -3,7 +3,7 @@ import { Handshake, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, capitalize, getStatusBadge } from '@lib/utils';
-import { Spinner, Badge, EmptyState, Button } from '@components/ui/Primitives';
+import { Badge, EmptyState, Button, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 
 const ENGAGEMENT_STATUSES = ['ACTIVE', 'PAUSED', 'COMPLETED', 'TERMINATED'];
@@ -48,12 +48,7 @@ export default function Engagements() {
       .finally(() => setActionLoading(null));
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <Spinner />
-      </div>
-    );
+  if (loading) return <PanelSkeleton variant="list" />;
   if (error)
     return <EmptyState icon={Handshake} title="Something went wrong" description={error} />;
 

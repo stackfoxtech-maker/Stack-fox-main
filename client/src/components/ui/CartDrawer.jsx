@@ -20,7 +20,7 @@ import { CURRENCIES } from '@lib/constants';
 import { applyTierMultiplier, computeEstimateRange, TIERS, TIER_LABELS } from '@lib/estimate';
 // jsPDF (~150 KB gz) is loaded on demand — see pdfExport / PERF_AUDIT P0-3.
 const exportQuotePDF = (...args) => import('@lib/pdfExport').then((m) => m.exportQuotePDF(...args));
-import { Spinner } from '@components/ui/Primitives';
+import { Skeleton } from '@components/ui/Primitives';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
 import api from '@lib/api';
@@ -192,8 +192,17 @@ export default function CartDrawer() {
             {/* Items */}
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               {isLoading ? (
-                <div className="flex h-40 items-center justify-center">
-                  <Spinner size="lg" />
+                <div role="status" aria-busy="true" className="space-y-4 p-5">
+                  <span className="sr-only">Loading your cart…</span>
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="flex gap-3">
+                      <Skeleton className="h-14 w-14 shrink-0 rounded-lg" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/3" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : itemCount === 0 ? (
                 <div className="flex flex-col items-center justify-center px-6 py-14 text-center md:h-full">

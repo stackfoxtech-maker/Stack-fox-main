@@ -18,7 +18,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePageTitle, useMediaQuery } from '@lib/hooks';
 import { formatINR, formatINRRounded } from '@lib/utils';
-import { Section, SectionHeading, Button, Spinner } from '@components/ui/Primitives';
+import { Section, SectionHeading, Button, PanelSkeleton } from '@components/ui/Primitives';
 import BottomSheet from '@components/builder/BottomSheet';
 import { haptic } from '@components/builder/MobileBuilder';
 import useCartStore from '@store/cartStore';
@@ -236,9 +236,7 @@ export default function Packages() {
   if (loading)
     return (
       <Section>
-        <div className="flex justify-center py-20">
-          <Spinner size="lg" />
-        </div>
+        <PanelSkeleton variant="cards" />
       </Section>
     );
 

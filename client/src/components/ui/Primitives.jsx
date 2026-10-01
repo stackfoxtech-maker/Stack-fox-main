@@ -225,6 +225,78 @@ export const Skeleton = ({ className, ...props }) => (
   <div className={cn('skeleton', className)} {...props} />
 );
 
+// Placeholder for a panel while its data loads: it has the shape of the content that is coming,
+// so the page does not jump when the data arrives. Pick the variant closest to the real layout.
+const SK_BOX = 'rounded-lg border border-warm-200 bg-white';
+
+export const PanelSkeleton = ({ variant = 'list', rows = 6, className }) => (
+  <div role="status" aria-busy="true" aria-live="polite" className={cn('space-y-4', className)}>
+    <span className="sr-only">Loading…</span>
+    {variant === 'dashboard' && (
+      <>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className={cn(SK_BOX, 'space-y-3 p-4')}>
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-7 w-2/3" />
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div key={i} className={cn(SK_BOX, 'space-y-3 p-5')}>
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-36 w-full" />
+            </div>
+          ))}
+        </div>
+      </>
+    )}
+    {variant === 'cards' && (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: Math.min(rows, 6) }, (_, i) => (
+          <div key={i} className={cn(SK_BOX, 'space-y-3 p-5')}>
+            <Skeleton className="h-9 w-9 rounded-lg" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-5/6" />
+          </div>
+        ))}
+      </div>
+    )}
+    {variant === 'form' && (
+      <div className={cn(SK_BOX, 'space-y-5 p-5')}>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+        ))}
+      </div>
+    )}
+    {variant === 'list' && (
+      <>
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-9 w-40 rounded-md" />
+          <Skeleton className="h-9 w-24 rounded-md" />
+        </div>
+        <div className={cn(SK_BOX, 'divide-y divide-warm-100')}>
+          {Array.from({ length: rows }, (_, i) => (
+            <div key={i} className="flex items-center gap-4 p-4">
+              <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-1/3" />
+                <Skeleton className="h-3 w-2/3" />
+              </div>
+              <Skeleton className="hidden h-6 w-16 rounded-full sm:block" />
+            </div>
+          ))}
+        </div>
+      </>
+    )}
+  </div>
+);
+
 // ── Page section wrapper ────────────────────
 
 export const Section = ({ children, className, id }) => (

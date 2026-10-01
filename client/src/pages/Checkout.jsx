@@ -12,7 +12,7 @@ import { usePageTitle } from '@lib/hooks';
 import { quoteForDisplay } from '@lib/quoteMoney';
 import { formatINR } from '@lib/utils';
 import { TIER_LABELS } from '@lib/estimate';
-import { Spinner, Button } from '@components/ui/Primitives';
+import { Button, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import { loadRazorpay } from '@lib/razorpay';
 import toast from 'react-hot-toast';
@@ -152,8 +152,8 @@ export default function Checkout() {
 
   if (loading)
     return (
-      <div className="flex justify-center py-24">
-        <Spinner size="lg" />
+      <div className="mx-auto max-w-3xl px-6 py-16">
+        <PanelSkeleton variant="list" rows={4} />
       </div>
     );
   if (!quote) {
