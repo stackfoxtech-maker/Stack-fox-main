@@ -25,7 +25,9 @@ const check = (label: string, pass: boolean) => checks.push([label, pass]);
 
 // Every opening chip, for every page the bot can be on, must land on a real answer.
 const pages = ["/", "/pricing", "/catalog", "/app/client/invoices"];
-const chips = [...new Set(pages.flatMap((p) => starterSuggestions(p)))];
+const chips = [
+  ...new Set((await Promise.all(pages.map((p) => starterSuggestions(p)))).flat()),
+];
 for (const chip of chips) {
   const a = await answerQuestion(chip);
   check(`chip "${chip}" gets a real answer (${a.intent})`, a.intent !== "unknown");
@@ -117,9 +119,9 @@ check(
 check("service answers say the price is indicative", /indicative/i.test(web.reply));
 
 // Budget handling.
-check("50k parses", parseBudget("something under 50k") === 50_000);
-check("1.5 lakh parses", parseBudget("budget is 1.5 lakh") === 150_000);
-check("a page count is not a budget", parseBudget("I need 5 pages") === null);
+check("50k parses", (await parseBudget("something under 50k")) === 50_000);
+check("1.5 lakh parses", (await parseBudget("budget is 1.5 lakh")) === 150_000);
+check("a page count is not a budget", (await parseBudget("I need 5 pages")) === null);
 const cheap = await answerQuestion("packages under 40000");
 check("a budget question answers with packages", cheap.intent === "packages");
 const amounts = [...cheap.reply.matchAll(/₹([\d,]+)/g)].map((m) =>
