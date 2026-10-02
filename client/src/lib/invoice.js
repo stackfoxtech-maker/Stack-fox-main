@@ -27,7 +27,7 @@ export const SUPPLIER = {
 
 export const BANK = {
   beneficiary: 'ARTWALL LABS PRIVATE LIMITED',
-  bank: 'State Bank of India',
+  bank: 'AU Small Finance Bank',
   branch: 'Malviya Nagar, Jaipur',
   pan: 'ABFCA1595D',
 };
