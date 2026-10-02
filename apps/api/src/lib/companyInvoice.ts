@@ -1,4 +1,13 @@
-import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf-lib";
+import { readFileSync } from "fs";
+import { resolve } from "path";
+import {
+  PDFDocument,
+  StandardFonts,
+  rgb,
+  type PDFPage,
+  type PDFFont,
+  type PDFImage,
+} from "pdf-lib";
 
 /**
  * The real StackFox tax invoice — the Artwall Labs letterhead document.
@@ -40,10 +49,27 @@ export const SUPPLIER = {
 
 export const BANK = {
   beneficiary: "ARTWALL LABS PRIVATE LIMITED",
-  bank: "State Bank of India",
-  branch: "Malviya Nagar, Jaipur",
+  bank: "AU Small Finance Bank",
+  branch: "Girdhar Marg, Jaipur",
   pan: "ABFCA1595D",
 } as const;
+
+// Signatory's signature image (apps/api/assets/signature.png). Same file as
+// client/public/signature.png — replace both together. Resolved from this
+// module so it works from src/lib (tsx) and dist/lib (built).
+const SIGNATURE_PATH = resolve(__dirname, "../../assets/signature.png");
+let signatureBytes: Uint8Array | null | undefined;
+
+async function embedSignature(doc: PDFDocument): Promise<PDFImage | null> {
+  if (signatureBytes === undefined) {
+    try {
+      signatureBytes = readFileSync(SIGNATURE_PATH);
+    } catch {
+      signatureBytes = null;
+    }
+  }
+  return signatureBytes ? doc.embedPng(signatureBytes) : null;
+}
 
 const TERMS = [
   "1. Payment due within 30 days. Interest @ 18% p.a. (MSMED Act, Sec. 16). 2. GST per CGST/SGST Act 2017. SAC/HSN per GST Tariff.",
@@ -452,7 +478,7 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
   gap(14);
 
   // ── Bank, signature ───────────────────────────────────────────────────────
-  ensure(90);
+  ensure(140);
   const blockTop = y;
   text("BANK DETAILS", MARGIN, 7, { bold: true, color: MUTED });
   gap(11);
@@ -473,9 +499,18 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
     color: MUTED,
     align: "right",
   });
-  gap(13);
-  text("DIGITALLY SIGNED", RIGHT, 8, { align: "right", color: BRAND, bold: true });
-  gap(12);
+  gap(8);
+  const signature = await embedSignature(doc);
+  if (signature) {
+    // Fit inside a 140×60 pt box, right-aligned, keeping the aspect ratio.
+    const scale = Math.min(140 / signature.width, 60 / signature.height);
+    const w = signature.width * scale;
+    const h = signature.height * scale;
+    page.drawImage(signature, { x: RIGHT - w, y: y - h, width: w, height: h });
+    gap(h + 12);
+  } else {
+    gap(16);
+  }
   text(SUPPLIER.signatory.name, RIGHT, 8.5, { align: "right", bold: true });
   gap(10);
   text(SUPPLIER.signatory.title, RIGHT, 7.5, { align: "right", color: MUTED });

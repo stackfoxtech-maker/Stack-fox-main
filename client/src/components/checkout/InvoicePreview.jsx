@@ -325,13 +325,11 @@ export default function InvoicePreview({ quote, account, paymentMode, onContinue
                 For {inv.supplier.legalName}
               </p>
               <div className="mt-2 flex justify-end">
-                <div className="grid h-16 w-16 place-items-center rounded-full border-2 border-[#1F4FA0]/60">
-                  <span className="text-center text-[7px] font-bold leading-tight text-[#1F4FA0]">
-                    DIGITALLY
-                    <br />
-                    SIGNED
-                  </span>
-                </div>
+                <img
+                  src={inv.supplier.signatory.signatureImage}
+                  alt={`Signature of ${inv.supplier.signatory.name}`}
+                  className="h-20 w-auto max-w-full object-contain"
+                />
               </div>
               <p className="mt-1 text-[12px] font-semibold text-warm-900">
                 {inv.supplier.signatory.name}

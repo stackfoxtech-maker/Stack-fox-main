@@ -21,14 +21,18 @@ export const SUPPLIER = {
   phone: '+91 82093 95894',
   email: 'artwalllabs@gmail.com',
   website: 'www.artwalllabs.com',
-  signatory: { name: 'Kailashpati Choudhary', title: 'CEO & Authorised Signatory' },
+  signatory: {
+    name: 'Kailashpati Choudhary',
+    title: 'CEO & Authorised Signatory',
+    signatureImage: '/signature.png', // client/public/signature.png
+  },
   place: 'Jaipur',
 };
 
 export const BANK = {
   beneficiary: 'ARTWALL LABS PRIVATE LIMITED',
   bank: 'AU Small Finance Bank',
-  branch: 'Malviya Nagar, Jaipur',
+  branch: 'Girdhar Marg, Jaipur',
   pan: 'ABFCA1595D',
 };
 

@@ -572,6 +572,23 @@ export const exportQuotePDF = async (
    GST TAX INVOICE — single-page A4, matches the Artwall Labs invoice layout.
    Pass a computed invoice from src/lib/invoice.js buildInvoice().
    ═══════════════════════════════════════════════════════════════════════════ */
+/** Load an image URL as a PNG data URL for jsPDF; resolves null if it can't be loaded. */
+function loadImageDataUrl(src) {
+  if (!src) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      resolve({ dataUrl: canvas.toDataURL('image/png'), width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
 export async function exportTaxInvoicePDF(inv) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
@@ -840,14 +857,14 @@ export async function exportTaxInvoicePDF(inv) {
     color: BLUE,
     align: 'right',
   });
-  const cx = W - M - 42,
-    cyc = gy + 15;
-  sd(BLUE);
-  doc.setLineWidth(0.4);
-  doc.circle(cx, cyc, 10.5);
-  doc.circle(cx, cyc, 7.5);
-  T('DIGITALLY', cx, cyc - 1.2, { align: 'center', size: 4, color: BLUE, bold: true });
-  T('SIGNED', cx, cyc + 2, { align: 'center', size: 4, color: BLUE, bold: true });
+  const sig = await loadImageDataUrl(inv.supplier.signatory.signatureImage);
+  if (sig) {
+    // Fit inside a 50×20 mm box, right-aligned, keeping the aspect ratio.
+    const scale = Math.min(50 / sig.width, 20 / sig.height);
+    const sw = sig.width * scale,
+      sh = sig.height * scale;
+    doc.addImage(sig.dataUrl, 'PNG', W - M - sw, gy + 3 + (20 - sh) / 2, sw, sh);
+  }
   gy += 29;
   T(inv.supplier.signatory.name, W - M, gy, { bold: true, size: 8.5, align: 'right' });
   T(inv.supplier.signatory.title, W - M, gy + 4, { size: 7, color: BLUE, align: 'right' });
