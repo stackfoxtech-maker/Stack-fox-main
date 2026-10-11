@@ -15,6 +15,7 @@ import "../src/env";
 import * as ids from "../src/lib/id";
 import { computeInvoice } from "../src/lib/gstInvoice";
 import { paymentModeAmount } from "@stackfox/core";
+import { invoiceIntegrityIssue } from "../src/lib/invoiceIntegrity";
 
 const checks: Array<[string, boolean, string]> = [];
 const check = (label: string, pass: boolean, note = "") =>
@@ -325,6 +326,57 @@ const check = (label: string, pass: boolean, note = "") =>
     `every component of that invoice exceeds the old int4 ceiling`,
     subtotal > INT4_MAX && subtotal + cgst + sgst > INT4_MAX,
     "the whole row, not just the total, had to widen",
+  );
+}
+
+// ── Invoices the admin panel must flag ───────────────────────────────────────
+//
+// Production showed "Paid" on invoices with nothing captured, and ₹445 invoices
+// for ₹44,500 orders (a rupee quote total copied into a paise column). The
+// panel and the GSTR-1 export both lean on invoiceIntegrityIssue to say so.
+{
+  const inv = (over: Record<string, unknown> = {}) => ({
+    status: "PAID",
+    subtotal: 3_771_186,
+    cgst: 0,
+    sgst: 0,
+    igst: 678_814,
+    grandTotal: 4_450_000,
+    amountPaid: 4_450_000,
+    ...over,
+  });
+  check(
+    "integrity: fully captured PAID invoice is clean",
+    invoiceIntegrityIssue(inv(), 4_450_000) === null,
+  );
+  check(
+    "integrity: PAID with nothing captured is flagged",
+    /without matching captured-payment/.test(
+      invoiceIntegrityIssue(inv({ amountPaid: 0 }), 0) ?? "",
+    ),
+  );
+  check(
+    "integrity: legacy rupee total (captured 100× the invoice) is flagged",
+    /legacy rupee/.test(
+      invoiceIntegrityIssue(
+        inv({ subtotal: 37_712, igst: 6_788, grandTotal: 44_500, amountPaid: 44_500 }),
+        4_450_000,
+      ) ?? "",
+    ),
+  );
+  check(
+    "integrity: under-₹1 total is flagged",
+    /under ₹1/.test(
+      invoiceIntegrityIssue(inv({ subtotal: 4, igst: 0, grandTotal: 4 }), 0) ?? "",
+    ),
+  );
+  check(
+    "integrity: unpaid SENT invoice with no payments is clean",
+    invoiceIntegrityIssue(inv({ status: "SENT", amountPaid: 0 }), 0) === null,
+  );
+  check(
+    "integrity: evidence checks skipped when payments were not loaded",
+    invoiceIntegrityIssue(inv({ amountPaid: 0 }), null) === null,
   );
 }
 

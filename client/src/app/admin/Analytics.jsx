@@ -154,7 +154,7 @@ export default function Analytics() {
                     />
                   </div>
                   <span className="text-xs font-mono text-warm-700 w-24 text-right">
-                    {formatINRShort(m.value)}
+                    ₹{formatINRShort(m.value)}
                   </span>
                 </div>
               );

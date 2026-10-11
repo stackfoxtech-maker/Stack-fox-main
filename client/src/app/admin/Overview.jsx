@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  DollarSign,
+  IndianRupee,
   FolderKanban,
   Users,
   LifeBuoy,
@@ -156,8 +156,8 @@ export default function Overview() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPI
           label="Total revenue"
-          value={formatINRShort(d.totalRevenue)}
-          icon={DollarSign}
+          value={`₹${formatINRShort(d.totalRevenue)}`}
+          icon={IndianRupee}
           color="bg-success-50 text-success-700"
           sub="All-time collected revenue"
         />

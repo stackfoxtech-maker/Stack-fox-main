@@ -361,6 +361,16 @@ export default function Purchases() {
                         <Badge variant={getStatusBadgeVariant(item.status)}>
                           {capitalize(item.status)}
                         </Badge>
+                        {/* "paid" is a label; capturedAmount is what the gateway
+                            actually confirmed. Legacy rows say paid with ₹0 behind them. */}
+                        {String(item.status).toLowerCase() === 'paid' &&
+                          (item.capturedAmount ?? 0) < item.total && (
+                            <Badge variant="danger">
+                              {(item.capturedAmount ?? 0) > 0
+                                ? 'Partly received'
+                                : 'No payment received'}
+                            </Badge>
+                          )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-warm-500 flex-wrap">
                         <span className="flex items-center gap-1 font-semibold text-warm-700">
@@ -391,6 +401,9 @@ export default function Purchases() {
                       </div>
                       <div className="font-mono text-xl font-black text-warm-900">
                         {formatINR(item.total)}
+                      </div>
+                      <div className="text-[10px] text-warm-500 font-mono">
+                        Received {formatINR(item.capturedAmount ?? 0)}
                       </div>
                     </div>
                     <button className="p-2 hover:bg-warm-100 rounded-xl transition-colors">

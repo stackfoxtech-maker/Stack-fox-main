@@ -87,10 +87,12 @@ export default function Finance() {
         const invs = invRes.data.data || [];
         const totalOutstanding = arRes.data.data?.totalOutstanding ?? 0;
         const overdue = invs.filter((i) => i.status === 'overdue').length;
+        const unverified = invs.filter((i) => i.integrityIssue).length;
         setMetrics({
           totalInvoices: invRes.data.meta?.pagination?.total ?? invs.length,
           outstanding: formatPaise(totalOutstanding),
           overdue,
+          unverified,
           arAging: arRes.data.data,
         });
       })
@@ -242,8 +244,8 @@ export default function Finance() {
             color="bg-danger-50 text-danger-600"
           />
           <MetricCard
-            label="AR Aging Buckets"
-            value={metrics.arAging ? 5 : '–'}
+            label="Need review on this page"
+            value={metrics.unverified}
             icon={Clock}
             color="bg-amber-50 text-amber-600"
           />
@@ -315,7 +317,21 @@ export default function Finance() {
                     <td className="px-5 py-3">{inv.org?.name || '–'}</td>
                     <td className="px-5 py-3 font-mono">{formatPaise(inv.total ?? 0)}</td>
                     <td className="px-5 py-3">
-                      <Badge variant={statusBadgeVariant(inv.status)}>{inv.status}</Badge>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Badge variant={statusBadgeVariant(inv.status)}>{inv.status}</Badge>
+                        {/* A status is a label, not money: legacy rows say "paid"
+                            with nothing captured. Show what the payments say. */}
+                        {inv.integrityIssue && (
+                          <span title={inv.integrityIssue}>
+                            <Badge variant="danger">Needs review</Badge>
+                          </span>
+                        )}
+                      </div>
+                      {inv.integrityIssue && (
+                        <p className="text-[10px] text-danger-600 mt-1 max-w-[16rem]">
+                          {inv.integrityIssue}
+                        </p>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-warm-500">
                       {inv.dueDate ? formatDate(inv.dueDate) : '–'}

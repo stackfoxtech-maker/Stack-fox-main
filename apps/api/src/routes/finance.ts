@@ -20,6 +20,7 @@ import { ADMIN_ROLES, FINANCE_ROLES, FINANCE_VIEW_ROLES } from "@stackfox/core";
 import { issueDownload } from "../lib/documentIntegrity";
 import { parseBody } from "../lib/validate";
 import { RecordUtrSchema, UpdateInvoiceStatusSchema } from "./financeSchemas";
+import { invoiceIntegrityIssue } from "../lib/invoiceIntegrity";
 
 const VALID_GST_RATES = [0, 5, 12, 18, 28];
 const INVOICE_STATUSES = [
@@ -45,10 +46,9 @@ const RECEIPT_SELECT = {
 // Shapes a raw Prisma invoice into the fields the client dashboard reads
 // (total/paidAmount/invoiceNumber/gst/clientDetails), and lowercases status
 // to match client/src/lib/utils.js's statusColors keys (e.g. "partially-paid").
-// grandTotal/cgst/sgst/igst/amountPaid are stored in paise; formatINR (and the
-// rest of the display layer) expects rupees, so the computed display fields
-// below convert — the raw paise fields stay untouched via the ...inv spread for
-// anything (e.g. Razorpay order creation) that needs paise.
+// Every money field here — raw and computed (total, paidAmount, balanceDue,
+// receipts[].amount) — is in PAISE. Render with formatPaise(), never
+// formatINR(): the admin Orders tab once did, and showed every invoice 100×.
 function serializeInvoice(inv: any) {
   const rawStatus = String(inv.status ?? "DRAFT").toUpperCase();
   const status = rawStatus.toLowerCase().replace(/_/g, "-");
@@ -79,6 +79,14 @@ function serializeInvoice(inv: any) {
       gstin: inv.org?.gstin ?? "",
     },
     project: inv.engagement ? { projectNumber: inv.engagement.id } : null,
+    // Non-null when the row cannot be a true invoice (see invoiceIntegrityIssue).
+    // Evidence checks only run when the caller loaded the captured payments.
+    integrityIssue: invoiceIntegrityIssue(
+      inv,
+      Array.isArray(inv.payments)
+        ? inv.payments.reduce((sum: number, p: any) => sum + Number(p.amount ?? 0), 0)
+        : null,
+    ),
     // One numbered receipt per captured payment; each has its own PDF.
     receipts: (inv.payments ?? []).map((p: any) => ({
       id: p.id,
@@ -700,35 +708,11 @@ export async function financeRoutes(app: FastifyInstance) {
      * filing sections — visible, and impossible to file by accident.
      */
     function rejectionReason(inv: (typeof invoices)[number]): string | null {
-      const subtotal = Number(inv.subtotal ?? 0);
-      const grand = Number(inv.grandTotal ?? 0);
-      const tax = Number(inv.cgst ?? 0) + Number(inv.sgst ?? 0) + Number(inv.igst ?? 0);
-
-      if (grand <= 0) return "grandTotal is zero or negative";
-
-      // Money is integer paise, so a real invoice cannot total under ₹1.
-      if (grand < 100) return `grandTotal ${grand} is under ₹1 — not a real amount`;
-
-      // The components must add up, or the return misstates taxable value.
-      if (subtotal + tax !== grand) {
-        return `subtotal ${subtotal} + tax ${tax} ≠ grandTotal ${grand}`;
-      }
-
-      // PAID with nothing collected is the signature of the non-transactional
-      // settlement bug, and catches all six of the corrupt production rows.
-      //
       const captured = inv.payments.reduce(
         (sum, payment) => sum + Number(payment.amount),
         0,
       );
-      if (
-        inv.status === "PAID" &&
-        (Number(inv.amountPaid ?? 0) < grand || captured < grand)
-      ) {
-        return "marked PAID without matching captured-payment evidence";
-      }
-
-      return null;
+      return invoiceIntegrityIssue(inv, captured);
     }
 
     const excluded = invoices

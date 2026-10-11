@@ -25,6 +25,7 @@
     "test:money": "tsx tests/money-and-ids.mts",
     "seed:master-admin": "tsx scripts/seed-master-admin.mts",
     "backfill:quotes": "tsx scripts/backfill-paid-quotes.mts",
+    "audit:invoices": "tsx scripts/audit-invoices.mts",
     "test:observability": "tsx tests/observability.mts",
     "test:validation": "tsx tests/validation.mts",
     "test:apikeys": "tsx tests/api-keys.mts",
