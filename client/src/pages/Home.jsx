@@ -21,18 +21,11 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePageTitle, useCountUp } from '@lib/hooks';
-import { cdnImg } from '@lib/img';
 import CdnImage from '@components/CdnImage';
 import { Reveal } from '@components/Reveal';
 import { fadeUp } from '@components/motion';
 import { BrandLogo } from '@components/ui/BrandLogo';
-import {
-  ScrollProgress,
-  CountOnView,
-  Parallax,
-  SpotlightGlow,
-  spotlightProps,
-} from '@components/home/HomeMotion';
+import { ScrollProgress, SpotlightGlow, spotlightProps } from '@components/home/HomeMotion';
 import { Bento } from '@components/home/Bento';
 // ~2 KB summary (names + counts) instead of the full 100 KB catalogue — keeps
 // the landing page off the big JSON. Regenerate: scripts/gen-catalog-summary.mjs
@@ -340,30 +333,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Proof numbers ───────────────────────────── */}
-      <section className="border-y border-warm-200 bg-warm-white">
-        <div className="container-fx py-10">
-          <Reveal stagger className="grid grid-cols-2 gap-y-8 md:grid-cols-4">
-            {[
-              [serviceCount, '+', 'priced services'],
-              [13, '', 'domains covered'],
-              [120, '+', 'teams shipped'],
-              [24, 'h', 'to a real reply'],
-            ].map(([end, suffix, label]) => (
-              <Reveal.Item
-                key={label}
-                className="text-center md:border-l md:border-warm-200 md:first:border-l-0"
-              >
-                <div className="font-display text-4xl font-semibold tracking-tight text-warm-900 md:text-5xl">
-                  <CountOnView end={end} suffix={suffix} />
-                </div>
-                <div className="mt-1 text-body-sm text-warm-600">{label}</div>
-              </Reveal.Item>
-            ))}
-          </Reveal>
-        </div>
-      </section>
-
       {/* ── 2 · How it works ─────────────────────────────────── */}
       <section className="section-padding bg-white">
         <div className="container-fx grid gap-8 lg:grid-cols-12 lg:gap-16">
@@ -401,36 +370,6 @@ export default function Home() {
                 </Reveal.Item>
               );
             })}
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ── Assembly band — "building software is easy now" ──── */}
-      <section className="relative overflow-hidden bg-warm-50">
-        <Parallax className="absolute inset-0" distance={48}>
-          <motion.img
-            src={cdnImg('home-blocks', 1600)}
-            width="1400"
-            height="788"
-            loading="lazy"
-            alt=""
-            aria-hidden
-            onError={(e) => {
-              e.currentTarget.src = '/img/home-blocks.webp';
-            }}
-            className="h-full w-full scale-110 object-cover"
-            initial={{ opacity: 0.6 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 1.2, ease: EASE }}
-          />
-        </Parallax>
-        <div className="absolute inset-0 bg-gradient-to-r from-warm-white via-warm-white/85 to-transparent" />
-        <div className="container-fx relative py-16 md:py-24">
-          <Reveal className="max-w-md">
-            <p className="font-display text-display-md text-warm-900">
-              Piece by piece, a real product — priced before you commit to a single line of code.
-            </p>
           </Reveal>
         </div>
       </section>
