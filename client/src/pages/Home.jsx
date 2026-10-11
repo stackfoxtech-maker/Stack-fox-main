@@ -29,7 +29,6 @@ import { BrandLogo } from '@components/ui/BrandLogo';
 import {
   ScrollProgress,
   CountOnView,
-  Marquee,
   Parallax,
   SpotlightGlow,
   spotlightProps,
@@ -95,7 +94,7 @@ const STEPS = [
     title: 'Browse',
     to: '/catalog',
     cta: 'Browse the catalog',
-    body: '240+ services across 13 domains, each with a real price. No "contact us" walls.',
+    body: `${CATALOG.serviceCount}+ services across 13 domains, each with a real price. No "contact us" walls.`,
   },
   {
     title: 'Assemble',
@@ -111,21 +110,6 @@ const STEPS = [
     cta: `Call ${CALL_NUMBER}`,
     body: 'Send us the itemised plan. We confirm scope on a free call and start.',
   },
-];
-
-const TICKER = [
-  { label: 'Custom websites', icon: Globe },
-  { label: 'Mobile apps', icon: Smartphone },
-  { label: 'AI chatbots', icon: Brain },
-  { label: 'Razorpay checkout', icon: ShoppingCart },
-  { label: 'Brand identity', icon: Palette },
-  { label: 'Cloud hosting', icon: Cloud },
-  { label: 'SEO & growth', icon: TrendingUp },
-  { label: 'APIs & backends', icon: Server },
-  { label: 'Automation', icon: Zap },
-  { label: 'Security reviews', icon: Shield },
-  { label: 'Maintenance plans', icon: Wrench },
-  { label: 'Custom software', icon: Code2 },
 ];
 
 export default function Home() {
@@ -356,10 +340,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Ticker + proof numbers ───────────────────────────── */}
+      {/* ── Proof numbers ───────────────────────────── */}
       <section className="border-y border-warm-200 bg-warm-white">
-        <Marquee items={TICKER} />
-        <div className="container-fx pb-10 pt-4">
+        <div className="container-fx py-10">
           <Reveal stagger className="grid grid-cols-2 gap-y-8 md:grid-cols-4">
             {[
               [serviceCount, '+', 'priced services'],
