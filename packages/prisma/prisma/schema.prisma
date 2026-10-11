@@ -1195,7 +1195,7 @@ model Payment {
   id               String   @id @default(uuid())
   orderId          String?   @map("order_id")
   invoiceId        String?   @map("invoice_id")
-  gateway          String // RAZORPAY|STRIPE|BANK_TRANSFER
+  gateway          String // RAZORPAY|STRIPE|BANK_TRANSFER|CASH
   gatewayPaymentId String?  @map("gateway_payment_id")
   gatewayOrderId   String?  @map("gateway_order_id")
   amount           BigInt // paise

@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Download,
+  Banknote,
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { formatINR, formatPaise, formatDate, capitalize } from '@lib/utils';
@@ -43,6 +44,7 @@ const STATUS_TO_VARIANT = {
   approved: 'info',
   invoiced: 'fox',
   cancelled: 'danger',
+  awaiting_cash: 'warning',
   sent: 'info',
   viewed: 'info',
   'partially-paid': 'warning',
@@ -147,6 +149,27 @@ export default function Orders() {
     } catch (err) {
       toast.error(
         err?.response?.data?.error || err?.response?.data?.message || 'Failed to update status',
+      );
+    }
+  };
+
+  const confirmCash = async (item) => {
+    const amount = formatINR(item.checkoutDetails?.pendingOrderAmount ?? 0);
+    const reference = window.prompt(
+      `Confirm ${amount} cash received for ${item.quoteNumber}?\n` +
+        'This onboards the client. Receipt no. (optional):',
+      '',
+    );
+    if (reference === null) return;
+    try {
+      await api.post(`/quotes/${item._id}/cash/confirm`, {
+        ...(reference.trim() ? { reference: reference.trim() } : {}),
+      });
+      toast.success('Cash payment recorded — client onboarded');
+      fetchPage(meta.page);
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.error || err?.response?.data?.message || 'Failed to confirm cash',
       );
     }
   };
@@ -533,6 +556,17 @@ export default function Orders() {
                             Quick Actions
                           </h4>
                           <div className="flex flex-wrap gap-3">
+                            {tab === 'quotes' && item.status === 'awaiting_cash' && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                className="rounded-xl text-xs gap-2"
+                                onClick={() => confirmCash(item)}
+                              >
+                                <Banknote size={14} /> Mark cash received (
+                                {formatINR(item.checkoutDetails?.pendingOrderAmount ?? 0)})
+                              </Button>
+                            )}
                             {item.client?._id && (
                               <Link
                                 to={`/app/admin/users?id=${item.client._id}`}

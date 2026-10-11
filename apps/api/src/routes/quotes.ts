@@ -2,7 +2,7 @@ import { nextDocNumber } from "../lib/docNumber";
 import { queueInvoiceEmail } from "../lib/businessMail";
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth } from "../plugins/auth";
+import { requireAuth, requireRole } from "../plugins/auth";
 import { applyTierMultiplier, computeEstimateRange } from "../lib/estimate";
 import {
   createRazorpayOrder,
@@ -10,7 +10,12 @@ import {
   fetchCapturedPayment,
   assertPaymentInitiationEnabled,
 } from "../lib/payments";
-import { getContractTypes, getMilestoneTemplates, isAdminRole } from "@stackfox/core";
+import {
+  FINANCE_ROLES,
+  getContractTypes,
+  getMilestoneTemplates,
+  isAdminRole,
+} from "@stackfox/core";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
 import { LIST_CAP, pageParams, paginated } from "../lib/http";
@@ -28,6 +33,7 @@ import { catalogPrice } from "../lib/pricing";
 import { quotePaymentTerms } from "../lib/quotePayment";
 import { queues } from "../lib/queue";
 import {
+  ConfirmCashPaymentSchema,
   QuoteFromCartSchema,
   QuotePaySchema,
   QuoteVerifyPaymentSchema,
@@ -341,6 +347,43 @@ export async function backfillPaidQuotes(opts: BackfillOptions = {}) {
   }
 }
 
+/**
+ * Prices the next payment on a quote and returns the fields that pin it.
+ * Shared by the Razorpay and cash paths so both charge the same amount.
+ */
+function priceNextPayment(quote: any, paymentMode?: string) {
+  const details = quote.checkoutDetails ?? {};
+  const amountPaidSoFar: number = details.amountPaid ?? 0;
+  const quoteTotal = Number(quote.total);
+
+  // The payment-terms split only applies to the first payment on a quote.
+  // Once a milestone/upfront payment has landed, whatever is left is due in
+  // full — there is no further installment schedule to compute against.
+  let mode = ["MILESTONE", "UPFRONT", "FULL"].includes(paymentMode ?? "")
+    ? paymentMode!
+    : "FULL";
+  if (amountPaidSoFar > 0) mode = "FULL";
+  const terms = quotePaymentTerms(Number(quote.subtotal), quoteTotal, amountPaidSoFar, mode);
+  return {
+    amount: terms.amount,
+    remainingDue: quoteTotal - amountPaidSoFar,
+    mode,
+    data: {
+      subtotal: terms.subtotal,
+      gstAmount: terms.gstAmount,
+      total: terms.total,
+      checkoutDetails: {
+        ...details,
+        pendingOrderAmount: terms.amount,
+        paymentMode: mode,
+        ...(mode === "UPFRONT"
+          ? { originalTotal: quoteTotal, discount: quoteTotal - terms.total }
+          : {}),
+      },
+    },
+  };
+}
+
 export async function quoteRoutes(app: FastifyInstance) {
   app.get("/quotes", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
@@ -472,7 +515,7 @@ export async function quoteRoutes(app: FastifyInstance) {
     }
 
     if (
-      ["paid", "cancelled", "partially_paid"].includes(existing.status) ||
+      ["paid", "cancelled", "partially_paid", "awaiting_cash"].includes(existing.status) ||
       existing.razorpayOrderId ||
       existing.validUntil < new Date()
     )
@@ -574,29 +617,11 @@ export async function quoteRoutes(app: FastifyInstance) {
               quoteNumber: quote.quoteNumber,
             },
           };
-        const amountPaidSoFar: number = details.amountPaid ?? 0;
-        const quoteTotal = Number(quote.total);
-        const remainingDue = quoteTotal - amountPaidSoFar;
-        if (quote.status === "paid" || remainingDue <= 0) {
+        const next = priceNextPayment(quote, paymentMode);
+        if (quote.status === "paid" || next.remainingDue <= 0) {
           return reply.code(400).send({ message: "This quote has already been paid." });
         }
-
-        // The payment-terms split only applies to the first payment on a quote.
-        // Once a milestone/upfront payment has landed, whatever is left is due in
-        // full — there is no further installment schedule to compute against.
-        let mode = ["MILESTONE", "UPFRONT", "FULL"].includes(paymentMode ?? "")
-          ? paymentMode!
-          : "FULL";
-        if (amountPaidSoFar > 0) {
-          mode = "FULL";
-        }
-        const terms = quotePaymentTerms(
-          Number(quote.subtotal),
-          quoteTotal,
-          amountPaidSoFar,
-          mode,
-        );
-        const amount = terms.amount;
+        const { amount, mode } = next;
 
         let order;
         try {
@@ -634,21 +659,7 @@ export async function quoteRoutes(app: FastifyInstance) {
 
         await tx.quote.update({
           where: { id },
-          data: {
-            razorpayOrderId: order.id,
-            status: "checkout",
-            subtotal: terms.subtotal,
-            gstAmount: terms.gstAmount,
-            total: terms.total,
-            checkoutDetails: {
-              ...details,
-              pendingOrderAmount: amount,
-              paymentMode: mode,
-              ...(mode === "UPFRONT"
-                ? { originalTotal: quoteTotal, discount: quoteTotal - terms.total }
-                : {}),
-            },
-          },
+          data: { razorpayOrderId: order.id, status: "checkout", ...next.data },
         });
 
         return {
@@ -664,6 +675,76 @@ export async function quoteRoutes(app: FastifyInstance) {
       },
       { timeout: 30000, maxWait: 10000 },
     );
+  });
+
+  // POST /quotes/:id/cash — client opts to pay in cash. Pins the amount due
+  // and parks the quote as awaiting_cash; nothing is provisioned until finance
+  // confirms receipt via /quotes/:id/cash/confirm.
+  app.post("/quotes/:id/cash", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    const { id } = req.params as { id: string };
+    const payBody = parseBody(req, reply, QuotePaySchema);
+    if (!payBody) return;
+    return prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM quotes WHERE id = ${id} FOR UPDATE`;
+      const quote = await tx.quote.findUnique({ where: { id } });
+      if (!quote || quote.userId !== req.user!.sub)
+        return reply.code(404).send({ message: "Quote not found" });
+      if (quote.status === "cancelled" || quote.validUntil < new Date())
+        return reply.code(409).send({ error: "Quote is cancelled or expired" });
+      if (quote.status === "awaiting_cash") return { data: serializeQuote(quote) };
+
+      const details = (quote.checkoutDetails as any) ?? {};
+      // An amount already pinned by an opened Razorpay order stays as is —
+      // re-pricing would apply the upfront discount to an already-discounted total.
+      const pinned = Number(details.pendingOrderAmount) > 0;
+      const next = pinned ? null : priceNextPayment(quote, payBody.paymentMode);
+      if (quote.status === "paid" || (next && next.remainingDue <= 0))
+        return reply.code(400).send({ message: "This quote has already been paid." });
+
+      const data = next?.data ?? { checkoutDetails: details };
+      const updated = await tx.quote.update({
+        where: { id },
+        data: {
+          ...data,
+          status: "awaiting_cash",
+          checkoutDetails: toJson({
+            ...data.checkoutDetails,
+            paymentMethod: "CASH",
+            cashRequestedAt: new Date().toISOString(),
+          }),
+        },
+      });
+      await emitEvent({
+        code: "QUOTE_STATUS_CHANGED",
+        payload: { quoteId: id, status: "awaiting_cash" },
+        actor: req.user!.sub,
+      });
+      return { data: serializeQuote(updated) };
+    });
+  });
+
+  // POST /quotes/:id/cash/confirm — finance confirms the cash was received.
+  // Settles through settleQuote, the same path as a Razorpay capture, so the
+  // engagement, projects, contracts and invoice are provisioned identically.
+  app.post("/quotes/:id/cash/confirm", async (req, reply) => {
+    if (!requireRole(req, reply, FINANCE_ROLES)) return;
+    const { id } = req.params as { id: string };
+    const body = parseBody(req, reply, ConfirmCashPaymentSchema);
+    if (!body) return;
+    const quote = await prisma.quote.findUnique({ where: { id } });
+    if (!quote) return reply.code(404).send({ error: "Quote not found" });
+    if (quote.status !== "awaiting_cash")
+      return reply.code(409).send({ error: "Quote is not awaiting a cash payment" });
+    const amount = Number((quote.checkoutDetails as any)?.pendingOrderAmount);
+    const ref = body.reference || String(Date.now());
+    const updated = await settleQuote(id, null, `cash:${id}:${ref}`, amount, "CASH");
+    await emitEvent({
+      code: "CASH_PAYMENT_CONFIRMED",
+      payload: { quoteId: id, amount, reference: body.reference },
+      actor: req.user!.sub,
+    });
+    return { data: serializeQuote(updated) };
   });
 
   // POST /quotes/:id/verify — verify signature, mark paid, and provision engagement/projects
@@ -707,9 +788,10 @@ export async function quoteRoutes(app: FastifyInstance) {
 /** Shared callback/webhook settlement. Provisioning and capture commit together. */
 export async function settleQuote(
   quoteId: string,
-  orderId: string,
+  orderId: string | null,
   paymentId: string,
   amount: number,
+  gateway: "RAZORPAY" | "CASH" = "RAZORPAY",
 ) {
   if (!Number.isSafeInteger(amount) || amount <= 0)
     throw new Error("Invalid captured amount");
@@ -720,7 +802,7 @@ export async function settleQuote(
       await tx.$queryRaw`SELECT id FROM quotes WHERE id = ${quoteId} FOR UPDATE`;
       const current = await tx.quote.findUniqueOrThrow({ where: { id: quoteId } });
       const prior = await tx.payment.findFirst({
-        where: { gateway: "RAZORPAY", gatewayPaymentId: paymentId },
+        where: { gateway, gatewayPaymentId: paymentId },
       });
       if (prior) {
         if (prior.invoiceId !== current.invoiceId || Number(prior.amount) !== amount)
@@ -729,7 +811,9 @@ export async function settleQuote(
       }
       const details = (current.checkoutDetails as any) ?? {};
       if (
-        current.razorpayOrderId !== orderId ||
+        (gateway === "CASH"
+          ? current.status !== "awaiting_cash"
+          : current.razorpayOrderId !== orderId) ||
         Number(details.pendingOrderAmount) !== amount
       )
         throw new Error("Captured amount/order does not match quote");
@@ -751,9 +835,10 @@ export async function settleQuote(
         },
       });
       const fx = await recordInvoicePaymentRows(tx, updatedInvoice, {
-        gateway: "RAZORPAY",
+        gateway,
         gatewayPaymentId: paymentId,
-        gatewayOrderId: orderId,
+        gatewayOrderId: orderId ?? undefined,
+        method: gateway === "CASH" ? "cash" : undefined,
         amount,
       });
       const updated = await tx.quote.update({
