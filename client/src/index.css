@@ -341,14 +341,9 @@
     transform: translateY(-3px);
   }
 
-  /* Primary. A lit surface rather than a flat fill: a vertical gradient, a crisp darker edge, a
-     1px inner highlight on top and a soft coloured glow beneath. It lifts on hover, sits down when
-     pressed, and a slow sheen crosses it once on hover. Radius is 14px, not a pill: pills are for
-     chips and filters, so a button reads as the thing you press. */
+  /* Primary. A flat fox fill: the colour does the work, so no gradient, glow or sheen.
+     Radius is 14px, not a pill: pills are for chips and filters. */
   .btn-fox {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -356,68 +351,28 @@
     min-height: 2.75rem;
     padding: 0.7rem 1.4rem;
     color: #ffffff;
-    font-family: var(--font-display);
+    font-family: var(--font-sans);
     font-weight: 600;
     font-size: 0.9375rem;
-    letter-spacing: -0.012em;
     line-height: 1.2;
-    text-shadow: 0 1px 0 rgba(150, 30, 0, 0.35);
-    background: linear-gradient(180deg, #ff6a2c 0%, #ff4d00 52%, #ec4300 100%);
-    border: 1px solid #d13d00;
+    background: #ff4d00;
+    border: 1px solid transparent;
     border-radius: 0.875rem;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.34),
-      inset 0 -1px 0 rgba(120, 25, 0, 0.18),
-      0 1px 2px rgba(120, 30, 0, 0.32),
-      0 10px 22px -10px rgba(255, 77, 0, 0.6);
-    transition:
-      transform 160ms var(--ease-enter),
-      box-shadow 200ms var(--ease-enter),
-      filter 200ms var(--ease-enter);
+    transition: background-color 160ms var(--ease-enter);
     white-space: nowrap;
   }
 
-  .btn-fox::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: linear-gradient(
-      105deg,
-      transparent 30%,
-      rgba(255, 255, 255, 0.28) 48%,
-      transparent 66%
-    );
-    transform: translateX(-120%);
-    transition: transform 650ms var(--ease-enter);
-  }
-
   .btn-fox:hover {
-    filter: brightness(1.04) saturate(1.05);
-    transform: translateY(-1px);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      inset 0 -1px 0 rgba(120, 25, 0, 0.2),
-      0 2px 4px rgba(120, 30, 0, 0.3),
-      0 14px 28px -10px rgba(255, 77, 0, 0.7);
-  }
-
-  .btn-fox:hover::after {
-    transform: translateX(120%);
+    background: #e04400;
   }
 
   .btn-fox:active {
-    transform: translateY(0.5px);
-    filter: brightness(0.97);
-    box-shadow:
-      inset 0 2px 4px rgba(120, 25, 0, 0.3),
-      0 1px 1px rgba(120, 30, 0, 0.3);
+    background: #c73c00;
   }
 
   .btn-fox:focus-visible {
     outline: none;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.34),
       0 0 0 3px #faf8f5,
       0 0 0 5px rgba(255, 77, 0, 0.55);
   }
@@ -425,8 +380,7 @@
   .btn-fox:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
-    filter: grayscale(0.2);
+    background: #ff4d00;
     box-shadow: none;
   }
 
@@ -440,14 +394,9 @@
   }
 
   /* The same button once its job is done ("Added"). */
-  .btn-fox--done {
-    background: linear-gradient(180deg, #6f9c86 0%, #5b8a72 55%, #4c7862 100%);
-    border-color: #3f6551;
-    text-shadow: 0 1px 0 rgba(20, 50, 35, 0.3);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      0 1px 2px rgba(30, 60, 45, 0.3),
-      0 10px 22px -10px rgba(91, 138, 114, 0.6);
+  .btn-fox--done,
+  .btn-fox--done:hover {
+    background: #5b8a72;
   }
 
   /* Secondary. White paper with a fine edge and a whisper of depth. */
@@ -498,12 +447,6 @@
     box-shadow:
       0 0 0 3px #faf8f5,
       0 0 0 5px rgba(26, 25, 24, 0.5);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .btn-fox::after {
-      display: none;
-    }
   }
 
   .btn-ghost {
