@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   ShieldCheck,
   FileText,
+  Banknote,
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { quoteForDisplay } from '@lib/quoteMoney';
@@ -83,6 +84,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
   const [paying, setPaying] = useState(false);
+  const [requestingCash, setRequestingCash] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [account, setAccount] = useState({
     name: '',
@@ -273,6 +275,21 @@ export default function Checkout() {
       : effectivePaymentMode === 'MILESTONE'
         ? Math.round(quote.total * 0.3)
         : quote.total;
+
+  // Cash: nothing is provisioned until finance confirms receipt in the admin panel.
+  const handleCashRequest = async () => {
+    setRequestingCash(true);
+    try {
+      await api.post(`/quotes/${quoteId}/cash`, { paymentMode: effectivePaymentMode });
+      toast.success('Cash payment requested. We will onboard you once it is received.');
+      navigate('/app/client/quotes');
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || err.response?.data?.error || 'Could not request cash payment.',
+      );
+    }
+    setRequestingCash(false);
+  };
 
   const handlePay = async () => {
     setPaying(true);
@@ -650,6 +667,18 @@ export default function Checkout() {
               <p className="text-[11px] text-warm-400 text-center flex items-center justify-center gap-1">
                 <ShieldCheck size={12} /> 256-bit encrypted · Razorpay secure
               </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                isLoading={requestingCash}
+                disabled={paying}
+                onClick={handleCashRequest}
+              >
+                <Banknote size={16} className="mr-2" /> Pay {formatINR(payAmount)} in cash instead
+              </Button>
+              <p className="text-[11px] text-warm-400 text-center">
+                Our team confirms the cash and your project kicks off.
+              </p>
             </div>
           )}
 
@@ -709,6 +738,18 @@ export default function Checkout() {
               </Button>
               <p className="text-[11px] text-warm-400 text-center flex items-center justify-center gap-1">
                 <ShieldCheck size={12} /> 256-bit encrypted · Razorpay secure
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                isLoading={requestingCash}
+                disabled={paying}
+                onClick={handleCashRequest}
+              >
+                <Banknote size={16} className="mr-2" /> Pay {formatINR(payAmount)} in cash instead
+              </Button>
+              <p className="text-[11px] text-warm-400 text-center">
+                Our team confirms the cash and your project kicks off.
               </p>
             </div>
           )}

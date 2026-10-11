@@ -13,7 +13,7 @@ import { log } from "./logger";
 export type Db = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 interface PaymentFacts {
-  gateway: "RAZORPAY" | "STRIPE" | "BANK_TRANSFER";
+  gateway: "RAZORPAY" | "STRIPE" | "BANK_TRANSFER" | "CASH";
   gatewayPaymentId?: string;
   gatewayOrderId?: string;
   method?: string;

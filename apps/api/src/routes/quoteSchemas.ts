@@ -59,6 +59,11 @@ export const QuotePaySchema = strictObject({
   paymentMode: z.enum(["UPFRONT", "MILESTONE", "FULL"]).optional(),
 });
 
+/** Finance confirming a cash payment; `reference` is the cash receipt number. */
+export const ConfirmCashPaymentSchema = strictObject({
+  reference: z.string().trim().min(1).max(64).optional(),
+});
+
 /**
  * The Razorpay handshake. These three go straight into an HMAC comparison, so
  * the shape matters more than the content — but an unbounded string reaching
