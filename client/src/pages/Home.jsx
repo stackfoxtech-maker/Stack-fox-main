@@ -402,13 +402,11 @@ export default function Home() {
       <section className="section-padding bg-warm-50">
         <div className="container-fx">
           <Reveal className="max-w-xl">
-            <span className="eyebrow mb-4">After you say yes</span>
             <h2 className="text-3xl text-warm-900 md:text-display-lg">
               The boring parts are handled
             </h2>
             <p className="mt-4 text-body-lg text-warm-600">
-              Progress, invoices, payments and agreements live in one dashboard, so you can get on
-              with your business.
+              Progress, invoices, payments and agreements live in one dashboard.
             </p>
           </Reveal>
           <Bento />
