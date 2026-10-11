@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { CountOnView, DrawnUnderline } from '@components/home/HomeMotion';
+import { CountOnView } from '@components/home/HomeMotion';
 
 const EASE = [0.2, 0.7, 0.2, 1];
 
@@ -47,12 +47,7 @@ export function PageHero({ eyebrow, title, accent, description, stats, children 
           {...rise(0.06)}
         >
           {before}
-          {accent && (
-            <span className="accent-serif relative inline-block">
-              {accent}
-              <DrawnUnderline delay={0.6} />
-            </span>
-          )}
+          {accent}
           {after}
         </motion.h1>
         {description && (
