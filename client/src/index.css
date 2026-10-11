@@ -270,6 +270,86 @@
 
   /* Photography frame — warm ground shows through a hair of padding, soft
      shadow does the separating (DESIGN.md: shadow over border). */
+  /* Brand stage: the warm fox field product windows sit on (hero film, showcase previews). */
+  .brand-stage {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: 1.75rem;
+    background:
+      radial-gradient(120% 90% at 100% 0%, #ffd9bd 0%, transparent 55%),
+      radial-gradient(90% 80% at 0% 100%, #ffb27a 0%, transparent 60%),
+      linear-gradient(135deg, #ff5a14 0%, #ff8a3d 48%, #ffc79a 100%);
+  }
+  .brand-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.07) 0 1px,
+      transparent 1px 22px
+    );
+  }
+
+  /* Headline accent: fox orange as a slow-moving warm gradient. */
+  .text-gradient-fox {
+    background-image: linear-gradient(
+      100deg,
+      #e04400 0%,
+      #ff4d00 30%,
+      #ff8a3d 55%,
+      #ff4d00 80%,
+      #e04400 100%
+    );
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: fox-sheen 9s ease-in-out infinite alternate;
+  }
+  @keyframes fox-sheen {
+    from {
+      background-position: 0% 50%;
+    }
+    to {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* A soft band of light that crosses the brand stage every few seconds. */
+  .brand-stage::after {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.28) 50%,
+      transparent 60%
+    );
+    transform: translateX(-60%);
+    animation: stage-sweep 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  @keyframes stage-sweep {
+    0%,
+    55% {
+      transform: translateX(-60%);
+    }
+    100% {
+      transform: translateX(60%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .text-gradient-fox,
+    .brand-stage::after {
+      animation: none;
+    }
+  }
+
   .img-frame {
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -355,7 +435,7 @@
     font-weight: 600;
     font-size: 0.9375rem;
     line-height: 1.2;
-    background: #ff4d00;
+    background: #c73c00;
     border: 1px solid transparent;
     border-radius: 0.875rem;
     transition: background-color 160ms var(--ease-enter);
@@ -363,7 +443,7 @@
   }
 
   .btn-fox:hover {
-    background: #e04400;
+    background: #a93200;
   }
 
   .btn-fox:active {
@@ -380,7 +460,7 @@
   .btn-fox:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background: #ff4d00;
+    background: #c73c00;
     box-shadow: none;
   }
 
@@ -808,4 +888,27 @@
   .marquee-track {
     animation: none;
   }
+}
+
+/* Visible keyboard navigation on all storefront controls. */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #b83700;
+  outline-offset: 4px;
+}
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 1.5rem;
+  z-index: 100;
+  transform: translateY(-180%);
+  padding: 0.75rem 1rem;
+  background: #1a1918;
+  color: white;
+  border-radius: 6px;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+#main-content {
+  scroll-margin-top: 4.25rem;
 }
