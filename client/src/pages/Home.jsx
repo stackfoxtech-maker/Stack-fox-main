@@ -6,13 +6,10 @@ import {
   Globe,
   Smartphone,
   Brain,
-  Zap,
   Palette,
   Cloud,
   TrendingUp,
   Check,
-  Shield,
-  Quote,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePageTitle, useCountUp } from '@lib/hooks';
@@ -20,7 +17,6 @@ import CdnImage from '@components/CdnImage';
 import { Reveal } from '@components/Reveal';
 import { fadeUp } from '@components/motion';
 import { BrandLogo } from '@components/ui/BrandLogo';
-import { ScrollProgress } from '@components/home/HomeMotion';
 import { Bento } from '@components/home/Bento';
 // ~2 KB summary (names + counts) instead of the full 100 KB catalogue — keeps
 // the landing page off the big JSON. Regenerate: scripts/gen-catalog-summary.mjs
@@ -137,7 +133,6 @@ export default function Home() {
 
   return (
     <>
-      <ScrollProgress />
       {/* ── 1 · Hero ─────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-warm-white">
         <div className="container-fx relative py-8 sm:py-16 lg:py-24">
@@ -432,30 +427,17 @@ export default function Home() {
             </Reveal>
 
             <Reveal className="lg:col-span-7">
-              <span className="eyebrow mb-4">Why teams pick us</span>
-              <Quote size={28} className="mb-3 text-fox-500" aria-hidden />
               <blockquote className="font-display text-display-sm text-warm-900">
-                "I priced the whole build in an afternoon, sent the list, and had a call booked by
-                the next morning. No back-and-forth, no guessing."
+                &ldquo;I priced the whole build in an afternoon, sent the list, and had a call
+                booked by the next morning. No back-and-forth, no guessing.&rdquo;
               </blockquote>
               <p className="mt-4 text-body-sm text-warm-600">
                 Neha R. · founder, D2C skincare · shipped a storefront + subscriptions in 6 weeks
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 border-t border-warm-200 pt-6 text-body-sm text-warm-600">
-                <span className="inline-flex items-center gap-2">
-                  <Shield size={15} className="text-sage-600" /> GST registered
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <Check size={15} className="text-sage-600" /> NDA on request
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <Check size={15} className="text-sage-600" /> ISO 27001 aligned
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <Zap size={15} className="text-fox-500" /> 24-hour response
-                </span>
-              </div>
+              <p className="mt-8 border-t border-warm-200 pt-6 text-body-sm text-warm-600">
+                GST registered · NDA on request · ISO 27001 aligned
+              </p>
             </Reveal>
           </div>
         </div>
