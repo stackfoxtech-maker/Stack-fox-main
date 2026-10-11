@@ -21,9 +21,8 @@
     --color-text-muted: #6e6860;
     --color-border: #edeae4;
     --color-border-hover: #c6c1b5;
-    --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-    --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
-    --font-serif: "Instrument Serif", Georgia, serif;
+    --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+    --font-display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
     --radius-sm: 0.5rem; /* 8px  — inputs, chips */
     --radius-md: 0.875rem; /* 14px — cards */
@@ -123,8 +122,7 @@
     }
   }
 
-  /* Plus Jakarta Sans is the display face, Inter the text face, and Instrument Serif italic is
-     reserved for the one accent phrase in a headline. */
+  /* Bricolage Grotesque for headings, DM Sans for text (DESIGN.md). */
   h1,
   h2,
   h3,
@@ -341,15 +339,6 @@
   .card-fx-elevated:hover {
     box-shadow: var(--shadow-lg);
     transform: translateY(-3px);
-  }
-
-  /* The accent phrase of a headline: one word or two, in serif italic. */
-  .accent-serif {
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-weight: 400;
-    letter-spacing: -0.01em;
-    font-size: 1.1em;
   }
 
   /* Primary. A lit surface rather than a flat fill: a vertical gradient, a crisp darker edge, a
