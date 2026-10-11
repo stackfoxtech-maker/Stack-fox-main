@@ -8,13 +8,8 @@ import {
   Brain,
   Zap,
   Palette,
-  Server,
   Cloud,
   TrendingUp,
-  MessageCircle,
-  Box,
-  Wrench,
-  Code2,
   Check,
   Shield,
   Quote,
@@ -25,7 +20,7 @@ import CdnImage from '@components/CdnImage';
 import { Reveal } from '@components/Reveal';
 import { fadeUp } from '@components/motion';
 import { BrandLogo } from '@components/ui/BrandLogo';
-import { ScrollProgress, SpotlightGlow, spotlightProps } from '@components/home/HomeMotion';
+import { ScrollProgress } from '@components/home/HomeMotion';
 import { Bento } from '@components/home/Bento';
 // ~2 KB summary (names + counts) instead of the full 100 KB catalogue — keeps
 // the landing page off the big JSON. Regenerate: scripts/gen-catalog-summary.mjs
@@ -49,23 +44,6 @@ const cardList = {
 const cardRow = {
   hidden: { opacity: 0, x: 10 },
   show: { opacity: 1, x: 0, transition: { duration: 0.34, ease: EASE } },
-};
-
-const iconMap = {
-  globe: Globe,
-  smartphone: Smartphone,
-  brain: Brain,
-  zap: Zap,
-  'shopping-cart': ShoppingCart,
-  palette: Palette,
-  server: Server,
-  cloud: Cloud,
-  shield: Shield,
-  'trending-up': TrendingUp,
-  'message-circle': MessageCircle,
-  box: Box,
-  wrench: Wrench,
-  code: Code2,
 };
 
 const inr = (n) => '₹' + new Intl.NumberFormat('en-IN').format(n);
@@ -379,13 +357,11 @@ export default function Home() {
         <div className="container-fx">
           <Reveal className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div className="max-w-xl">
-              <span className="eyebrow mb-4">The catalog</span>
               <h2 className="text-3xl text-warm-900 md:text-display-lg">
                 13 domains, {serviceCount}+ priced pieces
               </h2>
               <p className="mt-4 text-body-lg text-warm-600">
-                Every service is broken into individually priced pieces. Pick what you need, skip
-                what you don't.
+                Every service is split into pieces with their own price. Take what you need.
               </p>
             </div>
             <Link to="/catalog" className="btn-outline self-start md:self-auto">
@@ -394,37 +370,30 @@ export default function Home() {
           </Reveal>
 
           <Reveal
+            as="ul"
             stagger
-            className="no-scrollbar -mx-6 mt-8 grid scroll-pl-6 snap-x snap-mandatory auto-cols-[46%] grid-flow-col grid-rows-2 gap-3 overflow-x-auto px-6 pb-3 sm:mx-0 sm:mt-12 sm:auto-cols-auto sm:grid-flow-row sm:grid-rows-none sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
+            className="mt-10 grid gap-x-10 md:mt-14 md:grid-cols-2 lg:grid-cols-3"
           >
-            {categories.map((cat) => {
-              const Icon = iconMap[cat.icon] || Globe;
-              const count = cat.count;
-              return (
-                <Reveal.Item
-                  key={cat.id}
-                  as={Link}
+            {categories.map((cat) => (
+              <Reveal.Item key={cat.id} as="li" className="border-t border-warm-200">
+                <Link
                   to={`/builder?category=${cat.id}`}
-                  {...spotlightProps}
-                  className="group relative flex h-full snap-start flex-col overflow-hidden rounded-2xl border border-warm-200 bg-white p-4 shadow-sm transition-all sm:rounded-md sm:p-5 duration-short hover:-translate-y-1 hover:border-fox-200 hover:shadow-md"
+                  className="group flex items-baseline justify-between gap-4 py-4"
                 >
-                  <SpotlightGlow />
-                  <ArrowRight
-                    size={15}
-                    aria-hidden
-                    className="absolute right-4 top-4 -translate-x-1 text-fox-500 opacity-0 transition-all duration-short group-hover:translate-x-0 group-hover:opacity-100"
-                  />
-                  <span className="relative mb-4 grid h-10 w-10 place-items-center rounded-sm bg-warm-50 text-warm-500 transition-all duration-short group-hover:-rotate-6 group-hover:scale-110 group-hover:bg-fox-50 group-hover:text-fox-600">
-                    <Icon size={18} />
+                  <span className="min-w-0">
+                    <span className="block font-medium text-warm-900 transition-colors group-hover:text-fox-600">
+                      {cat.name}
+                    </span>
+                    <span className="mt-0.5 hidden truncate text-body-sm text-warm-500 sm:block">
+                      {cat.description}
+                    </span>
                   </span>
-                  <h3 className="text-body-md font-semibold text-warm-900">{cat.name}</h3>
-                  <p className="mt-0.5 text-body-sm text-sage-700">{count} pieces</p>
-                  <p className="mt-2 hidden text-body-sm leading-snug text-warm-500 sm:line-clamp-2">
-                    {cat.description}
-                  </p>
-                </Reveal.Item>
-              );
-            })}
+                  <span className="shrink-0 text-body-sm tabular-nums text-warm-400">
+                    {cat.count} pieces
+                  </span>
+                </Link>
+              </Reveal.Item>
+            ))}
           </Reveal>
         </div>
       </section>
