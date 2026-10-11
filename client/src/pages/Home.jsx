@@ -17,9 +17,6 @@ import {
   Code2,
   Check,
   Shield,
-  Search,
-  Layers,
-  PhoneCall,
   Quote,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -95,21 +92,18 @@ const CALL_NUMBER = '+91 82093 95894';
 
 const STEPS = [
   {
-    icon: Search,
     title: 'Browse',
     to: '/catalog',
     cta: 'Browse the catalog',
     body: '240+ services across 13 domains, each with a real price. No "contact us" walls.',
   },
   {
-    icon: Layers,
     title: 'Assemble',
     to: '/builder',
     cta: 'Open the Builder',
     body: 'Add the pieces you need. Your total updates live — GST and all.',
   },
   {
-    icon: PhoneCall,
     title: 'Book a call',
     // Opens the phone dialler on a phone; on a desktop the browser hands it to the
     // default calling app.
@@ -389,59 +383,41 @@ export default function Home() {
 
       {/* ── 2 · How it works ─────────────────────────────────── */}
       <section className="section-padding bg-white">
-        <div className="container-fx">
-          <Reveal className="max-w-xl">
-            <span className="eyebrow mb-4">One step at a time</span>
-            <h2 className="text-3xl text-warm-900 md:text-display-lg">
-              How it works, in three steps
-            </h2>
+        <div className="container-fx grid gap-8 lg:grid-cols-12 lg:gap-16">
+          <Reveal className="lg:col-span-4">
+            <h2 className="text-3xl text-warm-900 md:text-display-lg">How it works</h2>
             <p className="mt-4 text-body-lg text-warm-600">
-              No lengthy proposals. Browse, build a plan, and book a call when it looks right.
+              No proposals to wade through. You see the price before anyone calls you.
             </p>
           </Reveal>
 
-          <Reveal
-            stagger
-            className="no-scrollbar relative -mx-6 mt-8 flex snap-x snap-mandatory gap-3.5 overflow-x-auto px-6 pb-3 md:mx-0 md:mt-12 md:grid md:grid-cols-3 md:gap-5 md:overflow-visible md:px-0 md:pb-0"
-          >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute left-[16%] right-[16%] top-[3.35rem] hidden h-px bg-warm-200 md:block"
-            >
-              <motion.div
-                className="h-full origin-left bg-fox-500"
-                initial={{ scaleX: 0 }}
-                whileInView={{ scaleX: 1 }}
-                viewport={{ once: true, amount: 0.6 }}
-                transition={{ duration: 1.6, delay: 0.3, ease: EASE }}
-              />
-            </div>
-            {STEPS.map((s, i) => (
-              <Reveal.Item
-                key={s.title}
-                as={s.to ? Link : 'a'}
-                {...(s.to ? { to: s.to } : { href: s.href })}
-                {...spotlightProps}
-                className="group relative block w-[80%] shrink-0 snap-center overflow-hidden rounded-2xl border border-warm-200 bg-warm-white p-5 shadow-sm md:w-auto md:shrink md:rounded-md md:p-6 transition-all duration-medium hover:-translate-y-0.5 hover:border-fox-200 hover:shadow-md"
-              >
-                <SpotlightGlow />
-                <div className="relative mb-5 flex items-center gap-3">
-                  <span className="grid h-9 w-9 place-items-center rounded-pill bg-sage-50 font-mono text-sm text-sage-700 ring-4 ring-warm-white transition-colors duration-medium group-hover:bg-fox-500 group-hover:text-white">
+          <Reveal as="ol" stagger className="border-t border-warm-200 lg:col-span-8">
+            {STEPS.map((s, i) => {
+              const Anchor = s.to ? Link : 'a';
+              const anchorProps = s.to ? { to: s.to } : { href: s.href };
+              return (
+                <Reveal.Item
+                  key={s.title}
+                  as="li"
+                  className="grid grid-cols-[2rem_1fr] gap-x-4 border-b border-warm-200 py-6 md:grid-cols-[2.5rem_1fr_auto] md:items-baseline md:gap-x-8"
+                >
+                  <span className="text-body-sm font-medium tabular-nums text-warm-400">
                     {i + 1}
                   </span>
-                  <s.icon size={18} className="text-fox-500" />
-                </div>
-                <h3 className="relative text-title text-warm-900">{s.title}</h3>
-                <p className="relative mt-1.5 text-body-sm text-warm-600">{s.body}</p>
-                <span className="relative mt-4 inline-flex items-center gap-1.5 text-body-sm font-semibold text-fox-600">
-                  {s.cta}
-                  <ArrowRight
-                    size={14}
-                    className="transition-transform duration-short group-hover:translate-x-1"
-                  />
-                </span>
-              </Reveal.Item>
-            ))}
+                  <div>
+                    <h3 className="text-title text-warm-900">{s.title}</h3>
+                    <p className="mt-1 max-w-md text-body text-warm-600">{s.body}</p>
+                  </div>
+                  <Anchor
+                    {...anchorProps}
+                    className="col-start-2 mt-3 inline-flex items-center gap-1.5 justify-self-start text-body-sm font-semibold text-warm-900 underline decoration-warm-300 underline-offset-4 transition-colors hover:text-fox-600 hover:decoration-fox-300 md:col-start-auto md:mt-0"
+                  >
+                    {s.cta}
+                    <ArrowRight size={14} />
+                  </Anchor>
+                </Reveal.Item>
+              );
+            })}
           </Reveal>
         </div>
       </section>
