@@ -15,7 +15,7 @@ import {
   Download,
 } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
-import { formatINR, formatDate, capitalize } from '@lib/utils';
+import { formatINR, formatPaise, formatDate, capitalize } from '@lib/utils';
 import { Badge, EmptyState, Button, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import { downloadFromUrl, downloadErrorMessage } from '@lib/download';
@@ -65,6 +65,19 @@ export default function Orders() {
   const [contractPage, setContractPage] = useState(1);
   const CONTRACT_PAGE_SIZE = 10;
 
+  // Invoices are billed to an Org, not a user, and carry money in PAISE
+  // (quotes come through the api interceptor already in rupees). Give them the
+  // same `client` shape the cards read, so they stop showing "Anonymous User".
+  const normalize = (rows) =>
+    tab === 'invoices'
+      ? rows.map((inv) => ({
+          ...inv,
+          client: inv.org
+            ? { name: inv.org.name, email: inv.org.contactEmail, phone: inv.org.contactPhone }
+            : null,
+        }))
+      : rows;
+
   const fetchItems = () => {
     setLoading(true);
     setError(null);
@@ -83,7 +96,7 @@ export default function Orders() {
     api
       .get(tab === 'quotes' ? '/quotes' : '/invoices', { params: { page: 1, limit: 20 } })
       .then((r) => {
-        setItems(r.data.data || []);
+        setItems(normalize(r.data.data || []));
         const pagination = r.data.meta?.pagination;
         if (pagination) {
           setMeta({ page: pagination.page, pages: pagination.pages, total: pagination.total });
@@ -104,7 +117,7 @@ export default function Orders() {
     api
       .get(tab === 'quotes' ? '/quotes' : '/invoices', { params: { page, limit: 20 } })
       .then((r) => {
-        setItems(r.data.data || []);
+        setItems(normalize(r.data.data || []));
         const pagination = r.data.meta?.pagination;
         if (pagination) {
           setMeta({ page: pagination.page, pages: pagination.pages, total: pagination.total });
@@ -160,7 +173,9 @@ export default function Orders() {
     tab === 'quotes'
       ? ['draft', 'reviewing', 'approved', 'invoiced', 'cancelled']
       : tab === 'invoices'
-        ? ['draft', 'sent', 'viewed', 'partially-paid', 'paid', 'overdue', 'cancelled']
+        ? // Paid / partially-paid come only from a recorded payment (Finance →
+          // Mark paid, or the gateway); the API refuses them here with a 409.
+          ['draft', 'sent', 'viewed', 'overdue', 'cancelled']
         : ['draft', 'client-signed', 'executed', 'amended', 'terminated'];
 
   const contractStart = (contractPage - 1) * CONTRACT_PAGE_SIZE;
@@ -372,6 +387,14 @@ export default function Orders() {
                         <Badge variant={statusBadgeVariant(item.status)}>
                           {capitalize(item.status)}
                         </Badge>
+                        {item.integrityIssue && (
+                          <span title={item.integrityIssue}>
+                            <Badge variant="danger">
+                              <AlertTriangle size={10} className="inline mr-1" />
+                              Needs review
+                            </Badge>
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-warm-500">
                         <span className="flex items-center gap-1 font-semibold text-warm-700">
@@ -389,7 +412,7 @@ export default function Orders() {
                         Total Amount
                       </div>
                       <div className="font-mono text-xl font-black text-warm-900">
-                        {formatINR(tab === 'quotes' ? item.total : (item.grandTotal ?? item.total))}
+                        {tab === 'quotes' ? formatINR(item.total) : formatPaise(item.total)}
                       </div>
                     </div>
 
@@ -432,6 +455,37 @@ export default function Orders() {
                         <h4 className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-4">
                           Itemized Breakdown
                         </h4>
+                        {tab === 'invoices' && (
+                          <div className="space-y-2 text-sm">
+                            {item.integrityIssue && (
+                              <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-xl p-3 text-xs">
+                                <strong>Unverified invoice:</strong> {item.integrityIssue}
+                              </div>
+                            )}
+                            {[
+                              ['Subtotal', item.subtotal],
+                              [
+                                'GST',
+                                Number(item.cgst ?? 0) +
+                                  Number(item.sgst ?? 0) +
+                                  Number(item.igst ?? 0),
+                              ],
+                              ['Total', item.total],
+                              ['Payment received', item.paidAmount],
+                              ['Balance due', item.balanceDue],
+                            ].map(([label, value]) => (
+                              <div
+                                key={label}
+                                className="flex justify-between bg-warm-50 p-3 rounded-xl border border-warm-100/50"
+                              >
+                                <span className="text-warm-600">{label}</span>
+                                <span className="font-mono font-bold text-warm-800">
+                                  {formatPaise(value ?? 0)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         <div className="space-y-2">
                           {item.items?.map((sub, i) => (
                             <div
@@ -479,12 +533,14 @@ export default function Orders() {
                             Quick Actions
                           </h4>
                           <div className="flex flex-wrap gap-3">
-                            <Link
-                              to={`/app/admin/users?id=${item.client?._id}`}
-                              className="btn-outline py-2 px-4 rounded-xl text-xs gap-2"
-                            >
-                              <User size={14} /> User Profile
-                            </Link>
+                            {item.client?._id && (
+                              <Link
+                                to={`/app/admin/users?id=${item.client._id}`}
+                                className="btn-outline py-2 px-4 rounded-xl text-xs gap-2"
+                              >
+                                <User size={14} /> User Profile
+                              </Link>
+                            )}
                             <a
                               href={`mailto:${item.client?.email}`}
                               className="btn-outline py-2 px-4 rounded-xl text-xs gap-2"

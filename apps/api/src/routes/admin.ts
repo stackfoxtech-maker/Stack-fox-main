@@ -591,6 +591,44 @@ export async function adminRoutes(app: FastifyInstance) {
     });
     const engagementById = new Map<string, any>(engagements.map((e) => [e.id, e]));
 
+    // A quote's "paid" status is not proof of payment: legacy rows were marked
+    // paid with no capture behind them. Look up the captured gateway payments
+    // so the panel can say which purchases money actually arrived for.
+    const quoteOrderIds = paidQuotes
+      .map((q) => q.razorpayOrderId)
+      .filter((id): id is string => Boolean(id));
+    const quoteInvoiceIds = paidQuotes
+      .map((q) => q.invoiceId)
+      .filter((id): id is string => Boolean(id));
+    const quoteCaptures =
+      quoteOrderIds.length || quoteInvoiceIds.length
+        ? await prisma.payment.findMany({
+            take: LIST_CAP,
+            where: {
+              status: "CAPTURED",
+              OR: [
+                { gatewayOrderId: { in: quoteOrderIds } },
+                { invoiceId: { in: quoteInvoiceIds } },
+              ],
+            },
+            select: { id: true, amount: true, gatewayOrderId: true, invoiceId: true },
+          })
+        : [];
+    const capturedPaiseForQuote = (q: any) => {
+      const seen = new Set<string>();
+      let sum = 0;
+      for (const p of quoteCaptures) {
+        const matches =
+          (q.razorpayOrderId && p.gatewayOrderId === q.razorpayOrderId) ||
+          (q.invoiceId && p.invoiceId === q.invoiceId);
+        if (matches && !seen.has(p.id)) {
+          seen.add(p.id);
+          sum += Number(p.amount);
+        }
+      }
+      return sum;
+    };
+
     const normalizeOrder = (o: any) => {
       const eng = o.engagementId ? engagementById.get(o.engagementId) : null;
       return {
@@ -605,9 +643,12 @@ export async function adminRoutes(app: FastifyInstance) {
           name: c.serviceId,
           quantity: 1,
         })),
-        subtotal: o.estimate?.totals?.subtotal ?? o.subtotal ?? 0,
-        gst: o.estimate?.totals?.gst ?? o.gst ?? 0,
-        total: o.estimate?.totals?.grand ?? o.grandTotal ?? 0,
+        // Order columns and estimate totals are paise; this list is rupees
+        // (normalizeQuote below converts too), and the panel formats rupees.
+        // Returning paise here showed every order at 100× its real value.
+        subtotal: Number(o.estimate?.totals?.subtotal ?? o.subtotal ?? 0) / 100,
+        gst: Number(o.estimate?.totals?.gst ?? o.gst ?? 0) / 100,
+        total: Number(o.estimate?.totals?.grand ?? o.grandTotal ?? 0) / 100,
         paymentMode: o.paymentMode,
         paidAt: o.paidAt,
         razorpayOrderId: o.razorpayOrderId,
@@ -621,6 +662,10 @@ export async function adminRoutes(app: FastifyInstance) {
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         ),
         payments: o.payments,
+        capturedAmount:
+          (o.payments || [])
+            .filter((p: any) => p.status === "CAPTURED")
+            .reduce((sum: number, p: any) => sum + Number(p.amount), 0) / 100,
       };
     };
 
@@ -647,6 +692,7 @@ export async function adminRoutes(app: FastifyInstance) {
       contracts: [],
       projects: [],
       payments: [],
+      capturedAmount: capturedPaiseForQuote(q) / 100,
     });
 
     let purchases = [...orders.map(normalizeOrder), ...paidQuotes.map(normalizeQuote)];
