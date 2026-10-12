@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Captcha from '@components/ui/Captcha';
 import { Link } from 'react-router-dom';
 import { apiPost } from '@lib/api';
 
@@ -84,6 +85,7 @@ export default function Estimator() {
           </div>
         ))}
 
+        <Captcha />
         <button
           type="submit"
           disabled={loading}

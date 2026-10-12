@@ -50,7 +50,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           toastOptions={{
             duration: 4000,
             style: {
-              fontFamily: 'Inter, system-ui, sans-serif',
+              fontFamily: '"DM Sans", system-ui, sans-serif',
               fontSize: '14px',
               borderRadius: '12px',
               padding: '12px 16px',

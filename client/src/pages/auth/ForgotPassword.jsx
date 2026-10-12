@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Captcha from '@components/ui/Captcha';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
@@ -66,6 +67,7 @@ export default function ForgotPassword() {
                 required
                 autoFocus
               />
+              <Captcha />
               <Button
                 type="submit"
                 variant="primary"

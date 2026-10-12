@@ -50,6 +50,7 @@ import { findPhoneLoginUser } from "../lib/phoneLogin";
 import { authorizeUrl, exchangeCode, isGoogleConfigured } from "../lib/googleOAuth";
 import { getSessionEpoch, bumpSessionEpoch } from "../lib/session";
 import { webAppUrl } from "../lib/urls";
+import { requireCaptcha } from "../lib/captcha";
 import { randomBytes } from "crypto";
 
 /**
@@ -128,7 +129,10 @@ export async function authRoutes(app: FastifyInstance) {
   // POST /auth/register — email + password registration
   app.post(
     "/auth/register",
-    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    {
+      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+      preHandler: requireCaptcha,
+    },
     async (req, reply) => {
       const body = parseBody(req, reply, RegisterSchema);
       if (!body) return;
@@ -194,7 +198,10 @@ export async function authRoutes(app: FastifyInstance) {
   // POST /auth/login — email + password login
   app.post(
     "/auth/login",
-    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    {
+      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+      preHandler: requireCaptcha,
+    },
     async (req, reply) => {
       const body = parseBody(req, reply, LoginSchema);
       if (!body) return;
@@ -302,7 +309,10 @@ export async function authRoutes(app: FastifyInstance) {
   // POST /auth/forgot-password
   app.post(
     "/auth/forgot-password",
-    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    {
+      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+      preHandler: requireCaptcha,
+    },
     async (req, reply) => {
       const body = parseBody(req, reply, ForgotPasswordSchema);
       if (!body) return;

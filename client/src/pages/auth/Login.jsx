@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Captcha from '@components/ui/Captcha';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, useAnimationControls } from 'framer-motion';
 import { ArrowLeft, Lock, Mail } from 'lucide-react';
@@ -163,6 +164,7 @@ export default function Login() {
                   Forgot password?
                 </Link>
               </div>
+              <Captcha />
               <SubmitButton isLoading={isLoading}>Log in</SubmitButton>
             </form>
           ) : otpStep === 'enter-phone' ? (

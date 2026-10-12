@@ -2,6 +2,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { captureException } from './sentry';
 import { quoteForDisplay } from './quoteMoney';
+import { getCaptchaToken, consumeCaptcha } from './captcha';
 
 // Production builds must set VITE_API_URL (Vercel env). The Railway URL below
 // is only a last-resort fallback so a misconfigured build still reaches an API
@@ -27,6 +28,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const captcha = getCaptchaToken();
+    if (captcha && config.method === 'post') {
+      config.headers['x-captcha-token'] = captcha;
+      // Single-use: reset once this request settles (see response interceptor).
+      config.__usedCaptcha = true;
+    }
     return config;
   },
   (error) => Promise.reject(error),
@@ -46,6 +53,7 @@ const processQueue = (error, token = null) => {
 
 api.interceptors.response.use(
   (response) => {
+    if (response.config.__usedCaptcha) consumeCaptcha();
     if (/^\/quotes(?:\/[^/]+)?$/.test(response.config.url || '')) {
       const data = response.data?.data;
       if (Array.isArray(data)) response.data.data = data.map(quoteForDisplay);
@@ -56,6 +64,7 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    if (originalRequest?.__usedCaptcha) consumeCaptcha();
 
     // The API's validation and error handler reply { error, details }, but most
     // screens read `data.message`, so every 4xx showed a generic fallback.

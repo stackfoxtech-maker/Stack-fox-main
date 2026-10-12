@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Mail, Phone, MapPin } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Mail, Phone, MapPin } from 'lucide-react';
 import { BrandLogo, Tagline, Wordmark } from '@components/ui/BrandLogo';
 
 const footerLinks = {
@@ -19,7 +19,7 @@ const footerLinks = {
     { label: 'Contact', href: '/contact' },
   ],
   Support: [
-    { label: 'Help Center', href: '/contact' },
+    { label: 'Help Center', href: '/help' },
     { label: 'Privacy Policy', href: '/legal/privacy' },
     { label: 'Terms of Service', href: '/legal/terms' },
     { label: 'Refund Policy', href: '/legal/refunds' },
@@ -31,52 +31,60 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-warm-900 text-warm-200 mt-auto">
+    <footer className="bg-warm-900 text-warm-300 mt-auto">
       <div className="container-fx">
         {/* CTA Band */}
-        <div className="py-14 md:py-20 border-b border-warm-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-          <div>
-            <h3 className="text-2xl md:text-display-lg text-white mb-3">
+        <div className="py-16 md:py-24 border-b border-white/10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8">
+          <div className="max-w-2xl">
+            <h2 className="font-display text-display-lg md:text-display-xl text-white mb-4">
               Ready to price your project?
-            </h3>
+            </h2>
             <p className="text-warm-300 max-w-md text-body-lg">
               Open the builder, add the pieces you need, and see the number in a couple of minutes.
             </p>
           </div>
-          <Link to="/builder" className="btn-fox w-full shrink-0 px-8 text-base md:w-auto">
-            Start building <ArrowUpRight size={18} />
-          </Link>
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center md:w-auto md:shrink-0">
+            <Link to="/builder" className="btn-fox w-full px-8 text-base sm:w-auto">
+              Start building <ArrowUpRight size={18} />
+            </Link>
+            <Link
+              to="/contact"
+              className="inline-flex min-h-11 items-center justify-center gap-1 px-4 text-body-sm font-medium text-warm-300 transition-colors hover:text-white"
+            >
+              Talk to us <ArrowRight size={16} />
+            </Link>
+          </div>
         </div>
 
         {/* Links grid */}
-        <div className="py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="py-14 grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <BrandLogo size={16} withBackground />
+            <Link to="/" className="flex items-center gap-2 mb-4">
+              <BrandLogo size={24} />
               <div className="flex flex-col">
                 <Wordmark dark className="text-lg" />
                 <Tagline dark className="mt-1 tracking-tight" />
               </div>
-            </div>
-            <p className="text-sm text-warm-300 mb-5 leading-relaxed">
+            </Link>
+            <p className="text-body-sm text-warm-400 mb-5 leading-relaxed">
               Smart Code, Swift Delivery. A premium product of Artwall Labs.
             </p>
-            <div className="space-y-0 text-sm md:space-y-2.5">
+            <div className="space-y-0 text-body-sm md:space-y-2">
               <a
                 href="mailto:stackfox.tech@gmail.com"
-                className="flex min-h-11 items-center gap-2 transition-colors hover:text-fox-400 md:min-h-0"
+                className="flex min-h-11 items-center gap-2 transition-colors hover:text-white md:min-h-0"
               >
-                <Mail size={14} /> stackfox.tech@gmail.com
+                <Mail size={14} className="text-warm-500" /> stackfox.tech@gmail.com
               </a>
               <a
                 href="tel:+918209395894"
-                className="flex min-h-11 items-center gap-2 transition-colors hover:text-fox-400 md:min-h-0"
+                className="flex min-h-11 items-center gap-2 transition-colors hover:text-white md:min-h-0"
               >
-                <Phone size={14} /> +91 82093 95894
+                <Phone size={14} className="text-warm-500" /> +91 82093 95894
               </a>
               <p className="flex items-center gap-2">
-                <MapPin size={14} /> Jaipur, Rajasthan
+                <MapPin size={14} className="text-warm-500" /> Jaipur, Rajasthan
               </p>
             </div>
           </div>
@@ -84,13 +92,15 @@ export default function Footer() {
           {/* Link columns */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-label text-warm-300 mb-2 uppercase md:mb-4">{title}</h4>
+              <h3 className="text-caption font-medium uppercase tracking-wide text-warm-400 mb-2 md:mb-4">
+                {title}
+              </h3>
               <ul className="md:space-y-2.5">
                 {links.map((link) => (
                   <li key={link.href}>
                     <Link
                       to={link.href}
-                      className="flex min-h-11 items-center text-sm text-warm-300 transition-colors hover:text-fox-400 md:inline-flex md:min-h-0"
+                      className="flex min-h-11 items-center text-body-sm text-warm-300 transition-colors hover:text-white md:inline-flex md:min-h-0"
                     >
                       {link.label}
                     </Link>
@@ -102,15 +112,19 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="py-6 border-t border-warm-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-warm-300">
+        <div className="py-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-caption text-warm-400">
           <p>&copy; {year} Artwall Labs. All rights reserved.</p>
-          <div className="flex items-center gap-1 text-xs">
-            <span className="font-mono text-fox-500">BUILD</span>
-            <span className="text-warm-500">&middot;</span>
-            <span className="font-mono text-fox-500">SHIP</span>
-            <span className="text-warm-500">&middot;</span>
-            <span className="font-mono text-fox-500">SCALE</span>
-          </div>
+          <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-5 gap-y-1">
+            {footerLinks.Support.filter((l) => l.href.startsWith('/legal')).map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className="inline-flex min-h-11 items-center transition-colors hover:text-white sm:min-h-0"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
         </div>
       </div>
     </footer>

@@ -21,9 +21,8 @@
     --color-text-muted: #6e6860;
     --color-border: #edeae4;
     --color-border-hover: #c6c1b5;
-    --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-    --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
-    --font-serif: "Instrument Serif", Georgia, serif;
+    --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+    --font-display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
     --radius-sm: 0.5rem; /* 8px  — inputs, chips */
     --radius-md: 0.875rem; /* 14px — cards */
@@ -123,8 +122,7 @@
     }
   }
 
-  /* Plus Jakarta Sans is the display face, Inter the text face, and Instrument Serif italic is
-     reserved for the one accent phrase in a headline. */
+  /* Bricolage Grotesque for headings, DM Sans for text (DESIGN.md). */
   h1,
   h2,
   h3,
@@ -272,6 +270,86 @@
 
   /* Photography frame — warm ground shows through a hair of padding, soft
      shadow does the separating (DESIGN.md: shadow over border). */
+  /* Brand stage: the warm fox field product windows sit on (hero film, showcase previews). */
+  .brand-stage {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: 1.75rem;
+    background:
+      radial-gradient(120% 90% at 100% 0%, #ffd9bd 0%, transparent 55%),
+      radial-gradient(90% 80% at 0% 100%, #ffb27a 0%, transparent 60%),
+      linear-gradient(135deg, #ff5a14 0%, #ff8a3d 48%, #ffc79a 100%);
+  }
+  .brand-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: repeating-linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.07) 0 1px,
+      transparent 1px 22px
+    );
+  }
+
+  /* Headline accent: fox orange as a slow-moving warm gradient. */
+  .text-gradient-fox {
+    background-image: linear-gradient(
+      100deg,
+      #e04400 0%,
+      #ff4d00 30%,
+      #ff8a3d 55%,
+      #ff4d00 80%,
+      #e04400 100%
+    );
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: fox-sheen 9s ease-in-out infinite alternate;
+  }
+  @keyframes fox-sheen {
+    from {
+      background-position: 0% 50%;
+    }
+    to {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* A soft band of light that crosses the brand stage every few seconds. */
+  .brand-stage::after {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.28) 50%,
+      transparent 60%
+    );
+    transform: translateX(-60%);
+    animation: stage-sweep 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  @keyframes stage-sweep {
+    0%,
+    55% {
+      transform: translateX(-60%);
+    }
+    100% {
+      transform: translateX(60%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .text-gradient-fox,
+    .brand-stage::after {
+      animation: none;
+    }
+  }
+
   .img-frame {
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -343,23 +421,9 @@
     transform: translateY(-3px);
   }
 
-  /* The accent phrase of a headline: one word or two, in serif italic. */
-  .accent-serif {
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-weight: 400;
-    letter-spacing: -0.01em;
-    font-size: 1.1em;
-  }
-
-  /* Primary. A lit surface rather than a flat fill: a vertical gradient, a crisp darker edge, a
-     1px inner highlight on top and a soft coloured glow beneath. It lifts on hover, sits down when
-     pressed, and a slow sheen crosses it once on hover. Radius is 14px, not a pill: pills are for
-     chips and filters, so a button reads as the thing you press. */
+  /* Primary. A flat fox fill: the colour does the work, so no gradient, glow or sheen.
+     Radius is 14px, not a pill: pills are for chips and filters. */
   .btn-fox {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -367,68 +431,28 @@
     min-height: 2.75rem;
     padding: 0.7rem 1.4rem;
     color: #ffffff;
-    font-family: var(--font-display);
+    font-family: var(--font-sans);
     font-weight: 600;
     font-size: 0.9375rem;
-    letter-spacing: -0.012em;
     line-height: 1.2;
-    text-shadow: 0 1px 0 rgba(150, 30, 0, 0.35);
-    background: linear-gradient(180deg, #ff6a2c 0%, #ff4d00 52%, #ec4300 100%);
-    border: 1px solid #d13d00;
+    background: #c73c00;
+    border: 1px solid transparent;
     border-radius: 0.875rem;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.34),
-      inset 0 -1px 0 rgba(120, 25, 0, 0.18),
-      0 1px 2px rgba(120, 30, 0, 0.32),
-      0 10px 22px -10px rgba(255, 77, 0, 0.6);
-    transition:
-      transform 160ms var(--ease-enter),
-      box-shadow 200ms var(--ease-enter),
-      filter 200ms var(--ease-enter);
+    transition: background-color 160ms var(--ease-enter);
     white-space: nowrap;
   }
 
-  .btn-fox::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: linear-gradient(
-      105deg,
-      transparent 30%,
-      rgba(255, 255, 255, 0.28) 48%,
-      transparent 66%
-    );
-    transform: translateX(-120%);
-    transition: transform 650ms var(--ease-enter);
-  }
-
   .btn-fox:hover {
-    filter: brightness(1.04) saturate(1.05);
-    transform: translateY(-1px);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      inset 0 -1px 0 rgba(120, 25, 0, 0.2),
-      0 2px 4px rgba(120, 30, 0, 0.3),
-      0 14px 28px -10px rgba(255, 77, 0, 0.7);
-  }
-
-  .btn-fox:hover::after {
-    transform: translateX(120%);
+    background: #a93200;
   }
 
   .btn-fox:active {
-    transform: translateY(0.5px);
-    filter: brightness(0.97);
-    box-shadow:
-      inset 0 2px 4px rgba(120, 25, 0, 0.3),
-      0 1px 1px rgba(120, 30, 0, 0.3);
+    background: #c73c00;
   }
 
   .btn-fox:focus-visible {
     outline: none;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.34),
       0 0 0 3px #faf8f5,
       0 0 0 5px rgba(255, 77, 0, 0.55);
   }
@@ -436,8 +460,7 @@
   .btn-fox:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
-    filter: grayscale(0.2);
+    background: #c73c00;
     box-shadow: none;
   }
 
@@ -451,14 +474,9 @@
   }
 
   /* The same button once its job is done ("Added"). */
-  .btn-fox--done {
-    background: linear-gradient(180deg, #6f9c86 0%, #5b8a72 55%, #4c7862 100%);
-    border-color: #3f6551;
-    text-shadow: 0 1px 0 rgba(20, 50, 35, 0.3);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      0 1px 2px rgba(30, 60, 45, 0.3),
-      0 10px 22px -10px rgba(91, 138, 114, 0.6);
+  .btn-fox--done,
+  .btn-fox--done:hover {
+    background: #5b8a72;
   }
 
   /* Secondary. White paper with a fine edge and a whisper of depth. */
@@ -509,12 +527,6 @@
     box-shadow:
       0 0 0 3px #faf8f5,
       0 0 0 5px rgba(26, 25, 24, 0.5);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .btn-fox::after {
-      display: none;
-    }
   }
 
   .btn-ghost {
@@ -876,4 +888,27 @@
   .marquee-track {
     animation: none;
   }
+}
+
+/* Visible keyboard navigation on all storefront controls. */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #b83700;
+  outline-offset: 4px;
+}
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 1.5rem;
+  z-index: 100;
+  transform: translateY(-180%);
+  padding: 0.75rem 1rem;
+  background: #1a1918;
+  color: white;
+  border-radius: 6px;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+#main-content {
+  scroll-margin-top: 4.25rem;
 }

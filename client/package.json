@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint src/ --ext .js,.jsx --fix",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prebuild": "node scripts/gen-catalog-summary.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.75.0",

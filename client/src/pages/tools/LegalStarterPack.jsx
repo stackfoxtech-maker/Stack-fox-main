@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Captcha from '@components/ui/Captcha';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { apiPost } from '@lib/api';
@@ -60,6 +61,7 @@ export default function LegalStarterPack() {
             </div>
           ))}
         </div>
+        <Captcha />
         <button
           type="submit"
           disabled={loading}

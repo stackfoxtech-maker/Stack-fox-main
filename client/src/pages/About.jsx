@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { usePageTitle } from '@lib/hooks';
 import { Section } from '@components/ui/Primitives';
 import { Reveal } from '@components/Reveal';
-import CdnImage from '@components/CdnImage';
+import Photo from '@components/Photo';
 import { Check, ArrowRight, Zap, ExternalLink } from 'lucide-react';
 
 const ProblemItem = ({ title, desc }) => (
@@ -80,15 +80,15 @@ export default function About() {
 
             <Reveal variant="fade" delay={0.1} className="lg:col-span-6">
               <div className="img-frame aspect-[4/3]">
-                <CdnImage
-                  name="about-workspace"
-                  w={900}
-                  widths={[480, 720, 900, 1200]}
+                <Photo
+                  base="/images/about/studio-pair-laptop"
+                  widths={[720, 1200]}
                   eager
                   sizes="(min-width: 1024px) 45vw, 100vw"
                   width={1200}
                   height={900}
-                  alt="The StackFox studio in the late afternoon"
+                  alt="Two people working through a project together at a laptop"
+                  className="h-full w-full object-cover"
                 />
               </div>
             </Reveal>
@@ -153,14 +153,14 @@ export default function About() {
 
           <Reveal className="space-y-8 lg:col-span-7">
             <div className="img-frame aspect-[16/10]">
-              <CdnImage
-                name="studio-collab"
-                w={1200}
-                widths={[560, 800, 1200, 1600]}
+              <Photo
+                base="/images/about/team-task-board"
+                widths={[800, 1400]}
                 sizes="(min-width: 1024px) 58vw, 100vw"
                 width={1400}
                 height={875}
-                alt="The StackFox team working through a project plan"
+                alt="A team planning work on a board of sticky-note tasks"
+                className="h-full w-full object-cover"
               />
             </div>
             <p className="text-body-lg leading-relaxed text-warm-700">

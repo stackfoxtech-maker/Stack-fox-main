@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Captcha from '@components/ui/Captcha';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Mail, Phone, User } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
@@ -111,6 +112,7 @@ export default function Signup() {
           />
         </Item>
         <Item>
+          <Captcha />
           <SubmitButton isLoading={isLoading}>Create Account</SubmitButton>
         </Item>
         <Item>

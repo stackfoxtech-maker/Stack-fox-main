@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   ShoppingCart,
@@ -27,7 +27,6 @@ import { useScrollPosition, useClickOutside } from '@lib/hooks';
 import useAuthStore from '@store/authStore';
 import useCartStore from '@store/cartStore';
 import useUiStore from '@store/uiStore';
-import { Button } from '@components/ui/Primitives';
 import { BrandLogo, Tagline, Wordmark } from '@components/ui/BrandLogo';
 // Deferred: the search overlay pulls the storefront catalogue — don't load it
 // (or fire that fetch) until someone actually opens search.
@@ -77,11 +76,7 @@ const MORE_GROUPS = [
 // ── Logo ────────────────────────────────────────────────────────────────────
 const FoxLogo = () => (
   <Link to="/" className="flex items-center gap-2 group">
-    <BrandLogo
-      size={28}
-      withBackground
-      containerClassName="group-hover:scale-105 transition-transform"
-    />
+    <BrandLogo size={30} />
     <div className="flex flex-col">
       <Wordmark className="text-xl" />
       <Tagline className="mt-0.5" />
@@ -95,14 +90,26 @@ const UserMenu = () => {
   const { user, logout, getDashboardPath } = useAuthStore();
   const navigate = useNavigate();
   const ref = useClickOutside(() => setOpen(false));
+  const triggerRef = useRef(null);
 
   if (!user) return null;
 
   const dashPath = getDashboardPath();
 
   return (
-    <div className="relative" ref={ref}>
+    <div
+      className="relative"
+      ref={ref}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          setOpen(false);
+          triggerRef.current?.focus();
+        }
+      }}
+    >
       <button
+        ref={triggerRef}
+        aria-expanded={open}
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-warm-100 transition-colors"
       >
@@ -180,6 +187,7 @@ const handleInactiveClick = (e) => {
 const MoreMenu = () => {
   const [open, setOpen] = useState(false);
   const ref = useClickOutside(() => setOpen(false));
+  const triggerRef = useRef(null);
   const location = useLocation();
 
   const isActive = MORE_GROUPS.some((g) =>
@@ -187,14 +195,23 @@ const MoreMenu = () => {
   );
 
   return (
-    <div className="relative" ref={ref}>
+    <div
+      className="relative"
+      ref={ref}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          setOpen(false);
+          triggerRef.current?.focus();
+        }
+      }}
+    >
       <button
+        ref={triggerRef}
+        aria-expanded={open}
         onClick={() => setOpen(!open)}
         className={cn(
-          'flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-          isActive || open
-            ? 'text-fox-500 bg-fox-50'
-            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50',
+          'flex items-center gap-1 px-3 py-2 text-body-sm transition-colors duration-short',
+          isActive || open ? 'text-warm-900 font-medium' : 'text-warm-800 hover:text-warm-900',
         )}
       >
         More
@@ -215,6 +232,9 @@ const MoreMenu = () => {
                     return (
                       <Link
                         key={link.href}
+                        aria-current={
+                          isLinkActive(link.href, location.pathname) ? 'page' : undefined
+                        }
                         to={link.inactive ? '#' : link.href}
                         onClick={(e) => {
                           if (link.inactive) {
@@ -225,9 +245,10 @@ const MoreMenu = () => {
                         }}
                         className="flex items-start gap-3 px-2 py-2 rounded-lg hover:bg-warm-50 transition-colors group"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-fox-50 text-fox-500 flex items-center justify-center flex-shrink-0 group-hover:bg-fox-100 transition-colors">
-                          <Icon size={15} />
-                        </div>
+                        <Icon
+                          size={16}
+                          className="mt-0.5 flex-shrink-0 text-warm-400 group-hover:text-warm-900 transition-colors"
+                        />
                         <div className="min-w-0">
                           <div className="text-sm font-semibold text-warm-900">{link.label}</div>
                           <div className="text-[11px] text-warm-500 leading-tight mt-0.5">
@@ -278,6 +299,10 @@ export default function Navbar() {
   const { itemCount, toggleCart } = useCartStore();
   const { isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useUiStore();
   const location = useLocation();
+  const mobileTrigger = useRef(null);
+  useEffect(() => {
+    closeMobileMenu();
+  }, [location.pathname, closeMobileMenu]);
 
   // Hide navbar on dashboard pages (they have their own sidebar)
   const isDashboard = location.pathname.startsWith('/app/');
@@ -285,11 +310,17 @@ export default function Navbar() {
 
   return (
     <nav
+      aria-label="Main navigation"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && isMobileMenuOpen) {
+          closeMobileMenu();
+          mobileTrigger.current?.focus();
+        }
+      }}
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-[background,box-shadow,border-color] duration-medium ease-enter',
-        isScrolled
-          ? 'bg-warm-white/92 backdrop-blur-lg shadow-nav border-b border-warm-200'
-          : 'bg-warm-white/70 backdrop-blur-sm border-b border-transparent',
+        'bg-warm-white/80 backdrop-blur border-b',
+        isScrolled ? 'border-warm-200' : 'border-transparent',
       )}
     >
       <div className="container-fx">
@@ -298,19 +329,20 @@ export default function Navbar() {
           <FoxLogo />
 
           {/* Desktop nav */}
-          <div className="hidden lg:flex items-center gap-1">
+          <div className="hidden xl:flex items-center gap-1">
             {PRIMARY_LINKS.map((link) => (
               <Link
                 key={link.href}
+                aria-current={isLinkActive(link.href, location.pathname) ? 'page' : undefined}
                 to={link.inactive ? '#' : link.href}
                 onClick={(e) => {
                   if (link.inactive) handleInactiveClick(e);
                 }}
                 className={cn(
-                  'px-3.5 py-2 text-body-sm font-medium rounded-sm transition-colors duration-short',
+                  'px-3 py-2 text-body-sm transition-colors duration-short',
                   isLinkActive(link.href, location.pathname)
-                    ? 'text-fox-700 bg-fox-50'
-                    : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50',
+                    ? 'text-warm-900 font-medium'
+                    : 'text-warm-800 hover:text-warm-900',
                 )}
               >
                 {link.label}
@@ -333,7 +365,7 @@ export default function Navbar() {
             {/* Builder (Mobile Shortcut) */}
             <Link
               to="/builder"
-              className="hidden sm:block lg:hidden p-3 rounded-xl hover:bg-warm-100 transition-colors text-warm-700"
+              className="hidden sm:block xl:hidden p-3 rounded-xl hover:bg-warm-100 transition-colors text-warm-700"
               aria-label="Builder"
             >
               <Hammer size={20} />
@@ -360,24 +392,26 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
-                <Link to="/login">
-                  <Button variant="ghost" size="sm">
-                    Log in
-                  </Button>
+                <Link
+                  to="/login"
+                  className="inline-flex min-h-11 items-center px-3 text-body-sm text-warm-800 transition-colors hover:text-warm-900"
+                >
+                  Log in
                 </Link>
-                <Link to="/signup">
-                  <Button variant="primary" size="sm">
-                    Get started
-                  </Button>
+                <Link to="/signup" className="btn-fox btn-fox--sm">
+                  Get started
                 </Link>
               </div>
             )}
 
             {/* Mobile menu toggle */}
             <button
+              ref={mobileTrigger}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-navigation"
               onClick={toggleMobileMenu}
-              className="lg:hidden p-3 rounded-xl hover:bg-warm-100 transition-colors"
-              aria-label="Menu"
+              className="xl:hidden p-3 rounded-xl hover:bg-warm-100 transition-colors"
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -387,7 +421,10 @@ export default function Navbar() {
 
       {/* ─── Mobile drawer ─── */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-warm-100 shadow-elevated animate-slide-up max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div
+          id="mobile-navigation"
+          className="xl:hidden bg-white border-t border-warm-100 shadow-elevated animate-slide-up max-h-[calc(100dvh-9rem)] overscroll-contain overflow-y-auto"
+        >
           <div className="container-fx py-4 space-y-4">
             {/* Primary section */}
             <div>
@@ -401,6 +438,7 @@ export default function Navbar() {
                   return (
                     <Link
                       key={link.href}
+                      aria-current={isLinkActive(link.href, location.pathname) ? 'page' : undefined}
                       to={link.inactive ? '#' : link.href}
                       onClick={(e) => {
                         if (link.inactive) {
@@ -411,10 +449,10 @@ export default function Navbar() {
                       }}
                       className={cn(
                         'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors',
-                        active ? 'text-fox-500 bg-fox-50' : 'text-warm-700 hover:bg-warm-50',
+                        active ? 'text-warm-900 bg-warm-50' : 'text-warm-700 hover:bg-warm-50',
                       )}
                     >
-                      <Icon size={16} className={active ? 'text-fox-500' : 'text-warm-400'} />
+                      <Icon size={16} className={active ? 'text-warm-900' : 'text-warm-400'} />
                       {link.label}
                     </Link>
                   );
@@ -435,6 +473,9 @@ export default function Navbar() {
                     return (
                       <Link
                         key={link.href}
+                        aria-current={
+                          isLinkActive(link.href, location.pathname) ? 'page' : undefined
+                        }
                         to={link.inactive ? '#' : link.href}
                         onClick={(e) => {
                           if (link.inactive) {
@@ -445,10 +486,10 @@ export default function Navbar() {
                         }}
                         className={cn(
                           'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-colors',
-                          active ? 'text-fox-500 bg-fox-50' : 'text-warm-700 hover:bg-warm-50',
+                          active ? 'text-warm-900 bg-warm-50' : 'text-warm-700 hover:bg-warm-50',
                         )}
                       >
-                        <Icon size={16} className={active ? 'text-fox-500' : 'text-warm-400'} />
+                        <Icon size={16} className={active ? 'text-warm-900' : 'text-warm-400'} />
                         {link.label}
                         {link.href === '/project-wall' && (
                           <span className="ml-auto flex items-center gap-1 text-[8px] font-bold text-success-500 bg-success-50 px-1.5 py-0.5 rounded-full animate-pulse uppercase tracking-wider">
@@ -465,15 +506,11 @@ export default function Navbar() {
             {/* Auth buttons */}
             {!isAuthenticated && (
               <div className="flex gap-2 pt-3 border-t border-warm-100">
-                <Link to="/login" onClick={closeMobileMenu} className="flex-1">
-                  <Button variant="outline" size="md" className="w-full">
-                    Log in
-                  </Button>
+                <Link to="/login" onClick={closeMobileMenu} className="btn-outline flex-1">
+                  Log in
                 </Link>
-                <Link to="/signup" onClick={closeMobileMenu} className="flex-1">
-                  <Button variant="primary" size="md" className="w-full">
-                    Get started
-                  </Button>
+                <Link to="/signup" onClick={closeMobileMenu} className="btn-fox flex-1">
+                  Get started
                 </Link>
               </div>
             )}

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { usePageTitle } from '@lib/hooks';
 import { ArrowRight } from 'lucide-react';
 import { Section } from '@components/ui/Primitives';
-import CdnImage from '@components/CdnImage';
+import Photo from '@components/Photo';
 import LeadInquiryModal from '@components/LeadInquiryModal';
 
 const projects = [
@@ -14,42 +14,48 @@ const projects = [
     industry: 'E-Commerce',
     desc: 'Full-stack organic food marketplace with subscription box and delivery tracking.',
     tech: ['React', 'Node.js', 'MongoDB', 'Razorpay'],
-    img: 'portfolio-ecommerce',
+    photo: '/images/portfolio/ecommerce-grocery-delivery',
+    alt: 'Groceries unpacked beside a laptop showing a delivery order',
   },
   {
     title: 'HealthFirst Portal',
     industry: 'Healthcare',
     desc: 'Patient portal with appointment booking, telemedicine, and prescription management.',
     tech: ['Next.js', 'Express', 'PostgreSQL', 'Socket.io'],
-    img: 'portfolio-healthcare',
+    photo: '/images/portfolio/healthcare-telemedicine',
+    alt: 'A doctor on a telemedicine call at her laptop',
   },
   {
     title: 'PropertyDekho',
     industry: 'Real Estate',
     desc: 'Property listing with map view, virtual tours, and lead management CRM.',
     tech: ['React', 'Node.js', 'MongoDB', 'Google Maps'],
-    img: 'portfolio-realestate',
+    photo: '/images/portfolio/realestate-couple-tablet',
+    alt: 'A couple browsing property listings on a tablet at home',
   },
   {
     title: 'EduBridge LMS',
     industry: 'EdTech',
     desc: 'Learning management system supporting 5000+ students with offline mobile app.',
     tech: ['React Native', 'Node.js', 'MongoDB', 'AWS'],
-    img: 'portfolio-education',
+    photo: '/images/portfolio/education-online-class',
+    alt: 'A student laughing during an online class on her laptop',
   },
   {
     title: 'FoodBox',
     industry: 'Food & Restaurant',
     desc: 'Online ordering platform with kitchen management and WhatsApp integration.',
     tech: ['React', 'Express', 'MongoDB', 'Twilio'],
-    img: 'portfolio-food',
+    photo: '/images/portfolio/food-table-payment',
+    alt: 'A server taking payment at the table on a handheld device',
   },
   {
     title: 'EventHub',
     industry: 'Events',
     desc: 'Event ticketing with seat selection, QR check-in, and attendee analytics.',
     tech: ['Next.js', 'Node.js', 'PostgreSQL', 'Stripe'],
-    img: 'portfolio-events',
+    photo: '/images/portfolio/events-qr-ticket',
+    alt: 'A guest showing a QR ticket on a phone at a counter',
   },
 ];
 
@@ -116,14 +122,14 @@ export default function Portfolio() {
               <SpotlightGlow />
               <div className="img-frame img-frame-sm relative mb-5 aspect-[4/3] overflow-hidden">
                 <div className="h-full w-full transition-transform duration-500 group-hover:scale-105">
-                  <CdnImage
-                    name={p.img}
-                    w={720}
-                    widths={[400, 560, 720, 1000]}
+                  <Photo
+                    base={p.photo}
+                    widths={[600, 1000]}
                     sizes="(min-width: 1024px) 30vw, (min-width: 768px) 45vw, 100vw"
                     width={1000}
                     height={750}
-                    alt={`${p.title} — ${p.industry}`}
+                    alt={p.alt}
+                    className="h-full w-full object-cover"
                   />
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Captcha from '@components/ui/Captcha';
 import { Link } from 'react-router-dom';
 import { apiPost } from '@lib/api';
 
@@ -97,6 +98,7 @@ export default function BriefBuilder() {
             className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[140px]"
           />
         )}
+        <Captcha />
         <button
           type="submit"
           disabled={loading}

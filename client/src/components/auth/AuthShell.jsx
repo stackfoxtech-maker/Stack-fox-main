@@ -15,6 +15,7 @@ import {
 import { BrandLogo, Wordmark } from '@components/ui/BrandLogo';
 import { Button } from '@components/ui/Primitives';
 import { fadeUp, stagger } from '@components/motion';
+import Photo from '@components/Photo';
 
 const ease = [0.2, 0.7, 0.2, 1];
 
@@ -172,8 +173,9 @@ function SignupCards({ px }) {
 // Each auth page gets its own photo, headline, perks and floating cards.
 const VARIANTS = {
   login: {
-    image: '/img/founder-desk.webp',
-    position: '60% 30%',
+    image: '/images/auth/login-founder-desk',
+    alt: 'A founder smiling at her laptop at a light wooden desk',
+    position: '50% 45%',
     words: [{ w: 'Good' }, { w: 'to' }, { w: 'see' }, { w: 'you' }, { w: 'again.', hi: true }],
     perks: [
       { icon: CheckCircle2, text: 'Pick up exactly where you left off' },
@@ -182,8 +184,9 @@ const VARIANTS = {
     Cards: LoginCards,
   },
   signup: {
-    image: '/img/home-blocks.webp',
-    position: '75% 50%',
+    image: '/images/auth/signup-task-board',
+    alt: 'A founder presenting a task board with To do, In progress and Done columns',
+    position: '55% 40%',
     words: [{ w: 'Your' }, { w: 'build,' }, { w: 'block' }, { w: 'by' }, { w: 'block.', hi: true }],
     perks: [
       { icon: Sparkles, text: 'Scope, price and track a build in one place' },
@@ -213,18 +216,27 @@ function BrandPanel({ variant }) {
     >
       {/* photo: slow Ken Burns zoom + mouse parallax */}
       <motion.div style={{ x: imgX }} className="absolute -inset-8">
-        <motion.img
-          src={v.image}
-          alt=""
+        <motion.div
           initial={{ opacity: 0, scale: 1.18 }}
           animate={{ opacity: 1, scale: [1.08, 1.16, 1.08] }}
           transition={{
             opacity: { duration: 0.9 },
             scale: { duration: 24, repeat: Infinity, ease: 'easeInOut' },
           }}
-          className="h-full w-full object-cover"
-          style={{ objectPosition: v.position }}
-        />
+          className="h-full w-full"
+        >
+          <Photo
+            base={v.image}
+            widths={[700, 1200]}
+            eager
+            sizes="(min-width: 1280px) 50vw, 46vw"
+            width={1200}
+            height={1500}
+            alt={v.alt}
+            className="h-full w-full object-cover"
+            style={{ objectPosition: v.position }}
+          />
+        </motion.div>
       </motion.div>
       <div className="absolute inset-0 bg-gradient-to-t from-warm-900 via-warm-900/60 to-warm-900/5" />
       <motion.div
@@ -313,15 +325,24 @@ export default function AuthShell({ variant = 'login', title, subtitle, children
           transition={{ duration: 0.5 }}
           className="relative h-[15.5rem] shrink-0 overflow-hidden bg-warm-900 sm:h-[18rem] lg:hidden"
         >
-          <motion.img
-            src={VARIANTS[variant].image}
-            alt=""
+          <motion.div
             initial={{ scale: 1.18 }}
             animate={{ scale: 1.04 }}
             transition={{ duration: 6, ease: 'easeOut' }}
-            className="absolute inset-0 h-full w-full object-cover"
-            style={{ objectPosition: VARIANTS[variant].position }}
-          />
+            className="absolute inset-0"
+          >
+            <Photo
+              base={VARIANTS[variant].image}
+              widths={[700, 1200]}
+              eager
+              sizes="100vw"
+              width={1200}
+              height={1500}
+              alt={VARIANTS[variant].alt}
+              className="h-full w-full object-cover"
+              style={{ objectPosition: VARIANTS[variant].position }}
+            />
+          </motion.div>
           <div className="absolute inset-0 bg-gradient-to-t from-warm-900 via-warm-900/45 to-warm-900/10" />
           <Link
             to="/"
