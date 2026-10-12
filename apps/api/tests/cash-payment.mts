@@ -63,7 +63,10 @@ const total = Number(created.body?.data?.quote?.total);
 
 // Finance cannot confirm cash the client never asked to pay.
 const early = await call("POST", `/quotes/${quoteId}/cash/confirm`, financeToken, {});
-check(`confirm before a cash request is refused -> ${early.status}`, early.status === 409);
+check(
+  `confirm before a cash request is refused -> ${early.status}`,
+  early.status === 409,
+);
 
 const req = await call("POST", `/quotes/${quoteId}/cash`, client.token, {
   paymentMode: "MILESTONE",
@@ -71,7 +74,10 @@ const req = await call("POST", `/quotes/${quoteId}/cash`, client.token, {
 const pending = Number(req.body?.data?.checkoutDetails?.pendingOrderAmount);
 check(`client requests cash -> ${req.status}`, req.status === 200);
 check(`quote parks as awaiting_cash`, req.body?.data?.status === "awaiting_cash");
-check(`pinned amount is the 30% milestone (${pending})`, pending === Math.round(total * 0.3));
+check(
+  `pinned amount is the 30% milestone (${pending})`,
+  pending === Math.round(total * 0.3),
+);
 
 const again = await call("POST", `/quotes/${quoteId}/cash`, client.token, {});
 check(`a repeated cash request is idempotent -> ${again.status}`, again.status === 200);
@@ -85,13 +91,19 @@ const before = await prisma.quote.findUniqueOrThrow({ where: { id: quoteId } });
 check(`nothing is provisioned before confirmation`, before.invoiceId === null);
 
 const byClient = await call("POST", `/quotes/${quoteId}/cash/confirm`, client.token, {});
-check(`a client cannot confirm their own cash -> ${byClient.status}`, byClient.status === 403);
+check(
+  `a client cannot confirm their own cash -> ${byClient.status}`,
+  byClient.status === 403,
+);
 
 const ok = await call("POST", `/quotes/${quoteId}/cash/confirm`, financeToken, {
   reference: `RCPT-${stamp}`,
 });
 check(`finance confirms cash -> ${ok.status}`, ok.status === 200);
-check(`quote is partially paid after the milestone`, ok.body?.data?.status === "partially_paid");
+check(
+  `quote is partially paid after the milestone`,
+  ok.body?.data?.status === "partially_paid",
+);
 
 const after = await prisma.quote.findUniqueOrThrow({ where: { id: quoteId } });
 const invoice = after.invoiceId

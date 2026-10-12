@@ -285,7 +285,9 @@ export default function Checkout() {
       navigate('/app/client/quotes');
     } catch (err) {
       toast.error(
-        err.response?.data?.message || err.response?.data?.error || 'Could not request cash payment.',
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          'Could not request cash payment.',
       );
     }
     setRequestingCash(false);
