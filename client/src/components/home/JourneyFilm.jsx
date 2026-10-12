@@ -579,7 +579,7 @@ const CAP = {
  * The homepage hero film: one framed product window that plays the whole
  * customer journey, chapter by chapter. With a `progress` motion value (the
  * pinned scroll track) scrolling drives the chapters; otherwise a timer does,
- * pausing on hover and off-screen. Reduced motion holds still and waits for a click.
+ * pausing off-screen. Reduced motion holds still and waits for a click.
  */
 export function JourneyFilm({ stageClassName = '', progress, onJump }) {
   const reduce = useReducedMotion();
@@ -588,7 +588,6 @@ export function JourneyFilm({ stageClassName = '', progress, onJump }) {
   const scrollMode = !!progress && !reduce;
   const [chapter, setChapter] = useState(0);
   const [cycle, setCycle] = useState(0);
-  const [hover, setHover] = useState(false);
   const [paused, setPaused] = useState(false); // explicit pause for touch and keyboard
   const [hot, setHot] = useState(null); // chapter under the pointer or focus, shared by rail and sidebar
   const [cart, setCart] = useState(reduce ? PIECES.length : 0);
@@ -621,7 +620,7 @@ export function JourneyFilm({ stageClassName = '', progress, onJump }) {
       s.set(chapter + 1);
       return undefined;
     }
-    if (!visible || hover || paused) return undefined;
+    if (!visible || paused) return undefined;
     const left = clamp01(chapter + 1 - s.get());
     const run = animate(s, chapter + 1, {
       duration: left * CHAPTER_S,
@@ -633,7 +632,7 @@ export function JourneyFilm({ stageClassName = '', progress, onJump }) {
       },
     });
     return () => run.stop();
-  }, [scrollMode, reduce, visible, hover, paused, chapter, cycle, s]);
+  }, [scrollMode, reduce, visible, paused, chapter, cycle, s]);
 
   const go = (i) => {
     if (scrollMode) {
@@ -660,40 +659,10 @@ export function JourneyFilm({ stageClassName = '', progress, onJump }) {
   const lightO = useSpring(lo, { stiffness: 120, damping: 20 });
   const light = lit && !reduce;
 
-  // The window leans a couple of degrees toward the pointer.
-  const tx = useSpring(useMotionValue(0), { stiffness: 120, damping: 18 });
-  const ty = useSpring(useMotionValue(0), { stiffness: 120, damping: 18 });
-  const rotateY = useTransform(tx, [-1, 1], [-2, 2]);
-  const rotateX = useTransform(ty, [-1, 1], [1.5, -1.5]);
-  const lean = (e) => {
-    if (e.pointerType !== 'mouse') return;
-    const r = e.currentTarget.getBoundingClientRect();
-    tx.set(((e.clientX - r.left) / r.width) * 2 - 1);
-    ty.set(((e.clientY - r.top) / r.height) * 2 - 1);
-  };
-
-  const mouseOnly = (fn) => (e) => e.pointerType === 'mouse' && fn();
-
   return (
-    <div
-      ref={ref}
-      onPointerEnter={mouseOnly(() => setHover(true))}
-      onPointerLeave={mouseOnly(() => setHover(false))}
-    >
+    <div ref={ref}>
       <div className={stageClassName}>
-        <motion.div
-          className="overflow-hidden rounded-[1.25rem] bg-white shadow-[0_1px_0_rgba(26,25,24,0.04),0_40px_80px_-32px_rgba(26,25,24,0.35)] ring-1 ring-warm-900/10"
-          style={light ? { rotateX, rotateY, transformPerspective: 1400 } : undefined}
-          onPointerMove={light ? lean : undefined}
-          onPointerLeave={
-            light
-              ? () => {
-                  tx.set(0);
-                  ty.set(0);
-                }
-              : undefined
-          }
-        >
+        <motion.div className="overflow-hidden rounded-[1.25rem] bg-white shadow-[0_1px_0_rgba(26,25,24,0.04),0_40px_80px_-32px_rgba(26,25,24,0.35)] ring-1 ring-warm-900/10">
           {/* Window chrome */}
           <div className="flex items-center gap-3 border-b border-warm-100 bg-warm-50 px-4 py-2.5">
             <div className="flex gap-1.5" aria-hidden>
