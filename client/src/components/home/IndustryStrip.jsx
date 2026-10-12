@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { LayoutGroup, animate, motion, useInView, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Check, MapPin } from 'lucide-react';
 import { Reveal } from '@components/Reveal';
+import Photo from '@components/Photo';
 
 /* Mirrors shared/stackfox-data.json → industryBundles (first 3 features).
    Hardcoded so the homepage doesn't pull the full catalogue JSON. */
@@ -400,12 +401,23 @@ function IndustryCard({ bundle: b }) {
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-fox-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
         aria-hidden
       />
+      {/* Industry photo with the live UI vignette floating over it. */}
       <div
         ref={ref}
-        className="flex h-36 items-center justify-center rounded-sm bg-warm-50 px-4 ring-1 ring-inset ring-warm-900/[0.04]"
+        className="relative aspect-[4/3] overflow-hidden rounded-sm bg-warm-100"
         aria-hidden
       >
-        <div className="w-full max-w-[220px] transition-transform duration-300 ease-out group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
+        <Photo
+          base={`/images/home/industry-${b.id}`}
+          widths={[600, 900]}
+          width={900}
+          height={675}
+          sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
+          alt=""
+          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-warm-900/45 via-warm-900/5 to-transparent" />
+        <div className="absolute bottom-3 left-3 w-[min(220px,calc(100%-1.5rem))] rounded-[10px] bg-warm-white/95 p-2.5 shadow-lg ring-1 ring-black/5 backdrop-blur transition-transform duration-300 ease-out group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
           <Vignette key={replays} mode={mode} />
         </div>
       </div>

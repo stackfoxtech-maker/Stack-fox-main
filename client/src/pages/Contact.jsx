@@ -3,7 +3,7 @@ import { Mail, Phone, MapPin, Send, MessageCircle } from 'lucide-react';
 import { usePageTitle } from '@lib/hooks';
 import { PageHero } from '@components/layout/PageHero';
 import { Section, Input, Textarea, Button } from '@components/ui/Primitives';
-import CdnImage from '@components/CdnImage';
+import Photo from '@components/Photo';
 import toast from 'react-hot-toast';
 
 export default function Contact() {
@@ -78,14 +78,14 @@ export default function Contact() {
 
         <div className="md:col-span-2 space-y-6">
           <div className="img-frame img-frame-sm aspect-[4/3]">
-            <CdnImage
-              name="contact-call"
-              w={720}
-              widths={[400, 560, 720, 960]}
+            <Photo
+              base="/images/contact/advisor-video-call"
+              widths={[600, 960]}
               sizes="(min-width: 768px) 38vw, 100vw"
               width={960}
               height={720}
-              alt="A StackFox advisor on a friendly project call"
+              alt="An advisor explaining a plan on a laptop video call"
+              className="h-full w-full object-cover"
             />
           </div>
           <div className="card-fx p-5">

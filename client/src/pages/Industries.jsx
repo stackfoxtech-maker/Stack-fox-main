@@ -17,7 +17,7 @@ import { Section, Button } from '@components/ui/Primitives';
 import { Reveal } from '@components/Reveal';
 import { PageHero } from '@components/layout/PageHero';
 import { SpotlightGlow, spotlightProps } from '@components/home/HomeMotion';
-import CdnImage from '@components/CdnImage';
+import Photo from '@components/Photo';
 import useCartStore from '@store/cartStore';
 import useAuthStore from '@store/authStore';
 import data from '@data/stackfox-data.json';
@@ -58,14 +58,15 @@ export default function Industries() {
       />
 
       <Reveal variant="fade" className="img-frame mb-10 aspect-[16/8] md:mb-12 md:aspect-[16/7]">
-        <CdnImage
-          name="industries-hero"
-          w={1400}
+        <Photo
+          base="/images/industries/banner-upi-counter"
+          widths={[800, 1400]}
           eager
           sizes="(min-width: 1200px) 1152px, 100vw"
           width={1400}
           height={612}
-          alt="An independent shop owner in the doorway of her storefront at golden hour"
+          alt="A shop counter in Bengaluru with UPI and card payment signs"
+          className="h-full w-full object-cover object-[50%_60%]"
         />
       </Reveal>
 

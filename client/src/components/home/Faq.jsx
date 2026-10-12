@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { Reveal } from '@components/Reveal';
+import Photo from '@components/Photo';
 
 // Facts from shared/stackfox-data.json — keep numbers in sync with it.
 const FAQS = [
@@ -43,6 +44,17 @@ export function Faq() {
               Pricing, payments, timelines and what happens after launch.
             </p>
             <div className="mt-8 border-t border-warm-200 pt-6">
+              <div className="mb-5 aspect-square w-28 overflow-hidden rounded-md bg-warm-100 sm:w-32">
+                <Photo
+                  base="/images/home/faq-advisor-call"
+                  widths={[480, 800]}
+                  width={800}
+                  height={800}
+                  sizes="128px"
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </div>
               <p className="text-body text-warm-700">
                 Still unsure?{' '}
                 <a

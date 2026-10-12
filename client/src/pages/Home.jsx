@@ -15,6 +15,8 @@ import { usePageTitle } from '@lib/hooks';
 import { Reveal } from '@components/Reveal';
 import { CountOnView } from '@components/home/HomeMotion';
 import { JourneyFilm } from '@components/home/JourneyFilm';
+import { HeroVideo } from '@components/home/HeroVideo';
+import Photo from '@components/Photo';
 import { BuildShowcase } from '@components/home/BuildShowcase';
 import { TryEstimator } from '@components/home/TryEstimator';
 import { Bento } from '@components/home/Bento';
@@ -104,97 +106,95 @@ export default function Home() {
 
   return (
     <>
-      {/* ── Hero: promise, shortcuts, then the product film on the brand stage ── */}
+      {/* ── Hero: promise and shortcuts beside a founder at work ── */}
       <section className="relative overflow-hidden bg-warm-white">
-        <div className="container-fx relative pb-16 pt-10 sm:pt-16 lg:pb-24 lg:pt-20">
-          <div className="grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-12">
-            <h1
-              className="text-warm-900 lg:col-span-7"
-              style={{
-                fontSize: 'clamp(2.6rem, 6.4vw, 5.25rem)',
-                lineHeight: 1.02,
-                letterSpacing: '-0.04em',
-              }}
-            >
-              <span className="block">
-                <MaskWords text="Build anything." />
-              </span>
-              <span className="block">
-                <MaskWords text="Price every piece." delay={0.18} className="text-gradient-fox" />
-              </span>
-            </h1>
-            <motion.div
-              initial={reduce ? false : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.45, ease: EASE }}
-              className="lg:col-span-5 lg:pb-2"
-            >
-              <p className="max-w-md text-body-lg text-warm-800">
-                Your idea. The right expertise. A clear price. Pick from {serviceCount}+ priced
-                services and watch your total build up, line by line.
-              </p>
-              <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-                <Link to="/builder" className="btn-fox group w-full sm:w-auto">
-                  Start building
-                  <ArrowRight
-                    size={16}
-                    className="transition-transform duration-short group-hover:translate-x-1"
-                  />
-                </Link>
-                <Link
-                  to="/catalog"
-                  className="group inline-flex items-center gap-1 text-body-sm font-medium text-warm-900 underline decoration-warm-300 underline-offset-4 hover:text-fox-600 hover:decoration-fox-300"
-                >
-                  Explore services
-                  <ArrowUpRight
-                    size={15}
-                    className="transition-transform duration-short group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                  />
-                </Link>
-              </div>
-              <p className="mt-4 text-body-sm text-warm-700">
-                Explore first. Talk to us when you&rsquo;re ready.
-              </p>
-            </motion.div>
-          </div>
-
-          <motion.div
-            initial={reduce ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6, ease: EASE }}
-            className="mt-10 flex items-center gap-3"
-          >
-            <span className="hidden shrink-0 text-body-sm font-medium text-warm-800 sm:block">
-              What are you building?
-            </span>
-            <div className="no-scrollbar -mx-6 flex gap-2 overflow-x-auto px-6 sm:mx-0 sm:px-0">
-              {QUICK_STARTS.map(({ label, icon: Icon, cat }, i) => (
-                <motion.span
-                  key={cat}
-                  initial={reduce ? false : { opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.7 + i * 0.05, ease: EASE }}
-                  className="shrink-0"
-                >
-                  <Link
-                    to={`/builder?category=${cat}`}
-                    className="inline-flex items-center gap-2 rounded-pill bg-white px-3.5 py-2 text-body-sm font-medium text-warm-900 ring-1 ring-warm-200 transition-all hover:-translate-y-0.5 hover:shadow-sm hover:ring-fox-300"
-                  >
-                    <Icon size={15} className="text-fox-500" /> {label}
+        <div className="container-fx relative pb-20 pt-10 sm:pt-14 lg:pb-24 lg:pt-16">
+          <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-14">
+            <div className="lg:col-span-7">
+              <h1
+                className="text-warm-900"
+                style={{
+                  fontSize: 'clamp(2.6rem, 5.6vw, 5rem)',
+                  lineHeight: 1.02,
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                <span className="block">
+                  <MaskWords text="Build anything." />
+                </span>
+                <span className="block">
+                  <MaskWords text="Price every piece." delay={0.18} className="text-gradient-fox" />
+                </span>
+              </h1>
+              <motion.div
+                initial={reduce ? false : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.45, ease: EASE }}
+                className="mt-6"
+              >
+                <p className="max-w-md text-body-lg text-warm-800">
+                  Your idea. The right expertise. A clear price. Pick from {serviceCount}+ priced
+                  services and watch your total build up, line by line.
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+                  <Link to="/builder" className="btn-fox group w-full sm:w-auto">
+                    Start building
+                    <ArrowRight
+                      size={16}
+                      className="transition-transform duration-short group-hover:translate-x-1"
+                    />
                   </Link>
-                </motion.span>
-              ))}
+                  <Link
+                    to="/catalog"
+                    className="group inline-flex items-center gap-1 text-body-sm font-medium text-warm-900 underline decoration-warm-300 underline-offset-4 hover:text-fox-600 hover:decoration-fox-300"
+                  >
+                    Explore services
+                    <ArrowUpRight
+                      size={15}
+                      className="transition-transform duration-short group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                    />
+                  </Link>
+                </div>
+                <p className="mt-4 text-body-sm text-warm-700">
+                  Explore first. Talk to us when you&rsquo;re ready.
+                </p>
+              </motion.div>
+              <motion.div
+                initial={reduce ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.6, ease: EASE }}
+                className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"
+              >
+                <span className="hidden shrink-0 text-body-sm font-medium text-warm-800 sm:block">
+                  What are you building?
+                </span>
+                <div className="no-scrollbar -mx-6 flex gap-2 overflow-x-auto px-6 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+                  {QUICK_STARTS.map(({ label, icon: Icon, cat }, i) => (
+                    <motion.span
+                      key={cat}
+                      initial={reduce ? false : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.7 + i * 0.05, ease: EASE }}
+                      className="shrink-0"
+                    >
+                      <Link
+                        to={`/builder?category=${cat}`}
+                        className="inline-flex items-center gap-2 rounded-pill bg-white px-3.5 py-2 text-body-sm font-medium text-warm-900 ring-1 ring-warm-200 transition-all hover:-translate-y-0.5 hover:shadow-sm hover:ring-fox-300"
+                      >
+                        <Icon size={15} className="text-fox-500" /> {label}
+                      </Link>
+                    </motion.span>
+                  ))}
+                </div>
+              </motion.div>
             </div>
-          </motion.div>
-
-          <div ref={stageRef} className="mt-10 [perspective:1400px] lg:mt-14">
             <motion.div
-              initial={reduce ? false : { opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.5, ease: EASE }}
-              style={{ rotateX, scale, transformOrigin: 'center top' }}
+              initial={reduce ? false : { opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.9, delay: 0.3, ease: EASE }}
+              className="lg:col-span-5"
             >
-              <JourneyFilm stageClassName="brand-stage p-3 sm:p-6 lg:p-12" />
+              <HeroVideo />
             </motion.div>
           </div>
         </div>
@@ -218,6 +218,26 @@ export default function Home() {
             </Reveal.Item>
           ))}
         </Reveal>
+      </section>
+
+      {/* ── The whole journey, on the brand stage ─────────────── */}
+      <section className="section-padding bg-warm-white">
+        <div className="container-fx">
+          <SectionHead
+            title={'From first idea\nto launch day.'}
+            sub="Pick the pieces, see the price, sign and pay, then watch every milestone land. Here is the whole journey in twenty seconds."
+          />
+          <div ref={stageRef} className="mt-12 [perspective:1400px]">
+            <motion.div
+              initial={reduce ? false : { opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.9, ease: EASE }}
+              style={{ rotateX, scale, transformOrigin: 'center top' }}
+            >
+              <JourneyFilm stageClassName="brand-stage p-3 sm:p-6 lg:p-12" />
+            </motion.div>
+          </div>
+        </div>
       </section>
 
       {/* ── Proven builds ───────────────────────────────────── */}
@@ -255,6 +275,28 @@ export default function Home() {
             sub="A shared workspace keeps you connected to the work, from kickoff to launch."
           />
           <Bento />
+        </div>
+      </section>
+
+      {/* ── Band: built for how Indian businesses run ──────────── */}
+      <section className="relative isolate overflow-hidden bg-warm-100">
+        <Photo
+          base="/images/home/band-founder-laptop"
+          widths={[1200, 2400]}
+          width={2400}
+          height={1029}
+          sizes="100vw"
+          alt="A founder working at his laptop at a long table in warm afternoon light"
+          className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_50%]"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-warm-white via-warm-white/85 to-warm-white/0 md:via-warm-white/70" />
+        <div className="container-fx py-24 md:py-36">
+          <div className="max-w-xl">
+            <SectionHead
+              title={'Built for how\nIndian businesses run.'}
+              sub="UPI on day one, GST on every invoice, payments by milestone, and a real person a phone call away."
+            />
+          </div>
         </div>
       </section>
 
