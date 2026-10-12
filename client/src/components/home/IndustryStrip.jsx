@@ -1,8 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutGroup, animate, motion, useInView, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Check, MapPin } from 'lucide-react';
-import { Reveal } from '@components/Reveal';
+import {
+  AnimatePresence,
+  LayoutGroup,
+  animate,
+  motion,
+  useInView,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+} from 'framer-motion';
+import { ArrowLeft, ArrowRight, Check, MapPin } from 'lucide-react';
+import { CountOnView } from '@components/home/HomeMotion';
 import Photo from '@components/Photo';
 
 /* Mirrors shared/stackfox-data.json → industryBundles (first 3 features).
@@ -10,6 +20,7 @@ import Photo from '@components/Photo';
 const BUNDLES = [
   {
     id: 'healthcare',
+    cats: ['services'],
     name: 'Healthcare & Clinics',
     description:
       'HIPAA-aware patient portal, appointment booking, and telemedicine-ready platform.',
@@ -22,6 +33,7 @@ const BUNDLES = [
   },
   {
     id: 'realestate',
+    cats: ['commerce', 'services'],
     name: 'Real Estate & Property',
     description:
       'Property listing portal with virtual tours, lead management, and agent dashboard.',
@@ -34,6 +46,7 @@ const BUNDLES = [
   },
   {
     id: 'ecommerce',
+    cats: ['commerce'],
     name: 'E-Commerce Business',
     description:
       'Full-featured online store with inventory, shipping, reviews, and marketing automation.',
@@ -46,6 +59,7 @@ const BUNDLES = [
   },
   {
     id: 'education',
+    cats: ['learning'],
     name: 'Education & EdTech',
     description:
       'Learning management system with courses, quizzes, certificates, and student dashboard.',
@@ -58,6 +72,7 @@ const BUNDLES = [
   },
   {
     id: 'food',
+    cats: ['commerce'],
     name: 'Food & Restaurant',
     description: 'Online ordering, table reservation, delivery tracking, and kitchen management.',
     price: 140000,
@@ -69,6 +84,7 @@ const BUNDLES = [
   },
   {
     id: 'events',
+    cats: ['learning'],
     name: 'Events & Ticketing',
     description:
       'Event listing, online ticketing, seat selection, and attendee management platform.',
@@ -80,6 +96,16 @@ const BUNDLES = [
     ],
   },
 ];
+
+/* Filter pills. `all` shows every bundle; a bundle can sit in more than one group. */
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'commerce', label: 'Commerce' },
+  { id: 'services', label: 'Services' },
+  { id: 'learning', label: 'Learning & events' },
+];
+const countFor = (f) =>
+  f === 'all' ? BUNDLES.length : BUNDLES.filter((b) => b.cats.includes(f)).length;
 
 const inr = new Intl.NumberFormat('en-IN');
 
@@ -378,91 +404,342 @@ const VIGNETTES = {
   events: Events,
 };
 
-function IndustryCard({ bundle: b }) {
+function IndustryCard({ bundle: b, featured = false, index = 0, dim = false, onLink }) {
   const reduce = useReducedMotion();
   const ref = useRef(null);
   const seen = useInView(ref, { once: true, amount: 0.5 });
   const [replays, setReplays] = useState(0);
+  // Tilt + glare + photo parallax run on motion values: no re-renders while the cursor moves.
+  const spring = { stiffness: 300, damping: 30 };
+  const rx = useSpring(useMotionValue(0), spring);
+  const ry = useSpring(useMotionValue(0), spring);
+  const px = useSpring(useMotionValue(0), spring);
+  const py = useSpring(useMotionValue(0), spring);
+  const gx = useMotionValue(0);
+  const gy = useMotionValue(0);
+  const glare = useMotionTemplate`radial-gradient(260px circle at ${gx}px ${gy}px, rgba(255,255,255,0.28), transparent 65%)`;
   const Vignette = VIGNETTES[b.id];
   const mode = reduce ? 'final' : seen ? 'play' : 'idle';
   const replay = () => {
     if (mode === 'play') setReplays((n) => n + 1);
   };
+  const onMove = (e) => {
+    if (reduce || e.pointerType !== 'mouse') return; // fine pointers only
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    ry.set(x * 8);
+    rx.set(-y * 8);
+    px.set(-x * 16);
+    py.set(-y * 16);
+    gx.set(e.clientX - r.left);
+    gy.set(e.clientY - r.top);
+  };
+  const flat = () => {
+    onLink?.(null);
+    rx.set(0);
+    ry.set(0);
+    px.set(0);
+    py.set(0);
+  };
   return (
-    <Reveal.Item
-      as={Link}
+    <Link
       to="/industries"
-      onMouseEnter={replay}
-      onFocus={replay}
-      className="group relative flex flex-col overflow-hidden rounded-md border border-warm-200 bg-white p-3 transition-colors duration-200 hover:border-warm-400 focus-visible:border-warm-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fox-500 focus-visible:ring-offset-2"
+      onMouseEnter={() => {
+        replay();
+        onLink?.(b);
+      }}
+      onFocus={() => {
+        replay();
+        onLink?.(b);
+      }}
+      onBlur={() => onLink?.(null)}
+      onPointerMove={onMove}
+      onPointerLeave={flat}
+      onPointerCancel={flat}
+      data-industry={b.id}
+      data-featured={featured || undefined}
+      aria-label={`${b.name}, from ₹${inr.format(b.price)} plus GST`}
+      className={`group relative flex w-full flex-col overflow-hidden rounded-md border border-warm-200 bg-white p-3 shadow-sm transition-[border-color,box-shadow,transform,opacity] duration-200 hover:border-warm-400 hover:shadow-md focus-visible:border-warm-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fox-500 focus-visible:ring-offset-2 active:scale-[0.985] motion-reduce:active:scale-100 ${
+        dim ? 'opacity-40' : ''
+      }`}
     >
-      {/* 1px fox top edge on hover/focus. */}
-      <span
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-fox-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
-        aria-hidden
-      />
-      {/* Industry photo with the live UI vignette floating over it. */}
-      <div
-        ref={ref}
-        className="relative aspect-[4/3] overflow-hidden rounded-sm bg-warm-100"
-        aria-hidden
+      <motion.div
+        style={{ rotateX: rx, rotateY: ry, transformPerspective: 900 }}
+        className="flex flex-1 flex-col"
       >
-        <Photo
-          base={`/images/home/industry-${b.id}`}
-          widths={[600, 900]}
-          width={900}
-          height={675}
-          sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
-          alt=""
-          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+        {/* 1px fox top edge on hover/focus. */}
+        <span
+          className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-fox-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
+          aria-hidden
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-warm-900/45 via-warm-900/5 to-transparent" />
-        <div className="absolute bottom-3 left-3 w-[min(220px,calc(100%-1.5rem))] rounded-[10px] bg-warm-white/95 p-2.5 shadow-lg ring-1 ring-black/5 backdrop-blur transition-transform duration-300 ease-out group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
-          <Vignette key={replays} mode={mode} />
-        </div>
-      </div>
-
-      <div className="flex flex-1 flex-col px-2 pb-1 pt-4">
-        <h3 className="font-display text-title text-warm-900">{b.name}</h3>
-        <p className="mt-1 text-body-sm text-warm-800">{b.description}</p>
-        <ul className="mb-5 mt-3 space-y-1.5">
-          {b.features.map((f) => (
-            <li key={f} className="flex gap-2 text-body-sm text-warm-700">
-              <Check className="mt-[3px] h-3.5 w-3.5 shrink-0 text-sage-600" aria-hidden />
-              {f}
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-auto flex items-end justify-between gap-3 border-t border-warm-100 pt-4">
-          <div>
-            <p className="text-caption text-warm-700">from</p>
-            <p className="font-display text-title font-bold tabular-nums text-warm-900">
-              ₹{inr.format(b.price)}
-              <span className="ml-1 align-middle text-caption font-normal text-warm-700">
-                + GST
-              </span>
-            </p>
-          </div>
-          <span className="inline-flex items-center gap-1 text-body-sm font-medium text-warm-900">
-            See the bundle
-            <ArrowRight
-              className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
-              aria-hidden
+        {/* Glare follows the cursor. */}
+        <motion.span
+          style={{ background: glare }}
+          className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-200 group-hover:opacity-100 motion-reduce:hidden"
+          aria-hidden
+        />
+        {/* Industry photo with the live UI vignette floating over it. */}
+        <div
+          ref={ref}
+          className={`relative aspect-[4/3] overflow-hidden rounded-sm bg-warm-100 ${
+            featured ? 'lg:aspect-auto lg:min-h-[420px] lg:flex-1' : ''
+          }`}
+          aria-hidden
+        >
+          <motion.div style={{ x: px, y: py }} className="absolute -inset-4">
+            <Photo
+              base={`/images/home/industry-${b.id}`}
+              widths={[600, 900]}
+              width={900}
+              height={675}
+              sizes={
+                featured
+                  ? '(min-width: 1024px) 60vw, 100vw'
+                  : '(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 82vw'
+              }
+              alt=""
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
             />
-          </span>
+          </motion.div>
+          <div className="absolute inset-0 bg-gradient-to-t from-warm-900/45 via-warm-900/5 to-transparent" />
+          <div className="absolute bottom-3 left-3 w-[min(220px,calc(100%-1.5rem))] rounded-[10px] bg-warm-white/95 p-2.5 shadow-lg ring-1 ring-black/5 backdrop-blur transition-transform duration-300 ease-out group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
+            <Vignette key={replays} mode={mode} />
+          </div>
         </div>
-      </div>
-    </Reveal.Item>
+
+        <div className={`flex flex-col px-2 pb-1 pt-4 ${featured ? 'lg:pt-6' : 'flex-1'}`}>
+          <p className="text-caption font-medium tabular-nums text-warm-700" aria-hidden>
+            {String(index + 1).padStart(2, '0')}
+          </p>
+          <h3
+            className={`mt-0.5 font-display text-title text-warm-900 ${
+              featured ? 'lg:text-display-md' : ''
+            }`}
+          >
+            {b.name}
+          </h3>
+          <p className="mt-1 text-body-sm text-warm-800">{b.description}</p>
+          <ul className="mb-5 mt-3 space-y-1.5">
+            {b.features.map((f) => (
+              <li key={f} className="flex gap-2 text-body-sm text-warm-700">
+                <Check className="mt-[3px] h-3.5 w-3.5 shrink-0 text-sage-600" aria-hidden />
+                {f}
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-auto flex items-end justify-between gap-3 border-t border-warm-100 pt-4">
+            <div>
+              <p className="text-caption text-warm-700">from</p>
+              <p className="whitespace-nowrap font-display text-title font-bold tabular-nums text-warm-900">
+                <CountOnView end={b.price} prefix="₹" duration={0.9} />
+                <span className="ml-1 align-middle text-caption font-normal text-warm-700">
+                  + GST
+                </span>
+              </p>
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-body-sm font-medium text-warm-900">
+              <span className="relative">
+                See the bundle
+                <span
+                  className="absolute inset-x-0 -bottom-0.5 h-px origin-left scale-x-0 bg-fox-500 transition-transform duration-200 group-hover:scale-x-100 group-focus-visible:scale-x-100 motion-reduce:transition-none"
+                  aria-hidden
+                />
+              </span>
+              <ArrowRight
+                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 group-focus-visible:translate-x-1 motion-reduce:transition-none"
+                aria-hidden
+              />
+            </span>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
   );
 }
 
 export function IndustryStrip() {
+  const reduce = useReducedMotion();
+  const [filter, setFilter] = useState('all');
+  const [active, setActive] = useState(0);
+  // Linked hover: a pill previews its cards; a card lights up the pills it belongs to.
+  const [hintPill, setHintPill] = useState(null);
+  const [hintCard, setHintCard] = useState(null);
+  const scroller = useRef(null);
+  const pillRefs = useRef({});
+  const shown = filter === 'all' ? BUNDLES : BUNDLES.filter((b) => b.cats.includes(filter));
+
+  // Radiogroup keyboard: arrows move + select, wrapping at the ends.
+  const onPillKey = (e) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!step && e.key !== 'Home' && e.key !== 'End') return;
+    e.preventDefault();
+    const i = FILTERS.findIndex((f) => f.id === filter);
+    const next = (
+      e.key === 'Home'
+        ? FILTERS[0]
+        : e.key === 'End'
+          ? FILTERS[FILTERS.length - 1]
+          : FILTERS[(i + step + FILTERS.length) % FILTERS.length]
+    ).id;
+    setFilter(next);
+    pillRefs.current[next]?.focus();
+  };
+
+  // Phone scroller: dots follow the card nearest the left edge.
+  const onScroll = useCallback((e) => {
+    const el = e.currentTarget;
+    const card = el.firstElementChild;
+    if (!card) return;
+    const step = card.getBoundingClientRect().width + 16;
+    setActive(Math.round(el.scrollLeft / step));
+  }, []);
+  useEffect(() => {
+    setActive(0);
+    if (scroller.current) scroller.current.scrollLeft = 0;
+  }, [filter]);
+  const goTo = (i) => {
+    const card = scroller.current?.children[i];
+    card?.scrollIntoView({
+      behavior: reduce ? 'auto' : 'smooth',
+      inline: 'start',
+      block: 'nearest',
+    });
+  };
+
   return (
-    <Reveal stagger className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {BUNDLES.map((b) => (
-        <IndustryCard key={b.id} bundle={b} />
-      ))}
-    </Reveal>
+    <LayoutGroup id="industry-filter">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          role="radiogroup"
+          aria-label="Filter bundles by group"
+          className="flex flex-wrap gap-2"
+        >
+          {FILTERS.map((f) => {
+            const on = f.id === filter;
+            return (
+              <button
+                key={f.id}
+                ref={(el) => (pillRefs.current[f.id] = el)}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                tabIndex={on ? 0 : -1}
+                onClick={() => setFilter(f.id)}
+                onKeyDown={onPillKey}
+                onMouseEnter={() => setHintPill(f.id)}
+                onMouseLeave={() => setHintPill(null)}
+                onFocus={() => setHintPill(f.id)}
+                onBlur={() => setHintPill(null)}
+                className={`relative inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-pill border px-4 text-body-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fox-500 focus-visible:ring-offset-2 active:scale-[0.98] ${
+                  on
+                    ? 'border-warm-900 text-white'
+                    : hintCard?.cats.includes(f.id)
+                      ? 'border-fox-500 bg-white text-warm-900'
+                      : 'border-warm-200 bg-white text-warm-900 hover:border-warm-400'
+                }`}
+              >
+                {on && (
+                  <motion.span
+                    layoutId="industry-pill"
+                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                    className="absolute inset-0 rounded-pill bg-warm-900"
+                    aria-hidden
+                  />
+                )}
+                <span className="relative">{f.label}</span>
+                <span
+                  className={`relative text-caption tabular-nums ${on ? 'text-warm-200' : 'text-warm-700'}`}
+                >
+                  {countFor(f.id)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-body-sm tabular-nums text-warm-700" aria-live="polite">
+          Showing {shown.length} of {BUNDLES.length} bundles
+        </p>
+      </div>
+
+      {/* Phone: snap scroller with the next card peeking. sm+: grid; lg: first card is featured. */}
+      <div className="mt-6 sm:min-h-[560px]">
+        <div
+          ref={scroller}
+          onScroll={onScroll}
+          className="-mx-[var(--container-padding)] flex relative snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-[var(--container-padding)] pb-2 [scrollbar-width:none] sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden"
+        >
+          <AnimatePresence mode="popLayout" initial>
+            {shown.map((b, i) => {
+              const featured = filter === 'all' && i === 0;
+              return (
+                <motion.div
+                  key={b.id}
+                  layout={reduce ? false : 'position'}
+                  initial={reduce ? false : { opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.05 }}
+                  exit={
+                    reduce ? undefined : { opacity: 0, scale: 0.97, transition: { duration: 0.16 } }
+                  }
+                  transition={{ duration: 0.3, ease: EASE, delay: reduce ? 0 : (i % 3) * 0.07 }}
+                  className={`flex w-[82%] shrink-0 snap-start scroll-ml-[var(--container-padding)] sm:w-auto sm:shrink sm:snap-align-none ${
+                    featured ? 'lg:col-span-2 lg:row-span-2' : ''
+                  }`}
+                >
+                  <IndustryCard
+                    bundle={b}
+                    index={BUNDLES.indexOf(b)}
+                    featured={featured}
+                    dim={!!hintPill && hintPill !== 'all' && !b.cats.includes(hintPill)}
+                    onLink={setHintCard}
+                  />
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {shown.length > 1 && (
+        <div className="mt-2 flex items-center justify-center sm:hidden">
+          <button
+            type="button"
+            onClick={() => goTo(Math.max(0, active - 1))}
+            disabled={active === 0}
+            aria-label="Previous bundle"
+            className="flex h-11 w-11 items-center justify-center rounded-pill text-warm-900 transition-[background-color,transform,opacity] duration-150 hover:bg-warm-100 active:scale-90 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fox-500"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+          </button>
+          {shown.map((b, i) => (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => goTo(i)}
+              aria-label={`Show ${b.name}`}
+              aria-current={i === active}
+              className="group flex h-11 w-7 items-center justify-center focus-visible:outline-none"
+            >
+              <span
+                className={`h-2 rounded-pill transition-[width,background-color] duration-200 group-focus-visible:ring-2 group-focus-visible:ring-fox-500 group-focus-visible:ring-offset-2 ${
+                  i === active ? 'w-5 bg-warm-900' : 'w-2 bg-warm-300 group-hover:bg-warm-500'
+                }`}
+              />
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => goTo(Math.min(shown.length - 1, active + 1))}
+            disabled={active >= shown.length - 1}
+            aria-label="Next bundle"
+            className="flex h-11 w-11 items-center justify-center rounded-pill text-warm-900 transition-[background-color,transform,opacity] duration-150 hover:bg-warm-100 active:scale-90 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fox-500"
+          >
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+      )}
+    </LayoutGroup>
   );
 }

@@ -52,7 +52,7 @@ function Flow({ toY, delay }) {
     <motion.circle
       r="3.5"
       fill="#FF4D00"
-      initial={{ opacity: 0 }}
+      initial={{ opacity: 0, cx: 236, cy: 224 }}
       animate={{
         cx: [236, 286, 286, 334],
         cy: [224, 224, toY, toY],
