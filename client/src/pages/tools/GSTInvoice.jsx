@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import Captcha from '@components/ui/Captcha';
 import { Link } from 'react-router-dom';
 import { apiPost } from '@lib/api';
 
@@ -572,6 +573,7 @@ export default function GSTInvoice() {
           </div>
         </div>
 
+        <Captcha />
         <button
           type="submit"
           disabled={loading}

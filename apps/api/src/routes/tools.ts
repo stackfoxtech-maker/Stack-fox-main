@@ -9,6 +9,7 @@ import { toJson } from "../lib/json";
 import { LIST_CAP } from "../lib/http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { parseBody } from "../lib/validate";
+import { requireCaptcha } from "../lib/captcha";
 import {
   AuditToolSchema,
   BriefToolSchema,
@@ -37,7 +38,10 @@ export async function toolRoutes(app: FastifyInstance) {
   // Website Audit Tool
   app.post(
     "/tools/audit",
-    { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
+    {
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
+      preHandler: requireCaptcha,
+    },
     async (req, reply) => {
       const body = parseBody(req, reply, AuditToolSchema);
       if (!body) return;
@@ -74,7 +78,10 @@ Return as JSON with sections: performance, seo, accessibility, security, mobile,
   // Instant Estimate Tool
   app.post(
     "/tools/estimate",
-    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    {
+      config: { rateLimit: { max: 20, timeWindow: "1 minute" } },
+      preHandler: requireCaptcha,
+    },
     async (req, reply) => {
       const body = parseBody(req, reply, EstimateToolSchema);
       if (!body) return;
@@ -133,7 +140,10 @@ Return as JSON with sections: performance, seo, accessibility, security, mobile,
   // Brief Generator Tool
   app.post(
     "/tools/brief",
-    { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
+    {
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
+      preHandler: requireCaptcha,
+    },
     async (req, reply) => {
       const body = parseBody(req, reply, BriefToolSchema);
       if (!body) return;
@@ -167,7 +177,10 @@ Return as structured JSON.`;
   // Legal Template Generator
   app.post(
     "/tools/legal",
-    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    {
+      config: { rateLimit: { max: 20, timeWindow: "1 minute" } },
+      preHandler: requireCaptcha,
+    },
     async (req, reply) => {
       const body = parseBody(req, reply, LegalTemplateToolSchema);
       if (!body) return;
@@ -196,7 +209,10 @@ Return as structured JSON.`;
   // returned inline as base64 so the tool works with no storage round-trip.
   app.post(
     "/tools/invoice",
-    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    {
+      config: { rateLimit: { max: 20, timeWindow: "1 minute" } },
+      preHandler: requireCaptcha,
+    },
     async (req, reply) => {
       const body = (req.body ?? {}) as GstInvoiceInput;
       const session = await prisma.toolSession.create({
