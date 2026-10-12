@@ -50,6 +50,23 @@ testimonial from Neha R. A real photo of the client (with her permission) should
 Portfolio cards show illustrative stock scenes for each industry. Replace them with real project
 screenshots or client-approved photos when available.
 
+## Homepage "Proven builds" previews
+
+Photos placed inside the coded product mock-ups (`client/public/images/previews/`). The mock-ups are
+illustrative ("Example build" captions); the businesses shown are fictional.
+
+| File | Used in | Source | Creator | Licence |
+|---|---|---|---|---|
+| `previews/bakery-shelves.webp` | Website preview | https://www.pexels.com/photo/15009979/ | Vovka Panda | Pexels License |
+| `previews/bakery-loaves.webp` | Website preview | https://www.pexels.com/photo/10202985/ | cottonbro studio | Pexels License |
+| `previews/bakery-baskets.webp` | Website preview | https://www.pexels.com/photo/2128535/ | Maria Fernanda Perez | Pexels License |
+| `previews/bakery-window.webp` | Growth preview | https://www.pexels.com/photo/10391653/ | Kasia Palitava | Pexels License |
+| `previews/oil-bottles.webp` | Store preview | https://www.pexels.com/photo/31275834/ | Kader D. Kahraman | Pexels License |
+| `previews/oil-wood.webp` | Store preview | https://www.pexels.com/photo/38490934/ | Serkan Dinç | Pexels License |
+| `previews/oil-olives.webp` | Store preview | https://www.pexels.com/photo/38667635/ | Serkan Dinç | Pexels License |
+
+The App and AI previews reuse photos already listed above (education and healthcare cards).
+
 ## Illustrations
 
 | File | Source | Licence |
