@@ -16,7 +16,7 @@ source page on 2026-10-12.
 
 | File (base) | Used in | Source | Creator | Licence |
 |---|---|---|---|---|
-| `videos/home/hero-founder-desk-1080.{mp4,webm}` + `images/home/hero-video-poster-*` | Hero video (12 s seamless loop, muted) | https://www.pexels.com/video/woman-writing-on-a-paper-8061372/ | Pavel Danilyuk | Pexels License |
+| `videos/home/hero-builder-demo.mp4` + `images/home/hero-builder-poster-*` | Hero: 15 s silent screen recording of the StackFox Builder | Recorded from the StackFox Builder (`/builder`) on 2026-10-12 with a scripted browser session | StackFox | Original work (product screen recording) |
 | `images/home/band-founder-laptop-*` (mirrored) | "Built for how Indian businesses run" band | https://www.pexels.com/photo/40062245/ | Jatin Chaudhary | Pexels License |
 | `images/home/faq-advisor-call-*` | FAQ contact block | https://www.pexels.com/photo/18766134/ | Hindustani Lens | Pexels License |
 | `images/home/industry-ecommerce-*` | Industry card: E-commerce | https://www.pexels.com/photo/8939504/ | Nataliya Vaitkevich | Pexels License |
