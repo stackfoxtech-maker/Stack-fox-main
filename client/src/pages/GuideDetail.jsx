@@ -1,20 +1,16 @@
 import { useParams, Link } from 'react-router-dom';
 import { sanitizeHtml } from '@lib/utils';
-
-const content = {
-  'how-to-choose-a-website-builder': {
-    title: 'How to choose the right website builder (2026)',
-    html: '<h2>Start with your goal</h2><p>Are you selling online, showcasing a portfolio, or just need a brochure site?</p><h2>Compare the tiers</h2><p>Starter = fast brochure site, Growth = e-commerce, Premium = scale and custom logic.</p><h2>Watch out for hidden costs</h2><p>Hosting, domain, content, integrations, and revisions are often extra. Use our <a href="/tools/estimator">estimator</a>.</p>',
-  },
-  'gst-for-service-businesses': {
-    title: 'GST for service businesses in India',
-    html: '<h2>Which GST rate applies?</h2><p>Most services fall under 18% GST. Export-related services may be 0% (export of services).</p><h2>IGST vs CGST+SGST</h2><p>Inter-state = IGST; intra-state = CGST + SGST.</p><h2>Invoice requirements</h2><p>GSTIN of both parties, SAC code, place of supply, and tax breakup are mandatory. Try our <a href="/tools/gst-invoice">GST Invoice Generator</a>.</p>',
-  },
-};
+import guides from '@data/guides.json';
+import { usePageTitle } from '@lib/hooks';
 
 export default function GuideDetail() {
   const { slug } = useParams();
-  const g = content[slug] || { title: 'Guide', html: 'p' };
+  const found = guides.find((x) => x.slug === slug);
+  const g = found || {
+    title: 'Guide not found',
+    html: '<p>This guide does not exist. See all guides.</p>',
+  };
+  usePageTitle(g.title, found?.description, { noindex: !found });
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
       <Link to="/guides" className="text-sm text-orange-600 font-semibold mb-4 inline-block">

@@ -1,17 +1,12 @@
 import { Link } from 'react-router-dom';
-
-const guides = [
-  {
-    slug: 'how-to-choose-a-website-builder',
-    title: 'How to choose the right website builder (2026)',
-  },
-  { slug: 'gst-for-service-businesses', title: 'GST for service businesses in India' },
-  { slug: 'seo-basics-for-startups', title: 'SEO basics every startup needs' },
-  { slug: 'mobile-vs-web-app', title: 'Mobile app vs web app trade-offs' },
-  { slug: 'ai-automation-roi', title: 'Measuring AI automation ROI' },
-];
+import guides from '@data/guides.json';
+import { usePageTitle } from '@lib/hooks';
 
 export default function Guides() {
+  usePageTitle(
+    'How-to guides for startups and SMEs',
+    'Practical guides on choosing a website, GST for service businesses, SEO basics, mobile vs web apps and measuring AI automation ROI.',
+  );
   return (
     <div className="max-w-4xl mx-auto px-6 py-16">
       <p className="text-sm font-semibold text-orange-600 mb-2">Guides</p>

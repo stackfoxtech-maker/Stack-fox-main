@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePageTitle } from '@lib/hooks';
 import { ShoppingCart, Clock, MessageSquare, ArrowRight } from 'lucide-react';
 
 const services = {
@@ -44,6 +45,7 @@ const related = [
 
 export default function ServiceDetail() {
   const [added, setAdded] = useState(false);
+  usePageTitle('Service', null, { noindex: true });
 
   // In a real app: const { id } = useParams();
   const id = new URLSearchParams(window.location.search).get('id') || '1';

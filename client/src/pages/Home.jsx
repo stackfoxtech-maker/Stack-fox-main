@@ -14,7 +14,10 @@ import { Faq } from '@components/home/Faq';
 
 /** Homepage: one component per section, each in components/home/. */
 export default function Home() {
-  usePageTitle(null);
+  usePageTitle(
+    'IT services with transparent INR pricing',
+    'Browse, configure and price IT services like shopping online — web development, mobile apps, AI and automation, from transparent INR prices. Get an instant quote.',
+  );
   return (
     <>
       <Hero />
