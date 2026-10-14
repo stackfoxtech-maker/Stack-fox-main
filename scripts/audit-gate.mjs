@@ -59,6 +59,33 @@ const ACCEPTED = [
       "share a version line.",
     until: "2026-11-30",
   },
+  {
+    module: "tinypool",
+    reason:
+      "client/ devDependency, transitive under vitest (the test worker pool). " +
+      "The prototype-pollution gadget needs attacker-controlled worker " +
+      "options; our tests pass none and never run on untrusted input. Fixed " +
+      "by the same vitest major bump that clears the vitest entry above.",
+    until: "2026-11-30",
+  },
+  {
+    // One chain, four names: tailwindcss 3 -> chokidar / micromatch /
+    // fast-glob -> braces (already accepted above; no patched release).
+    module: "tailwindcss",
+    reason:
+      "client/ devDependency. The advisories are all inherited from braces " +
+      "via tailwind 3's file globbing. Tailwind runs at build time over our " +
+      "own source files, never in a deployed artifact or on user input. The " +
+      "fix is the Tailwind 3 -> 4 major rewrite, which is not a drive-by " +
+      "change. Tracked separately.",
+    until: "2026-11-30",
+  },
+  ...["chokidar", "micromatch", "fast-glob"].map((module) => ({
+    module,
+    reason:
+      "Same chain as the tailwindcss entry above: inherited from braces via tailwind 3.",
+    until: "2026-11-30",
+  })),
 ];
 
 // Resolved 2026-09-21 by the Fastify 4 -> 5 upgrade, and removed from the list
