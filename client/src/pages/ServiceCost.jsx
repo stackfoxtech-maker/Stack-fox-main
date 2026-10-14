@@ -2,6 +2,8 @@ import { useParams, Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { useCatalogue } from '@lib/useStorefrontData';
 import { PanelSkeleton } from '@components/ui/Primitives';
+import { usePageTitle } from '@lib/hooks';
+import { serviceMeta } from '@lib/seo';
 
 const TIERS = [
   {
@@ -35,6 +37,11 @@ export default function ServiceCost() {
   const { category, slug } = useParams();
   const service = services.find((s) => (s.slug || s.id) === slug);
   const cat = categories.find((c) => c.id === category) || categories[0];
+  const meta = service && serviceMeta(service);
+  // undefined while loading = leave the prerendered head alone
+  usePageTitle(loading ? undefined : (meta?.title ?? 'Service not found'), meta?.description, {
+    noindex: !loading && !service,
+  });
 
   if (loading)
     return (

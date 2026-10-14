@@ -20,6 +20,15 @@ const FAIL_AT = ["high", "critical"];
 
 const ACCEPTED = [
   {
+    module: "braces",
+    reason:
+      "Transitive under @changesets/cli (micromatch). Release tooling only: it " +
+      "is absent from every production dependency chain (`pnpm why braces " +
+      "--prod` is empty) and never runs on user input. No patched release " +
+      "exists (3.0.3 is the latest). Re-check when braces publishes a fix.",
+    until: "2026-12-31",
+  },
+  {
     module: "js-yaml",
     reason:
       "Transitive under @changesets/cli. Build tooling only — never present " +

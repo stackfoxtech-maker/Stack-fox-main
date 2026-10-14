@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { SITE, absUrl, clip } from './seo';
 
 /**
  * IntersectionObserver hook for scroll-reveal animations.
@@ -92,17 +93,66 @@ export const useMediaQuery = (query) => {
   return matches;
 };
 
+const upsert = (selector, make) => {
+  let el = document.head.querySelector(selector);
+  if (!el) {
+    el = make();
+    document.head.appendChild(el);
+  }
+  return el;
+};
+const metaEl = (attr, key) => () => {
+  const m = document.createElement('meta');
+  m.setAttribute(attr, key);
+  return m;
+};
+
 /**
- * Set document title.
+ * Per-route head: title, optional description, canonical + og:url from the current path.
+ * Pass { noindex: true } for pages that should stay out of search (stubs, not-found states).
+ * The prerendered HTML (scripts/prerender.mjs) carries the same values for crawlers that skip JS.
  */
-export const usePageTitle = (title) => {
+export const usePageTitle = (title, description, { noindex = false } = {}) => {
   useEffect(() => {
-    const prev = document.title;
-    document.title = title ? `${title} — StackFox` : 'StackFox — Smart Code, Swift Delivery';
+    if (title === undefined) return undefined;
+    const full = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
+    const url = absUrl(window.location.pathname);
+    const targets = [
+      ['meta[property="og:title"]', metaEl('property', 'og:title'), full],
+      ['meta[name="twitter:title"]', metaEl('name', 'twitter:title'), full],
+      ['meta[property="og:url"]', metaEl('property', 'og:url'), url],
+    ];
+    if (description) {
+      const d = clip(description, 200);
+      targets.push(
+        ['meta[name="description"]', metaEl('name', 'description'), d],
+        ['meta[property="og:description"]', metaEl('property', 'og:description'), d],
+        ['meta[name="twitter:description"]', metaEl('name', 'twitter:description'), d],
+      );
+    }
+    if (noindex) targets.push(['meta[name="robots"]', metaEl('name', 'robots'), 'noindex']);
+    const canonical = upsert('link[rel="canonical"]', () => {
+      const l = document.createElement('link');
+      l.rel = 'canonical';
+      return l;
+    });
+
+    const prevTitle = document.title;
+    const prevCanonical = canonical.getAttribute('href');
+    const prev = targets.map(([sel, make, val]) => {
+      const el = upsert(sel, make);
+      const old = el.getAttribute('content');
+      el.setAttribute('content', val);
+      return [el, old];
+    });
+    document.title = full;
+    canonical.setAttribute('href', url);
     return () => {
-      document.title = prev;
+      document.title = prevTitle;
+      if (prevCanonical) canonical.setAttribute('href', prevCanonical);
+      prev.forEach(([el, old]) => (old === null ? el.remove() : el.setAttribute('content', old)));
     };
-  }, [title]);
+  }, [title, description, noindex]);
 };
 
 /**

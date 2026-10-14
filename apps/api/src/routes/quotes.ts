@@ -363,7 +363,12 @@ function priceNextPayment(quote: any, paymentMode?: string) {
     ? paymentMode!
     : "FULL";
   if (amountPaidSoFar > 0) mode = "FULL";
-  const terms = quotePaymentTerms(Number(quote.subtotal), quoteTotal, amountPaidSoFar, mode);
+  const terms = quotePaymentTerms(
+    Number(quote.subtotal),
+    quoteTotal,
+    amountPaidSoFar,
+    mode,
+  );
   return {
     amount: terms.amount,
     remainingDue: quoteTotal - amountPaidSoFar,
@@ -515,7 +520,9 @@ export async function quoteRoutes(app: FastifyInstance) {
     }
 
     if (
-      ["paid", "cancelled", "partially_paid", "awaiting_cash"].includes(existing.status) ||
+      ["paid", "cancelled", "partially_paid", "awaiting_cash"].includes(
+        existing.status,
+      ) ||
       existing.razorpayOrderId ||
       existing.validUntil < new Date()
     )

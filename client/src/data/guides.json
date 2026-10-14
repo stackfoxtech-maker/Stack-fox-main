@@ -1,0 +1,32 @@
+[
+  {
+    "slug": "how-to-choose-a-website-builder",
+    "title": "How to choose the right website builder (2026)",
+    "description": "Match the website tier to your goal — brochure, e-commerce or custom logic — and avoid the hidden costs of hosting, domains, content and revisions.",
+    "html": "<p><strong>Short answer:</strong> pick the tier that matches what the site has to do — a Starter site to be found, a Growth site to sell, a Premium build when you need custom logic or scale.</p><h2>Start with your goal</h2><p>Are you selling online, showcasing a portfolio, or just need a brochure site?</p><h2>Compare the tiers</h2><p>Starter = fast brochure site, Growth = e-commerce, Premium = scale and custom logic.</p><h2>Watch out for hidden costs</h2><p>Hosting, domain, content, integrations, and revisions are often extra. Use our <a href=\"/tools/estimator\">estimator</a>.</p>"
+  },
+  {
+    "slug": "gst-for-service-businesses",
+    "title": "GST for service businesses in India",
+    "description": "Which GST rate applies to services, when to charge IGST versus CGST plus SGST, and what every tax invoice must contain.",
+    "html": "<p><strong>Short answer:</strong> most services in India attract 18% GST; charge IGST on inter-state supply and CGST + SGST within one state.</p><h2>Which GST rate applies?</h2><p>Most services fall under 18% GST. Export-related services may be 0% (export of services).</p><h2>IGST vs CGST+SGST</h2><p>Inter-state = IGST; intra-state = CGST + SGST.</p><h2>Invoice requirements</h2><p>GSTIN of both parties, SAC code, place of supply, and tax breakup are mandatory. Try our <a href=\"/tools/gst-invoice\">GST Invoice Generator</a>.</p>"
+  },
+  {
+    "slug": "seo-basics-for-startups",
+    "title": "SEO basics every startup needs",
+    "description": "The handful of search-engine fundamentals a new site needs before any paid growth: crawlable pages, clear titles, useful content and a sitemap.",
+    "html": "<p><strong>Short answer:</strong> make every important page crawlable, give it one clear topic, a unique title and description, and publish content that answers the question a customer actually types.</p><h2>1. Make pages crawlable</h2><p>Search engines and AI assistants read your HTML first. Pages that only appear after heavy JavaScript can be missed, so make sure key content is present in the page source.</p><h2>2. One topic per page</h2><p>Give each page a unique title and meta description that say what the page is, in plain words, and a single H1 that matches.</p><h2>3. Answer real questions</h2><p>Lead with the direct answer, then add detail. Pricing, timelines and comparisons are what buyers search for.</p><h2>4. Ship the basics</h2><p>Publish a sitemap, a robots file, fast mobile pages, and register the site in Google Search Console so you can see what is indexed.</p><p>Need hands-on help? Browse our <a href=\"/catalog\">SEO and marketing services</a>.</p>"
+  },
+  {
+    "slug": "mobile-vs-web-app",
+    "title": "Mobile app vs web app trade-offs",
+    "description": "When a web app is enough, when you need a native or cross-platform mobile app, and how cost, speed and reach compare.",
+    "html": "<p><strong>Short answer:</strong> start with a web app if you need reach and speed to market; build a mobile app when you depend on device features, push notifications or repeat daily use.</p><h2>Web app</h2><p>One codebase, no app-store review, instantly updatable, and discoverable through search. Best for validating an idea, dashboards, marketplaces and internal tools.</p><h2>Mobile app</h2><p>Better access to the camera, location, offline use and push notifications, and a home-screen presence. A cross-platform framework such as React Native can cover iOS and Android from one codebase.</p><h2>How to decide</h2><p>If users come from search or links, begin on the web. If your product is used daily or needs the device hardware, plan for mobile. Many products launch web first and add a mobile app once usage is proven.</p><p>Compare options in the <a href=\"/builder\">Builder</a>.</p>"
+  },
+  {
+    "slug": "ai-automation-roi",
+    "title": "Measuring AI automation ROI",
+    "description": "A simple way to estimate payback on an AI or workflow-automation project: hours saved, error reduction, run cost and build cost.",
+    "html": "<p><strong>Short answer:</strong> ROI = (value of time and errors saved per month − monthly run cost) ÷ build cost. Payback is build cost divided by the monthly net saving.</p><h2>1. Measure the manual baseline</h2><p>Count how many times the task happens each month, how long it takes, and the loaded hourly cost of the person doing it.</p><h2>2. Estimate the saving</h2><p>Multiply hours saved by hourly cost. Add the cost of errors, rework and delays that the automation removes.</p><h2>3. Subtract running costs</h2><p>Include model or API usage, hosting and a little maintenance time each month.</p><h2>4. Compare with the build cost</h2><p>Divide the build cost by the monthly net saving to get the payback period. Prefer processes that are frequent, rule-based and high volume.</p><p>Explore <a href=\"/catalog\">AI and automation services</a> or use the <a href=\"/tools/estimator\">estimator</a>.</p>"
+  }
+]

@@ -41,7 +41,8 @@
   "pnpm": {
     "overrides": {
       "fast-uri": "^3.1.6",
-      "axios": "^1.20.0"
+      "axios": "^1.20.0",
+      "source-map-js": "^1.2.2"
     }
   }
 }
