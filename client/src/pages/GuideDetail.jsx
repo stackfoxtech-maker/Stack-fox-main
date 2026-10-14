@@ -18,7 +18,7 @@ export default function GuideDetail() {
       </Link>
       <h1 className="text-3xl font-bold my-6">{g.title}</h1>
       <div
-        className="prose max-w-none text-gray-700"
+        className="max-w-none text-gray-700 leading-relaxed [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-gray-900 [&_h2]:mt-10 [&_h2]:mb-3 [&_h3]:font-semibold [&_h3]:text-gray-900 [&_h3]:mt-5 [&_h3]:mb-1 [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_li]:mb-1.5 [&_a]:text-orange-600 [&_a]:underline [&_strong]:text-gray-900"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(g.html) }}
       />
       <div className="mt-12 bg-[#FAFAF8] rounded-2xl p-8 text-center">
