@@ -5,6 +5,7 @@ import { emitEvent } from "../lib/events";
 import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import {
+  DELIVERY_ROLES,
   canTransition,
   PROJECT_TRANSITIONS,
   MILESTONE_TRANSITIONS,
@@ -15,6 +16,7 @@ import { requireRole } from "../plugins/auth";
 import { clientScope, clientWriteScope, assertProjectInScope } from "../lib/scope";
 import { LIST_CAP, pageParams, paginated } from "../lib/http";
 import { parseBody } from "../lib/validate";
+import { resolveGstType, splitGst } from "../lib/gst";
 import { MilestoneDeliverablesSchema } from "./opsSchemas";
 import {
   AssessChangeRequestSchema,
@@ -23,6 +25,12 @@ import {
   UpdateMilestoneStatusSchema,
   UpdateProjectStatusSchema,
 } from "./deliverySchemas";
+
+/** `/milestones/:n/...` with a non-numeric n used to reach Prisma and come back as a 500. */
+function milestoneNumber(n: string): number | null {
+  const v = Number(n);
+  return Number.isInteger(v) && v > 0 ? v : null;
+}
 
 export async function projectRoutes(app: FastifyInstance) {
   // GET /projects
@@ -90,11 +98,11 @@ export async function projectRoutes(app: FastifyInstance) {
   });
 
   // PATCH /projects/:id/status
+  // Staff only. A client used to be able to mark their own project COMPLETED or
+  // CANCELLED here, skipping payment and the handover sign-off.
   app.patch("/projects/:id/status", async (req, reply) => {
-    const scope = await clientWriteScope(req, reply);
-    if (scope === undefined) return;
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
     const { id } = req.params as { id: string };
-    if (!(await assertProjectInScope(id, scope, reply))) return;
     const statusBody = parseBody(req, reply, UpdateProjectStatusSchema);
     if (!statusBody) return;
     const { status } = statusBody;
@@ -150,9 +158,11 @@ export async function projectRoutes(app: FastifyInstance) {
     // on work the team has submitted, not the client's.
     if (!requireRole(req, reply, MILESTONE_APPROVE_ROLES)) return;
     const { id, n } = req.params as { id: string; n: string };
+    const number = milestoneNumber(n);
+    if (!number) return reply.code(400).send({ error: "Invalid milestone number" });
 
     const milestone = await prisma.milestone.findUnique({
-      where: { projectId_number: { projectId: id, number: parseInt(n) } },
+      where: { projectId_number: { projectId: id, number } },
     });
     if (!milestone) return reply.code(404).send({ error: "Milestone not found" });
     if (milestone.status !== "IN_REVIEW") {
@@ -176,7 +186,7 @@ export async function projectRoutes(app: FastifyInstance) {
 
     await emitEvent({
       code: "MILESTONE_APPROVED",
-      payload: { projectId: id, milestone: parseInt(n) },
+      payload: { projectId: id, milestone: number },
       actor: req.user!.sub,
       projectId: id,
     });
@@ -190,7 +200,7 @@ export async function projectRoutes(app: FastifyInstance) {
       await queues.docGen.add("milestone-invoice", {
         type: "milestone-invoice",
         projectId: id,
-        milestoneNumber: parseInt(n),
+        milestoneNumber: number,
         engagementId: project.engagementId,
       });
     }
@@ -205,9 +215,11 @@ export async function projectRoutes(app: FastifyInstance) {
     const { id, n } = req.params as { id: string; n: string };
     const body = parseBody(req, reply, UpdateMilestoneStatusSchema);
     if (!body) return;
+    const number = milestoneNumber(n);
+    if (!number) return reply.code(400).send({ error: "Invalid milestone number" });
 
     const milestone = await prisma.milestone.findUnique({
-      where: { projectId_number: { projectId: id, number: parseInt(n) } },
+      where: { projectId_number: { projectId: id, number } },
     });
     if (!milestone) return reply.code(404).send({ error: "Milestone not found" });
     if (!canTransition(milestone.status as any, body.status, MILESTONE_TRANSITIONS)) {
@@ -228,7 +240,7 @@ export async function projectRoutes(app: FastifyInstance) {
 
     await emitEvent({
       code: body.status === "IN_REVIEW" ? "MILESTONE_SUBMITTED" : "MILESTONE_STARTED",
-      payload: { projectId: id, milestone: parseInt(n), from: milestone.status },
+      payload: { projectId: id, milestone: number, from: milestone.status },
       actor: req.user!.sub,
       projectId: id,
     });
@@ -245,9 +257,11 @@ export async function projectRoutes(app: FastifyInstance) {
     const fbBody = parseBody(req, reply, MilestoneFeedbackSchema);
     if (!fbBody) return;
     const { feedback } = fbBody;
+    const number = milestoneNumber(n);
+    if (!number) return reply.code(400).send({ error: "Invalid milestone number" });
 
     const milestone = await prisma.milestone.findUnique({
-      where: { projectId_number: { projectId: id, number: parseInt(n) } },
+      where: { projectId_number: { projectId: id, number } },
     });
     if (!milestone) return reply.code(404).send({ error: "Milestone not found" });
     if (milestone.status !== "IN_REVIEW") {
@@ -260,14 +274,25 @@ export async function projectRoutes(app: FastifyInstance) {
 
     // If exceeding max rounds, auto-generate CR
     if (newRound > milestone.maxRounds) {
+      const title = `Extra revision round ${newRound} for Milestone ${n}`;
+      const already = await prisma.changeRequest.findFirst({
+        where: { projectId: id, title, status: { in: ["SUBMITTED", "ASSESSED"] } },
+      });
+      if (already) {
+        return {
+          milestone,
+          cr: already,
+          message: "A change request for this extra revision is already open.",
+        };
+      }
       const cr = await prisma.changeRequest.create({
         data: {
           id: ids.crId(),
           projectId: id,
-          title: `Extra revision round ${newRound} for Milestone ${n}`,
+          title,
           description: feedback,
           urgency: "LOW",
-          affectedMilestones: [parseInt(n)],
+          affectedMilestones: [number],
           status: "SUBMITTED",
           raisedBy: req.user!.sub,
         },
@@ -294,7 +319,7 @@ export async function projectRoutes(app: FastifyInstance) {
 
     await emitEvent({
       code: "MILESTONE_REVISION_REQUESTED",
-      payload: { projectId: id, milestone: parseInt(n), round: newRound, feedback },
+      payload: { projectId: id, milestone: number, round: newRound, feedback },
       actor: req.user!.sub,
       projectId: id,
     });
@@ -334,116 +359,131 @@ export async function projectRoutes(app: FastifyInstance) {
     return cr;
   });
 
-  // PATCH /projects/:id/change-requests/:crId/assess
+  // PATCH /projects/:id/change-requests/:crId/assess — the team prices a change
+  // request. Staff only: a client must not set the cost of their own request.
   app.patch("/projects/:id/change-requests/:crId/assess", async (req, reply) => {
-    const scope = await clientWriteScope(req, reply);
-    if (scope === undefined) return;
-    {
-      const { id } = req.params as { id: string };
-      if (!(await assertProjectInScope(id, scope, reply))) return;
-    }
-    const { crId } = req.params as { crId: string };
-    // costDelta becomes an invoice once this request is approved (see the
-    // G-041 block below), so it is integer paise like any other money field.
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
+    const { id, crId } = req.params as { id: string; crId: string };
+    // costDelta becomes an invoice once this request is approved, so it is
+    // integer paise like any other money field.
     const assessBody = parseBody(req, reply, AssessChangeRequestSchema);
     if (!assessBody) return;
     const { costDelta, timelineDelta, scopeImpact } = assessBody;
 
-    const updated = await prisma.changeRequest.update({
-      where: { id: crId },
+    // The CR must belong to the project in the URL; it was never checked.
+    const claimed = await prisma.changeRequest.updateMany({
+      where: { id: crId, projectId: id, status: { in: ["SUBMITTED", "ASSESSED"] } },
       data: { costDelta, timelineDelta, scopeImpact, status: "ASSESSED" },
     });
+    if (claimed.count !== 1)
+      return reply.code(409).send({ error: "This change request cannot be assessed" });
 
     await emitEvent({
       code: "CR_ASSESSED",
       payload: { crId, costDelta, timelineDelta },
       actor: req.user!.sub,
+      projectId: id,
     });
 
-    return updated;
+    return prisma.changeRequest.findUniqueOrThrow({ where: { id: crId } });
   });
 
   // PATCH /projects/:id/change-requests/:crId/client-approve
   app.patch("/projects/:id/change-requests/:crId/client-approve", async (req, reply) => {
     const scope = await clientWriteScope(req, reply);
     if (scope === undefined) return;
-    {
-      const { id } = req.params as { id: string };
-      if (!(await assertProjectInScope(id, scope, reply))) return;
-    }
-    const { crId } = req.params as { crId: string };
+    const { id, crId } = req.params as { id: string; crId: string };
+    if (!(await assertProjectInScope(id, scope, reply))) return;
 
-    const cr = await prisma.changeRequest.findUnique({ where: { id: crId } });
-    if (!cr || cr.status !== "ASSESSED") {
-      return reply.code(409).send({ error: "CR must be assessed first" });
-    }
-
-    // G-041: if cost delta > 0, create invoice before approving
-    const costDelta = Number(cr.costDelta ?? 0);
-    if (costDelta > 0 && cr.projectId) {
-      const project = await prisma.project.findUnique({
-        where: { id: cr.projectId },
-        include: { engagement: true },
+    // One transaction: claim the CR, then raise its invoice. Two clicks used to
+    // pass the status check together and raise two invoices.
+    const result = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.changeRequest.updateMany({
+        where: { id: crId, projectId: id, status: "ASSESSED" },
+        data: { status: "APPROVED" },
       });
-      if (project) {
-        const invoice = await prisma.$transaction(async (tx) =>
-          tx.invoice.create({
-            data: {
-              id: ids.invoiceId(),
-              invoiceNo: await nextDocNumber(tx, "INV"),
-              engagementId: project.engagementId,
-              orgId: project.engagement.clientId,
-              milestoneRef: `CR-${crId}`,
-              sacCode: "998314",
-              gstType: "IGST",
-              subtotal: costDelta,
-              igst: Math.round(costDelta * 0.18),
-              grandTotal: costDelta + Math.round(costDelta * 0.18),
-              status: "SENT",
-            },
-          }),
-        );
-        await prisma.changeRequest.update({
-          where: { id: crId },
-          data: { invoiceId: invoice.id },
-        });
-      }
-    }
+      if (claimed.count !== 1) return null;
 
-    const updated = await prisma.changeRequest.update({
-      where: { id: crId },
-      data: { status: cr.costDelta && cr.costDelta > 0 ? "APPROVED" : "APPROVED" },
+      const cr = await tx.changeRequest.findUniqueOrThrow({ where: { id: crId } });
+      const costDelta = Number(cr.costDelta ?? 0);
+      if (costDelta <= 0) return cr;
+
+      const project = await tx.project.findUniqueOrThrow({
+        where: { id },
+        include: { engagement: { include: { client: true } } },
+      });
+      // Tax follows the client's GSTIN, as on every other invoice.
+      const gstType = resolveGstType(project.engagement.client);
+      const gst = Math.round(costDelta * 0.18);
+      const { cgst, sgst, igst } = splitGst(gst, gstType);
+      const invoice = await tx.invoice.create({
+        data: {
+          id: ids.invoiceId(),
+          invoiceNo: await nextDocNumber(tx, "INV"),
+          engagementId: project.engagementId,
+          orgId: project.engagement.clientId,
+          milestoneRef: `CR-${crId}`,
+          sacCode: "998314",
+          gstType,
+          subtotal: costDelta,
+          cgst,
+          sgst,
+          igst,
+          grandTotal: costDelta + gst,
+          status: "SENT",
+          dueDate: new Date(Date.now() + 7 * 86400000),
+        },
+      });
+      return tx.changeRequest.update({
+        where: { id: crId },
+        data: { invoiceId: invoice.id },
+      });
     });
+    if (!result) return reply.code(409).send({ error: "CR must be assessed first" });
 
-    await emitEvent({ code: "CR_APPROVED", payload: { crId }, actor: req.user!.sub });
-    return updated;
+    await emitEvent({
+      code: "CR_APPROVED",
+      payload: { crId },
+      actor: req.user!.sub,
+      projectId: id,
+    });
+    return result;
   });
 
   // PATCH /projects/:id/change-requests/:crId/client-reject
   app.patch("/projects/:id/change-requests/:crId/client-reject", async (req, reply) => {
     const scope = await clientWriteScope(req, reply);
     if (scope === undefined) return;
-    {
-      const { id } = req.params as { id: string };
-      if (!(await assertProjectInScope(id, scope, reply))) return;
-    }
-    const { crId } = req.params as { crId: string };
+    const { id, crId } = req.params as { id: string; crId: string };
+    if (!(await assertProjectInScope(id, scope, reply))) return;
 
-    const updated = await prisma.changeRequest.update({
-      where: { id: crId },
+    // Only an open request of this project can be rejected. It could reject any
+    // CR by id, including another client's and one whose invoice was already raised.
+    const claimed = await prisma.changeRequest.updateMany({
+      where: { id: crId, projectId: id, status: { in: ["SUBMITTED", "ASSESSED"] } },
       data: { status: "REJECTED" },
     });
+    if (claimed.count !== 1)
+      return reply.code(409).send({ error: "This change request can no longer be rejected" });
 
-    await emitEvent({ code: "CR_REJECTED", payload: { crId }, actor: req.user!.sub });
-    return updated;
+    await emitEvent({
+      code: "CR_REJECTED",
+      payload: { crId },
+      actor: req.user!.sub,
+      projectId: id,
+    });
+    return prisma.changeRequest.findUniqueOrThrow({ where: { id: crId } });
   });
 
-  // POST /projects/:id/reactivate — G-043 micro-SOW
+  // POST /projects/:id/reactivate — G-043 micro-SOW.
+  // Staff only: reopening a finished project creates new paid work, so it is the
+  // team's call. (A client could do it themselves, for free, before.)
   app.post("/projects/:id/reactivate", async (req, reply) => {
-    const scope = await clientWriteScope(req, reply);
-    if (scope === undefined) return;
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
     const { id } = req.params as { id: string };
-    if (!(await assertProjectInScope(id, scope, reply))) return;
+    // Validate before writing anything; a bad body used to leave an orphan contract.
+    const milestoneBody = parseBody(req, reply, MilestoneDeliverablesSchema);
+    if (!milestoneBody) return;
 
     const project = await prisma.project.findUnique({ where: { id } });
     if (!project) return reply.code(404).send({ error: "Project not found" });
@@ -453,38 +493,33 @@ export async function projectRoutes(app: FastifyInstance) {
         .send({ error: "Only completed/cancelled projects can be reactivated" });
     }
 
-    // Create micro-SOW contract
-    const contract = await prisma.contract.create({
-      data: {
-        contractNo: await nextDocNumber(prisma, "CON"),
-        engagementId: project.engagementId,
-        type: "MICRO_SOW",
-        status: "DRAFT",
-      },
-    });
-
-    // Add single milestone
-    const maxMilestone = await prisma.milestone.findFirst({
-      where: { projectId: id },
-      orderBy: { number: "desc" },
-    });
-
-    const milestoneBody = parseBody(req, reply, MilestoneDeliverablesSchema);
-    if (!milestoneBody) return;
-
-    await prisma.milestone.create({
-      data: {
-        projectId: id,
-        number: (maxMilestone?.number ?? 0) + 1,
-        name: "Reactivation",
-        paymentPct: 100,
-        deliverables: milestoneBody.deliverables ?? [],
-      },
-    });
-
-    const updated = await prisma.project.update({
-      where: { id },
-      data: { status: "ACTIVE" },
+    const { contract, updated } = await prisma.$transaction(async (tx) => {
+      const contract = await tx.contract.create({
+        data: {
+          contractNo: await nextDocNumber(tx, "CON"),
+          engagementId: project.engagementId,
+          type: "MICRO_SOW",
+          status: "DRAFT",
+        },
+      });
+      const maxMilestone = await tx.milestone.findFirst({
+        where: { projectId: id },
+        orderBy: { number: "desc" },
+      });
+      await tx.milestone.create({
+        data: {
+          projectId: id,
+          number: (maxMilestone?.number ?? 0) + 1,
+          name: "Reactivation",
+          paymentPct: 100,
+          deliverables: milestoneBody.deliverables ?? [],
+        },
+      });
+      const updated = await tx.project.update({
+        where: { id },
+        data: { status: "ACTIVE" },
+      });
+      return { contract, updated };
     });
 
     await emitEvent({
