@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
+import { isInternalRole } from "@stackfox/core";
 import { LIST_CAP } from "../lib/http";
 import { parseBody } from "../lib/validate";
 import { CreateReviewSchema } from "./opsSchemas";
@@ -87,6 +88,10 @@ export async function reviewRoutes(app: FastifyInstance) {
 
   app.post("/reviews", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
+    // Performance reviews are internal: a client must not be able to review (or
+    // discover) staff.
+    if (!isInternalRole(req.user!.role))
+      return reply.code(403).send({ message: "Staff only." });
     const revBody = parseBody(req, reply, CreateReviewSchema);
     if (!revBody) return;
     const { revieweeId, rating, comment, period } = revBody;

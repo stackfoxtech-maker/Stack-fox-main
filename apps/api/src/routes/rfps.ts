@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { toJson } from "../lib/json";
 import { requireRole } from "../plugins/auth";
@@ -25,7 +24,9 @@ export async function rfpRoutes(app: FastifyInstance) {
   });
 
   app.post("/rfps", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    // RFPs are the sales team's pipeline. These mutations only checked "signed in",
+    // so any client could create RFPs for any organisation or change their status.
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const body = parseBody(req, reply, CreateRfpSchema);
     if (!body) return;
     return prisma.rfp.create({
@@ -43,7 +44,9 @@ export async function rfpRoutes(app: FastifyInstance) {
   });
 
   app.patch("/rfps/:id/decision", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    // RFPs are the sales team's pipeline. These mutations only checked "signed in",
+    // so any client could create RFPs for any organisation or change their status.
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const { id } = req.params as { id: string };
     // `decision` was written straight into `status` with no check at all.
     const decBody = parseBody(req, reply, RfpDecisionSchema);
@@ -56,7 +59,9 @@ export async function rfpRoutes(app: FastifyInstance) {
   });
 
   app.post("/rfps/:id/submit", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    // RFPs are the sales team's pipeline. These mutations only checked "signed in",
+    // so any client could create RFPs for any organisation or change their status.
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const { id } = req.params as { id: string };
     const updated = await prisma.rfp.update({
       where: { id },
@@ -71,7 +76,9 @@ export async function rfpRoutes(app: FastifyInstance) {
   });
 
   app.patch("/rfps/:id/outcome", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    // RFPs are the sales team's pipeline. These mutations only checked "signed in",
+    // so any client could create RFPs for any organisation or change their status.
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const { id } = req.params as { id: string };
     const outBody = parseBody(req, reply, RfpOutcomeSchema);
     if (!outBody) return;
@@ -83,7 +90,9 @@ export async function rfpRoutes(app: FastifyInstance) {
   });
 
   app.post("/rfps/:id/sdns", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    // RFPs are the sales team's pipeline. These mutations only checked "signed in",
+    // so any client could create RFPs for any organisation or change their status.
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const { id } = req.params as { id: string };
     const body = parseBody(req, reply, CreateSdnNoteSchema);
     if (!body) return;

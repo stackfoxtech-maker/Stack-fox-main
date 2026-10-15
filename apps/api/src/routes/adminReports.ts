@@ -431,7 +431,10 @@ function toCsv(rows: string[][]): string {
     .map((row) =>
       row
         .map((cell) => {
-          const v = cell ?? "";
+          let v = cell ?? "";
+          // A name like =HYPERLINK(...) becomes a formula when finance opens the file in
+          // Excel. Neutralise it, but leave plain negative numbers alone.
+          if (/^[=+\-@\t\r]/.test(v) && !/^-?\d+(\.\d+)?$/.test(v)) v = `'${v}`;
           return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
         })
         .join(","),

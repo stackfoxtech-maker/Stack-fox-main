@@ -34,7 +34,7 @@ import {
 } from "../lib/password";
 import { ensurePersonalOrg } from "../lib/scope";
 import { toJson } from "../lib/json";
-import { isInternalRole, CLIENT_ROLES } from "@stackfox/core";
+import { isInternalRole, isAdminRole, CLIENT_ROLES } from "@stackfox/core";
 
 const ORG_MANAGER_ROLES = ["ORG_OWNER", "CLIENT_ADMIN"];
 const ASSIGNABLE_MEMBER_ROLES = CLIENT_ROLES as readonly string[];
@@ -495,6 +495,27 @@ export async function authRoutes(app: FastifyInstance) {
       if (!body) return;
       const { email, phone } = body;
 
+      // Per-DESTINATION throttle, on top of the per-IP limit. A per-IP limit alone let
+      // one caller (rotating IPs) mail a victim without end, or run up the SMS bill
+      // (SMS pumping). 30s between codes, and 5 an hour to any one address or number.
+      const destination = (email ?? phone) as string;
+      const allowed = await tryRedis(
+        "throttle OTP send",
+        async () => {
+          const cooled = await redis.set(`otpcool:${destination}`, "1", "EX", 30, "NX");
+          if (!cooled) return false;
+          const n = await redis.incr(`otphour:${destination}`);
+          if (n === 1) await redis.expire(`otphour:${destination}`, 3600);
+          return n <= 5;
+        },
+        true,
+      );
+      if (!allowed) {
+        return reply
+          .code(429)
+          .send({ error: "Please wait a little before asking for another code." });
+      }
+
       // ── Phone: MSG91 generates, stores and rate-limits the code ────────────────
       if (phone && !email) {
         if (isSmsConfigured()) {
@@ -589,12 +610,18 @@ export async function authRoutes(app: FastifyInstance) {
         const attemptsKey = `otp-attempts:${email}`;
         // Fails closed: an unreachable Redis reports the cap as already hit
         // rather than resetting the counter to zero on every error.
+        // Count the attempt BEFORE comparing, atomically. Read-then-write let a burst of
+        // parallel guesses all read "0 attempts" and all be tried, defeating the cap.
         const attempts = await tryRedis(
-          "read OTP attempts",
-          async () => Number((await redis.get(attemptsKey)) ?? 0),
-          OTP_MAX_ATTEMPTS,
+          "count OTP attempt",
+          async () => {
+            const n = await redis.incr(attemptsKey);
+            if (n === 1) await redis.expire(attemptsKey, 300);
+            return n;
+          },
+          OTP_MAX_ATTEMPTS + 1,
         );
-        if (attempts >= OTP_MAX_ATTEMPTS) {
+        if (attempts > OTP_MAX_ATTEMPTS) {
           return reply
             .code(429)
             .send({ error: "Too many incorrect attempts. Request a new code." });
@@ -606,14 +633,6 @@ export async function authRoutes(app: FastifyInstance) {
           null,
         );
         if (!stored || stored !== code) {
-          await tryRedis(
-            "record failed OTP attempt",
-            async () => {
-              const ttl = await redis.ttl(`otp:${email}`);
-              await redis.set(attemptsKey, attempts + 1, "EX", ttl > 0 ? ttl : 300);
-            },
-            undefined,
-          );
           return reply.code(401).send({ error: "Invalid or expired OTP" });
         }
         await tryRedis(
@@ -642,9 +661,33 @@ export async function authRoutes(app: FastifyInstance) {
         });
       }
 
-      const orgId = isInternalRole(user.role)
-        ? (user.orgId ?? undefined)
-        : await ensurePersonalOrg(user.id);
+      // The code went to this address, so it is now verified; an earlier unverified
+      // signup's password is dropped for the same reason as in the Google flow.
+      if (email && !isInternalRole(user.role)) {
+        const authData = (user.authData as Record<string, unknown> | null) ?? {};
+        if (authData.verified !== true) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              authData: toJson({
+                ...authData,
+                verified: true,
+                verifiedAt: new Date().toISOString(),
+                passwordHash: null,
+              }),
+            },
+          });
+        }
+      }
+
+      // A staff (and so ADMIN) account must not be reachable with a 6-digit code that
+      // anyone who knows the email can try; staff sign in with a password. The WhatsApp
+      // path already refused them, the email and phone paths did not.
+      if (isInternalRole(user.role)) {
+        return reply.code(403).send({ error: "This account cannot sign in this way." });
+      }
+
+      const orgId = await ensurePersonalOrg(user.id);
 
       const { accessToken, refreshToken } = await issueSession(user, orgId);
 
@@ -757,6 +800,12 @@ export async function authRoutes(app: FastifyInstance) {
             // Google has already proven the address, whichever way they signed up.
             verified: true,
             verifiedAt: authData.verifiedAt ?? new Date().toISOString(),
+            // If the account was never verified, whoever set its password could be
+            // someone who registered this address first (pre-hijack). The real owner
+            // has just proven the address, so that password must stop working.
+            ...(authData.verified === true || isInternalRole(user.role)
+              ? {}
+              : { passwordHash: null }),
           }),
         },
       });
@@ -805,11 +854,15 @@ export async function authRoutes(app: FastifyInstance) {
       const attemptsKey = `otp-attempts:${phone}`;
       // Fails closed, as on the email path above.
       const attempts = await tryRedis(
-        "read OTP attempts",
-        async () => Number((await redis.get(attemptsKey)) ?? 0),
-        OTP_MAX_ATTEMPTS,
+        "count OTP attempt",
+        async () => {
+          const n = await redis.incr(attemptsKey);
+          if (n === 1) await redis.expire(attemptsKey, 300);
+          return n;
+        },
+        OTP_MAX_ATTEMPTS + 1,
       );
-      if (attempts >= OTP_MAX_ATTEMPTS) {
+      if (attempts > OTP_MAX_ATTEMPTS) {
         return reply
           .code(429)
           .send({ error: "Too many incorrect attempts. Request a new code." });
@@ -821,16 +874,6 @@ export async function authRoutes(app: FastifyInstance) {
         null,
       );
       if (!stored || stored !== code) {
-        // Same counter shape as the email path: capped against the 6-digit space
-        // and expiring with the code rather than lingering.
-        await tryRedis(
-          "record failed OTP attempt",
-          async () => {
-            const ttl = await redis.ttl(`otp:${phone}`);
-            await redis.set(attemptsKey, attempts + 1, "EX", ttl > 0 ? ttl : 300);
-          },
-          undefined,
-        );
         return reply.code(401).send({ error: "Invalid OTP" });
       }
       await tryRedis(
@@ -1012,7 +1055,11 @@ export async function authRoutes(app: FastifyInstance) {
     const caller = req.user!;
     const isOwnOrgManager =
       caller.orgId === id && ORG_MANAGER_ROLES.includes(caller.role);
-    if (!isInternalRole(caller.role) && !isOwnOrgManager) {
+    // Only an ADMIN may manage another organisation's members or hand out staff roles.
+    // Any staff role (a developer, QA, sales...) used to pass this check, so one of
+    // them could make themselves ADMIN.
+    const callerIsAdmin = isAdminRole(caller.role);
+    if (!callerIsAdmin && !isOwnOrgManager) {
       return reply.code(403).send({ error: "Insufficient permissions" });
     }
 
@@ -1025,7 +1072,7 @@ export async function authRoutes(app: FastifyInstance) {
     // known role (including internal ones, e.g. staffing an internal org).
     const roleIsKnown = ASSIGNABLE_MEMBER_ROLES.includes(role) || isInternalRole(role);
     const roleIsAllowedForCaller =
-      isInternalRole(caller.role) || ASSIGNABLE_MEMBER_ROLES.includes(role);
+      callerIsAdmin || ASSIGNABLE_MEMBER_ROLES.includes(role);
     if (!roleIsKnown || !roleIsAllowedForCaller) {
       return reply.code(400).send({
         error: `Unknown or unassignable role. Valid roles: ${ASSIGNABLE_MEMBER_ROLES.join(", ")}`,
@@ -1042,7 +1089,10 @@ export async function authRoutes(app: FastifyInstance) {
       //
       // An account is claimable only when it is unclaimed: no other org, no
       // internal role, and no credential of its own.
-      const callerIsStaff = isInternalRole(caller.role);
+      const callerIsStaff = callerIsAdmin;
+      if (user.id === caller.sub) {
+        return reply.code(409).send({ error: "You cannot change your own role." });
+      }
       const authData = (user.authData as Record<string, unknown> | null) ?? {};
       const hasOwnCredential =
         Boolean(authData.passwordHash) || Boolean(authData.googleId);
@@ -1070,6 +1120,8 @@ export async function authRoutes(app: FastifyInstance) {
         where: { id: user.id },
         data: { orgId: id, role },
       });
+      // Their old token still carries the old role and org for up to 24h.
+      await bumpSessionEpoch(user.id).catch(() => {});
     } else {
       user = await prisma.user.create({
         data: {

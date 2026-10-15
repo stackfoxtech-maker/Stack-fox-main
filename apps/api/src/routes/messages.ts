@@ -211,11 +211,15 @@ export async function messageRoutes(app: FastifyInstance) {
       return reply.code(404).send({ message: "Conversation not found" });
     }
 
-    const messages = await prisma.message.findMany({
-      take: LIST_CAP,
-      where: { conversationId: id },
-      orderBy: { createdAt: "asc" },
-    });
+    // The NEWEST page, oldest first. Taking the first 500 oldest meant a long thread
+    // never showed its latest messages.
+    const messages = (
+      await prisma.message.findMany({
+        take: LIST_CAP,
+        where: { conversationId: id },
+        orderBy: { createdAt: "desc" },
+      })
+    ).reverse();
     const senderMap = new Map(
       (await participantsFor(convo.participantIds)).map((p) => [p.id, p]),
     );

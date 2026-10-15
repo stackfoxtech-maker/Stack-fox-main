@@ -145,11 +145,11 @@ export async function checkoutRoutes(app: FastifyInstance) {
 
     // KYC gate check
     const totals = await getEstimateTotals(session.estimateId);
-    if (totals && totals.grand >= 1000000) {
+    if (totals && totals.grand >= 100_000_000) {
       // ≥₹10L: BO declaration
       (session.accountDetails as any).kycRequired = "BO_DECLARATION";
     }
-    if (totals && totals.grand >= 5000000) {
+    if (totals && totals.grand >= 500_000_000) {
       // ≥₹50L: EDD
       (session.accountDetails as any).kycRequired = "EDD";
     }
@@ -402,6 +402,17 @@ export async function checkoutRoutes(app: FastifyInstance) {
               { statusCode: 409 },
             );
           }
+          // Claim the estimate first. Two sessions opened on one ACTIVE estimate could
+          // both complete and provision two engagements, order sets and invoices for one
+          // purchase; only the first to flip it may go on.
+          const claimed = await tx.estimate.updateMany({
+            where: { id: estimate.id, status: "ACTIVE" },
+            data: { status: "CONVERTED" },
+          });
+          if (claimed.count !== 1)
+            throw Object.assign(new Error("This estimate was already converted"), {
+              statusCode: 409,
+            });
           const engagement = await tx.engagement.create({
             data: {
               id: engId,
@@ -479,11 +490,6 @@ export async function checkoutRoutes(app: FastifyInstance) {
               }),
             );
           }
-
-          await tx.estimate.update({
-            where: { id: estimate.id },
-            data: { status: "CONVERTED" },
-          });
 
           const invoice = await tx.invoice.create({
             data: {

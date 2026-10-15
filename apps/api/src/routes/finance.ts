@@ -502,24 +502,74 @@ export async function financeRoutes(app: FastifyInstance) {
       // payment on a superseded order still lands on its invoice.
       const noteInvoiceId =
         typeof entity.notes?.invoiceId === "string" ? entity.notes.invoiceId : null;
+      const order = await prisma.order.findFirst({
+        where: { razorpayOrderId: rzpOrderId },
+      });
+      // Checkout orders have no `razorpayOrderId` on their invoice, so a payment that
+      // reached only this webhook was booked on the order with no invoice behind it:
+      // the invoice stayed unpaid, no receipt or revenue, and the client was dunned.
+      // The order's first invoice is the one that payment settles.
       const invoice =
         (await prisma.invoice.findFirst({ where: { razorpayOrderId: rzpOrderId } })) ??
         (noteInvoiceId
           ? await prisma.invoice.findUnique({ where: { id: noteInvoiceId } })
+          : null) ??
+        (order
+          ? await prisma.invoice.findFirst({
+              where: { orderId: order.id },
+              orderBy: { createdAt: "asc" },
+            })
           : null);
       if (invoice) {
-        await applyGatewayPayment(invoice.id, Number(entity.amount) || 0, {
-          gateway: "RAZORPAY",
-          gatewayPaymentId: entity.id,
-          gatewayOrderId: rzpOrderId,
-          method: entity.method ?? "unknown",
-        });
+        try {
+          await applyGatewayPayment(invoice.id, Number(entity.amount) || 0, {
+            gateway: "RAZORPAY",
+            gatewayPaymentId: entity.id,
+            gatewayOrderId: rzpOrderId,
+            method: entity.method ?? "unknown",
+          });
+        } catch (err) {
+          // A cancelled invoice, a reused payment id: the money is real but cannot be
+          // applied. Answering 500 only made Razorpay retry; put it in front of finance.
+          await emitEvent({
+            code: "PAYMENT_NEEDS_REVIEW",
+            payload: {
+              invoiceId: invoice.id,
+              orderId: rzpOrderId,
+              paymentId: entity.id,
+              amount: entity.amount,
+              reason: err instanceof Error ? err.message : "could not apply payment",
+            },
+            actor: "SYSTEM",
+            engagementId: invoice.engagementId ?? undefined,
+          });
+        }
+        return { ok: true };
       }
 
-      // Update order if linked
-      const order = await prisma.order.findFirst({
-        where: { razorpayOrderId: rzpOrderId },
-      });
+      // Nothing we know of owns this order. If a checkout session does, the customer
+      // paid but never reached /complete (closed the tab), so nothing was provisioned.
+      if (!order) {
+        const session = await prisma.checkoutSession.findFirst({
+          where: { razorpayOrderId: rzpOrderId },
+          select: { id: true },
+        });
+        await emitEvent({
+          code: "PAYMENT_NEEDS_REVIEW",
+          payload: {
+            orderId: rzpOrderId,
+            paymentId: entity.id,
+            amount: entity.amount,
+            checkoutSessionId: session?.id ?? null,
+            reason: session
+              ? "Paid at checkout but the checkout was never completed"
+              : "No quote, invoice or order matches this payment",
+          },
+          actor: "SYSTEM",
+        });
+        return { ok: true };
+      }
+
       if (order && !invoice) {
         // The order flip and the Payment row go together: an order marked PAID
         // with no payment behind it is the same books-disagree problem as the
@@ -566,6 +616,21 @@ export async function financeRoutes(app: FastifyInstance) {
           });
         }
       }
+    }
+
+    // Refunds and chargebacks are not applied automatically (they change revenue and
+    // referral commission), but they must not pass unnoticed.
+    if (eventType === "payment.refunded" || eventType?.startsWith("refund.")) {
+      await emitEvent({
+        code: "PAYMENT_NEEDS_REVIEW",
+        payload: {
+          orderId: entity.order_id,
+          paymentId: entity.id,
+          amount: payload.payload?.refund?.entity?.amount ?? entity.amount_refunded,
+          reason: `Razorpay reported ${eventType}`,
+        },
+        actor: "SYSTEM",
+      });
     }
 
     if (eventType === "payment.failed") {

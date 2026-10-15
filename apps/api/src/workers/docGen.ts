@@ -38,10 +38,18 @@ createWorker(QUEUE.docGen, async (job) => {
     const milestoneRef = `M${milestoneNumber}`;
     const commercial = (project.engagement.commercial ?? {}) as Record<string, unknown>;
     const engagementGrand = num(commercial.grand);
-    const invoiceGross = Math.round((engagementGrand * milestone.paymentPct) / 100);
-    const subtotal = Math.round(invoiceGross / (1 + GST_RATE));
     const gstType = resolveGstType(project.engagement.client);
-    const { cgst, sgst, igst } = splitGst(invoiceGross - subtotal, gstType);
+    // The invoice amount is worked out under the lock below, because it depends on
+    // what has already been billed for the engagement.
+    const amounts = (billedSoFar: number) => {
+      // Never bill past the engagement value. The checkout's first invoice is a flat
+      // 30% while a Premium plan's milestones are 20/20/25/20/15, so billing each
+      // milestone at its own percentage added up to 110%.
+      const share = Math.round((engagementGrand * milestone.paymentPct) / 100);
+      const gross = Math.max(0, Math.min(share, engagementGrand - billedSoFar));
+      const sub = Math.round(gross / (1 + GST_RATE));
+      return { gross, sub, ...splitGst(gross - sub, gstType) };
+    };
 
     // A client who paid in full (or upfront) was already billed for everything;
     // raising milestone invoices on top of that would charge them twice.
@@ -61,7 +69,7 @@ createWorker(QUEUE.docGen, async (job) => {
     });
 
     const startedAt = Date.now() - 1000;
-    if (!invoice && !billedUpfront && invoiceGross > 0) {
+    if (!invoice && !billedUpfront && engagementGrand > 0) {
       invoice = await prisma.$transaction(async (tx) => {
         // Serialise per milestone and look again inside the lock: two workers (or a
         // retry) could both pass the check above and issue two tax invoices.
@@ -70,6 +78,14 @@ createWorker(QUEUE.docGen, async (job) => {
           where: { engagementId: project.engagementId, milestoneRef },
         });
         if (again) return again;
+        const billed = await tx.invoice.aggregate({
+          where: { engagementId: project.engagementId, status: { not: "CANCELLED" } },
+          _sum: { grandTotal: true },
+        });
+        const { gross, sub, cgst, sgst, igst } = amounts(
+          Number(billed._sum.grandTotal ?? 0),
+        );
+        if (gross <= 0) return null;
         return tx.invoice.create({
           data: {
             id: ids.invoiceId(),
@@ -80,11 +96,11 @@ createWorker(QUEUE.docGen, async (job) => {
             milestoneRef,
             sacCode: "998314",
             gstType,
-            subtotal,
+            subtotal: sub,
             cgst,
             sgst,
             igst,
-            grandTotal: invoiceGross,
+            grandTotal: gross,
             status: "SENT",
             dueDate: new Date(Date.now() + 7 * 86400000),
           },

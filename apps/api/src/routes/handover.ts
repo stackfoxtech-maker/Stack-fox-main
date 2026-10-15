@@ -7,6 +7,7 @@ import { decryptSecret } from "../lib/crypto";
 import { toJson } from "../lib/json";
 import { emitEvent } from "../lib/events";
 import { createHash } from "crypto";
+import { VAULT_ROLES, canTransact } from "@stackfox/core";
 import { issueDownload } from "../lib/documentIntegrity";
 
 /**
@@ -229,6 +230,10 @@ export async function handoverRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const scope = await clientWriteScope(req, reply);
       if (scope === undefined) return;
+      // Staff pass the tenant scope, so without this every staff role (sales, QA,
+      // finance...) could read any client's hosting, DNS and payment-gateway logins.
+      if (scope === null && !(VAULT_ROLES as readonly string[]).includes(req.user!.role))
+        return reply.code(403).send({ error: "You do not have access to the vault." });
 
       const { projectId, credentialId } = req.params as {
         projectId: string;
@@ -283,6 +288,10 @@ export async function handoverRoutes(app: FastifyInstance) {
   app.post("/handover/:projectId/accept", async (req, reply) => {
     const scope = await clientWriteScope(req, reply);
     if (scope === undefined) return;
+    // Sign-off is the client's. A staff member could accept on the client's behalf,
+    // starting the warranty clock and completing the project.
+    if (scope === null || !canTransact(req.user!.role))
+      return reply.code(403).send({ error: "Only the client's signatory can accept." });
 
     const { projectId } = req.params as { projectId: string };
     if (!(await assertProjectInScope(projectId, scope, reply))) return;
@@ -371,6 +380,8 @@ export async function handoverRoutes(app: FastifyInstance) {
   app.post("/handover/:projectId/dispute", async (req, reply) => {
     const scope = await clientWriteScope(req, reply);
     if (scope === undefined) return;
+    if (scope === null || !canTransact(req.user!.role))
+      return reply.code(403).send({ error: "Only the client's signatory can dispute." });
 
     const { projectId } = req.params as { projectId: string };
     if (!(await assertProjectInScope(projectId, scope, reply))) return;

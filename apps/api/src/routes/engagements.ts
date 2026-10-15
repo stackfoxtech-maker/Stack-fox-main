@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
-import { SALES_ROLES, canTransition } from "@stackfox/core";
+import { DELIVERY_ROLES, SALES_ROLES, canTransition } from "@stackfox/core";
 import { clientScope, clientWriteScope, assertEngagementInScope } from "../lib/scope";
 import { LIST_CAP, ok, withId, withIds } from "../lib/http";
 import { parseBody } from "../lib/validate";
@@ -70,11 +70,11 @@ export async function engagementRoutes(app: FastifyInstance) {
     return ok(withIds(items));
   });
 
+  // Staff only. A client owner could drive their own engagement to ACTIVE (skipping
+  // contracting and payment) or COMPLETED/TERMINATED, like the project status route.
   app.patch("/engagements/:id/status", async (req, reply) => {
-    const scope = await clientWriteScope(req, reply);
-    if (scope === undefined) return;
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
     const { id } = req.params as { id: string };
-    if (!(await assertEngagementInScope(id, scope, reply))) return;
     const stBody = parseBody(req, reply, UpdateEngagementStatusSchema);
     if (!stBody) return;
     const { status } = stBody;
@@ -92,7 +92,8 @@ export async function engagementRoutes(app: FastifyInstance) {
       where: { id },
       data: {
         status,
-        ...(status === "ACTIVE" ? { executedAt: new Date() } : {}),
+        // Only the first activation is the execution date; a resume must not overwrite it.
+        ...(status === "ACTIVE" && !eng.executedAt ? { executedAt: new Date() } : {}),
         ...(status === "COMPLETED" || status === "TERMINATED"
           ? { endsAt: new Date() }
           : {}),

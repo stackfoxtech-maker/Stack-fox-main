@@ -25,7 +25,7 @@ registerCron("dunning-run", async () => {
       code: "DUNNING_NOTICE",
       payload: {
         invoiceId: inv.id,
-        amount: inv.grandTotal,
+        amount: Number(inv.grandTotal) - Number(inv.amountPaid ?? 0),
         daysPastDue,
         level: dunningLevel,
       },

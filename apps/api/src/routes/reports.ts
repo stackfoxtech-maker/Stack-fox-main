@@ -64,9 +64,12 @@ async function engagementIdsFor(scope: string | null): Promise<string[] | null> 
 async function spendReport(scope: string | null) {
   const where = scope !== null ? { orgId: scope } : {};
   const invoices = await prisma.invoice.findMany({
-    where: { ...where, status: { not: "CANCELLED" } },
+    // A draft has not been issued to the client, so it is neither "invoiced" nor
+    // "outstanding".
+    where: { ...where, status: { notIn: ["CANCELLED", "DRAFT"] } },
     select: {
       grandTotal: true,
+      amountPaid: true,
       status: true,
       createdAt: true,
       paidAt: true,
@@ -88,9 +91,12 @@ async function spendReport(scope: string | null) {
   }
 
   const totalInvoiced = invoices.reduce((s, i) => s + Number(i.grandTotal), 0);
-  const totalPaid = invoices
-    .filter((i) => i.status === "PAID")
-    .reduce((s, i) => s + Number(i.grandTotal), 0);
+  // What was actually received, including the part-paid. Counting only PAID invoices
+  // showed a 30%-paid project as nothing paid.
+  const totalPaid = invoices.reduce(
+    (s, i) => s + Math.min(Number(i.amountPaid ?? 0), Number(i.grandTotal)),
+    0,
+  );
 
   const now = new Date();
   const overdue = invoices.filter(

@@ -5,6 +5,7 @@ import { emitEvent } from "../lib/events";
 import { CATALOGUE_ROLES } from "@stackfox/core";
 import { LIST_CAP } from "../lib/http";
 import { parseBody } from "../lib/validate";
+import { resolveOrgId } from "../lib/scope";
 import { CreateFeedbackSchema } from "./opsSchemas";
 
 export async function feedbackRoutes(app: FastifyInstance) {
@@ -16,6 +17,9 @@ export async function feedbackRoutes(app: FastifyInstance) {
 
     const feedback = await prisma.feedback.create({
       data: {
+        // The client engagement report reads feedback by organisation, and this was
+        // never set, so every client's ratings and NPS showed as empty.
+        orgId: await resolveOrgId(req),
         raisedBy: req.user!.sub,
         projectRef: projectRef ?? null,
         rating,

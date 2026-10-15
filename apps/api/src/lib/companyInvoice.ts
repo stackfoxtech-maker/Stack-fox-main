@@ -165,8 +165,15 @@ export function fyLabel(d = new Date()): string {
 // The number printed on a tax invoice (AWL/INV/<FY>/NNNN) comes from lib/docNumber.ts. The
 // `INV-YYYY-MM-XXXXXXXX` primary key is an internal handle and is never printed.
 
+// Always in IST: a server in UTC printed the previous day for anything issued
+// between midnight and 05:30 IST.
 const fmtDate = (d: Date) =>
-  d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
 
 // ── Model ───────────────────────────────────────────────────────────────────
 export interface CompanyInvoiceLine {
@@ -335,7 +342,13 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
     `Invoice No.   ${inv.invoiceNo}`,
     `Date          ${fmtDate(inv.date)}`,
     inv.dueDate ? `Due           ${fmtDate(inv.dueDate)}` : "",
-    `Place         ${SUPPLIER.place} (${SUPPLIER.stateCode})`,
+    // Place of supply is the recipient's State for an inter-State (IGST) supply; it
+    // always printed the supplier's own city.
+    `Place         ${
+      inv.isInterState && r.stateName
+        ? `${r.stateName}${r.stateCode ? ` (${r.stateCode})` : ""}`
+        : `${SUPPLIER.place} (${SUPPLIER.stateCode})`
+    }`,
     `Supply        ${inv.isInterState ? "IGST" : "CGST+SGST"}`,
     inv.status ? `Status        ${inv.status}` : "",
   ]);
@@ -460,10 +473,26 @@ export async function renderCompanyInvoicePdf(inv: CompanyInvoiceModel): Promise
     g.taxable = round2(g.taxable + l.amount);
     bySac.set(l.sacCode, g);
   }
-  for (const [sac, g] of bySac) {
+  // The tax per SAC is the stored tax shared out by taxable value, the last group
+  // taking the remainder. Recomputing taxable x rate disagreed with the stored tax by
+  // a paisa (and so with the totals block and GSTR-1) whenever the subtotal was rounded.
+  const sacGroups = [...bySac.entries()];
+  const taxableAll = sacGroups.reduce((n, [, g]) => n + g.taxable, 0);
+  let restC = inv.cgst;
+  let restI = inv.igst;
+  let groupNo = 0;
+  for (const [sac, g] of sacGroups) {
     ensure(20);
-    const c = inv.isInterState ? 0 : round2((g.taxable * inv.gstRate) / 200);
-    const i = inv.isInterState ? round2((g.taxable * inv.gstRate) / 100) : 0;
+    const lastGroup = ++groupNo === sacGroups.length;
+    const share = taxableAll > 0 ? g.taxable / taxableAll : 0;
+    const c = inv.isInterState ? 0 : lastGroup ? round2(restC) : round2(inv.cgst * share);
+    const i = inv.isInterState
+      ? lastGroup
+        ? round2(restI)
+        : round2(inv.igst * share)
+      : 0;
+    restC -= c;
+    restI -= i;
     text(sac, bx.sac, 8);
     text(g.desc.slice(0, 38), bx.desc, 8);
     text(inr2(g.taxable), bx.taxable, 8, { align: "right" });

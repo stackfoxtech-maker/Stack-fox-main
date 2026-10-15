@@ -76,6 +76,8 @@ export async function recordInvoicePaymentRows(
       const payment = await db.payment.create({
         data: {
           receiptNo: await nextDocNumber(db, "RCP"),
+          // A bank payment recorded days later belongs to the day it arrived.
+          ...(facts.paidAt ? { createdAt: facts.paidAt } : {}),
           orderId: invoice.orderId,
           invoiceId: invoice.id,
           gateway: facts.gateway,
@@ -216,11 +218,22 @@ export async function settleInvoice(invoiceId: string, facts: PaymentFacts) {
     const fx = await recordInvoicePaymentRows(tx, updated, facts);
     // A quote that was part-paid stayed "partially_paid" for ever when its
     // balance was settled through this path (online invoice, bank UTR).
-    if (paid)
-      await tx.quote.updateMany({
-        where: { invoiceId: invoice.id, status: { not: "paid" } },
-        data: { status: "paid", paidAt: updated.paidAt },
+    // Keep the quote that owns this invoice in step with it. The quote's own
+    // `amountPaid` was never updated by UTR or online invoice payments, so the next
+    // "pay the balance" on the quote charged total - (stale amount) instead of what
+    // was really outstanding.
+    const quote = await tx.quote.findFirst({ where: { invoiceId: invoice.id } });
+    if (quote) {
+      const details = (quote.checkoutDetails as Record<string, unknown> | null) ?? {};
+      await tx.quote.update({
+        where: { id: quote.id },
+        data: {
+          status: paid ? "paid" : quote.status,
+          paidAt: paid ? updated.paidAt : quote.paidAt,
+          checkoutDetails: toJson({ ...details, amountPaid }),
+        },
       });
+    }
     return { invoice: updated, fx, replayed: false };
   });
   if (result.fx) await enqueuePaymentSideEffects(result.fx);

@@ -61,11 +61,11 @@ function checkoutDetailsOf(q: { checkoutDetails?: unknown }): Record<string, any
  * Cancelled, or past its validity date. A part-paid quote never expires: the
  * client already owes the balance, so the date must not lock them out of paying it.
  */
-function isDeadQuote(q: { status: string; validUntil: Date }) {
-  return (
-    q.status === "cancelled" ||
-    (q.status !== "partially_paid" && q.validUntil < new Date())
-  );
+function isDeadQuote(q: { status: string; validUntil: Date; invoiceId?: string | null }) {
+  // A quote that already has an invoice has been (part-)paid: the client owes the
+  // balance, whatever status the last action left on it ("checkout", "awaiting_cash").
+  const started = q.status === "partially_paid" || Boolean(q.invoiceId);
+  return q.status === "cancelled" || (!started && q.validUntil < new Date());
 }
 
 /** Thrown when a gateway payment cannot be matched to what the quote is waiting for. */
@@ -659,7 +659,13 @@ export async function quoteRoutes(app: FastifyInstance) {
         if (quote.status === "paid" || next.remainingDue <= 0) {
           return reply.code(400).send({ message: "This quote has already been paid." });
         }
-        const { amount, mode } = next;
+        // An amount already pinned (by a cash request, say) is charged as it is.
+        // Pricing it again took the 5% upfront discount twice: a Rs 1,00,000 quote
+        // charged Rs 90,250.
+        const pinnedAmount = Number(details.pendingOrderAmount);
+        const pinned = pinnedAmount > 0;
+        const amount = pinned ? pinnedAmount : next.amount;
+        const mode = pinned ? (details.paymentMode ?? next.mode) : next.mode;
 
         let order;
         try {
@@ -698,7 +704,11 @@ export async function quoteRoutes(app: FastifyInstance) {
 
         await tx.quote.update({
           where: { id },
-          data: { razorpayOrderId: order.id, status: "checkout", ...next.data },
+          data: {
+            razorpayOrderId: order.id,
+            status: quote.status === "partially_paid" ? quote.status : "checkout",
+            ...(pinned ? {} : next.data),
+          },
         });
 
         return {

@@ -46,7 +46,10 @@ export async function adminRoutes(app: FastifyInstance) {
   const ADMIN_ONLY =
     /^\/admin\/(users|screening|compliance|flags|notification-templates|purchases)(\/|\?|$)/;
   app.addHook("preHandler", async (req, reply) => {
-    const allowed = ADMIN_ONLY.test(req.url) ? ADMIN_ROLES : CATALOGUE_ROLES;
+    // Match the route PATTERN, not the raw URL: "/admin/%75sers" reaches the users
+    // handler but does not match a regex written against "/admin/users".
+    const pattern = req.routeOptions?.url ?? req.url;
+    const allowed = ADMIN_ONLY.test(pattern) ? ADMIN_ROLES : CATALOGUE_ROLES;
     if (!requireRole(req, reply, allowed)) return;
   });
 
