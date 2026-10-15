@@ -51,7 +51,9 @@ createWorker(QUEUE.docGen, async (job) => {
           select: { paymentMode: true },
         })
       : null;
-    const paymentMode = String(commercial.paymentMode ?? order?.paymentMode ?? "MILESTONE");
+    const storedMode = commercial.paymentMode;
+    const paymentMode =
+      typeof storedMode === "string" ? storedMode : (order?.paymentMode ?? "MILESTONE");
     const billedUpfront = paymentMode === "FULL" || paymentMode === "UPFRONT";
 
     let invoice = await prisma.invoice.findFirst({
