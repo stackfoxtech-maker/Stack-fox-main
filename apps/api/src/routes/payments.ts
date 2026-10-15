@@ -54,22 +54,24 @@ export async function paymentRoutes(app: FastifyInstance) {
 
         let order;
         try {
-          if (invoice.razorpayOrderId) {
-            order = await fetchRazorpayOrder(invoice.razorpayOrderId);
-            if (
-              Number(order.amount) !== balance ||
-              order.currency !== "INR" ||
-              order.status === "paid"
-            ) {
-              return reply.code(409).send({
-                message:
-                  "Existing gateway order requires reconciliation before another payment",
+          // Reuse an open order for the same balance. Otherwise (first payment, or
+          // the balance changed, or the old order was already paid) open a fresh
+          // one. This used to answer 409 for ever, locking the client out of
+          // paying. A late payment on the old order is still matched to this
+          // invoice by the `invoiceId` note (see the Razorpay webhook).
+          const existing = invoice.razorpayOrderId
+            ? await fetchRazorpayOrder(invoice.razorpayOrderId)
+            : null;
+          const reusable =
+            existing &&
+            Number(existing.amount) === balance &&
+            existing.currency === "INR" &&
+            existing.status !== "paid";
+          order = reusable
+            ? existing
+            : await createRazorpayOrder(balance, "INR", `inv_${invoice.id}`, {
+                invoiceId: invoice.id,
               });
-            }
-          } else
-            order = await createRazorpayOrder(balance, "INR", `inv_${invoice.id}`, {
-              invoiceId: invoice.id,
-            });
         } catch (err: any) {
           // The Razorpay SDK throws { statusCode, error: { code, description } } —
           // not a plain Error — so the real reason lives in err.error.description,

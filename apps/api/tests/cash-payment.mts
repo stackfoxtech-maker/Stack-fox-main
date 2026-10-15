@@ -101,8 +101,8 @@ const ok = await call("POST", `/quotes/${quoteId}/cash/confirm`, financeToken, {
 });
 check(`finance confirms cash -> ${ok.status}`, ok.status === 200);
 check(
-  `quote is partially paid after the milestone`,
-  ok.body?.data?.status === "partially_paid",
+  `quote is settled once its first (30%) invoice is paid`,
+  ok.body?.data?.status === "paid",
 );
 
 const after = await prisma.quote.findUniqueOrThrow({ where: { id: quoteId } });
@@ -119,6 +119,10 @@ check(`engagement + invoice provisioned`, Boolean(invoice?.engagementId));
 check(`projects provisioned (${projects})`, projects > 0);
 check(`CASH Payment row recorded for ${pending}`, Number(payment?.amount) === pending);
 check(`invoice amountPaid = ${pending}`, Number(invoice?.amountPaid) === pending);
+check(
+  `first invoice bills only the 30% instalment`,
+  Number(invoice?.grandTotal) === pending && invoice?.status === "PAID",
+);
 
 const twice = await call("POST", `/quotes/${quoteId}/cash/confirm`, financeToken, {});
 check(`a second confirm is refused -> ${twice.status}`, twice.status === 409);

@@ -209,6 +209,13 @@ export async function settleInvoice(invoiceId: string, facts: PaymentFacts) {
       },
     });
     const fx = await recordInvoicePaymentRows(tx, updated, facts);
+    // A quote that was part-paid stayed "partially_paid" for ever when its
+    // balance was settled through this path (online invoice, bank UTR).
+    if (paid)
+      await tx.quote.updateMany({
+        where: { invoiceId: invoice.id, status: { not: "paid" } },
+        data: { status: "paid", paidAt: updated.paidAt },
+      });
     return { invoice: updated, fx, replayed: false };
   });
   if (result.fx) await enqueuePaymentSideEffects(result.fx);
