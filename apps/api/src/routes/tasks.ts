@@ -21,6 +21,18 @@ import { CreateTaskSchema } from "./opsSchemas";
  */
 
 const OPEN_STATUSES = ["backlog", "todo", "in-progress", "review"];
+// The only values the board knows. Any other string made a task fall out of every
+// column and out of the workload counts.
+const TASK_STATUSES = [...OPEN_STATUSES, "done"];
+const TASK_PRIORITIES = ["low", "medium", "high", "urgent"];
+
+/** A date the client sent, or an error message. `null` clears it. */
+function parseDue(v: unknown): { ok: true; value: Date | null } | { ok: false } {
+  if (v === null || v === "") return { ok: true, value: null };
+  if (typeof v !== "string" && typeof v !== "number") return { ok: false };
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? { ok: false } : { ok: true, value: d };
+}
 
 function serializeTask(t: any) {
   return {
@@ -141,6 +153,16 @@ export async function taskRoutes(app: FastifyInstance) {
     const body = parseBody(req, reply, CreateTaskSchema);
     if (!body) return;
     const { title, description, assigneeId, projectId, priority, status, dueDate } = body;
+    if (status && !TASK_STATUSES.includes(status))
+      return reply
+        .code(400)
+        .send({ message: `Status must be one of ${TASK_STATUSES.join(", ")}.` });
+    if (priority && !TASK_PRIORITIES.includes(priority))
+      return reply
+        .code(400)
+        .send({ message: `Priority must be one of ${TASK_PRIORITIES.join(", ")}.` });
+    const due = dueDate ? parseDue(dueDate) : { ok: true as const, value: null };
+    if (!due.ok) return reply.code(400).send({ message: "That due date is not valid." });
 
     const assignee = await prisma.user.findUnique({ where: { id: assigneeId } });
     if (!assignee || !assignee.isActive) {
@@ -163,7 +185,7 @@ export async function taskRoutes(app: FastifyInstance) {
         projectId: projectId ?? null,
         priority: priority ?? "medium",
         status: status ?? "todo",
-        dueDate: dueDate ? new Date(dueDate) : null,
+        dueDate: due.value,
       },
       include: { project: true },
     });
@@ -203,13 +225,29 @@ export async function taskRoutes(app: FastifyInstance) {
 
     const body = (req.body ?? {}) as Record<string, any>;
     const data: Record<string, unknown> = {};
-    if (typeof body.status === "string") data.status = body.status;
-    if (typeof body.priority === "string") data.priority = body.priority;
+    if (typeof body.status === "string") {
+      if (!TASK_STATUSES.includes(body.status))
+        return reply
+          .code(400)
+          .send({ message: `Status must be one of ${TASK_STATUSES.join(", ")}.` });
+      data.status = body.status;
+    }
+    if (typeof body.priority === "string") {
+      if (!TASK_PRIORITIES.includes(body.priority))
+        return reply
+          .code(400)
+          .send({ message: `Priority must be one of ${TASK_PRIORITIES.join(", ")}.` });
+      data.priority = body.priority;
+    }
     if (typeof body.title === "string" && body.title.trim())
       data.title = body.title.trim();
     if (typeof body.description === "string") data.description = body.description;
-    if (body.dueDate !== undefined)
-      data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+    if (body.dueDate !== undefined) {
+      const due = parseDue(body.dueDate);
+      if (!due.ok)
+        return reply.code(400).send({ message: "That due date is not valid." });
+      data.dueDate = due.value;
+    }
 
     // Reassignment is a lead-only action.
     if (typeof body.assigneeId === "string" && body.assigneeId !== task.assigneeId) {
@@ -232,6 +270,17 @@ export async function taskRoutes(app: FastifyInstance) {
       data,
       include: { project: true },
     });
+    // A reassigned task used to land on someone's board without a word.
+    if (data.assigneeId) {
+      await prisma.notification.create({
+        data: {
+          userId: data.assigneeId as string,
+          title: "Task assigned to you",
+          body: updated.title,
+          link: "/app/team/tasks",
+        },
+      });
+    }
     return ok(serializeTask(updated));
   });
 
