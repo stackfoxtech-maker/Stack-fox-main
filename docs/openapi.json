@@ -6876,6 +6876,41 @@
         }
       }
     },
+    "/files/{id}/confirm": {
+      "post": {
+        "summary": "POST /files/:id/confirm",
+        "tags": [
+          "files"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
     "/files/{id}/download": {
       "get": {
         "summary": "GET /files/:id/download",
