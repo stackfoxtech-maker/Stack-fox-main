@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth, requireRole } from "../plugins/auth";
+import { requireRole } from "../plugins/auth";
 import { CATALOGUE_ROLES, SALES_ROLES } from "@stackfox/core";
 import { parseBody } from "../lib/validate";
 import { UpdateStatusSchema } from "./opsSchemas";

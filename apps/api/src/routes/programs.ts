@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
 import { DELIVERY_ROLES, computeHealthState } from "@stackfox/core";

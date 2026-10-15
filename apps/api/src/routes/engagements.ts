@@ -3,7 +3,7 @@ import { prisma } from "@stackfox/prisma";
 import { requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { DELIVERY_ROLES, SALES_ROLES, canTransition } from "@stackfox/core";
-import { clientScope, clientWriteScope, assertEngagementInScope } from "../lib/scope";
+import { clientScope, assertEngagementInScope } from "../lib/scope";
 import { LIST_CAP, ok, withId, withIds } from "../lib/http";
 import { parseBody } from "../lib/validate";
 import { CreateEngagementSchema, UpdateEngagementStatusSchema } from "./opsSchemas";
