@@ -41,7 +41,7 @@ export default function MilestoneActions({ projectId, milestone, onChanged }) {
   };
 
   const setStatus = (status, done) => run(() => api.patch(`${base}/status`, { status }), done);
-  const approve = () => run(() => api.patch(`${base}/approve`), 'Approved. Invoice raised.');
+  const approve = () => run(() => api.patch(`${base}/approve`), 'Approved.');
   const revise = () => {
     const feedback = window.prompt('What needs to change?');
     if (!feedback?.trim()) return;

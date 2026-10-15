@@ -13,6 +13,7 @@ import { usePageTitle } from '@lib/hooks';
 import { formatINRShort, formatDate } from '@lib/utils';
 import { PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
+import ActionQueue from '@components/ops/ActionQueue';
 import toast from 'react-hot-toast';
 
 const KPI = ({ label, value, icon: Icon, color, sub }) => (
@@ -114,6 +115,7 @@ export default function Overview() {
 
   return (
     <div className="space-y-6">
+      <ActionQueue />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-display-sm text-warm-900">Dashboard</h2>
         <div className="flex flex-wrap items-center gap-2">

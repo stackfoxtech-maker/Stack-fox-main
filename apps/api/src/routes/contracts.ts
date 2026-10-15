@@ -4,9 +4,11 @@ import { requireRole } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import { isStorageConfigured } from "../lib/storage";
 import { buildAgreementPack, buildContractPdf } from "../lib/documents";
-import { clientScope } from "../lib/scope";
+import { clientScope, clientWriteScope } from "../lib/scope";
+import { parseBody, strictObject } from "../lib/validate";
+import { z } from "zod";
 import { LIST_CAP, ok, withId, withIds } from "../lib/http";
-import { DELIVERY_ROLES } from "@stackfox/core";
+import { DELIVERY_ROLES, canTransact } from "@stackfox/core";
 import { issueDownload } from "../lib/documentIntegrity";
 
 export async function contractRoutes(app: FastifyInstance) {
@@ -89,6 +91,66 @@ export async function contractRoutes(app: FastifyInstance) {
         requestId: String(req.id),
       });
     }
+  });
+
+  // POST /contracts/:id/sign — the client signs a contract that was not signed in
+  // checkout (the cash route and the Starter plan can skip it). Before this a DRAFT
+  // contract could never be signed, so it could never be countersigned either.
+  app.post("/contracts/:id/sign", async (req, reply) => {
+    const scope = await clientWriteScope(req, reply);
+    if (scope === undefined) return;
+    if (scope === null || !canTransact(req.user!.role))
+      return reply.code(403).send({ error: "Only the client's signatory can sign." });
+    const body = parseBody(
+      req,
+      reply,
+      strictObject({ signatureName: z.string().trim().min(3).max(200) }),
+    );
+    if (!body) return;
+    const { id } = req.params as { id: string };
+
+    const contract = await prisma.contract.findFirst({
+      where: { id, engagement: { clientId: scope } },
+    });
+    if (!contract) return reply.code(404).send({ error: "Contract not found" });
+    if (contract.status !== "DRAFT")
+      return reply.code(409).send({ error: "This contract is already signed." });
+
+    const signed = await prisma.$transaction(async (tx) => {
+      const { count } = await tx.contract.updateMany({
+        where: { id, status: "DRAFT" },
+        data: { status: "CLIENT_SIGNED" },
+      });
+      if (count === 0) return null;
+      await tx.signature.create({
+        data: {
+          contractId: id,
+          signerUserId: req.user!.sub,
+          side: "CLIENT",
+          rail: "CLICK",
+          evidence: {
+            method: "typed_name",
+            name: body.signatureName,
+            timestamp: new Date().toISOString(),
+            ip: req.ip,
+            userAgent: req.headers["user-agent"] ?? null,
+          },
+        },
+      });
+      return tx.contract.findUniqueOrThrow({
+        where: { id },
+        include: { signatures: true },
+      });
+    });
+    if (!signed) return reply.code(409).send({ error: "This contract is already signed." });
+
+    await emitEvent({
+      code: "CONTRACT_CLIENT_SIGNED",
+      payload: { contractId: id },
+      actor: req.user!.sub,
+      engagementId: contract.engagementId ?? undefined,
+    });
+    return ok(withId(signed));
   });
 
   /** Signals a lost race inside the countersign transaction, so it rolls back. */

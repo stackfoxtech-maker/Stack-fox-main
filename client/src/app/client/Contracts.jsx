@@ -56,6 +56,51 @@ function ContractTypeTag({ type }) {
   );
 }
 
+/** Sign a contract that was not signed at checkout. */
+function SignNow({ contractId, onSigned }) {
+  const [name, setName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const sign = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const res = await api.post(`/contracts/${contractId}/sign`, { signatureName: name.trim() });
+      onSigned(res.data.data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not sign. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-warm-500">
+        Type your full name to sign. This is a legally binding electronic signature.
+      </p>
+      <input
+        className="input-fx text-sm"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Your full name"
+        autoComplete="name"
+      />
+      {error && <p className="text-xs text-danger-600">{error}</p>}
+      <Button
+        size="sm"
+        variant="primary"
+        onClick={sign}
+        isLoading={saving}
+        disabled={name.trim().length < 3}
+      >
+        Sign now
+      </Button>
+    </div>
+  );
+}
+
 export default function Contracts() {
   usePageTitle('Contracts');
   const { id } = useParams();
@@ -210,6 +255,8 @@ export default function Contracts() {
                         {clientSig.rail === 'CLICK' ? 'Electronic Signature' : clientSig.rail}
                       </p>
                     </div>
+                  ) : selected.status === 'DRAFT' ? (
+                    <SignNow contractId={selected._id || selected.id} onSigned={setSelected} />
                   ) : (
                     <p className="text-xs text-warm-400">Awaiting signature</p>
                   )}
