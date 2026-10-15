@@ -20,9 +20,9 @@ export function CatalogIndex() {
             </Link>
           }
         />
-        <Reveal as="ul" stagger className="mt-12 grid gap-x-12 md:grid-cols-2">
+        <Reveal as="ul" stagger className="mt-12 grid grid-cols-1 gap-x-12 md:grid-cols-2">
           {categories.map((cat, i) => (
-            <Reveal.Item key={cat.id} as="li" className="border-t border-warm-200">
+            <Reveal.Item key={cat.id} as="li" className="min-w-0 border-t border-warm-200">
               <Link
                 to={`/builder?category=${cat.id}`}
                 className="group relative flex items-baseline gap-5 py-5"
