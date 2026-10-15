@@ -75,6 +75,20 @@ function Field({ label, required = false, hint, className = '', children }) {
   );
 }
 
+/** Polls until the quote shows as paid; gives up after about a minute. */
+async function waitForPayment(quoteId) {
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const { data } = await api.get(`/quotes/${quoteId}`);
+      if (['paid', 'partially_paid'].includes(data.data?.status)) return;
+    } catch {
+      /* keep waiting */
+    }
+  }
+  throw new Error('payment not confirmed yet');
+}
+
 export default function Checkout() {
   usePageTitle('Checkout');
   const { quoteId } = useParams();
@@ -316,14 +330,24 @@ export default function Checkout() {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-            const paidQuote = quoteForDisplay(verifyRes.data.data);
-            setQuote(paidQuote);
+            if (verifyRes.status === 202) {
+              // Paid, but the bank has not finished capturing it. Wait for it
+              // instead of telling someone who has been charged that it failed.
+              await waitForPayment(quoteId);
+            } else {
+              const paidQuote = quoteForDisplay(verifyRes.data.data);
+              setQuote(paidQuote);
+            }
             // Let the overlay land before the celebration page takes over.
             await new Promise((r) => setTimeout(r, 900));
             navigate(`/payment-confirmation?quote=${quoteId}`);
-          } catch {
+          } catch (err) {
             setConfirming(false);
-            toast.error('Payment verification failed.');
+            toast.error(
+              err.response?.data?.message ||
+                "We couldn't confirm your payment yet. If money was deducted, please don't pay again. It will show in My Quotes shortly.",
+              { duration: 9000 },
+            );
           }
         },
         prefill: { name: account.name, email: account.email, contact: account.phone },
