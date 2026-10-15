@@ -13,10 +13,17 @@ registerCron("invoice-reconcile", async () => {
       <> COALESCE((SELECT SUM(r.recognised) FROM revrec_ledger r WHERE r.invoice_id=i.id AND r.type='RECOGNIZED'),0)
     LIMIT 100`;
   for (const invoice of unreconciled) await reconcileInvoiceRevenue(invoice.id);
+  // Overdue means past the due date. It used to mean "created over 30 days ago",
+  // which ignored dueDate and skipped part-paid invoices, so the balance left
+  // after a 30% instalment was never chased.
+  const now = new Date();
   const overdueInvoices = await prisma.invoice.findMany({
     where: {
-      status: "SENT",
-      createdAt: { lt: new Date(Date.now() - 30 * 86400000) },
+      status: { in: ["SENT", "VIEWED", "PARTIALLY_PAID"] },
+      OR: [
+        { dueDate: { lt: now } },
+        { dueDate: null, createdAt: { lt: new Date(Date.now() - 30 * 86400000) } },
+      ],
     },
   });
 
@@ -30,7 +37,9 @@ registerCron("invoice-reconcile", async () => {
       code: "INVOICE_OVERDUE",
       payload: {
         invoiceId: inv.id,
-        daysPastDue: Math.floor((Date.now() - inv.createdAt.getTime()) / 86400000),
+        daysPastDue: Math.floor(
+          (Date.now() - (inv.dueDate ?? inv.createdAt).getTime()) / 86400000,
+        ),
       },
       actor: "system",
       engagementId: inv.engagementId ?? undefined,

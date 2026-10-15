@@ -43,11 +43,24 @@ createWorker(QUEUE.docGen, async (job) => {
     const gstType = resolveGstType(project.engagement.client);
     const { cgst, sgst, igst } = splitGst(invoiceGross - subtotal, gstType);
 
+    // A client who paid in full (or upfront) was already billed for everything;
+    // raising milestone invoices on top of that would charge them twice.
+    const order = project.orderId
+      ? await prisma.order.findUnique({
+          where: { id: project.orderId },
+          select: { paymentMode: true },
+        })
+      : null;
+    const storedMode = commercial.paymentMode;
+    const paymentMode =
+      typeof storedMode === "string" ? storedMode : (order?.paymentMode ?? "MILESTONE");
+    const billedUpfront = paymentMode === "FULL" || paymentMode === "UPFRONT";
+
     let invoice = await prisma.invoice.findFirst({
       where: { engagementId: project.engagementId, milestoneRef },
     });
 
-    if (!invoice && invoiceGross > 0) {
+    if (!invoice && !billedUpfront && invoiceGross > 0) {
       invoice = await prisma.$transaction(async (tx) =>
         tx.invoice.create({
           data: {

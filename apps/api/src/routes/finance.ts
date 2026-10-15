@@ -1,6 +1,6 @@
 import { ensureInvoiceNo, nextDocNumber } from "../lib/docNumber";
 import { queueInvoiceEmail } from "../lib/businessMail";
-import { settleQuote } from "./quotes";
+import { settleQuote, PaymentMismatchError } from "./quotes";
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
@@ -318,9 +318,13 @@ export async function financeRoutes(app: FastifyInstance) {
         : balance;
     const result = await settleInvoice(id, {
       gateway: "BANK_TRANSFER",
-      gatewayPaymentId: "utr:" + String(utr).trim(),
+      // Per invoice: one bank transfer often covers several invoices, and the
+      // same UTR on a second invoice used to be refused as a duplicate. Retrying
+      // the same UTR on the same invoice is still idempotent.
+      gatewayPaymentId: `utr:${String(utr).trim().toUpperCase()}:${id}`,
       method: "bank_transfer",
       amount: applied,
+      paidAt: paidAt ? new Date(paidAt) : undefined,
     });
     if (!result.replayed)
       await emitEvent({
@@ -472,13 +476,37 @@ export async function financeRoutes(app: FastifyInstance) {
         where: { razorpayOrderId: rzpOrderId },
       });
       if (quote) {
-        await settleQuote(quote.id, rzpOrderId, entity.id, entity.amount);
+        try {
+          await settleQuote(quote.id, rzpOrderId, entity.id, entity.amount);
+        } catch (err) {
+          if (!(err instanceof PaymentMismatchError)) throw err;
+          // Money was captured for a quote that no longer expects it (settled
+          // by cash, or paid twice). Returning 500 made Razorpay retry forever
+          // with nothing recorded. Answer 200 and put it in front of finance.
+          await emitEvent({
+            code: "PAYMENT_NEEDS_REVIEW",
+            payload: {
+              quoteId: quote.id,
+              orderId: rzpOrderId,
+              paymentId: entity.id,
+              amount: entity.amount,
+              reason: err.message,
+            },
+            actor: "SYSTEM",
+          });
+        }
         return { ok: true };
       }
 
-      const invoice = await prisma.invoice.findFirst({
-        where: { razorpayOrderId: rzpOrderId },
-      });
+      // Fall back to the `invoiceId` note set when the order was created, so a
+      // payment on a superseded order still lands on its invoice.
+      const noteInvoiceId =
+        typeof entity.notes?.invoiceId === "string" ? entity.notes.invoiceId : null;
+      const invoice =
+        (await prisma.invoice.findFirst({ where: { razorpayOrderId: rzpOrderId } })) ??
+        (noteInvoiceId
+          ? await prisma.invoice.findUnique({ where: { id: noteInvoiceId } })
+          : null);
       if (invoice) {
         await applyGatewayPayment(invoice.id, Number(entity.amount) || 0, {
           gateway: "RAZORPAY",

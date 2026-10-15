@@ -53,6 +53,24 @@ function serializeQuote(q: any) {
   return { ...q, _id: q.id, moneyUnit: "PAISE" };
 }
 
+function checkoutDetailsOf(q: { checkoutDetails?: unknown }): Record<string, any> {
+  return (q.checkoutDetails as Record<string, any> | null) ?? {};
+}
+
+/**
+ * Cancelled, or past its validity date. A part-paid quote never expires: the
+ * client already owes the balance, so the date must not lock them out of paying it.
+ */
+function isDeadQuote(q: { status: string; validUntil: Date }) {
+  return (
+    q.status === "cancelled" ||
+    (q.status !== "partially_paid" && q.validUntil < new Date())
+  );
+}
+
+/** Thrown when a gateway payment cannot be matched to what the quote is waiting for. */
+export class PaymentMismatchError extends Error {}
+
 /**
  * Provisions an engagement from a paid quote.
  *
@@ -83,7 +101,13 @@ async function provisionQuote(quote: any, userId: string, tx: Db, orgId: string)
   // Resolve the tax treatment from the billing org, exactly as checkout does.
   const billTo = await tx.org.findUnique({ where: { id: orgId } });
   const gstType = resolveGstType(billTo);
+
   const { cgst, sgst, igst } = splitGst(quote.gstAmount ?? 0, gstType);
+  // One invoice carries the whole order; instalments are paid against it. When only
+  // part is paid now, the balance is due in 30 days, not "today" (it used to be
+  // due immediately, which made it overdue the moment work began).
+  const paidNow = Number(checkoutDetailsOf(quote).pendingOrderAmount) || quote.total;
+  const balanceDue = paidNow < quote.total;
 
   // One lookup for every service in the quote rather than one per item.
   const existing = await tx.serviceUnit.findMany({
@@ -204,7 +228,9 @@ async function provisionQuote(quote: any, userId: string, tx: Db, orgId: string)
       igst,
       grandTotal: quote.total,
       status: "SENT",
-      dueDate: quote.paidAt ?? new Date(),
+      dueDate: balanceDue
+        ? new Date(Date.now() + 30 * 86400000)
+        : (quote.paidAt ?? new Date()),
     },
   });
 
@@ -585,6 +611,11 @@ export async function quoteRoutes(app: FastifyInstance) {
       return reply
         .code(409)
         .send({ error: "Payment-bound quote cannot change workflow status" });
+    // Cash may already be with finance; only they can cancel it from here.
+    if (!isAdmin && existing.status === "awaiting_cash")
+      return reply.code(409).send({
+        error: "Cash payment is in progress. Contact StackFox to cancel this quote.",
+      });
     const quote = await prisma.quote.update({ where: { id }, data: { status } });
     await emitEvent({
       code: "QUOTE_STATUS_CHANGED",
@@ -609,7 +640,7 @@ export async function quoteRoutes(app: FastifyInstance) {
           return reply.code(404).send({ message: "Quote not found" });
         }
 
-        if (quote.status === "cancelled" || quote.validUntil < new Date())
+        if (isDeadQuote(quote))
           return reply.code(409).send({ error: "Quote is cancelled or expired" });
         const details = (quote.checkoutDetails as any) ?? {};
         assertPaymentInitiationEnabled();
@@ -644,7 +675,8 @@ export async function quoteRoutes(app: FastifyInstance) {
             "Razorpay order creation failed",
           );
           const authFailure =
-            statusCode === 401 || /key_id|key_secret|auth/i.test(description ?? "");
+            statusCode === 401 ||
+            /key_id|key_secret|authentication/i.test(description ?? "");
           // A 401 here is the GATEWAY refusing our credentials (or none being
           // configured), not the caller's session. The web client treats any
           // 401 as an expired login and signs the user out, so a payment
@@ -697,7 +729,7 @@ export async function quoteRoutes(app: FastifyInstance) {
       const quote = await tx.quote.findUnique({ where: { id } });
       if (!quote || quote.userId !== req.user!.sub)
         return reply.code(404).send({ message: "Quote not found" });
-      if (quote.status === "cancelled" || quote.validUntil < new Date())
+      if (isDeadQuote(quote))
         return reply.code(409).send({ error: "Quote is cancelled or expired" });
       if (quote.status === "awaiting_cash") return { data: serializeQuote(quote) };
 
@@ -745,7 +777,14 @@ export async function quoteRoutes(app: FastifyInstance) {
       return reply.code(409).send({ error: "Quote is not awaiting a cash payment" });
     const amount = Number((quote.checkoutDetails as any)?.pendingOrderAmount);
     const ref = body.reference || String(Date.now());
-    const updated = await settleQuote(id, null, `cash:${id}:${ref}`, amount, "CASH");
+    let updated;
+    try {
+      updated = await settleQuote(id, null, `cash:${id}:${ref}`, amount, "CASH");
+    } catch (err) {
+      if (err instanceof PaymentMismatchError)
+        return reply.code(409).send({ error: "This quote is no longer awaiting cash" });
+      throw err;
+    }
     await emitEvent({
       code: "CASH_PAYMENT_CONFIRMED",
       payload: { quoteId: id, amount, reference: body.reference },
@@ -781,14 +820,33 @@ export async function quoteRoutes(app: FastifyInstance) {
       !verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature)
     )
       return reply.code(400).send({ message: "Signature verification failed" });
-    const captured = await fetchCapturedPayment(razorpay_payment_id, razorpay_order_id);
-    const updated = await settleQuote(
-      id,
-      razorpay_order_id,
-      razorpay_payment_id,
-      captured.amount,
-    );
-    return { data: serializeQuote(updated) };
+    let captured;
+    try {
+      captured = await fetchCapturedPayment(razorpay_payment_id, razorpay_order_id);
+    } catch {
+      // Paid but not captured yet (or gateway slow). The webhook settles it once
+      // Razorpay captures; tell the client to wait rather than that it failed.
+      return reply.code(202).send({
+        pending: true,
+        message: "Your payment is being confirmed. This page will update shortly.",
+      });
+    }
+    try {
+      const updated = await settleQuote(
+        id,
+        razorpay_order_id,
+        razorpay_payment_id,
+        captured.amount,
+      );
+      return { data: serializeQuote(updated) };
+    } catch (err) {
+      if (err instanceof PaymentMismatchError)
+        return reply.code(409).send({
+          message:
+            "This quote was already settled. If you were charged twice, contact support and we will refund it.",
+        });
+      throw err;
+    }
   });
 }
 
@@ -813,7 +871,7 @@ export async function settleQuote(
       });
       if (prior) {
         if (prior.invoiceId !== current.invoiceId || Number(prior.amount) !== amount)
-          throw new Error("Payment reference mismatch");
+          throw new PaymentMismatchError("Payment reference mismatch");
         return { quote: current, fx: null };
       }
       const details = (current.checkoutDetails as any) ?? {};
@@ -823,7 +881,7 @@ export async function settleQuote(
           : current.razorpayOrderId !== orderId) ||
         Number(details.pendingOrderAmount) !== amount
       )
-        throw new Error("Captured amount/order does not match quote");
+        throw new PaymentMismatchError("Captured amount/order does not match quote");
       const provisioned = current.invoiceId
         ? null
         : await provisionQuote(current, current.userId, tx, orgId);
