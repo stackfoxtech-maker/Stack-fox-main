@@ -83,7 +83,7 @@ export async function paymentRoutes(app: FastifyInstance) {
             "Razorpay order creation failed",
           );
           const authFailure =
-            statusCode === 401 || /key_id|key_secret|auth/i.test(description ?? "");
+            statusCode === 401 || /key_id|key_secret|authentication/i.test(description ?? "");
           // A gateway 401 is not the caller's session; the web client signs the
           // user out on any 401. Report it as unavailable and keep deliberate
           // statuses such as the live-payments gate's 503.

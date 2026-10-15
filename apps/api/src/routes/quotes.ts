@@ -678,7 +678,7 @@ export async function quoteRoutes(app: FastifyInstance) {
             "Razorpay order creation failed",
           );
           const authFailure =
-            statusCode === 401 || /key_id|key_secret|auth/i.test(description ?? "");
+            statusCode === 401 || /key_id|key_secret|authentication/i.test(description ?? "");
           // A 401 here is the GATEWAY refusing our credentials (or none being
           // configured), not the caller's session. The web client treats any
           // 401 as an expired login and signs the user out, so a payment
