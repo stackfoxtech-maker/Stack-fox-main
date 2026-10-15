@@ -76,6 +76,10 @@ export async function fileRoutes(app: FastifyInstance) {
 
     const body = parseBody(req, reply, CreateUploadSchema);
     if (!body) return;
+    // A client's file must belong to one of their projects. A projectless upload was
+    // invisible to them afterwards: not listed, not downloadable, not deletable.
+    if (scope !== null && !body.projectId)
+      return reply.code(400).send({ error: "Choose a project to upload to." });
     if (body.projectId && !(await assertProjectInScope(body.projectId, scope, reply)))
       return;
 
@@ -104,10 +108,31 @@ export async function fileRoutes(app: FastifyInstance) {
         mimeType: contentType,
         uploadedBy: req.user!.sub,
         projectId: body.projectId,
+        // Pending until the browser has really sent the bytes and calls
+        // /files/:id/confirm. The row used to appear (and count as a delivered
+        // file in the handover checklist) the moment a slot was signed, even if
+        // the upload then failed. archived + no archivedAt means "pending".
+        archived: true,
       },
     });
 
     return { data: withId(file), meta: { upload: presigned } };
+  });
+
+  // The upload finished: make the file visible.
+  app.post("/files/:id/confirm", async (req, reply) => {
+    const scope = await clientWriteScope(req, reply);
+    if (scope === undefined) return;
+    const { id } = req.params as { id: string };
+    const file = await findFileInScope(id, scope);
+    if (!file || file.uploadedBy !== req.user!.sub)
+      return reply.code(404).send({ error: "File not found" });
+    if (!file.archived || file.archivedAt) return ok(withId(file)); // already live
+    const updated = await prisma.file.update({
+      where: { id },
+      data: { archived: false },
+    });
+    return ok(withId(updated));
   });
 
   app.get("/files", async (req, reply) => {
