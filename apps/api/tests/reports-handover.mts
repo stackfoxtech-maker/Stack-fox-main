@@ -190,7 +190,7 @@ checks.push([
 ]);
 checks.push([
   `checklist computed`,
-  Array.isArray(kit.b?.data?.checklist) && kit.b.data.checklist.length === 5,
+  Array.isArray(kit.b?.data?.checklist) && kit.b.data.checklist.length === 4,
 ]);
 checks.push([
   `readyToAccept = ${kit.b?.data?.readyToAccept} (expect true)`,

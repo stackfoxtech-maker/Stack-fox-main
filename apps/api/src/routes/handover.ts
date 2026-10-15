@@ -25,7 +25,6 @@ const DEFAULT_CHECKLIST = [
   { key: "deliverables", label: "All deliverable files uploaded" },
   { key: "milestones", label: "All milestones approved" },
   { key: "credentials", label: "Credentials and access handed over" },
-  { key: "documentation", label: "Documentation provided" },
   { key: "invoices", label: "All invoices settled" },
 ];
 
@@ -45,7 +44,8 @@ async function buildChecklist(projectId: string, orgId: string | null) {
     ? await prisma.invoice.count({
         where: {
           engagementId: project.engagementId,
-          status: { notIn: ["PAID", "CANCELLED"] },
+          // A draft has not been issued to the client, so it cannot be "outstanding".
+          status: { notIn: ["PAID", "CANCELLED", "DRAFT"] },
           ...(orgId ? { orgId } : {}),
         },
       })
@@ -62,12 +62,14 @@ async function buildChecklist(projectId: string, orgId: string | null) {
     },
     {
       ...DEFAULT_CHECKLIST[2],
+      // Informational: a project with nothing to hand over (a static site, say)
+      // has no credentials, and that must not stop the client accepting it.
+      optional: true,
       done: credentials > 0,
-      detail: `${credentials} system(s)`,
+      detail: credentials > 0 ? `${credentials} system(s)` : "none needed",
     },
-    { ...DEFAULT_CHECKLIST[3], done: files > 0, detail: null },
     {
-      ...DEFAULT_CHECKLIST[4],
+      ...DEFAULT_CHECKLIST[3],
       done: unpaidInvoices === 0,
       detail: unpaidInvoices > 0 ? `${unpaidInvoices} outstanding` : "settled",
     },
@@ -288,7 +290,7 @@ export async function handoverRoutes(app: FastifyInstance) {
     const { notes } = (req.body ?? {}) as { notes?: string };
 
     const checklist = await buildChecklist(projectId, scope);
-    const blocking = checklist.filter((c) => !c.done);
+    const blocking = checklist.filter((c) => !c.done && !("optional" in c && c.optional));
     if (blocking.length > 0) {
       return reply.code(409).send({
         message: "This handover is not ready to accept yet.",
@@ -361,6 +363,20 @@ export async function handoverRoutes(app: FastifyInstance) {
     const { reason } = (req.body ?? {}) as { reason?: string };
     if (!reason?.trim()) {
       return reply.code(400).send({ message: "Please describe what is outstanding." });
+    }
+    if (reason.length > 5000) {
+      return reply
+        .code(400)
+        .send({ message: "Please keep the description under 5000 characters." });
+    }
+    // An accepted handover has started its warranty. Disputing it afterwards used to
+    // flip the status but keep acceptedAt, so it could never be accepted again.
+    const current = await prisma.handover.findUnique({ where: { projectId } });
+    if (current?.acceptedAt) {
+      return reply.code(409).send({
+        message:
+          "This handover was already accepted. Raise a support ticket for warranty issues.",
+      });
     }
 
     const handover = await prisma.handover.upsert({
