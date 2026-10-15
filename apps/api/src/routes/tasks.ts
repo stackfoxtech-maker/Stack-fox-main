@@ -29,7 +29,8 @@ const TASK_PRIORITIES = ["low", "medium", "high", "urgent"];
 /** A date the client sent, or an error message. `null` clears it. */
 function parseDue(v: unknown): { ok: true; value: Date | null } | { ok: false } {
   if (v === null || v === "") return { ok: true, value: null };
-  const d = new Date(String(v));
+  if (typeof v !== "string" && typeof v !== "number") return { ok: false };
+  const d = new Date(v);
   return Number.isNaN(d.getTime()) ? { ok: false } : { ok: true, value: d };
 }
 
