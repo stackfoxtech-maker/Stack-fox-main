@@ -614,6 +614,11 @@ export async function quoteRoutes(app: FastifyInstance) {
       return reply
         .code(409)
         .send({ error: "Payment-bound quote cannot change workflow status" });
+    // Cash may already be with finance; only they can cancel it from here.
+    if (!isAdmin && existing.status === "awaiting_cash")
+      return reply.code(409).send({
+        error: "Cash payment is in progress. Contact StackFox to cancel this quote.",
+      });
     const quote = await prisma.quote.update({ where: { id }, data: { status } });
     await emitEvent({
       code: "QUOTE_STATUS_CHANGED",

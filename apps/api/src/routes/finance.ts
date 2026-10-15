@@ -318,9 +318,13 @@ export async function financeRoutes(app: FastifyInstance) {
         : balance;
     const result = await settleInvoice(id, {
       gateway: "BANK_TRANSFER",
-      gatewayPaymentId: "utr:" + String(utr).trim(),
+      // Per invoice: one bank transfer often covers several invoices, and the
+      // same UTR on a second invoice used to be refused as a duplicate. Retrying
+      // the same UTR on the same invoice is still idempotent.
+      gatewayPaymentId: `utr:${String(utr).trim().toUpperCase()}:${id}`,
       method: "bank_transfer",
       amount: applied,
+      paidAt: paidAt ? new Date(paidAt) : undefined,
     });
     if (!result.replayed)
       await emitEvent({

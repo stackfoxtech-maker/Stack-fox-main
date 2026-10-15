@@ -19,6 +19,8 @@ interface PaymentFacts {
   method?: string;
   /** paise; defaults to the invoice grand total. */
   amount?: number;
+  /** When the money actually arrived (bank payments are often recorded later). */
+  paidAt?: Date;
 }
 
 type InvoiceLike = {
@@ -199,12 +201,15 @@ export async function settleInvoice(invoiceId: string, facts: PaymentFacts) {
       throw new Error("Cancelled invoice requires reconciliation");
     const amountPaid = Number(invoice.amountPaid) + facts.amount!;
     const paid = amountPaid >= Number(invoice.grandTotal);
+    // Never in the future: a typo'd date must not book revenue into a later period.
+    const now = new Date();
+    const receivedAt = facts.paidAt && facts.paidAt < now ? facts.paidAt : now;
     const updated = await tx.invoice.update({
       where: { id: invoice.id },
       data: {
         amountPaid,
         status: paid ? "PAID" : "PARTIALLY_PAID",
-        paidAt: paid ? new Date() : null,
+        paidAt: paid ? receivedAt : null,
         utr: facts.gatewayPaymentId,
       },
     });

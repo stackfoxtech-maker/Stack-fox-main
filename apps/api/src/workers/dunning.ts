@@ -2,13 +2,19 @@ import { prisma } from "@stackfox/prisma";
 import { registerCron } from "./cron/registry";
 import { queues } from "../lib/queue";
 
+const DUNNING_DAYS = [1, 7, 14, 30, 45, 60, 90];
+
 registerCron("dunning-run", async () => {
   const overdueInvoices = await prisma.invoice.findMany({
     where: { status: "OVERDUE" },
   });
 
   for (const inv of overdueInvoices) {
-    const daysPastDue = Math.floor((Date.now() - inv.createdAt.getTime()) / 86400000);
+    const daysPastDue = Math.floor(
+      (Date.now() - (inv.dueDate ?? inv.createdAt).getTime()) / 86400000,
+    );
+    // The job runs daily; reminding every day is spam. Chase on set days only.
+    if (!DUNNING_DAYS.includes(daysPastDue)) continue;
 
     let dunningLevel = "REMINDER";
     if (daysPastDue > 90) dunningLevel = "FINAL_NOTICE";
