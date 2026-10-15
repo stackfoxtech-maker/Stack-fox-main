@@ -221,14 +221,15 @@ export async function authRoutes(app: FastifyInstance) {
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user) return reply.code(401).send({ message: "Invalid credentials" });
 
-      if (!user.isActive)
-        return reply.code(403).send({ message: "This account is disabled" });
-
       const authData = (user.authData as Record<string, unknown> | null) ?? {};
       const storedHash = authData.passwordHash as string | undefined;
       if (!storedHash || !(await verifyPassword(password, storedHash))) {
         return reply.code(401).send({ message: "Invalid credentials" });
       }
+      // After the password check: telling anyone who knows an email that the
+      // account is disabled (without the password) confirmed the account exists.
+      if (!user.isActive)
+        return reply.code(403).send({ message: "This account is disabled" });
 
       // Transparently upgrade anyone still on the legacy unsalted digest.
       if (needsRehash(storedHash)) {
