@@ -30,6 +30,7 @@ import { checkoutRoutes } from "./routes/checkout";
 import { contractRoutes } from "./routes/contracts";
 import { engagementRoutes } from "./routes/engagements";
 import { projectRoutes } from "./routes/projects";
+import { projectAssignmentRoutes } from "./routes/projectAssignment";
 import { timesheetRoutes } from "./routes/timesheets";
 import { programRoutes } from "./routes/programs";
 import { rfpRoutes } from "./routes/rfps";
@@ -210,6 +211,7 @@ async function start() {
   await app.register(contractRoutes, { prefix: "/" });
   await app.register(engagementRoutes, { prefix: "/" });
   await app.register(projectRoutes, { prefix: "/" });
+  await app.register(projectAssignmentRoutes, { prefix: "/" });
   await app.register(timesheetRoutes, { prefix: "/" });
   await app.register(programRoutes, { prefix: "/" });
   await app.register(rfpRoutes, { prefix: "/" });
