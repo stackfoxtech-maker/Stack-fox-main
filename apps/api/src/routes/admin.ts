@@ -43,7 +43,8 @@ export async function adminRoutes(app: FastifyInstance) {
   // The catalogue is shared with SE and SENIOR_PM. Everything below is not: it
   // holds client contact/tax data, compliance decisions, feature flags and the
   // user directory, and only the ADMIN-only admin panel ever calls it.
-  const ADMIN_ONLY = /^\/admin\/(users|screening|compliance|flags|notification-templates|purchases)(\/|\?|$)/;
+  const ADMIN_ONLY =
+    /^\/admin\/(users|screening|compliance|flags|notification-templates|purchases)(\/|\?|$)/;
   app.addHook("preHandler", async (req, reply) => {
     const allowed = ADMIN_ONLY.test(req.url) ? ADMIN_ROLES : CATALOGUE_ROLES;
     if (!requireRole(req, reply, allowed)) return;

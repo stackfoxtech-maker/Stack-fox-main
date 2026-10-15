@@ -62,7 +62,10 @@ function checkoutDetailsOf(q: { checkoutDetails?: unknown }): Record<string, any
  * client already owes the balance, so the date must not lock them out of paying it.
  */
 function isDeadQuote(q: { status: string; validUntil: Date }) {
-  return q.status === "cancelled" || (q.status !== "partially_paid" && q.validUntil < new Date());
+  return (
+    q.status === "cancelled" ||
+    (q.status !== "partially_paid" && q.validUntil < new Date())
+  );
 }
 
 /** Thrown when a gateway payment cannot be matched to what the quote is waiting for. */
@@ -672,7 +675,8 @@ export async function quoteRoutes(app: FastifyInstance) {
             "Razorpay order creation failed",
           );
           const authFailure =
-            statusCode === 401 || /key_id|key_secret|authentication/i.test(description ?? "");
+            statusCode === 401 ||
+            /key_id|key_secret|authentication/i.test(description ?? "");
           // A 401 here is the GATEWAY refusing our credentials (or none being
           // configured), not the caller's session. The web client treats any
           // 401 as an expired login and signs the user out, so a payment
