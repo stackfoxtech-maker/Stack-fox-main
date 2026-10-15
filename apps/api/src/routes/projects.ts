@@ -464,7 +464,9 @@ export async function projectRoutes(app: FastifyInstance) {
       data: { status: "REJECTED" },
     });
     if (claimed.count !== 1)
-      return reply.code(409).send({ error: "This change request can no longer be rejected" });
+      return reply
+        .code(409)
+        .send({ error: "This change request can no longer be rejected" });
 
     await emitEvent({
       code: "CR_REJECTED",

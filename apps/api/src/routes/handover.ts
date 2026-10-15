@@ -365,14 +365,17 @@ export async function handoverRoutes(app: FastifyInstance) {
       return reply.code(400).send({ message: "Please describe what is outstanding." });
     }
     if (reason.length > 5000) {
-      return reply.code(400).send({ message: "Please keep the description under 5000 characters." });
+      return reply
+        .code(400)
+        .send({ message: "Please keep the description under 5000 characters." });
     }
     // An accepted handover has started its warranty. Disputing it afterwards used to
     // flip the status but keep acceptedAt, so it could never be accepted again.
     const current = await prisma.handover.findUnique({ where: { projectId } });
     if (current?.acceptedAt) {
       return reply.code(409).send({
-        message: "This handover was already accepted. Raise a support ticket for warranty issues.",
+        message:
+          "This handover was already accepted. Raise a support ticket for warranty issues.",
       });
     }
 
