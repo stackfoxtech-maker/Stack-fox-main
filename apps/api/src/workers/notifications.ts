@@ -53,6 +53,11 @@ const STAFF_ALERTS: Record<string, StaffAlert> = {
     link: projectLink,
   },
   CR_SUBMITTED: { title: "New change request", roles: PM_ROLES, link: projectLink },
+  CONTRACT_CLIENT_SIGNED: {
+    title: "Contract signed, ready to countersign",
+    roles: PM_ROLES,
+    link: (role) => (role === "ADMIN" ? "/app/admin/orders" : "/app/team/projects"),
+  },
   HANDOVER_DISPUTED: { title: "Handover disputed", roles: PM_ROLES, link: projectLink },
   HANDOVER_ACCEPTED: { title: "Handover accepted", roles: PM_ROLES, link: projectLink },
   QUOTE_STATUS_CHANGED: {

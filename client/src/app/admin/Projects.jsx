@@ -6,6 +6,7 @@ import { formatDate, capitalize, getStatusBadge } from '@lib/utils';
 import { Badge, EmptyState, Button, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import ChangeRequestsPanel from '@components/project/ChangeRequestsPanel';
+import HandoverKit from '@components/project/HandoverKit';
 import MilestoneActions from '@components/project/MilestoneActions';
 
 const STATUSES = [
@@ -174,6 +175,7 @@ export default function AdminProjects() {
         </div>
 
         <ChangeRequestsPanel project={project} onChanged={refreshProject} />
+        <HandoverKit projectId={pid} />
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-warm-50 rounded-xl p-4">

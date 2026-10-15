@@ -142,7 +142,8 @@ export async function contractRoutes(app: FastifyInstance) {
         include: { signatures: true },
       });
     });
-    if (!signed) return reply.code(409).send({ error: "This contract is already signed." });
+    if (!signed)
+      return reply.code(409).send({ error: "This contract is already signed." });
 
     await emitEvent({
       code: "CONTRACT_CLIENT_SIGNED",

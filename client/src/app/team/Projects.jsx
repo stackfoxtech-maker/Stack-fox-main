@@ -8,6 +8,7 @@ import api from '@lib/api';
 import toast from 'react-hot-toast';
 import MilestoneActions from '@components/project/MilestoneActions';
 import ChangeRequestsPanel from '@components/project/ChangeRequestsPanel';
+import HandoverKit from '@components/project/HandoverKit';
 
 export default function Projects() {
   usePageTitle('Team Projects');
@@ -78,6 +79,7 @@ export default function Projects() {
           ))}
         </div>
         <ChangeRequestsPanel project={project} onChanged={reloadProject} />
+        <HandoverKit projectId={project.id} />
       </div>
     );
   }
