@@ -872,7 +872,7 @@ export async function settleQuote(
       if (prior) {
         if (prior.invoiceId !== current.invoiceId || Number(prior.amount) !== amount)
           throw new PaymentMismatchError("Payment reference mismatch");
-        return { quote: current, fx: null };
+        return { quote: current, fx: null, newProjects: [] };
       }
       const details = (current.checkoutDetails as any) ?? {};
       if (
@@ -920,12 +920,23 @@ export async function settleQuote(
           }),
         },
       });
-      return { quote: updated, fx };
+      return { quote: updated, fx, newProjects: provisioned?.projects ?? [] };
     },
     { timeout: 30000, maxWait: 10000 },
   );
   if (result.fx) {
     await enqueuePaymentSideEffects(result.fx);
+    // Tell the team there is a new project to staff. One event per project so the
+    // alert links straight to it.
+    for (const project of result.newProjects ?? []) {
+      await emitEvent({
+        code: "PROJECT_PROVISIONED",
+        actor: "SYSTEM",
+        engagementId: result.fx.engagementId ?? undefined,
+        projectId: project.id,
+        payload: { projectId: project.id, name: project.name },
+      });
+    }
     await emitEvent({
       code: result.quote.status === "paid" ? "INVOICE_PAID" : "INVOICE_PARTIALLY_PAID",
       actor: "SYSTEM",
