@@ -43,7 +43,14 @@ export const UpdateQuoteSchema = strictObject({
     contractTypes: z.array(z.string().max(40)).max(20).optional(),
     clauseSelections: z.record(z.string().max(120), z.unknown()).optional(),
     referralCode: z.string().trim().max(32).optional(),
-  }).optional(),
+  })
+    // Signing without a name used to be accepted and provisioned a contract marked
+    // CLIENT_SIGNED with no signature record behind it.
+    .refine((d) => !d.contractSigned || Boolean(d.signatureName), {
+      message: "Type your full name to sign",
+      path: ["signatureName"],
+    })
+    .optional(),
   tier: z.enum(["STARTER", "GROWTH", "PREMIUM"]).optional(),
 }).refine((b) => Object.keys(b).length > 0, {
   message: "Provide checkoutDetails or tier",

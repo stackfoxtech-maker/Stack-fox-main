@@ -3,7 +3,7 @@ import { Files as FilesIcon, Upload, Trash2, FileText, Image } from 'lucide-reac
 import { usePageTitle } from '@lib/hooks';
 import { formatDate, cn } from '@lib/utils';
 import { EmptyState, PanelSkeleton } from '@components/ui/Primitives';
-import api, { apiUpload } from '@lib/api';
+import api from '@lib/api';
 import toast from 'react-hot-toast';
 
 export default function Files() {
@@ -11,6 +11,19 @@ export default function Files() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [projectId, setProjectId] = useState('');
+
+  useEffect(() => {
+    api
+      .get('/projects')
+      .then((r) => {
+        const list = r.data.data || [];
+        setProjects(list);
+        setProjectId((cur) => cur || list[0]?.id || '');
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchFiles = () => {
     api
@@ -24,21 +37,38 @@ export default function Files() {
     fetchFiles();
   }, []);
 
+  // Three steps: ask the API for a signed slot, send the bytes straight to storage,
+  // then confirm. (This used to post a multipart form the API never accepted, so
+  // every upload failed.)
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    if (!projectId) {
+      toast.error('Choose a project first.');
+      return;
+    }
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      await apiUpload('/files/upload', fd);
+      const { data } = await api.post('/files/upload', {
+        filename: file.name,
+        contentType: file.type || undefined,
+        size: file.size,
+        projectId,
+      });
+      const body = new FormData();
+      body.append('cacheControl', '3600');
+      body.append('', file);
+      const put = await fetch(data.meta.upload.url, { method: 'PUT', body });
+      if (!put.ok) throw new Error('storage upload failed');
+      await api.post(`/files/${data.data.id}/confirm`);
       toast.success('File uploaded!');
       fetchFiles();
-    } catch {
-      toast.error('Upload failed.');
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
-    e.target.value = '';
   };
 
   const handleDelete = async (id) => {
@@ -57,12 +87,36 @@ export default function Files() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-warm-900">Files</h2>
-        <label
-          className={cn('btn-fox text-sm px-4 py-2 cursor-pointer', uploading && 'opacity-50')}
-        >
-          <Upload size={16} /> {uploading ? 'Uploading...' : 'Upload'}
-          <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
-        </label>
+        <div className="flex items-center gap-2">
+          {projects.length > 1 && (
+            <select
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              aria-label="Project"
+              className="input-fx text-sm max-w-[12rem]"
+            >
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name || p.id}
+                </option>
+              ))}
+            </select>
+          )}
+          <label
+            className={cn(
+              'btn-fox text-sm px-4 py-2 cursor-pointer',
+              (uploading || !projectId) && 'opacity-50',
+            )}
+          >
+            <Upload size={16} /> {uploading ? 'Uploading...' : 'Upload'}
+            <input
+              type="file"
+              className="hidden"
+              onChange={handleUpload}
+              disabled={uploading || !projectId}
+            />
+          </label>
+        </div>
       </div>
 
       {files.length === 0 ? (
