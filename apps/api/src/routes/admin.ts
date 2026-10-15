@@ -734,7 +734,7 @@ export async function adminRoutes(app: FastifyInstance) {
       capturedAmount: capturedPaiseForQuote(q) / 100,
     });
 
-    let purchases = [...orders.map(normalizeOrder), ...paidQuotes.map(normalizeQuote)];
+    const purchases = [...orders.map(normalizeOrder), ...paidQuotes.map(normalizeQuote)];
 
     purchases.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
