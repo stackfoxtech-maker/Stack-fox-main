@@ -195,14 +195,8 @@ export async function checkoutRoutes(app: FastifyInstance) {
     session.step = 5;
     await writeSession(sid, session);
 
-    // Queue contract document generation
-    await queues.docGen.add("contracts", {
-      type: "checkout-contracts",
-      sid,
-      tier: session.tier,
-      clauseSelections: session.clauseSelections,
-      estimateId: session.estimateId,
-    });
+    // Contract documents are generated when the contracts exist (after payment), not
+    // here: the job that used to be queued at this point had no handler and did nothing.
 
     return session;
   });

@@ -2,7 +2,7 @@ import { prisma } from "@stackfox/prisma";
 import { registerCron } from "./cron/registry";
 import { queues } from "../lib/queue";
 
-const DUNNING_DAYS = [1, 7, 14, 30, 45, 60, 90];
+const DUNNING_DAYS = [1, 7, 14, 30, 45, 60, 91];
 
 registerCron("dunning-run", async () => {
   const overdueInvoices = await prisma.invoice.findMany({

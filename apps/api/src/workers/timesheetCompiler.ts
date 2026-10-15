@@ -1,6 +1,7 @@
 import { registerCron } from "./cron/registry";
 import { prisma } from "@stackfox/prisma";
 import { emitEvent } from "../lib/events";
+import { istParts } from "../lib/ist";
 
 registerCron("timesheet-weekly", async () => {
   const activeEngagements = await prisma.engagement.findMany({
@@ -32,9 +33,9 @@ registerCron("timesheet-weekly", async () => {
   }
 });
 
+/** The Monday of the current week in IST, as a calendar date (UTC midnight). */
 function getWeekStart(): Date {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(now.getFullYear(), now.getMonth(), diff);
+  const { year, month, date, day } = istParts();
+  const sinceMonday = day === 0 ? 6 : day - 1;
+  return new Date(Date.UTC(year, month, date - sinceMonday));
 }

@@ -19,6 +19,17 @@ registerCron("sla-sweep", async () => {
     const elapsedMin = (Date.now() - ticket.createdAt.getTime()) / 60000;
     if (!isSlaBreached(severity, elapsedMin, "response")) continue;
 
+    // Once per ticket. The sweep runs every 15 minutes and an unanswered ticket
+    // stays OPEN, so it used to re-announce the same breach up to 96 times a day.
+    const already = await prisma.event.findFirst({
+      where: {
+        code: "SLA_BREACHED",
+        payload: { path: ["ticketId"], equals: ticket.id },
+      },
+      select: { seq: true },
+    });
+    if (already) continue;
+
     await emitEvent({
       code: "SLA_BREACHED",
       payload: {

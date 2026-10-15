@@ -2,10 +2,14 @@ import Redis from "ioredis";
 import { rootLogger } from "./logger";
 
 export const redis = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", {
-  maxRetriesPerRequest: null,
+  // A command fails after 2 reconnect attempts instead of waiting for ever, so a
+  // Redis outage degrades requests (rate limit and sessions fail fast) rather than
+  // hanging every one of them. BullMQ uses its own connection, not this client.
+  maxRetriesPerRequest: 2,
   enableOfflineQueue: true,
+  // Keep reconnecting. Giving up after ~28s left OTP, reset and session revocation
+  // dead until the container was restarted by hand, while /health still said 200.
   retryStrategy(times) {
-    if (times > 10) return null;
     return Math.min(times * 500, 5000);
   },
   lazyConnect: true,

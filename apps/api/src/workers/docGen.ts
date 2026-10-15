@@ -60,9 +60,17 @@ createWorker(QUEUE.docGen, async (job) => {
       where: { engagementId: project.engagementId, milestoneRef },
     });
 
+    const startedAt = Date.now() - 1000;
     if (!invoice && !billedUpfront && invoiceGross > 0) {
-      invoice = await prisma.$transaction(async (tx) =>
-        tx.invoice.create({
+      invoice = await prisma.$transaction(async (tx) => {
+        // Serialise per milestone and look again inside the lock: two workers (or a
+        // retry) could both pass the check above and issue two tax invoices.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${project.engagementId}:${milestoneRef}`}))`;
+        const again = await tx.invoice.findFirst({
+          where: { engagementId: project.engagementId, milestoneRef },
+        });
+        if (again) return again;
+        return tx.invoice.create({
           data: {
             id: ids.invoiceId(),
             invoiceNo: await nextDocNumber(tx, "INV"),
@@ -80,15 +88,18 @@ createWorker(QUEUE.docGen, async (job) => {
             status: "SENT",
             dueDate: new Date(Date.now() + 7 * 86400000),
           },
-        }),
-      );
-      await emitEvent({
-        code: "INVOICE_CREATED",
-        payload: { invoiceId: invoice.id, milestoneRef, projectId },
-        actor: "system",
-        engagementId: project.engagementId ?? undefined,
-        projectId,
+        });
       });
+      // Only the worker that actually created it announces it.
+      if (invoice && invoice.createdAt.getTime() >= startedAt) {
+        await emitEvent({
+          code: "INVOICE_CREATED",
+          payload: { invoiceId: invoice.id, milestoneRef, projectId },
+          actor: "system",
+          engagementId: project.engagementId ?? undefined,
+          projectId,
+        });
+      }
     }
 
     const key = invoice

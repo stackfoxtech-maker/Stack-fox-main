@@ -98,8 +98,11 @@ initSentry();
 
 async function start() {
   const BUILT_IN_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:5173",
+    // Dev servers only: with credentials enabled, any page on a visitor's own
+    // localhost could otherwise call the production API as them.
+    ...(process.env.NODE_ENV === "production"
+      ? []
+      : ["http://localhost:3000", "http://localhost:5173"]),
     "https://stackfox.in",
     "https://www.stackfox.in",
     "https://stackfox-client-stackfox1.vercel.app",

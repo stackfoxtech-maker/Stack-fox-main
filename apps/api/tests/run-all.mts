@@ -40,6 +40,7 @@ const SUITES = [
   "catalogue-cache.mts",
   "transactions.mts",
   "quote-pricing.mts",
+  "ist-time.mts",
   "production-audit.mts",
   "mutation-smoke.mts",
   "signup-form.mts",
