@@ -33,20 +33,58 @@ export default function Quotes() {
   usePageTitle('My Quotes');
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+
+  const load = (nextPage) => {
+    const first = nextPage === 1;
+    if (!first) setLoadingMore(true);
+    return (
+      api
+        .get('/quotes', { params: { page: nextPage } })
+        // Same conversion as Checkout.jsx: the API returns quotes tagged
+        // moneyUnit: "PAISE", and every render below (list total, line items,
+        // subtotal, GST, the PDF export) reads the field directly through
+        // formatINR() expecting rupees.
+        .then((r) => {
+          const fresh = r.data.data || [];
+          // quoteForDisplay is idempotent, so already-converted rows pass through.
+          setQuotes((cur) => [...(first ? [] : cur), ...fresh].map(quoteForDisplay));
+          setPage(nextPage);
+          setPages(r.data.meta?.pagination?.pages ?? 1);
+          setFailed(false);
+        })
+        // An error used to look exactly like "No quotes yet", and only the first
+        // 20 quotes were ever shown.
+        .catch(() => setFailed(true))
+        .finally(() => {
+          setLoading(false);
+          setLoadingMore(false);
+        })
+    );
+  };
 
   useEffect(() => {
-    api
-      .get('/quotes')
-      // Same conversion as Checkout.jsx: the API returns quotes tagged
-      // moneyUnit: "PAISE", and every render below (list total, line items,
-      // subtotal, GST, the PDF export) reads the field directly through
-      // formatINR() expecting rupees.
-      .then((r) => setQuotes((r.data.data || []).map(quoteForDisplay)))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    load(1);
   }, []);
 
   if (loading) return <PanelSkeleton variant="list" />;
+
+  if (failed && quotes.length === 0)
+    return (
+      <EmptyState
+        icon={AlertCircle}
+        title="We couldn't load your quotes"
+        description="Check your connection and try again."
+        action={
+          <Button variant="primary" onClick={() => load(1)}>
+            Try again
+          </Button>
+        }
+      />
+    );
 
   return (
     <div className="space-y-6">
@@ -166,6 +204,13 @@ export default function Quotes() {
               </div>
             );
           })}
+          {page < pages && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" onClick={() => load(page + 1)} isLoading={loadingMore}>
+                Show older quotes
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

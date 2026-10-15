@@ -4,6 +4,7 @@ import {
   STAFF_ROLES,
   SALES_ROLES,
   FINANCE_VIEW_ROLES,
+  FINANCE_ROLES,
 } from '../../packages/core/src/roles/index';
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
@@ -378,6 +379,10 @@ export default function AppRoutes() {
           <Route path="quality" element={<TeamQuality />} />
           <Route element={<ProtectedRoute roles={FINANCE_VIEW_ROLES} />}>
             <Route path="finance" element={<TeamFinance />} />
+          </Route>
+          {/* Finance confirms cash here; the admin panel is ADMIN-only. */}
+          <Route element={<ProtectedRoute roles={FINANCE_ROLES} />}>
+            <Route path="orders" element={<AdminOrders />} />
           </Route>
           <Route path="clients" element={<TeamClients />} />
           <Route path="analytics" element={<TeamAnalyticsDash />} />
