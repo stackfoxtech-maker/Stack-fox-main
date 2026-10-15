@@ -99,16 +99,12 @@ async function provisionQuote(quote: any, userId: string, tx: Db, orgId: string)
   const billTo = await tx.org.findUnique({ where: { id: orgId } });
   const gstType = resolveGstType(billTo);
 
-  // The first invoice bills what is being paid now (30% for a milestone plan),
-  // exactly like the checkout path. Later milestones raise their own invoices
-  // when approved (workers/docGen.ts). It used to bill the whole order here.
+  const { cgst, sgst, igst } = splitGst(quote.gstAmount ?? 0, gstType);
+  // One invoice carries the whole order; instalments are paid against it. When only
+  // part is paid now, the balance is due in 30 days, not "today" (it used to be
+  // due immediately, which made it overdue the moment work began).
   const paidNow = Number(checkoutDetailsOf(quote).pendingOrderAmount) || quote.total;
-  const wholeOrder = paidNow >= quote.total;
-  const invoiceSubtotal = wholeOrder ? quote.subtotal : Math.round(paidNow / 1.18);
-  const { cgst, sgst, igst } = splitGst(
-    wholeOrder ? (quote.gstAmount ?? 0) : paidNow - invoiceSubtotal,
-    gstType,
-  );
+  const balanceDue = paidNow < quote.total;
 
   // One lookup for every service in the quote rather than one per item.
   const existing = await tx.serviceUnit.findMany({
@@ -143,14 +139,10 @@ async function provisionQuote(quote: any, userId: string, tx: Db, orgId: string)
       id: engId,
       clientId: orgId,
       model: "FPM",
-      // `grand` is what the milestone-invoice worker bills against; without it
-      // every later milestone invoice came out as 0 and was never raised.
       commercial: {
         subtotal: quote.subtotal,
         gst: quote.gstAmount,
         total: quote.total,
-        grand: quote.total,
-        paymentMode: checkoutDetailsOf(quote).paymentMode ?? "FULL",
       },
       methodology: "MILESTONE",
       status: "ACTIVE",
@@ -227,13 +219,15 @@ async function provisionQuote(quote: any, userId: string, tx: Db, orgId: string)
       milestoneRef: "M1",
       sacCode: "998314",
       gstType,
-      subtotal: invoiceSubtotal,
+      subtotal: quote.subtotal,
       cgst,
       sgst,
       igst,
-      grandTotal: paidNow,
+      grandTotal: quote.total,
       status: "SENT",
-      dueDate: quote.paidAt ?? new Date(),
+      dueDate: balanceDue
+        ? new Date(Date.now() + 30 * 86400000)
+        : (quote.paidAt ?? new Date()),
     },
   });
 
@@ -891,9 +885,7 @@ export async function settleQuote(
       await tx.$queryRaw`SELECT id FROM invoices WHERE id = ${invoiceId} FOR UPDATE`;
       const invoice = await tx.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
       const amountPaid = Number(invoice.amountPaid) + amount;
-      // The quote is done once its own invoice is settled. Instalments after the
-      // first are billed by their milestone invoices, not by this quote.
-      const paid = amountPaid >= Number(invoice.grandTotal);
+      const paid = amountPaid >= Number(current.total);
       const updatedInvoice = await tx.invoice.update({
         where: { id: invoiceId },
         data: {
@@ -939,14 +931,8 @@ export async function settleQuote(
 
     // Commission is earned on the full order value, so only fire once the
     // quote is fully paid off — not on an UPFRONT/MILESTONE installment.
-    const settledDetails = (result.quote.checkoutDetails as any) ?? {};
-    const referralCode = settledDetails.referralCode;
-    // `status` alone is no longer enough: a milestone plan is "paid" after its
-    // first instalment, but commission is earned on the whole order.
-    const orderFullyPaid =
-      result.quote.status === "paid" &&
-      Number(settledDetails.amountPaid ?? 0) >= Number(result.quote.total);
-    if (referralCode && orderFullyPaid) {
+    const referralCode = (result.quote.checkoutDetails as any)?.referralCode;
+    if (referralCode && result.quote.status === "paid") {
       // No purchaser-email lookup here: handleConvert never reads
       // purchaserEmail (see referralProcessor.ts), and a lookup that can
       // reject would make settleQuote reject too — after the payment
