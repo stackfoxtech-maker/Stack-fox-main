@@ -175,7 +175,7 @@ export async function handoverRoutes(app: FastifyInstance) {
         : { status: "PREPARING", deliveredAt: null, acceptedAt: null, warrantyDays: 30 },
       warranty: warrantyOf(project.handover),
       checklist,
-      readyToAccept: checklist.every((c) => c.done),
+      readyToAccept: checklist.every((c) => c.done || ("optional" in c && c.optional)),
       deliverables: withIds(
         files.map((f) => ({
           id: f.id,
@@ -337,6 +337,21 @@ export async function handoverRoutes(app: FastifyInstance) {
         checklist: toJson(checklist),
       },
     });
+
+    // Accepting is the end of delivery. Nothing ever moved the project to COMPLETED
+    // (staff had to remember), so finished work sat as "Active" for ever.
+    const completed = await prisma.project.updateMany({
+      where: { id: projectId, status: "ACTIVE" },
+      data: { status: "COMPLETED" },
+    });
+    if (completed.count === 1) {
+      await emitEvent({
+        code: "PROJECT_COMPLETED",
+        payload: { projectId },
+        actor: req.user!.sub,
+        projectId,
+      });
+    }
 
     await emitEvent({
       code: "HANDOVER_ACCEPTED",

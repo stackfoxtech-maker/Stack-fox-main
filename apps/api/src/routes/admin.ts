@@ -4,6 +4,7 @@ import { requireRole } from "../plugins/auth";
 import { bumpSessionEpoch } from "../lib/session";
 import { LIST_CAP, pageParams, paginated } from "../lib/http";
 import {
+  ADMIN_ROLES,
   CATALOGUE_ROLES,
   CLIENT_ROLES,
   INTERNAL_ROLES,
@@ -39,8 +40,14 @@ import {
 const ALL_ROLES = [...INTERNAL_ROLES, ...CLIENT_ROLES] as readonly string[];
 
 export async function adminRoutes(app: FastifyInstance) {
+  // The catalogue is shared with SE and SENIOR_PM. Everything below is not: it
+  // holds client contact/tax data, compliance decisions, feature flags and the
+  // user directory, and only the ADMIN-only admin panel ever calls it.
+  const ADMIN_ONLY =
+    /^\/admin\/(users|screening|compliance|flags|notification-templates|purchases)(\/|\?|$)/;
   app.addHook("preHandler", async (req, reply) => {
-    if (!requireRole(req, reply, CATALOGUE_ROLES)) return;
+    const allowed = ADMIN_ONLY.test(req.url) ? ADMIN_ROLES : CATALOGUE_ROLES;
+    if (!requireRole(req, reply, allowed)) return;
   });
 
   /**
@@ -380,6 +387,10 @@ export async function adminRoutes(app: FastifyInstance) {
     if (typeof body.isActive === "boolean") data.isActive = body.isActive;
     if (typeof body.orgId === "string" || body.orgId === null) data.orgId = body.orgId;
 
+    if (data.isActive === false && id === req.user!.sub) {
+      return reply.code(409).send({ error: "You cannot deactivate your own account." });
+    }
+
     if (body.role !== undefined) {
       if (!callerIsAdmin) {
         return reply
@@ -476,11 +487,41 @@ export async function adminRoutes(app: FastifyInstance) {
     const take = Math.min(parseInt(limit) || 50, 200);
     const skipNum = parseInt(skip) || 0;
 
+    // Search and paging happen in the database and over the merged list. They used
+    // to take `skip` from each source separately and filter afterwards, so pages
+    // skipped or repeated rows, search only saw the current page and `total` was
+    // just the page size.
+    const term = q?.trim();
+    const ordersWhere = term
+      ? {
+          OR: [
+            { id: { contains: term, mode: "insensitive" as const } },
+            { org: { name: { contains: term, mode: "insensitive" as const } } },
+          ],
+        }
+      : {};
+    const quotesWhere = {
+      status: "paid",
+      ...(term
+        ? {
+            OR: [
+              { id: { contains: term, mode: "insensitive" as const } },
+              { quoteNumber: { contains: term, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [orderCount, quoteCount] = await Promise.all([
+      prisma.order.count({ where: ordersWhere }),
+      prisma.quote.count({ where: quotesWhere }),
+    ]);
+
     const [orders, paidQuotes] = await Promise.all([
       prisma.order.findMany({
+        where: ordersWhere,
         orderBy: { createdAt: "desc" },
-        skip: skipNum,
-        take: Math.ceil(take / 2),
+        take: skipNum + take,
         include: {
           org: {
             select: {
@@ -534,10 +575,9 @@ export async function adminRoutes(app: FastifyInstance) {
         },
       }),
       prisma.quote.findMany({
-        where: { status: "paid" },
+        where: quotesWhere,
         orderBy: { createdAt: "desc" },
-        skip: skipNum,
-        take: Math.ceil(take / 2),
+        take: skipNum + take,
       }),
     ]);
 
@@ -695,28 +735,13 @@ export async function adminRoutes(app: FastifyInstance) {
       capturedAmount: capturedPaiseForQuote(q) / 100,
     });
 
-    let purchases = [...orders.map(normalizeOrder), ...paidQuotes.map(normalizeQuote)];
-
-    if (q && q.trim()) {
-      const ql = q.toLowerCase();
-      purchases = purchases.filter((p: any) => {
-        const hay = [
-          p.id,
-          p.quoteNumber,
-          p.client?.name,
-          p.client?.id,
-          p.contact?.email,
-          p.contact?.name,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        return hay.includes(ql);
-      });
-    }
+    const purchases = [...orders.map(normalizeOrder), ...paidQuotes.map(normalizeQuote)];
 
     purchases.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    return { data: purchases, total: purchases.length };
+    return {
+      data: purchases.slice(skipNum, skipNum + take),
+      total: orderCount + quoteCount,
+    };
   });
 }

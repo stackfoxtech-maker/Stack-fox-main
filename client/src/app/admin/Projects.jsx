@@ -5,6 +5,8 @@ import { usePageTitle } from '@lib/hooks';
 import { formatDate, capitalize, getStatusBadge } from '@lib/utils';
 import { Badge, EmptyState, Button, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
+import ChangeRequestsPanel from '@components/project/ChangeRequestsPanel';
+import HandoverKit from '@components/project/HandoverKit';
 import MilestoneActions from '@components/project/MilestoneActions';
 
 const STATUSES = [
@@ -19,6 +21,47 @@ const STATUSES = [
 ];
 const PROJECT_STATUSES = ['ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'];
 const LIMIT = 10;
+
+/** Who runs this project. Without a PM the client's messages and the team's reviews have nowhere to go. */
+function PmPicker({ project, onChanged, onError }) {
+  const [options, setOptions] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api
+      .get('/projects/pm-options')
+      .then((r) => setOptions(r.data.data || []))
+      .catch(() => {});
+  }, []);
+
+  const change = (e) => {
+    setSaving(true);
+    api
+      .patch(`/projects/${project._id || project.id}/pm`, { pmUserId: e.target.value || null })
+      .then(onChanged)
+      .catch((err) => onError(err?.response?.data?.error || 'Could not assign the PM'))
+      .finally(() => setSaving(false));
+  };
+
+  return (
+    <label className="text-xs text-warm-500 flex flex-col gap-1">
+      Project manager
+      <select
+        className="input-fx text-sm"
+        value={project.pmUserId || ''}
+        onChange={change}
+        disabled={saving || options.length === 0}
+      >
+        <option value="">Not assigned</option>
+        {options.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.name} ({u.role})
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 export default function AdminProjects() {
   usePageTitle('Admin Projects');
@@ -108,6 +151,7 @@ export default function AdminProjects() {
               {pid} &middot; Service: {project.service?.name || project.serviceId}
             </p>
           </div>
+          <PmPicker project={project} onChanged={refreshProject} onError={setError} />
           <Badge variant={getStatusBadge(project.status)?.replace('badge-', '')}>
             {capitalize((project.status || '').replace(/_/g, ' '))}
           </Badge>
@@ -129,6 +173,9 @@ export default function AdminProjects() {
             ))}
           </div>
         </div>
+
+        <ChangeRequestsPanel project={project} onChanged={refreshProject} />
+        <HandoverKit projectId={pid} />
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-warm-50 rounded-xl p-4">

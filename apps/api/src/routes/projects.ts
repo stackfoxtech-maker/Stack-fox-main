@@ -48,6 +48,10 @@ export async function projectRoutes(app: FastifyInstance) {
     if (scope !== null) where.engagement = { clientId: scope };
     if (engId) where.engagementId = engId;
     if (status) where.status = status;
+    // `?mine=1`: the projects I run. The team page used to list every client's
+    // project to every staff member under a "projects assigned to you" heading.
+    if ((req.query as Record<string, string>).mine === "1" && scope === null)
+      where.pmUserId = req.user!.sub;
 
     const { page: p, limit: l, skip } = pageParams({ page, limit });
     const [items, total] = await Promise.all([
@@ -190,6 +194,20 @@ export async function projectRoutes(app: FastifyInstance) {
       actor: req.user!.sub,
       projectId: id,
     });
+
+    // The last approval means the work is done: say so, instead of leaving the PM
+    // and the client to notice it on their own.
+    const remaining = await prisma.milestone.count({
+      where: { projectId: id, status: { not: "APPROVED" } },
+    });
+    if (remaining === 0) {
+      await emitEvent({
+        code: "PROJECT_READY_FOR_HANDOVER",
+        payload: { projectId: id },
+        actor: req.user!.sub,
+        projectId: id,
+      });
+    }
 
     // Trigger invoice for this milestone
     const project = await prisma.project.findUnique({

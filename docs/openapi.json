@@ -6306,6 +6306,41 @@
         }
       }
     },
+    "/contracts/{id}/sign": {
+      "post": {
+        "summary": "POST /contracts/:id/sign",
+        "tags": [
+          "contracts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
     "/documents/{type}/{id}/access": {
       "get": {
         "summary": "GET /documents/:type/:id/access",
@@ -8360,6 +8395,31 @@
         }
       }
     },
+    "/ops/queue": {
+      "get": {
+        "summary": "GET /ops/queue",
+        "tags": [
+          "opsQueue"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
     "/orgs": {
       "post": {
         "summary": "POST /orgs",
@@ -9221,6 +9281,41 @@
         }
       }
     },
+    "/projects/{id}/pm": {
+      "patch": {
+        "summary": "PATCH /projects/:id/pm",
+        "tags": [
+          "projectAssignment"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
     "/projects/{id}/reactivate": {
       "post": {
         "summary": "POST /projects/:id/reactivate",
@@ -9271,6 +9366,31 @@
               "type": "string"
             }
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request. Body is { error, details: [{ path, message }], requestId }."
+          },
+          "401": {
+            "description": "Missing or invalid credentials."
+          },
+          "404": {
+            "description": "Not found — also returned for a resource outside the caller's tenancy, deliberately, so an id cannot be probed for existence."
+          },
+          "500": {
+            "description": "Body is { error, requestId }. The internal message is never returned; quote the requestId."
+          }
+        }
+      }
+    },
+    "/projects/pm-options": {
+      "get": {
+        "summary": "GET /projects/pm-options",
+        "tags": [
+          "projectAssignment"
         ],
         "responses": {
           "200": {

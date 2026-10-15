@@ -5,6 +5,7 @@ import { usePageTitle } from '@lib/hooks';
 import { formatDate, capitalize, getStatusBadge } from '@lib/utils';
 import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
+import ActionQueue from '@components/ops/ActionQueue';
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
@@ -30,6 +31,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <ActionQueue />
+
       <h2 className="text-display-sm text-warm-900">My tasks</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

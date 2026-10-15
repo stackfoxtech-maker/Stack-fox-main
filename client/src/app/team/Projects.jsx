@@ -7,6 +7,8 @@ import { Badge, EmptyState, PanelSkeleton } from '@components/ui/Primitives';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 import MilestoneActions from '@components/project/MilestoneActions';
+import ChangeRequestsPanel from '@components/project/ChangeRequestsPanel';
+import HandoverKit from '@components/project/HandoverKit';
 
 export default function Projects() {
   usePageTitle('Team Projects');
@@ -14,6 +16,9 @@ export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Staff were shown every client's project under "assigned to you". Default to the
+  // ones they run, with a switch for the full list.
+  const [mine, setMine] = useState(true);
 
   const reloadProject = () =>
     api
@@ -31,12 +36,12 @@ export default function Projects() {
         .finally(() => setLoading(false));
     } else {
       api
-        .get('/projects')
+        .get('/projects', { params: mine ? { mine: 1 } : {} })
         .then((r) => setProjects(r.data.data || []))
         .catch(() => toast.error('Failed to load projects.'))
         .finally(() => setLoading(false));
     }
-  }, [id]);
+  }, [id, mine]);
 
   if (loading) return <PanelSkeleton variant="list" />;
 
@@ -73,18 +78,43 @@ export default function Projects() {
             </div>
           ))}
         </div>
+        <ChangeRequestsPanel project={project} onChanged={reloadProject} />
+        <HandoverKit projectId={project.id} />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-warm-900">Projects</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-warm-900">Projects</h2>
+        <div className="inline-flex rounded-pill border border-warm-200 p-0.5 text-xs">
+          {[
+            [true, 'My projects'],
+            [false, 'All projects'],
+          ].map(([value, label]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setMine(value)}
+              className={`rounded-pill px-3 py-1.5 font-medium ${
+                mine === value ? 'bg-fox-500 text-white' : 'text-warm-600'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       {projects.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
-          title="No projects assigned"
-          description="You'll see projects here when assigned by an admin."
+          title={mine ? 'No projects assigned to you' : 'No projects yet'}
+          description={
+            mine
+              ? "Projects appear here once an admin or senior PM makes you the project manager. Switch to 'All projects' to look around."
+              : 'Projects appear here when a client completes checkout.'
+          }
         />
       ) : (
         <div className="space-y-3">
