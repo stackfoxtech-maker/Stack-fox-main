@@ -107,6 +107,15 @@ async function deliver(
  * here — a path that skips the Redis write issues a refresh token that
  * /auth/refresh-token will always reject.
  */
+const REFRESH_TTL_SEC = 2592000;
+/**
+ * One key per refresh token, not one per user. A single `refresh:<user>` slot meant
+ * signing in on a second device replaced the first device's token, and two tabs
+ * refreshing together made the slower one fail and sign the user out.
+ */
+const refreshKey = (userId: string, token: string) =>
+  `refresh:${userId}:${hashToken(token)}`;
+
 async function issueSession(
   user: { id: string; email: string; role: string },
   orgId?: string,
@@ -119,7 +128,7 @@ async function issueSession(
   const refreshToken = signRefreshToken(payload);
   await tryRedis(
     "store refresh token",
-    () => redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000),
+    () => redis.set(refreshKey(user.id, refreshToken), "1", "EX", REFRESH_TTL_SEC),
     null,
   );
   return { accessToken, refreshToken };
@@ -274,13 +283,19 @@ export async function authRoutes(app: FastifyInstance) {
 
     // The signature alone is not enough: a refresh token must still be the one
     // on record, so logout and password changes actually revoke sessions.
-    let onRecord: string | null;
+    let known: boolean;
     try {
-      onRecord = await redis.get(`refresh:${decoded.sub}`);
+      // The legacy single slot is still honoured so sessions started before this
+      // change survive the deploy.
+      const [byToken, legacy] = await Promise.all([
+        redis.get(refreshKey(decoded.sub, presented)),
+        redis.get(`refresh:${decoded.sub}`),
+      ]);
+      known = Boolean(byToken) || legacy === presented;
     } catch {
       return reply.code(503).send({ message: "Session store unavailable" });
     }
-    if (!onRecord || onRecord !== presented) {
+    if (!known) {
       return reply.code(401).send({ message: "Session expired, please sign in again" });
     }
 
@@ -288,18 +303,33 @@ export async function authRoutes(app: FastifyInstance) {
     if (!user || !user.isActive)
       return reply.code(401).send({ message: "User not found" });
 
+    const epoch = await getSessionEpoch(user.id);
+    // Tokens do not live in a per-user slot any more, so a logout/password change
+    // is enforced by the epoch: a refresh token minted before it is dead.
+    if (((decoded as { epoch?: number }).epoch ?? 0) !== epoch) {
+      return reply.code(401).send({ message: "Session expired, please sign in again" });
+    }
     const payload = {
       sub: user.id,
       email: user.email,
       role: user.role,
       orgId: user.orgId ?? undefined,
-      epoch: await getSessionEpoch(user.id),
+      epoch,
     };
-    // Rotate on every use so a leaked token has a single-use lifetime.
+    // Rotate on every use. The old token keeps working for a few seconds so a
+    // second tab refreshing at the same moment is not signed out.
     const refreshToken = signRefreshToken(payload);
     await tryRedis(
-      "store refresh token",
-      () => redis.set(`refresh:${user.id}`, refreshToken, "EX", 2592000),
+      "rotate refresh token",
+      async () => {
+        await redis.set(
+          refreshKey(user.id, refreshToken),
+          "1",
+          "EX",
+          REFRESH_TTL_SEC,
+        );
+        await redis.expire(refreshKey(user.id, presented), 30);
+      },
       null,
     );
 
