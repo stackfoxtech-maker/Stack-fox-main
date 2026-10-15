@@ -154,9 +154,13 @@ export async function taskRoutes(app: FastifyInstance) {
     if (!body) return;
     const { title, description, assigneeId, projectId, priority, status, dueDate } = body;
     if (status && !TASK_STATUSES.includes(status))
-      return reply.code(400).send({ message: `Status must be one of ${TASK_STATUSES.join(", ")}.` });
+      return reply
+        .code(400)
+        .send({ message: `Status must be one of ${TASK_STATUSES.join(", ")}.` });
     if (priority && !TASK_PRIORITIES.includes(priority))
-      return reply.code(400).send({ message: `Priority must be one of ${TASK_PRIORITIES.join(", ")}.` });
+      return reply
+        .code(400)
+        .send({ message: `Priority must be one of ${TASK_PRIORITIES.join(", ")}.` });
     const due = dueDate ? parseDue(dueDate) : { ok: true as const, value: null };
     if (!due.ok) return reply.code(400).send({ message: "That due date is not valid." });
 
@@ -223,12 +227,16 @@ export async function taskRoutes(app: FastifyInstance) {
     const data: Record<string, unknown> = {};
     if (typeof body.status === "string") {
       if (!TASK_STATUSES.includes(body.status))
-        return reply.code(400).send({ message: `Status must be one of ${TASK_STATUSES.join(", ")}.` });
+        return reply
+          .code(400)
+          .send({ message: `Status must be one of ${TASK_STATUSES.join(", ")}.` });
       data.status = body.status;
     }
     if (typeof body.priority === "string") {
       if (!TASK_PRIORITIES.includes(body.priority))
-        return reply.code(400).send({ message: `Priority must be one of ${TASK_PRIORITIES.join(", ")}.` });
+        return reply
+          .code(400)
+          .send({ message: `Priority must be one of ${TASK_PRIORITIES.join(", ")}.` });
       data.priority = body.priority;
     }
     if (typeof body.title === "string" && body.title.trim())
@@ -236,7 +244,8 @@ export async function taskRoutes(app: FastifyInstance) {
     if (typeof body.description === "string") data.description = body.description;
     if (body.dueDate !== undefined) {
       const due = parseDue(body.dueDate);
-      if (!due.ok) return reply.code(400).send({ message: "That due date is not valid." });
+      if (!due.ok)
+        return reply.code(400).send({ message: "That due date is not valid." });
       data.dueDate = due.value;
     }
 

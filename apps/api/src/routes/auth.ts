@@ -323,12 +323,7 @@ export async function authRoutes(app: FastifyInstance) {
     await tryRedis(
       "rotate refresh token",
       async () => {
-        await redis.set(
-          refreshKey(user.id, refreshToken),
-          "1",
-          "EX",
-          REFRESH_TTL_SEC,
-        );
+        await redis.set(refreshKey(user.id, refreshToken), "1", "EX", REFRESH_TTL_SEC);
         await redis.expire(refreshKey(user.id, presented), 30);
       },
       null,
