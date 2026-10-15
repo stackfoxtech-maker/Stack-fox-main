@@ -361,7 +361,7 @@ export async function projectRoutes(app: FastifyInstance) {
         projectId: id,
         title: body.title,
         description: body.description,
-        urgency: body.urgency ?? "MEDIUM",
+        urgency: body.urgency ?? "NORMAL",
         affectedMilestones: body.affectedMilestones ?? [],
         status: "SUBMITTED",
         raisedBy: req.user!.sub,
