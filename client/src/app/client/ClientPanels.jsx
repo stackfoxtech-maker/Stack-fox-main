@@ -207,7 +207,13 @@ export function Changes() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', urgency: 'MEDIUM' });
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    urgency: 'NORMAL',
+    projectId: '',
+  });
+  const [projects, setProjects] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [acting, setActing] = useState(null);
 
@@ -224,17 +230,35 @@ export function Changes() {
     fetchItems();
   }, [fetchItems]);
 
+  // A change request belongs to a project: without one nobody can price it and the
+  // client's Approve/Decline had no project to call.
+  useEffect(() => {
+    api
+      .get('/projects')
+      .then((r) => {
+        const list = listOf(r);
+        setProjects(list);
+        setForm((f) => ({ ...f, projectId: f.projectId || list[0]?.id || '' }));
+      })
+      .catch(() => {});
+  }, []);
+
   const create = async () => {
     if (!form.title.trim() || !form.description.trim()) {
       toast.error('Add a title and a description.');
       return;
     }
+    if (!form.projectId) {
+      toast.error('Choose the project this change is for.');
+      return;
+    }
     setSubmitting(true);
     try {
-      await api.post('/change-requests', form);
+      const { projectId, ...body } = form;
+      await api.post(`/projects/${projectId}/change-requests`, body);
       toast.success('Change request submitted.');
       setShowNew(false);
-      setForm({ title: '', description: '', urgency: 'MEDIUM' });
+      setForm((f) => ({ ...f, title: '', description: '', urgency: 'NORMAL' }));
       fetchItems();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not submit that request.');
@@ -374,9 +398,16 @@ export function Changes() {
             onChange={(e) => setForm({ ...form, urgency: e.target.value })}
             options={[
               { value: 'LOW', label: 'Low' },
-              { value: 'MEDIUM', label: 'Medium' },
+              { value: 'NORMAL', label: 'Normal' },
               { value: 'HIGH', label: 'High' },
+              { value: 'URGENT', label: 'Urgent' },
             ]}
+          />
+          <Select
+            label="Project"
+            value={form.projectId}
+            onChange={(e) => setForm({ ...form, projectId: e.target.value })}
+            options={projects.map((p) => ({ value: p.id, label: p.name || p.id }))}
           />
           <Textarea
             label="Description"

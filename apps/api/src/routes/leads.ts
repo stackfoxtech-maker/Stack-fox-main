@@ -486,6 +486,17 @@ export async function leadRoutes(app: FastifyInstance) {
 
   app.post("/proposals/:id/send", async (req, reply) => {
     const { id } = req.params as { id: string };
+    // Only a draft can be sent. Re-sending an accepted or rejected proposal flipped it
+    // back to SENT, reset its date and queued a second PDF.
+    const current = await prisma.proposal.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+    if (!current) return reply.code(404).send({ error: "Proposal not found" });
+    if (current.status !== "DRAFT")
+      return reply
+        .code(409)
+        .send({ error: `This proposal is already ${current.status.toLowerCase()}.` });
     const proposal = await prisma.proposal.update({
       where: { id },
       data: { status: "SENT", sentAt: new Date() },

@@ -31,6 +31,7 @@ const MilestoneBar = ({ milestones }) => {
 };
 
 const msStatusIcon = {
+  UPCOMING: Clock,
   PENDING: Clock,
   IN_PROGRESS: AlertCircle,
   IN_REVIEW: AlertCircle,
@@ -38,6 +39,7 @@ const msStatusIcon = {
   REVISION: AlertCircle,
 };
 const msStatusColor = {
+  UPCOMING: 'text-warm-400',
   PENDING: 'text-warm-400',
   IN_PROGRESS: 'text-warning-500',
   IN_REVIEW: 'text-fox-500',
@@ -48,6 +50,7 @@ const msStatusColor = {
 function ProjectDetail({ id }) {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [money, setMoney] = useState(null); // paid / balance from the engagement's invoices
 
   useEffect(() => {
     api
@@ -56,6 +59,24 @@ function ProjectDetail({ id }) {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
+
+  // What has really been paid, from the invoices. "Paid" used to repeat the total and
+  // "Balance" was a hard-coded zero, so every project looked fully paid.
+  useEffect(() => {
+    if (!project?.engagementId) return;
+    api
+      .get('/invoices', { params: { engId: project.engagementId, limit: 100 } })
+      .then((r) => {
+        const live = (r.data.data || []).filter(
+          (i) => !['draft', 'cancelled'].includes(String(i.status)),
+        );
+        setMoney({
+          paid: live.reduce((n, i) => n + Number(i.paidAmount || 0), 0),
+          balance: live.reduce((n, i) => n + Number(i.balanceDue || 0), 0),
+        });
+      })
+      .catch(() => {});
+  }, [project?.engagementId]);
 
   if (loading) return <PanelSkeleton variant="detail" />;
   if (!project) return <EmptyState icon={FolderKanban} title="Project not found" />;
@@ -83,8 +104,8 @@ function ProjectDetail({ id }) {
           // being hardcoded 0 are pre-existing, unrelated to the unit and left
           // as-is; both still need the same conversion once real data flows.
           { label: 'Total', value: formatPaise(project.engagement?.commercial?.total || 0) },
-          { label: 'Paid', value: formatPaise(project.engagement?.commercial?.total || 0) },
-          { label: 'Balance', value: formatPaise(0) },
+          { label: 'Paid', value: money ? formatPaise(money.paid) : '—' },
+          { label: 'Balance', value: money ? formatPaise(money.balance) : '—' },
           { label: 'Start', value: formatDate(project.createdAt) },
         ].map((s, i) => (
           <div key={i} className="bg-warm-50 rounded-xl p-4">

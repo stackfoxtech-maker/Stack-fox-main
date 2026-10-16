@@ -56,7 +56,13 @@ export async function apiKeyRoutes(app: FastifyInstance) {
     queryOrgId?: string,
   ): string | null {
     const caller = req.user!;
-    if (isInternalRole(caller.role)) return queryOrgId ?? caller.orgId ?? null;
+    // Only senior staff may mint or revoke keys on a client's behalf. Any staff role
+    // (a developer, say) could issue a read+write key for a client org and then read
+    // its invoices through /v1.
+    if (isInternalRole(caller.role))
+      return ["ADMIN", "SENIOR_PM"].includes(String(caller.role).toUpperCase())
+        ? (queryOrgId ?? caller.orgId ?? null)
+        : null;
     if (!caller.orgId) return null;
     return ORG_MANAGER_ROLES.includes(caller.role) ? caller.orgId : null;
   }

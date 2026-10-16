@@ -54,7 +54,7 @@ start_api() {
 stop_api() {
   local pid
   pid=$(netstat -ano 2>/dev/null | grep ":${API_PORT}" | grep LISTENING | awk '{print $5}' | head -1 || true)
-  [ -n "${pid:-}" ] && taskkill //PID "$pid" //F >/dev/null 2>&1 || true
+  if [ -n "${pid:-}" ]; then taskkill //PID "$pid" //F >/dev/null 2>&1 || true; fi
 }
 
 case "${1:-up}" in

@@ -136,8 +136,9 @@ export default function PaymentConfirmation() {
   usePageTitle('Payment Confirmation');
   const [params] = useSearchParams();
   const quoteId = params.get('quote');
-  const orderId = params.get('order');
-  const demoTier = (params.get('demo') || '').toUpperCase();
+  // The sample screens are a design preview, available only while developing. In
+  // production `?demo=PREMIUM` rendered "Payment successful" with made-up figures.
+  const demoTier = import.meta.env.DEV ? (params.get('demo') || '').toUpperCase() : '';
   const isDemo = ['STARTER', 'GROWTH', 'PREMIUM'].includes(demoTier);
   const [quote, setQuote] = useState(isDemo ? demoQuote(demoTier) : null);
   const [loading, setLoading] = useState(!isDemo);
@@ -150,9 +151,7 @@ export default function PaymentConfirmation() {
       return;
     }
     if (!quoteId) {
-      // Express checkout hands over an order id, not a quote: confirm without quote details.
-      if (orderId) setQuote({ tier: 'STARTER', items: [] });
-      else setError('No quote ID provided');
+      setError('No quote ID provided');
       setLoading(false);
       return;
     }
@@ -161,7 +160,7 @@ export default function PaymentConfirmation() {
       .then((r) => setQuote(quoteForDisplay(r.data.data)))
       .catch(() => setError('Quote not found'))
       .finally(() => setLoading(false));
-  }, [quoteId, orderId, isDemo, demoTier]);
+  }, [quoteId, isDemo, demoTier]);
 
   if (loading)
     return (
@@ -180,6 +179,25 @@ export default function PaymentConfirmation() {
         </div>
       </div>
     );
+
+  // Success only for a quote that has really been paid. Any quote the user owns used to
+  // show "Payment successful", whatever its status (draft, awaiting cash...).
+  if (!['paid', 'partially_paid'].includes(quote.status)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-warm-white px-4">
+        <div className="max-w-sm text-center">
+          <h1 className="mb-2 text-xl font-semibold text-warm-900">No payment received yet</h1>
+          <p className="mb-4 text-warm-500">
+            We have not received a payment for this quote. If you have just paid, give it a moment
+            and check My Quotes.
+          </p>
+          <Link to="/app/client/quotes" className="font-semibold text-fox-500 hover:underline">
+            Go to My Quotes
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const tier = quote.tier || 'STARTER';
   const copy = TIER_COPY[tier] || TIER_COPY.STARTER;

@@ -228,7 +228,33 @@ export const statusColors = {
 /**
  * Get appropriate badge class for a status.
  */
-export const getStatusBadge = (status) => statusColors[status] || 'badge-neutral';
+// The API stores statuses upper-case with underscores (ACTIVE, IN_REVIEW, ON_HOLD) while
+// this table is lower-case with hyphens, so project and milestone badges never matched
+// and were always grey. Normalise before looking up.
+const extraStatusColors = {
+  active: 'badge-success',
+  approved: 'badge-success',
+  'in-review': 'badge-fox',
+  revision: 'badge-danger',
+  upcoming: 'badge-neutral',
+  scoping: 'badge-info',
+  estimation: 'badge-info',
+  contracting: 'badge-info',
+  open: 'badge-info',
+  acknowledged: 'badge-warning',
+  resolved: 'badge-success',
+  closed: 'badge-neutral',
+  terminated: 'badge-danger',
+  disputed: 'badge-danger',
+  executed: 'badge-success',
+  'client-signed': 'badge-info',
+};
+export const getStatusBadge = (status) => {
+  const key = String(status ?? '')
+    .toLowerCase()
+    .replace(/_/g, '-');
+  return statusColors[key] || extraStatusColors[key] || 'badge-neutral';
+};
 
 /**
  * Priority colors.

@@ -26,6 +26,7 @@ registerCron("sales-followup", async () => {
 
   for (const f of due) {
     if (f.assignedTo) {
+      let queued = true;
       await queues.notifications
         .add("sales-followup", {
           code: "SALES_FOLLOWUP_DUE",
@@ -39,7 +40,13 @@ registerCron("sales-followup", async () => {
           },
           userIds: [f.assignedTo],
         })
-        .catch((err) => log().error({ err }, "sales follow-up notify failed"));
+        .catch((err) => {
+          queued = false;
+          log().error({ err }, "sales follow-up notify failed");
+        });
+      // Leave it unstamped so the next run tries again; it used to be marked
+      // reminded even when the reminder was never queued.
+      if (!queued) continue;
     }
     await prisma.followUp.update({
       where: { id: f.id },

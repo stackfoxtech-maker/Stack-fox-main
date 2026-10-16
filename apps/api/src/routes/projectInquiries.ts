@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth, requireRole } from "../plugins/auth";
-import { CATALOGUE_ROLES } from "@stackfox/core";
+import { requireRole } from "../plugins/auth";
+import { CATALOGUE_ROLES, SALES_ROLES } from "@stackfox/core";
 import { parseBody } from "../lib/validate";
 import { UpdateStatusSchema } from "./opsSchemas";
 
@@ -29,7 +29,9 @@ export async function projectInquiryRoutes(app: FastifyInstance) {
   });
 
   app.patch("/project-inquiries/:id/status", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    // Lead ids are handed back to whoever submitted the form, so "signed in" was
+    // enough for any client to change any lead's status.
+    if (!requireRole(req, reply, SALES_ROLES)) return;
     const { id } = req.params as { id: string };
     const piBody = parseBody(req, reply, UpdateStatusSchema);
     if (!piBody) return;

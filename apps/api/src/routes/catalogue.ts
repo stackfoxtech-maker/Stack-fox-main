@@ -3,34 +3,32 @@ import { prisma } from "@stackfox/prisma";
 import { cache } from "../lib/redis";
 import { readRawCatalogue } from "../lib/catalogue";
 import { TIMEOUT } from "../lib/timeouts";
+import { pageParams } from "../lib/http";
 
 export async function catalogueRoutes(app: FastifyInstance) {
   // GET /catalogue/services
   app.get("/catalogue/services", async (req) => {
-    const {
-      category,
-      status,
-      page = "1",
-      limit = "20",
-    } = req.query as Record<string, string>;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const { category } = req.query as Record<string, string>;
+    // Bounded and numeric: `limit=abc` used to reach Prisma as NaN (a 500) and a huge
+    // limit returned the whole table.
+    const { page, limit, skip } = pageParams(req.query as Record<string, string>);
 
-    const where: any = {};
+    // Public, so published services only. A `status` query parameter let anyone list
+    // DRAFT and ARCHIVED services (the admin API has its own listing).
+    const where: any = { status: "PUBLISHED" };
     if (category) where.categoryTier1 = category;
-    if (status) where.status = status;
-    else where.status = "PUBLISHED";
 
     const [items, total] = await Promise.all([
       prisma.serviceUnit.findMany({
         where,
         skip,
-        take: parseInt(limit),
+        take: limit,
         orderBy: { name: "asc" },
       }),
       prisma.serviceUnit.count({ where }),
     ]);
 
-    return { items, total, page: parseInt(page), limit: parseInt(limit) };
+    return { items, total, page, limit };
   });
 
   // GET /catalogue/services/:id
@@ -39,8 +37,8 @@ export async function catalogueRoutes(app: FastifyInstance) {
     const cached = await cache.get(`service:${id}`);
     if (cached) return cached;
 
-    const service = await prisma.serviceUnit.findUnique({
-      where: { id },
+    const service = await prisma.serviceUnit.findFirst({
+      where: { id, status: "PUBLISHED" },
       include: {
         featureUnits: { orderBy: { sortOrder: "asc" } },
         sdpVersions: {
@@ -160,10 +158,9 @@ export async function catalogueRoutes(app: FastifyInstance) {
     }
 
     const result = {
+      // Only the point rate is public. The per-role cost rates are how StackFox
+      // prices its own people; nothing in the client reads them.
       pointRate: latest["POINT:point"]?.rate ?? 280000, // ₹2,800 in paise
-      roleRates: Object.entries(latest)
-        .filter(([k]) => k.startsWith("ROLE:"))
-        .map(([, v]) => v),
     };
 
     await cache.set("rate-card", result, 3600);
@@ -172,27 +169,20 @@ export async function catalogueRoutes(app: FastifyInstance) {
 
   // American-spelling aliases used by the client app
   app.get("/catalog/services", async (req, reply) => {
-    const {
-      category,
-      status,
-      page = "1",
-      limit = "20",
-    } = req.query as Record<string, string>;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const where: any = {};
+    const { category } = req.query as Record<string, string>;
+    const { page, limit, skip } = pageParams(req.query as Record<string, string>);
+    const where: any = { status: "PUBLISHED" };
     if (category) where.categoryTier1 = category;
-    if (status) where.status = status;
-    else where.status = "PUBLISHED";
     const [items, total] = await Promise.all([
       prisma.serviceUnit.findMany({
         where,
         skip,
-        take: parseInt(limit),
+        take: limit,
         orderBy: { name: "asc" },
       }),
       prisma.serviceUnit.count({ where }),
     ]);
-    return { items, total, page: parseInt(page), limit: parseInt(limit) };
+    return { items, total, page, limit };
   });
 
   app.get("/catalog/categories", async () => {

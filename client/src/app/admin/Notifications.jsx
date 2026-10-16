@@ -36,12 +36,12 @@ export default function Notifications() {
       ) : (
         <div className="grid gap-3">
           {templates.map((t) => (
-            <div key={t.id || t.code} className="bg-white rounded-2xl border border-warm-200 p-5">
+            <div key={t.key} className="bg-white rounded-2xl border border-warm-200 p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-warm-900">{t.code}</p>
+                  <p className="font-medium text-warm-900">{t.key}</p>
                   <p className="text-sm text-warm-500 mt-1">
-                    {t.channel || 'email'} · {t.subject || 'No subject'}
+                    {String(t.key).split('.').pop() || 'email'} · {t.subject || 'No subject'}
                   </p>
                 </div>
                 <Badge variant={t.active !== false ? 'success' : 'neutral'}>

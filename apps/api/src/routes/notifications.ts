@@ -3,21 +3,24 @@ import { prisma } from "@stackfox/prisma";
 import { requireAuth } from "../plugins/auth";
 import { parseBody } from "../lib/validate";
 import { MarkNotificationsReadSchema, NotificationPrefsSchema } from "./opsSchemas";
+import { pageParams } from "../lib/http";
 
 // Per-user notification inbox — distinct from NotificationContent (admin
 // templates keyed by event_code.channel, no userId/readAt on that model).
 export async function notificationRoutes(app: FastifyInstance) {
   app.get("/notifications", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const { unread, page = "1", limit = "30" } = req.query as Record<string, string>;
+    const { unread } = req.query as Record<string, string>;
+    // `limit=abc` or `page=0` reached Prisma as NaN/negative and came back as a 500.
+    const { skip, limit } = pageParams(req.query as Record<string, string>, 30, 100);
     const where: any = { userId: req.user!.sub };
     if (unread === "true") where.readAt = null;
 
     const [items, total] = await Promise.all([
       prisma.notification.findMany({
         where,
-        skip: (parseInt(page) - 1) * parseInt(limit),
-        take: parseInt(limit),
+        skip,
+        take: limit,
         orderBy: { createdAt: "desc" },
       }),
       prisma.notification.count({ where }),

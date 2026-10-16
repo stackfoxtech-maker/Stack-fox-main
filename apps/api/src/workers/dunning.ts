@@ -2,7 +2,7 @@ import { prisma } from "@stackfox/prisma";
 import { registerCron } from "./cron/registry";
 import { queues } from "../lib/queue";
 
-const DUNNING_DAYS = [1, 7, 14, 30, 45, 60, 90];
+const DUNNING_DAYS = [1, 7, 14, 30, 45, 60, 91];
 
 registerCron("dunning-run", async () => {
   const overdueInvoices = await prisma.invoice.findMany({
@@ -25,7 +25,7 @@ registerCron("dunning-run", async () => {
       code: "DUNNING_NOTICE",
       payload: {
         invoiceId: inv.id,
-        amount: inv.grandTotal,
+        amount: Number(inv.grandTotal) - Number(inv.amountPaid ?? 0),
         daysPastDue,
         level: dunningLevel,
       },

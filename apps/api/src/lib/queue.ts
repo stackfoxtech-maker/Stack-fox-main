@@ -79,7 +79,18 @@ export function stampReqId(data: unknown): unknown {
 }
 
 export function createQueue(name: QueueName) {
-  const queue = new Queue(name, { connection });
+  const queue = new Queue(name, {
+    connection,
+    // Without these a single transient failure (storage, DB, provider) dropped an
+    // invoice PDF, notification or webhook for good, and every completed job stayed
+    // in Redis for ever.
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: "exponential", delay: 5000 },
+      removeOnComplete: { age: 86400, count: 1000 },
+      removeOnFail: { age: 7 * 86400 },
+    },
+  });
 
   // Stamp the enqueuing request's id onto every job, by overriding `add` here
   // rather than at each call site. There are twelve call sites today; the

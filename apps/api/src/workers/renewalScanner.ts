@@ -13,6 +13,16 @@ registerCron("renewal-scan", async () => {
   });
 
   for (const eng of expiringEngagements) {
+    // One reminder per engagement per renewal window, not one every day.
+    const alreadyTold = await prisma.event.findFirst({
+      where: {
+        code: "RENEWAL_DUE",
+        engagementId: eng.id,
+        createdAt: { gte: new Date(Date.now() - 35 * 86400000) },
+      },
+      select: { seq: true },
+    });
+    if (alreadyTold) continue;
     await emitEvent({
       code: "RENEWAL_DUE",
       payload: {

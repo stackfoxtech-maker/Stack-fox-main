@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@stackfox/prisma";
-import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
 import { DELIVERY_ROLES, computeHealthState } from "@stackfox/core";
@@ -38,7 +37,8 @@ async function programInScope(
 
 export async function programRoutes(app: FastifyInstance) {
   app.post("/programs", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    // A programme appears in the client's portal; only delivery staff create them.
+    if (!requireRole(req, reply, DELIVERY_ROLES)) return;
     const body = parseBody(req, reply, CreateProgramSchema);
     if (!body) return;
     return prisma.program.create({
@@ -114,7 +114,7 @@ export async function programRoutes(app: FastifyInstance) {
   });
 
   app.post("/programs/:id/qbr", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!(await programInScope(req, reply))) return;
     const { id } = req.params as { id: string };
     const engagements = await prisma.engagement.findMany({
       where: { programId: id },

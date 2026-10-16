@@ -2,6 +2,7 @@ import { registerCron } from "./cron/registry";
 import { prisma } from "@stackfox/prisma";
 import { toJson } from "../lib/json";
 import { log } from "../lib/logger";
+import { istMidnight, istParts } from "../lib/ist";
 
 interface SoftexJob {
   /** Omitted by the quarterly scheduler — then every eligible engagement is filed. */
@@ -12,9 +13,11 @@ interface SoftexJob {
 
 /** The quarter that closed most recently, relative to `now`. */
 function lastClosedQuarter(now = new Date()): { quarter: number; year: number } {
-  const q = Math.floor(now.getMonth() / 3) + 1; // 1-4, current quarter
-  if (q === 1) return { quarter: 4, year: now.getFullYear() - 1 };
-  return { quarter: q - 1, year: now.getFullYear() };
+  // In IST, not server time: at 05:00 IST on 1 April a UTC server still says March.
+  const { month, year } = istParts(now);
+  const q = Math.floor(month / 3) + 1; // 1-4, current quarter
+  if (q === 1) return { quarter: 4, year: year - 1 };
+  return { quarter: q - 1, year };
 }
 
 async function fileForEngagement(engagementId: string, quarter: number, year: number) {
@@ -39,8 +42,8 @@ async function fileForEngagement(engagementId: string, quarter: number, year: nu
       engagementId,
       status: "PAID",
       paidAt: {
-        gte: new Date(year, (quarter - 1) * 3, 1),
-        lt: new Date(year, quarter * 3, 1),
+        gte: istMidnight(year, (quarter - 1) * 3, 1),
+        lt: istMidnight(year, quarter * 3, 1),
       },
     },
     include: { org: true },

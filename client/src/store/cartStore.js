@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import api from '@lib/api';
 import toast from 'react-hot-toast';
 
+let localSeq = 0;
+let addChain = Promise.resolve();
+
 const useCartStore = create((set, get) => ({
   items: [],
   subtotal: 0,
@@ -47,7 +50,9 @@ const useCartStore = create((set, get) => ({
       items[idx].quantity = Math.min(99, items[idx].quantity + (item.quantity || 1));
     } else {
       items.push({
-        _id: `local-${Date.now()}`,
+        // Date.now() alone repeated for items added in one loop ("add all" for a bundle), so
+        // removing or changing one line changed every line that shared the id.
+        _id: `local-${Date.now()}-${localSeq++}`,
         itemId: item.itemId,
         itemType: item.itemType,
         name: item.name,
@@ -105,26 +110,33 @@ const useCartStore = create((set, get) => ({
 
   // `silent` (phone builder): update the cart without popping the drawer or a
   // toast, so a person can add many pieces in a row. Never sent to the API.
-  addItem: async (item, isAuthenticated) => {
+  addItem: (item, isAuthenticated) => {
     const { silent = false, ...payload } = item;
     if (!isAuthenticated) {
       get().localAdd(payload, silent);
-      return;
+      return Promise.resolve();
     }
 
-    set({ isLoading: true });
-    try {
-      const res = await api.post('/cart/add', payload);
-      get().syncFromApi(res.data.data.cart);
-      if (!silent) {
-        set({ isOpen: true });
-        toast.success('Added to cart');
+    // One at a time. "Add all" and the ?cart= loader call this in a loop; the server
+    // updates the cart with a read-modify-write, so parallel calls overwrote each other
+    // and only some of the pieces survived.
+    const run = async () => {
+      set({ isLoading: true });
+      try {
+        const res = await api.post('/cart/add', payload);
+        get().syncFromApi(res.data.data.cart);
+        if (!silent) {
+          set({ isOpen: true });
+          toast.success('Added to cart');
+        }
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to add item.');
+      } finally {
+        set({ isLoading: false });
       }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to add item.');
-    } finally {
-      set({ isLoading: false });
-    }
+    };
+    addChain = addChain.then(run, run);
+    return addChain;
   },
 
   removeItem: async (cartItemId, isAuthenticated) => {

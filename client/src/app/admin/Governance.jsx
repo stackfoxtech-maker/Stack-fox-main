@@ -284,7 +284,15 @@ export function Templates() {
   };
   const openEdit = (t) => {
     setEditing(t.key);
-    setForm(t);
+    // Only the editable fields, never the raw row: it carries nulls and the key, and the
+    // strict update schema rejected both (every template edit was a 400).
+    setForm({
+      key: t.key,
+      subject: t.subject ?? '',
+      body: t.body ?? '',
+      ctaLabel: t.ctaLabel ?? '',
+      ctaUrlTpl: t.ctaUrlTpl ?? '',
+    });
     setOpen(true);
   };
 
@@ -295,9 +303,17 @@ export function Templates() {
     }
     setSaving(true);
     try {
+      const fields = Object.fromEntries(
+        Object.entries({
+          subject: form.subject,
+          body: form.body,
+          ctaLabel: form.ctaLabel,
+          ctaUrlTpl: form.ctaUrlTpl,
+        }).filter(([, v]) => v !== '' && v != null),
+      );
       if (editing)
-        await api.patch(`/admin/notification-templates/${encodeURIComponent(editing)}`, form);
-      else await api.post('/admin/notification-templates', form);
+        await api.patch(`/admin/notification-templates/${encodeURIComponent(editing)}`, fields);
+      else await api.post('/admin/notification-templates', { key: form.key, ...fields });
       toast.success('Saved.');
       setOpen(false);
       refetch();

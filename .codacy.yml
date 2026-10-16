@@ -1,0 +1,36 @@
+---
+# Codacy scope. Without this, ~760 of the 769 "code scanning" alerts came from tools
+# pointed at files they were never meant to judge:
+#   - JSHint flagging ES6 (`for...of`, generators) in code that ESLint already covers
+#   - TSQLLint (a SQL Server linter) run over PostgreSQL migrations
+#   - CSSLint/Stylelint over the Tailwind stylesheet, whose at-rules they do not know
+#   - Pylint/Bandit over Python helper scripts of third-party agent skills
+#   - remark-lint over generated and credits markdown
+# ESLint (with the project config) and the CI type checks are the source of truth for the
+# application code; CodeQL and the dependency audit run separately.
+exclude_paths:
+  - ".claude/**"
+  - ".agents/**"
+  - "packages/prisma/prisma/migrations/**"
+  - "client/public/**"
+  - "client/dist/**"
+  - "apps/api/dist/**"
+  - "docs/**"
+  - "**/*.md"
+  - "**/*.css"
+
+engines:
+  jshint:
+    enabled: false
+  csslint:
+    enabled: false
+  stylelint:
+    enabled: false
+  tsqllint:
+    enabled: false
+  remark-lint:
+    enabled: false
+  pylint:
+    enabled: false
+  prospector:
+    enabled: false

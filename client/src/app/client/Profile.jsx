@@ -3,6 +3,7 @@ import { usePageTitle } from '@lib/hooks';
 import { Input, Button } from '@components/ui/Primitives';
 import useAuthStore from '@store/authStore';
 import toast from 'react-hot-toast';
+import api from '@lib/api';
 
 export default function Profile() {
   usePageTitle('Profile');
@@ -37,7 +38,37 @@ export default function Profile() {
     });
   };
 
-  const handleSave = () => updateProfile(form);
+  // Only an organisation's owner or admin may change its company details.
+  const canEditCompany = Boolean(user?.orgId) && ['ORG_OWNER', 'CLIENT_ADMIN'].includes(user?.role);
+
+  // The profile route accepts only name and phone (it rejected the whole form, company
+  // included, with a 400). Company details belong to the organisation and go to its own
+  // route, with the field names it expects.
+  const handleSave = async () => {
+    const res = await updateProfile({ name: form.name, phone: form.phone });
+    if (!res?.success || !canEditCompany) return;
+    const c = form.company;
+    const address = Object.fromEntries(
+      Object.entries({
+        line1: c.address.line1,
+        city: c.address.city,
+        state: c.address.state,
+        postalCode: c.address.pincode,
+      }).filter(([, v]) => v && v.trim()),
+    );
+    const body = {
+      ...(c.name.trim() ? { name: c.name.trim() } : {}),
+      ...(c.gstNumber.trim() ? { gstin: c.gstNumber.trim().toUpperCase() } : {}),
+      ...(Object.keys(address).length ? { billingAddress: address } : {}),
+    };
+    if (!Object.keys(body).length) return;
+    try {
+      await api.patch(`/orgs/${user.orgId}`, body);
+      toast.success('Company details saved.');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not save the company details.');
+    }
+  };
   const handlePw = () => {
     if (pw.new.length < 8) {
       toast.error('Min 8 characters.');
@@ -59,42 +90,44 @@ export default function Profile() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-warm-200 p-5 space-y-4">
-        <h3 className="font-medium text-warm-900">Company details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
-            label="Company name"
-            value={form.company.name}
-            onChange={(e) => set('company.name', e.target.value)}
-          />
-          <Input
-            label="GST number"
-            value={form.company.gstNumber}
-            onChange={(e) => set('company.gstNumber', e.target.value)}
-            placeholder="22AAAAA0000A1Z5"
-          />
-          <Input
-            label="Address"
-            value={form.company.address.line1}
-            onChange={(e) => set('company.address.line1', e.target.value)}
-          />
-          <Input
-            label="City"
-            value={form.company.address.city}
-            onChange={(e) => set('company.address.city', e.target.value)}
-          />
-          <Input
-            label="State"
-            value={form.company.address.state}
-            onChange={(e) => set('company.address.state', e.target.value)}
-          />
-          <Input
-            label="Pincode"
-            value={form.company.address.pincode}
-            onChange={(e) => set('company.address.pincode', e.target.value)}
-          />
+      {canEditCompany && (
+        <div className="bg-white rounded-2xl border border-warm-200 p-5 space-y-4">
+          <h3 className="font-medium text-warm-900">Company details</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Company name"
+              value={form.company.name}
+              onChange={(e) => set('company.name', e.target.value)}
+            />
+            <Input
+              label="GST number"
+              value={form.company.gstNumber}
+              onChange={(e) => set('company.gstNumber', e.target.value)}
+              placeholder="22AAAAA0000A1Z5"
+            />
+            <Input
+              label="Address"
+              value={form.company.address.line1}
+              onChange={(e) => set('company.address.line1', e.target.value)}
+            />
+            <Input
+              label="City"
+              value={form.company.address.city}
+              onChange={(e) => set('company.address.city', e.target.value)}
+            />
+            <Input
+              label="State"
+              value={form.company.address.state}
+              onChange={(e) => set('company.address.state', e.target.value)}
+            />
+            <Input
+              label="Pincode"
+              value={form.company.address.pincode}
+              onChange={(e) => set('company.address.pincode', e.target.value)}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <Button variant="primary" onClick={handleSave} isLoading={isLoading}>
         Save Changes

@@ -63,6 +63,7 @@ export default function Hiring() {
           <button
             key={j._id}
             onClick={() => {
+              if (j._id === selectedJob) return; // same job: no refetch, so no skeleton
               setSelectedJob(j._id);
               setLoading(true);
             }}

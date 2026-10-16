@@ -29,12 +29,14 @@ export default function Resources() {
     fetchPosts();
   }, []);
 
-  const categories = ['All', ...new Set(posts.map((p) => p.category))];
+  const categories = ['All', ...new Set(posts.map((p) => p.category).filter(Boolean))];
 
   const filteredPosts = posts.filter((post) => {
+    // `excerpt` is nullable in the database: calling .toLowerCase() on null crashed the
+    // whole page for anyone with one such post.
     const matchesSearch =
-      post.title.toLowerCase().includes(search.toLowerCase()) ||
-      post.excerpt.toLowerCase().includes(search.toLowerCase());
+      (post.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      (post.excerpt || '').toLowerCase().includes(search.toLowerCase());
     const matchesCategory = activeCategory === 'All' || post.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
@@ -113,7 +115,7 @@ export default function Resources() {
                     <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-bold text-fox-600 uppercase tracking-widest border border-fox-100 shadow-sm">
                       {post.category}
                     </span>
-                    {post.status && post.status !== 'published' && (
+                    {post.status && String(post.status).toUpperCase() !== 'PUBLISHED' && (
                       <span className="px-2 py-1 rounded-md bg-amber-500 text-white text-[9px] font-black uppercase tracking-tighter shadow-sm">
                         Draft
                       </span>
@@ -123,12 +125,16 @@ export default function Resources() {
 
                 <div className="p-6 flex-1 flex flex-col">
                   <div className="flex items-center gap-4 text-[10px] text-warm-400 font-bold uppercase tracking-wider mb-3">
-                    <span className="flex items-center gap-1">
-                      <Clock size={12} /> {post.readTime} min read
-                    </span>
+                    {post.readTime && (
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} /> {post.readTime} min read
+                      </span>
+                    )}
                     <span className="flex items-center gap-1">
                       <Calendar size={12} />{' '}
-                      {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : post.date}
+                      {post.publishedAt || post.createdAt
+                        ? new Date(post.publishedAt || post.createdAt).toLocaleDateString()
+                        : post.date}
                     </span>
                   </div>
 

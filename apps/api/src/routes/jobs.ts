@@ -40,6 +40,9 @@ export async function jobRoutes(app: FastifyInstance) {
 
       const job = await prisma.job.findUnique({ where: { id } });
       if (!job) return reply.code(404).send({ message: "Job not found" });
+      // A closed vacancy takes no applications.
+      if (job.status && job.status !== "OPEN")
+        return reply.code(409).send({ message: "This position is no longer open." });
 
       const application = await prisma.jobApplication.create({
         data: {

@@ -22,7 +22,7 @@ export async function changeRequestRoutes(app: FastifyInstance) {
         id: ids.crId(),
         title,
         description,
-        urgency: urgency ?? "MEDIUM",
+        urgency: urgency ?? "NORMAL",
         affectedMilestones: [],
         status: "SUBMITTED",
         raisedBy: req.user!.sub,

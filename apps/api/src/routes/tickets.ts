@@ -4,7 +4,8 @@ import { requireAuth } from "../plugins/auth";
 import { emitEvent } from "../lib/events";
 import * as ids from "../lib/id";
 import { LIST_CAP, pageParams, paginated } from "../lib/http";
-import { clientScope, projectIdsInScope } from "../lib/scope";
+import { clientScope, clientWriteScope, projectIdsInScope } from "../lib/scope";
+import { isInternalRole } from "@stackfox/core";
 import { parseBody } from "../lib/validate";
 import {
   CloseTicketSchema,
@@ -12,6 +13,20 @@ import {
   ResolveTicketSchema,
   TicketMessageSchema,
 } from "./crmSchemas";
+
+/**
+ * The ticket actions below belong to the team (acknowledge, resolve, reply). They only
+ * checked "signed in", so any client could acknowledge, resolve or answer as "team" on
+ * any ticket by id, falsifying the SLA timestamps.
+ */
+function requireStaff(req: any, reply: any): boolean {
+  if (!requireAuth(req, reply)) return false;
+  if (!isInternalRole(req.user.role)) {
+    reply.code(403).send({ error: "Staff only." });
+    return false;
+  }
+  return true;
+}
 
 function serializeTicket(t: any) {
   return {
@@ -37,10 +52,31 @@ export async function ticketRoutes(app: FastifyInstance) {
     const body = parseBody(req, reply, CreateTicketSchema);
     if (!body) return;
 
+    // Attach the ticket to its project (and engagement) so the PM tracker, SLA reports
+    // and the client's ticket report can find it; the project id was accepted and dropped.
+    let projectId: string | null = null;
+    let engagementId: string | null = null;
+    if (body.projectId) {
+      const scope = await clientScope(req, reply);
+      if (scope === undefined) return;
+      const project = await prisma.project.findFirst({
+        where: {
+          id: body.projectId,
+          ...(scope !== null ? { engagement: { clientId: scope } } : {}),
+        },
+        select: { id: true, engagementId: true },
+      });
+      if (!project) return reply.code(404).send({ error: "Project not found" });
+      projectId = project.id;
+      engagementId = project.engagementId;
+    }
+
     const ticket = await prisma.ticket.create({
       data: {
         id: ids.ticketId(),
         raisedBy: req.user!.sub,
+        projectId,
+        engagementId,
         subject: body.subject,
         description: body.description,
         category: body.category ?? "general",
@@ -178,8 +214,10 @@ export async function ticketRoutes(app: FastifyInstance) {
   });
 
   app.patch("/tickets/:id/acknowledge", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireStaff(req, reply)) return;
     const { id } = req.params as { id: string };
+    if (!(await prisma.ticket.findUnique({ where: { id }, select: { id: true } })))
+      return reply.code(404).send({ error: "Ticket not found" });
     const updated = await prisma.ticket.update({
       where: { id },
       data: { status: "ACKNOWLEDGED", acknowledgedAt: new Date() },
@@ -193,11 +231,13 @@ export async function ticketRoutes(app: FastifyInstance) {
   });
 
   app.patch("/tickets/:id/resolve", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireStaff(req, reply)) return;
     const { id } = req.params as { id: string };
     const resBody = parseBody(req, reply, ResolveTicketSchema);
     if (!resBody) return;
     const { resolution } = resBody;
+    if (!(await prisma.ticket.findUnique({ where: { id }, select: { id: true } })))
+      return reply.code(404).send({ error: "Ticket not found" });
     const updated = await prisma.ticket.update({
       where: { id },
       data: { status: "RESOLVED", resolution, resolvedAt: new Date() },
@@ -211,11 +251,25 @@ export async function ticketRoutes(app: FastifyInstance) {
   });
 
   app.patch("/tickets/:id/verify", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    // The client confirms (or reopens) a resolved ticket: only for tickets on their
+    // own projects. Staff may also do it.
+    const scope = await clientWriteScope(req, reply);
+    if (scope === undefined) return;
     const { id } = req.params as { id: string };
     const closeBody = parseBody(req, reply, CloseTicketSchema);
     if (!closeBody) return;
     const { accepted } = closeBody;
+    const target = await prisma.ticket.findUnique({
+      where: { id },
+      select: { projectId: true, raisedBy: true },
+    });
+    if (!target) return reply.code(404).send({ error: "Ticket not found" });
+    if (scope !== null) {
+      const own = target.raisedBy === req.user!.sub;
+      const allowed = (await projectIdsInScope(scope)) ?? [];
+      if (!own && !(target.projectId && allowed.includes(target.projectId)))
+        return reply.code(404).send({ error: "Ticket not found" });
+    }
 
     if (accepted) {
       const updated = await prisma.ticket.update({
@@ -244,7 +298,7 @@ export async function ticketRoutes(app: FastifyInstance) {
 
   // Team-side reply into a client's ticket (shows up in their Support view)
   app.post("/tickets/:id/reply", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireStaff(req, reply)) return;
     const { id } = req.params as { id: string };
     const replyBody = parseBody(req, reply, TicketMessageSchema);
     if (!replyBody) return;

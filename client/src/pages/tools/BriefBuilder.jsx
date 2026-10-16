@@ -18,7 +18,11 @@ export default function BriefBuilder() {
     setLoading(true);
     setError('');
     try {
-      const res = await apiPost('/tools/brief', { mode, input: inputValue.trim() });
+      // The brief tool takes industry, goals, budget and timeline (anything else is a 400).
+      const res = await apiPost('/tools/brief', {
+        industry: mode,
+        goals: inputValue.trim().slice(0, 2000),
+      });
       setBrief(res.data.brief);
     } catch (err) {
       setError(err.response?.data?.error || 'Could not generate brief. Try again.');

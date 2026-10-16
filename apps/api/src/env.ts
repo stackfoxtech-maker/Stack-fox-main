@@ -153,6 +153,15 @@ const PRODUCTION_REQUIRED: Array<[string, string]> = [
   ["SUPABASE_URL", "file storage"],
   ["SUPABASE_SECRET_KEY", "file storage"],
   ["CREDENTIAL_ENCRYPTION_KEY", "encrypts the client credential vault"],
+  [
+    "WEB_APP_URL",
+    "links in emails and where Google sign-in returns to (falls back to localhost)",
+  ],
+  ["API_PUBLIC_URL", "OAuth callbacks and webhook URLs (falls back to localhost)"],
+  [
+    "MAIL_FROM",
+    "sender of OTP, reset and invoice mail (the default only delivers to the provider account owner)",
+  ],
 ];
 
 if (isProd) {

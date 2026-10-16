@@ -756,28 +756,28 @@ export function JourneyFilm({ stageClassName = '', progress, onJump }) {
                   }}
                 />
               )}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={`${chapter}-${cycle}`}
-                  initial={reduce ? false : { opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={reduce ? undefined : { opacity: 0, y: -8 }}
-                  transition={{ duration: 0.35, ease: EASE }}
-                  className="relative h-full"
-                  // Swipe on touch (timer mode) changes chapter.
-                  onPanEnd={(_, { offset }) => {
-                    if (
-                      scrollMode ||
-                      Math.abs(offset.x) < 60 ||
-                      Math.abs(offset.x) < Math.abs(offset.y)
-                    )
-                      return;
-                    go((chapter + (offset.x < 0 ? 1 : CHAPTERS.length - 1)) % CHAPTERS.length);
-                  }}
-                >
-                  <Scene still={reduce} onAdd={onAdd} />
-                </motion.div>
-              </AnimatePresence>
+              {/* Keyed so each chapter fades in fresh. It used to sit inside AnimatePresence
+                  mode="wait": when a switch interrupted the exit, the next scene could stay at
+                  opacity 0 and the window went blank after the first loop. */}
+              <motion.div
+                key={`${chapter}-${cycle}`}
+                initial={reduce ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: EASE }}
+                className="relative h-full"
+                // Swipe on touch (timer mode) changes chapter.
+                onPanEnd={(_, { offset }) => {
+                  if (
+                    scrollMode ||
+                    Math.abs(offset.x) < 60 ||
+                    Math.abs(offset.x) < Math.abs(offset.y)
+                  )
+                    return;
+                  go((chapter + (offset.x < 0 ? 1 : CHAPTERS.length - 1)) % CHAPTERS.length);
+                }}
+              >
+                <Scene still={reduce} onAdd={onAdd} />
+              </motion.div>
             </div>
           </div>
         </motion.div>

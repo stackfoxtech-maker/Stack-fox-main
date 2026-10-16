@@ -111,7 +111,16 @@ export default function Catalog() {
 
   const openEdit = (item) => {
     setEditingId(tab === 'dependencies' ? item.id : item.id);
-    setForm({ ...EMPTY_FORMS[tab], ...item });
+    // The API stores prices in paise but the form edits rupees. It used to show paise
+    // under a rupee label, and the save multiplied by 100 again: every edit made a
+    // service 100x dearer.
+    setForm({
+      ...EMPTY_FORMS[tab],
+      ...item,
+      ...(tab === 'services' && item.starterPrice != null
+        ? { starterPrice: String(Number(item.starterPrice) / 100) }
+        : {}),
+    });
     setModalOpen(true);
   };
 
@@ -125,16 +134,22 @@ export default function Catalog() {
         baseWeight: Number(form.baseWeight) || 0,
         sacCode: form.sacCode,
         status: form.status,
-        starterPrice: form.starterPrice ? Number(form.starterPrice) * 100 : null,
-        starterTimelineDays: form.starterTimelineDays ? Number(form.starterTimelineDays) : null,
+        // Left out when blank: the strict schema rejects null and an empty value.
+        ...(form.starterPrice !== '' && form.starterPrice != null
+          ? { starterPrice: Math.round(Number(form.starterPrice) * 100) }
+          : {}),
+        ...(form.starterTimelineDays !== '' && form.starterTimelineDays != null
+          ? { starterTimelineDays: Number(form.starterTimelineDays) }
+          : {}),
       };
     }
     if (tab === 'features') {
       return {
         ...(editingId ? {} : { id: form.id }),
-        serviceId: form.serviceId,
+        // A feature cannot move to another service, and the update schema refuses the field.
+        ...(editingId ? {} : { serviceId: form.serviceId }),
         name: form.name,
-        description: form.description || null,
+        ...(form.description ? { description: form.description } : {}),
         weight: Number(form.weight) || 1,
         defaultState: !!form.defaultState,
       };

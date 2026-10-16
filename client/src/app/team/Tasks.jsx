@@ -128,9 +128,10 @@ export default function Tasks() {
                     )}
                     {/* Quick move buttons */}
                     <div className="flex gap-1 mt-2">
+                      {/* Every other column: the first two only (to do / in progress) meant a
+                          task could never be moved to Review or Done from the board. */}
                       {Object.keys(columnConfig)
                         .filter((s) => s !== status)
-                        .slice(0, 2)
                         .map((s) => (
                           <button
                             key={s}

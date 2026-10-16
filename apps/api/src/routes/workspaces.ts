@@ -100,7 +100,14 @@ export async function workspaceRoutes(app: FastifyInstance) {
       data.canvas = body.canvas;
       data.canonicalHash = canonicalHash(body.canvas);
     }
-    if (body.timelineMult !== undefined) data.timelineMult = body.timelineMult;
+    if (body.timelineMult !== undefined) {
+      // Changes the price, so it is the solutions team's call, never the client's.
+      if (!isInternalRole(req.user?.role))
+        return reply
+          .code(403)
+          .send({ error: "Only StackFox staff can change the timeline." });
+      data.timelineMult = body.timelineMult;
+    }
 
     return prisma.workspace.update({ where: { id }, data });
   });
@@ -292,19 +299,29 @@ export async function workspaceRoutes(app: FastifyInstance) {
   // PATCH /workspaces/:id/custom-lines/:lineId
   app.patch("/workspaces/:id/custom-lines/:lineId", async (req, reply) => {
     if (!(await workspaceInScope((req.params as { id: string }).id, req, reply))) return;
-    const { lineId } = req.params as { lineId: string };
+    const { id, lineId } = req.params as { id: string; lineId: string };
     // `data: body as any` used to spread the whole body into the update, so
     // any column on CustomLine was settable. The schema names the fields.
     const body = parseBody(req, reply, UpdateCustomLineSchema);
     if (!body) return;
-    return prisma.customLine.update({ where: { id: lineId }, data: body });
+    // The line must belong to THIS workspace. Authorising only the workspace id and
+    // then updating by line id let anyone edit another tenant's line.
+    const { count } = await prisma.customLine.updateMany({
+      where: { id: lineId, workspaceId: id },
+      data: body,
+    });
+    if (count === 0) return reply.code(404).send({ error: "Line not found" });
+    return prisma.customLine.findUnique({ where: { id: lineId } });
   });
 
   // DELETE /workspaces/:id/custom-lines/:lineId
   app.delete("/workspaces/:id/custom-lines/:lineId", async (req, reply) => {
     if (!(await workspaceInScope((req.params as { id: string }).id, req, reply))) return;
-    const { lineId } = req.params as { lineId: string };
-    await prisma.customLine.delete({ where: { id: lineId } });
+    const { id, lineId } = req.params as { id: string; lineId: string };
+    const { count } = await prisma.customLine.deleteMany({
+      where: { id: lineId, workspaceId: id },
+    });
+    if (count === 0) return reply.code(404).send({ error: "Line not found" });
     return { success: true };
   });
 

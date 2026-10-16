@@ -94,7 +94,14 @@ export async function ensurePersonalOrg(userId: string): Promise<string> {
   if (!user) throw new Error(`Cannot provision an org for unknown user ${userId}`);
   if (user.orgId) return user.orgId;
 
-  const existing = await prisma.org.findFirst({ where: { contactEmail: user.email } });
+  // Join an existing organisation by contact email ONLY once this user has proven they
+  // own that address. Signup does not verify it, so anyone could register someone
+  // else's email (the express-checkout tool creates organisations for arbitrary
+  // emails) and walk into that organisation's invoices, contracts and files.
+  const verified = (user.authData as { verified?: unknown } | null)?.verified === true;
+  const existing = verified
+    ? await prisma.org.findFirst({ where: { contactEmail: user.email } })
+    : null;
   if (existing) {
     await prisma.user.update({ where: { id: userId }, data: { orgId: existing.id } });
     return existing.id;

@@ -3,6 +3,7 @@ import fp from "fastify-plugin";
 import jwt from "jsonwebtoken";
 import { redis } from "../lib/redis";
 import { getSessionEpoch } from "../lib/session";
+import { isReadOnlyClient } from "@stackfox/core";
 import {
   hasScope,
   touchApiKey,
@@ -148,6 +149,17 @@ export const authPlugin = fp(async function authPlugin(app: FastifyInstance) {
     } catch (err: any) {
       req.log.warn({ url: req.url, error: err.message }, "Token verification failed");
     }
+  });
+
+  // CLIENT_VIEWER is read-only across the whole portal. Only the routes that asked for
+  // `clientWriteScope` enforced it, so a viewer could still create quotes, sign and
+  // complete a checkout (provisioning an engagement and invoice), or raise tickets.
+  // Enforce it once, here. Their own session and profile routes stay open.
+  app.addHook("onRequest", async (req, reply) => {
+    if (!req.user || !isReadOnlyClient(req.user.role)) return;
+    if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return;
+    if (req.url.startsWith("/auth/") || req.url.startsWith("/users/me")) return;
+    return reply.code(403).send({ error: "Your role has read-only access." });
   });
 });
 

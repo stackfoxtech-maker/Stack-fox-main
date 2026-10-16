@@ -46,6 +46,15 @@ function isBlockedIPv6(ip: string): boolean {
   // IPv4-mapped (::ffff:10.0.0.1) and IPv4-compatible forms
   const mapped = v.match(/(\d{1,3}(?:\.\d{1,3}){3})$/);
   if (mapped) return isBlockedIPv4(mapped[1]);
+  // The same addresses in hex form. WHATWG URL parsing turns [::ffff:10.0.0.1] into
+  // ::ffff:a00:1, which the dotted pattern above never matched, so private hosts passed.
+  const hex = v.match(/^::(?:ffff:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (hex) {
+    const hi = parseInt(hex[1], 16);
+    const lo = parseInt(hex[2], 16);
+    return isBlockedIPv4(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
+  }
+  if (v.startsWith("64:ff9b:")) return true; // NAT64: translates to IPv4 anywhere
   return false;
 }
 

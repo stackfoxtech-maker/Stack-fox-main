@@ -287,14 +287,6 @@ const pages = [
       `<p>Generate a tax invoice with GSTIN of both parties, SAC code, place of supply and the correct IGST or CGST + SGST split.</p>`,
   },
   {
-    path: "/tools/estimator",
-    title: "Instant project cost estimator",
-    description:
-      "Get an indicative cost and timeline in INR for your website, app or software project.",
-    h1: "Instant Project Estimator",
-    body: () => `<p>Get an indicative project cost and timeline in rupees.</p>`,
-  },
-  {
     path: "/tools/website-audit",
     title: "Free AI website audit",
     description: "Run a free AI-powered audit of your website and see what to fix first.",

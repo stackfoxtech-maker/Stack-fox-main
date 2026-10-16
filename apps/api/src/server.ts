@@ -71,7 +71,11 @@ const app = Fastify({
   // Railway terminates TLS and forwards, so without this every request is keyed
   // by the proxy's address: the rate limiter below would throttle all users as
   // one, and req.ip would never be the real client.
-  trustProxy: true,
+  // The number of proxies in front of the API (Railway's edge is one). `true` trusted
+  // the whole X-Forwarded-For chain, so any caller could pick the IP that every rate
+  // limit is keyed on.
+  trustProxy: (_address: string, hop: number) =>
+    hop <= Number(process.env.TRUST_PROXY_HOPS ?? 1),
   // Fastify's default id is a per-process counter ("req-1"), which restarts
   // at 1 on every deploy and collides across replicas. Accept a caller's
   // x-request-id when it is well-formed so a trace spans client and API,
@@ -98,8 +102,11 @@ initSentry();
 
 async function start() {
   const BUILT_IN_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:5173",
+    // Dev servers only: with credentials enabled, any page on a visitor's own
+    // localhost could otherwise call the production API as them.
+    ...(process.env.NODE_ENV === "production"
+      ? []
+      : ["http://localhost:3000", "http://localhost:5173"]),
     "https://stackfox.in",
     "https://www.stackfox.in",
     "https://stackfox-client-stackfox1.vercel.app",

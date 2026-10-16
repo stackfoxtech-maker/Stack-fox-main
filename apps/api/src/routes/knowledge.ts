@@ -5,13 +5,17 @@ export async function knowledgeRoutes(app: FastifyInstance) {
   app.get("/knowledge", async (req) => {
     const { limit, featured } = req.query as { limit?: string; featured?: string };
     // Only published articles are public; drafts and team suggestions are not.
-    const where: any = { status: "PUBLISHED" };
+    // Not scheduled-for-later posts either.
+    const where: any = {
+      status: "PUBLISHED",
+      OR: [{ publishedAt: null }, { publishedAt: { lte: new Date() } }],
+    };
     if (featured !== undefined) where.featured = featured === "true";
 
     const posts = await prisma.blogPost.findMany({
       where,
       orderBy: { publishedAt: "desc" },
-      take: limit ? parseInt(limit) : undefined,
+      take: Math.min(Math.max(parseInt(limit ?? "") || 50, 1), 100),
     });
     return { data: posts, total: posts.length };
   });

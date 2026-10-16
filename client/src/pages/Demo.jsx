@@ -16,7 +16,16 @@ export default function Demo() {
     setLoading(true);
     setError('');
     try {
-      await apiPost('/lead/demo', { name, email, phone, team, challenge });
+      // The lead endpoint takes name, email, phone, company, message, source; it rejects
+      // any other field, so the team size and challenge travel in the message.
+      await apiPost('/lead/demo', {
+        name,
+        email,
+        ...(phone ? { phone } : {}),
+        message: `Team size: ${team}
+${challenge}`.trim(),
+        source: 'demo',
+      });
       setSubmitted(true);
     } catch (err) {
       setError(err.response?.data?.error || 'Something went wrong. Try again.');

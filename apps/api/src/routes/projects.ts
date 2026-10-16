@@ -6,6 +6,7 @@ import { queues } from "../lib/queue";
 import * as ids from "../lib/id";
 import {
   DELIVERY_ROLES,
+  canTransact,
   canTransition,
   PROJECT_TRANSITIONS,
   MILESTONE_TRANSITIONS,
@@ -360,7 +361,7 @@ export async function projectRoutes(app: FastifyInstance) {
         projectId: id,
         title: body.title,
         description: body.description,
-        urgency: body.urgency ?? "MEDIUM",
+        urgency: body.urgency ?? "NORMAL",
         affectedMilestones: body.affectedMilestones ?? [],
         status: "SUBMITTED",
         raisedBy: req.user!.sub,
@@ -410,6 +411,9 @@ export async function projectRoutes(app: FastifyInstance) {
   app.patch("/projects/:id/change-requests/:crId/client-approve", async (req, reply) => {
     const scope = await clientWriteScope(req, reply);
     if (scope === undefined) return;
+    // Approving raises an invoice, so it needs a role that may spend money.
+    if (scope !== null && !canTransact(req.user!.role))
+      return reply.code(403).send({ error: "Your role cannot approve paid changes." });
     const { id, crId } = req.params as { id: string; crId: string };
     if (!(await assertProjectInScope(id, scope, reply))) return;
 

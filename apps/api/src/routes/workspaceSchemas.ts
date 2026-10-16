@@ -36,9 +36,9 @@ export const CreateWorkspaceSchema = z
 
 export const UpdateWorkspaceSchema = strictObject({
   canvas: canvas.optional(),
-  // Multiplies the estimate, so it is bounded on both sides. A zero or
-  // negative multiplier would produce a free or negative estimate.
-  timelineMult: z.number().min(0.1).max(10).optional(),
+  // Multiplies the estimate, so it is bounded on both sides: a small value is a
+  // discount (0.1 meant 90% off) and the column holds at most 9.99.
+  timelineMult: z.number().min(0.8).max(3).optional(),
 }).refine((b) => Object.keys(b).length > 0, {
   message: "Provide canvas or timelineMult",
 });
