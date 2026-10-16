@@ -3452,8 +3452,8 @@
           },
           "timelineMult": {
             "type": "number",
-            "minimum": 0.1,
-            "maximum": 10
+            "minimum": 0.8,
+            "maximum": 3
           }
         },
         "additionalProperties": false
