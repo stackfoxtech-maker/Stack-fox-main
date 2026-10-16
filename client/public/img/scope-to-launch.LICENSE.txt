@@ -1,5 +1,0 @@
-Original illustration: scope-to-launch.svg
-Created for StackFox by Artwall Labs, 2026-10-11.
-Original vector artwork authored in this repository; no stock assets, external fonts, third-party images or runtime requests.
-Purpose: illustrate an itemised plan connecting design and engineering.
-Delivery: 640 × 440 SVG with an intrinsic aspect ratio, lazy loading and asynchronous decoding. No raster conversion is required.
