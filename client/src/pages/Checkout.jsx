@@ -283,12 +283,21 @@ export default function Checkout() {
   // and pins the actual charge amount; this never feeds a request body.
   // Keep in sync with PAYMENT_TERMS in packages/core/src/billing/index.ts.
   const effectivePaymentMode = tier === 'STARTER' ? 'FULL' : paymentMode;
+  // What the server will really charge: a part-paid quote owes the balance (it forces
+  // FULL), and an amount already pinned by an open order or cash request is charged as is.
+  // The page showed "Pay 30%" while Razorpay opened for the remaining balance.
+  const paidSoFar = Number(quote.checkoutDetails?.amountPaid || 0);
+  const pinnedAmount = Number(quote.checkoutDetails?.pendingOrderAmount || 0);
   const payAmount =
-    effectivePaymentMode === 'UPFRONT'
-      ? Math.round(quote.total * 0.95)
-      : effectivePaymentMode === 'MILESTONE'
-        ? Math.round(quote.total * 0.3)
-        : quote.total;
+    quote.status === 'partially_paid' || paidSoFar > 0
+      ? Math.max(0, quote.total - paidSoFar)
+      : pinnedAmount > 0
+        ? pinnedAmount
+        : effectivePaymentMode === 'UPFRONT'
+          ? Math.round(quote.total * 0.95)
+          : effectivePaymentMode === 'MILESTONE'
+            ? Math.round(quote.total * 0.3)
+            : quote.total;
 
   // Cash: nothing is provisioned until finance confirms receipt in the admin panel.
   const handleCashRequest = async () => {

@@ -167,7 +167,9 @@ export default function Leads() {
     if (saving) return;
     setSaving(true);
     try {
-      await apiPost('/leads', {
+      // Blank optional fields are left out: an empty email fails the schema's email check,
+      // so a lead added without one returned 400.
+      const body = {
         businessName: form.businessName,
         ownerName: form.ownerName,
         contact: form.contact,
@@ -178,8 +180,12 @@ export default function Leads() {
         stage: form.status,
         priority: form.priority,
         value: Number(form.value) || 0,
-        notes: form.notes || undefined,
-      });
+        notes: form.notes,
+      };
+      await apiPost(
+        '/leads',
+        Object.fromEntries(Object.entries(body).filter(([, v]) => v !== '' && v != null)),
+      );
       toast.success('Lead added');
       setShowModal(false);
       setForm(EMPTY_FORM);

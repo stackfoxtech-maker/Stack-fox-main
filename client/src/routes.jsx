@@ -45,7 +45,6 @@ const GuideDetail = lazy(() => import('@pages/GuideDetail'));
 const BundleDetail = lazy(() => import('@pages/BundleDetail'));
 const ExpressCheckout = lazy(() => import('@pages/ExpressCheckout'));
 const WebsiteAudit = lazy(() => import('@pages/tools/WebsiteAudit'));
-const Estimator = lazy(() => import('@pages/tools/Estimator'));
 const BriefBuilder = lazy(() => import('@pages/tools/BriefBuilder'));
 const LegalStarterPack = lazy(() => import('@pages/tools/LegalStarterPack'));
 const GSTInvoice = lazy(() => import('@pages/tools/GSTInvoice'));
@@ -281,7 +280,10 @@ export default function AppRoutes() {
         <Route path="services/:category/:slug/timeline" element={<ServiceTimelinePage />} />
         <Route path="checkout/express" element={<ExpressCheckout />} />
         <Route path="tools/website-audit" element={<WebsiteAudit />} />
-        <Route path="tools/estimator" element={<Estimator />} />
+        {/* The old questionnaire estimator posted to an endpoint that expects a list of services, so
+            it could never return a result. The guides still link here: the Build & Price tool
+            is the real estimator. */}
+        <Route path="tools/estimator" element={<Navigate to="/builder" replace />} />
         <Route path="tools/brief-generator" element={<BriefBuilder />} />
         <Route path="tools/legal-starter-pack" element={<LegalStarterPack />} />
         <Route path="tools/gst-invoice" element={<GSTInvoice />} />
@@ -316,13 +318,31 @@ export default function AppRoutes() {
         }
       />
 
+      {/* Emailed links work whether or not the visitor is already signed in. Signup logs
+          the new user straight in, so a verification link opened in the same browser was
+          bounced to the home page by AuthLayout and the token was never used. */}
+      <Route
+        path="verify-email"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <VerifyEmail />
+          </Suspense>
+        }
+      />
+      <Route
+        path="reset-password"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <ResetPassword />
+          </Suspense>
+        }
+      />
+
       {/* Auth pages (no navbar/footer) */}
       <Route element={<AuthLayout />}>
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<Signup />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
-        <Route path="reset-password" element={<ResetPassword />} />
-        <Route path="verify-email" element={<VerifyEmail />} />
       </Route>
 
       {/* Client dashboard */}

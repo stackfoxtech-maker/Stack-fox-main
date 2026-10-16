@@ -300,7 +300,7 @@ export default function Contracts() {
                     </p>
                   </div>
                   <Link
-                    to={`/app/client/engagement`}
+                    to={`/app/client/engagements`}
                     className="text-xs text-fox-500 font-semibold hover:text-fox-600 flex items-center gap-1"
                   >
                     View <ArrowRight size={12} />

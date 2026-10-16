@@ -31,7 +31,21 @@ export default function AdminSettings() {
     setLoading(true);
     api
       .get('/settings')
-      .then((r) => setConfig(r.data))
+      .then((r) => {
+        // The API answers { data: { environment, integrations: {...}, featureFlags: [...] } };
+        // this page read flat fields off the envelope, so every integration showed
+        // "Not configured" and every flag Off.
+        const d = r.data.data || {};
+        const i = d.integrations || {};
+        setConfig({
+          environment: d.environment,
+          smtpConfigured: Boolean(i.email?.configured),
+          razorpayConfigured: Boolean(i.razorpay?.configured),
+          stripeConfigured: Boolean(i.stripe?.configured),
+          s3Configured: Boolean(i.storage?.configured),
+          featureFlags: d.featureFlags || [],
+        });
+      })
       .catch(() => toast.error('Failed to load settings.'))
       .finally(() => setLoading(false));
   };
@@ -116,7 +130,7 @@ export default function AdminSettings() {
     },
   ];
 
-  const flags = config.featureFlags || {};
+  const flags = Array.isArray(config.featureFlags) ? config.featureFlags : [];
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -154,24 +168,16 @@ export default function AdminSettings() {
           <h3 className="font-semibold text-warm-900">Feature Flags</h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="flex items-center justify-between bg-warm-50 rounded-xl px-4 py-3">
-            <span className="text-sm text-warm-700">Maintenance Mode</span>
-            <Badge variant={flags.maintenanceMode ? 'warning' : 'success'}>
-              {flags.maintenanceMode ? 'On' : 'Off'}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between bg-warm-50 rounded-xl px-4 py-3">
-            <span className="text-sm text-warm-700">New Registration</span>
-            <Badge variant={flags.newRegistration ? 'success' : 'neutral'}>
-              {flags.newRegistration ? 'Enabled' : 'Disabled'}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between bg-warm-50 rounded-xl px-4 py-3">
-            <span className="text-sm text-warm-700">Referrals</span>
-            <Badge variant={flags.referralsEnabled ? 'success' : 'neutral'}>
-              {flags.referralsEnabled ? 'Enabled' : 'Disabled'}
-            </Badge>
-          </div>
+          {flags.length === 0 && <p className="text-sm text-warm-400">No feature flags yet.</p>}
+          {flags.map((f) => (
+            <div
+              key={f.id}
+              className="flex items-center justify-between bg-warm-50 rounded-xl px-4 py-3"
+            >
+              <span className="text-sm text-warm-700">{f.id}</span>
+              <Badge variant={f.enabled ? 'success' : 'neutral'}>{f.enabled ? 'On' : 'Off'}</Badge>
+            </div>
+          ))}
         </div>
       </div>
 

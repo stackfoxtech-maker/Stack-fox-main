@@ -54,7 +54,8 @@ export default function Content() {
     setGenerating(true);
     try {
       const res = await api.post('/blog/generate', { topic });
-      setCurrentPost(res.data.data.post);
+      // The API's envelope is { data: post } (not { data: { post } }).
+      setCurrentPost(res.data.data);
       setEditModal(true);
       setGenModal(false);
       setTopic('');
@@ -75,7 +76,7 @@ export default function Content() {
         toast.success('Post updated');
       } else {
         const res = await api.post('/blog', currentPost);
-        const newPost = res.data.data.post;
+        const newPost = res.data.data;
         toast.success(
           (t) => (
             <span>
@@ -105,7 +106,7 @@ export default function Content() {
   };
 
   const handleDelete = async (post) => {
-    const isArchived = post.status === 'archived';
+    const isArchived = String(post.status).toUpperCase() === 'ARCHIVED';
     const msg = isArchived
       ? 'This will PERMANENTLY delete the post from the database. Proceed?'
       : 'Move this post to archives? It will no longer be visible to users.';
@@ -113,7 +114,9 @@ export default function Content() {
     if (!window.confirm(msg)) return;
 
     try {
-      await api.delete(`/blog/${post._id}`);
+      // "Move to archives" used to call DELETE, which erases the post for good.
+      if (isArchived) await api.delete(`/blog/${post._id}`);
+      else await api.put(`/blog/${post._id}`, { status: 'ARCHIVED' });
       toast.success(isArchived ? 'Deleted permanently' : 'Post archived');
       fetchPosts();
     } catch (err) {
@@ -205,7 +208,11 @@ export default function Content() {
                       <Badge variant="neutral">{post.category}</Badge>
                     </td>
                     <td className="px-6 py-4">
-                      <Badge variant={post.status === 'published' ? 'success' : 'warning'}>
+                      <Badge
+                        variant={
+                          String(post.status).toUpperCase() === 'PUBLISHED' ? 'success' : 'warning'
+                        }
+                      >
                         {post.status}
                       </Badge>
                     </td>

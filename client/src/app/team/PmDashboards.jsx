@@ -11,7 +11,8 @@ export function Queue() {
 
   useEffect(() => {
     api
-      .get('/projects', { params: { status: 'PENDING' } })
+      // There is no PENDING project status. The queue is what has no project manager yet.
+      .get('/projects', { params: { limit: 100 } })
       .then((r) => {
         const items = r.data.data || r.data.items || r.data;
         setProjects(Array.isArray(items) ? items : []);
@@ -22,7 +23,10 @@ export function Queue() {
 
   if (loading) return <PanelSkeleton variant="dashboard" />;
 
-  const queue = projects.filter((p) => p.status === 'DRAFT' || p.status === 'PENDING');
+  const queue = projects.filter(
+    (p) =>
+      !p.pmUserId && ['DRAFT', 'SCOPING', 'ESTIMATION', 'CONTRACTING', 'ACTIVE'].includes(p.status),
+  );
 
   return (
     <div className="p-6">
@@ -36,7 +40,7 @@ export function Queue() {
       {queue.length === 0 ? (
         <EmptyState
           title="No projects in queue"
-          description="Projects with DRAFT or PENDING status will appear here."
+          description="Projects that have no project manager yet will appear here."
         />
       ) : (
         <div className="space-y-3">
@@ -47,7 +51,7 @@ export function Queue() {
             >
               <div>
                 <div className="font-semibold">
-                  {p.projectNumber || p.id || p._id}: {p.title || p.service?.name || 'Untitled'}
+                  {p.id || p._id}: {p.name || p.service?.name || 'Untitled'}
                 </div>
                 <div className="text-sm text-gray-500">
                   Status: {p.status} &middot; {p.milestones?.length || 0} milestones
@@ -55,10 +59,10 @@ export function Queue() {
               </div>
               <div className="text-right">
                 <Link
-                  to={'/builder?service=' + (p.id || p._id)}
+                  to={'/app/team/projects/' + (p.id || p._id)}
                   className="text-xs text-orange-600 hover:underline"
                 >
-                  Open Builder
+                  Open project
                 </Link>
               </div>
             </div>
@@ -309,8 +313,9 @@ export function Quality() {
 
   if (loading) return <PanelSkeleton variant="dashboard" />;
 
-  const openTickets = tickets.filter(
-    (t) => t.status === 'open' || t.status === 'acknowledged' || t.status === 'in-progress',
+  // The API sends upper-case statuses (OPEN, IN_PROGRESS...).
+  const openTickets = tickets.filter((t) =>
+    ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS', 'REOPENED'].includes(String(t.status).toUpperCase()),
   );
 
   return (
@@ -333,7 +338,7 @@ export function Quality() {
                 >
                   {b.severity || 'Medium'}
                 </span>
-                <span className="font-medium ml-2">{b.title || b.description}</span>
+                <span className="font-medium ml-2">{b.subject || b.title || b.description}</span>
               </div>
               <span className="text-sm text-gray-500">
                 {b.project?.projectNumber || b.projectId || '—'}

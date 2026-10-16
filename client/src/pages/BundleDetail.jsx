@@ -62,7 +62,7 @@ export default function BundleDetail() {
 
       <div className="flex flex-wrap gap-3">
         <Link
-          to={'/checkout/express?service=' + bundle.id}
+          to="/builder?category=industry-bundles"
           className="px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600"
         >
           Buy this bundle

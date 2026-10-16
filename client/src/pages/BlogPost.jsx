@@ -6,6 +6,7 @@ import { Section, Skeleton } from '@components/ui/Primitives';
 import data from '@data/stackfox-data.json';
 import { useEffect, useState } from 'react';
 import api from '@lib/api';
+import toast from 'react-hot-toast';
 
 export default function BlogPost() {
   const { id } = useParams(); // This is the slug
@@ -19,7 +20,8 @@ export default function BlogPost() {
     const fetchPost = async () => {
       try {
         const res = await api.get(`/blog/${id}`);
-        setPost(res.data.data.post);
+        // The API answers { data: post }.
+        setPost(res.data.data);
       } catch (err) {
         // Try to find in static data as fallback
         const staticPost = data.resources?.find((p) => p.id === id);

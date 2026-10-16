@@ -144,7 +144,15 @@ const UserMenu = () => {
           </button>
           <button
             onClick={() => {
-              navigate(`${dashPath}/profile`);
+              // Admin has no /profile page (its account page is Settings) and the sales
+              // dashboard shares the team profile; both used to land on the home page.
+              navigate(
+                dashPath.startsWith('/app/admin')
+                  ? '/app/admin/settings'
+                  : dashPath.startsWith('/app/team')
+                    ? '/app/team/profile'
+                    : `${dashPath}/profile`,
+              );
               setOpen(false);
             }}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-warm-700 hover:bg-warm-50 transition-colors"

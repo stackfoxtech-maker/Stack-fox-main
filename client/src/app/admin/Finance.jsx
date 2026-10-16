@@ -169,7 +169,8 @@ export default function Finance() {
     try {
       await api.patch(`/invoices/${paidModal.invoice.id}/utr`, {
         utr: utr.trim(),
-        paidAt: paidAt || undefined,
+        // datetime-local gives "2026-10-15T10:30"; the API wants a full ISO datetime.
+        paidAt: paidAt ? new Date(paidAt).toISOString() : undefined,
       });
       toast.success('Invoice marked as paid');
       closePaidModal();

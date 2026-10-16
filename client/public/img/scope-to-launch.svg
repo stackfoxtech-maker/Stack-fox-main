@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="440" viewBox="0 0 640 440" fill="none">
+<path d="M80 340H560M80 100H560M120 60V380M520 60V380" stroke="#E4DFD5"/>
+<path d="M236 224H286V153H334M286 224V303H334" stroke="#A19B90" stroke-width="2"/>
+<rect x="82" y="144" width="156" height="164" rx="10" fill="#FFFEFC" stroke="#C6C1B5"/>
+<path d="M106 176H160" stroke="#252722" stroke-width="5" stroke-linecap="round"/>
+<path d="M106 191H195" stroke="#DEDAD1" stroke-width="4" stroke-linecap="round"/>
+<rect x="106" y="217" width="13" height="13" rx="3" fill="#DCE8E1"/><path d="m109 223 3 3 5-6" stroke="#48705C" stroke-width="1.5"/>
+<rect x="106" y="242" width="13" height="13" rx="3" fill="#DCE8E1"/><path d="m109 248 3 3 5-6" stroke="#48705C" stroke-width="1.5"/>
+<rect x="106" y="267" width="13" height="13" rx="3" fill="#DCE8E1"/><path d="m109 273 3 3 5-6" stroke="#48705C" stroke-width="1.5"/>
+<path d="M130 224H207M130 249H182M130 274H198" stroke="#C6C1B5" stroke-width="4" stroke-linecap="round"/>
+<rect x="332" y="84" width="220" height="136" rx="10" fill="#FFFEFC" stroke="#C6C1B5"/>
+<path d="M332 110H552" stroke="#DEDAD1"/>
+<circle cx="347" cy="97" r="3" fill="#FF4D00"/><circle cx="358" cy="97" r="3" fill="#DEDAD1"/><circle cx="369" cy="97" r="3" fill="#DEDAD1"/>
+<rect x="350" y="128" width="73" height="72" rx="4" fill="#FFE1D1"/>
+<path d="m369 177 13-27 21 35h-38" fill="#C73C00"/><circle cx="406" cy="140" r="5" fill="#FF9E74"/>
+<path d="M439 139H529M439 151H513M439 163H521" stroke="#DEDAD1" stroke-width="4" stroke-linecap="round"/>
+<rect x="439" y="183" width="50" height="16" rx="3" fill="#252722"/>
+<rect x="332" y="252" width="184" height="100" rx="10" fill="#252722"/>
+<path d="m365 290-11 10 11 10m38-20 11 10-11 10m-14-28-11 46" stroke="#FFAC85" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M436 289H493M436 301H479M436 313H488" stroke="#64675B" stroke-width="3" stroke-linecap="round"/>
+<rect x="261" y="209" width="30" height="30" rx="6" fill="#C73C00"/><path d="M269 224H283M276 217V231" stroke="white" stroke-width="2"/>
+</svg>

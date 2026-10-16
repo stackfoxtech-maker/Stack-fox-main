@@ -75,12 +75,12 @@ export default function ServiceCost() {
         '1 revision round',
         '30-day warranty',
       ],
-      cta: `/checkout/express?service=${service.id}`,
+      cta: `/builder?item=${service.id}`, // express checkout is not available; the builder is the real path
     },
     GROWTH: {
       display: `₹${growthLow.toLocaleString('en-IN')} – ₹${growthHigh.toLocaleString('en-IN')}`,
       bullets: ['±15% price band', 'Named project manager', '2 revision rounds', '30-day warranty'],
-      cta: `/builder?service=${service.id}&tier=GROWTH`,
+      cta: `/builder?item=${service.id}`,
     },
     PREMIUM: {
       display: `₹${premiumLow.toLocaleString('en-IN')} – ₹${premiumHigh.toLocaleString('en-IN')}+`,
@@ -90,7 +90,7 @@ export default function ServiceCost() {
         'White-glove service',
         'SLA-backed delivery',
       ],
-      cta: `/builder?service=${service.id}&tier=PREMIUM`,
+      cta: `/builder?item=${service.id}`,
     },
   };
 

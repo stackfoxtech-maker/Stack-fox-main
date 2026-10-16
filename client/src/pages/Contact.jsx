@@ -5,19 +5,40 @@ import { PageHero } from '@components/layout/PageHero';
 import { Section, Input, Textarea, Button } from '@components/ui/Primitives';
 import Photo from '@components/Photo';
 import toast from 'react-hot-toast';
+import { apiPost } from '@lib/api';
 
 export default function Contact() {
   usePageTitle('Contact');
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [sending, setSending] = useState(false);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
-  const handleSubmit = () => {
+  // This used to show "Message sent!" without sending anything, so every enquiry made
+  // through the form was lost. It now creates the lead.
+  const handleSubmit = async () => {
     if (!form.name || !form.email || !form.message) {
       toast.error('Please fill all required fields.');
       return;
     }
-    toast.success("Message sent! We'll get back to you within 24 hours.");
-    setForm({ name: '', email: '', phone: '', message: '' });
+    setSending(true);
+    try {
+      await apiPost('/lead/demo', {
+        name: form.name,
+        email: form.email,
+        ...(form.phone ? { phone: form.phone } : {}),
+        message: form.message,
+        source: 'contact',
+      });
+      toast.success("Message sent! We'll get back to you within 24 hours.");
+      setForm({ name: '', email: '', phone: '', message: '' });
+    } catch (err) {
+      toast.error(
+        err.response?.data?.error ||
+          'We could not send your message. Please try again, or call us.',
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -71,7 +92,7 @@ export default function Contact() {
             placeholder="Tell us about your project..."
             className="min-h-[140px]"
           />
-          <Button variant="primary" size="lg" onClick={handleSubmit}>
+          <Button variant="primary" size="lg" onClick={handleSubmit} isLoading={sending}>
             <Send size={16} /> Send Message
           </Button>
         </div>

@@ -277,6 +277,9 @@ export default function AdminProjects() {
           <button
             key={s}
             onClick={() => {
+              // Clicking the chip that is already selected changes nothing, so the effect
+              // never refetches and the skeleton set below would stay on screen for ever.
+              if (s === statusFilter) return;
               setStatusFilter(s);
               setPage(1);
               setLoading(true);

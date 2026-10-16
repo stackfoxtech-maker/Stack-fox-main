@@ -424,7 +424,11 @@ export async function quoteRoutes(app: FastifyInstance) {
     // Admins manage every quote; regular users only see their own.
     // Goes through isAdminRole() rather than a bare === "ADMIN" so the legacy
     // lowercase "admin" still present in older rows is normalised too.
-    const isAdmin = isAdminRole(req.user!.role);
+    // Finance sees every quote too: confirming a client's cash payment starts from this
+    // list, and for FINANCE it showed only their own (empty) quotes.
+    const isAdmin =
+      isAdminRole(req.user!.role) ||
+      (FINANCE_ROLES as readonly string[]).includes(String(req.user!.role).toUpperCase());
     const where = isAdmin ? {} : { userId: req.user!.sub };
 
     const [quotes, total] = await Promise.all([
