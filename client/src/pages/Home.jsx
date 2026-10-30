@@ -15,10 +15,7 @@ import { Faq } from '@components/home/Faq';
 
 /** Homepage: one component per section, each in components/home/. */
 export default function Home() {
-  usePageTitle(
-    'Web development and IT services company in Jaipur, India',
-    SITE.description,
-  );
+  usePageTitle('Web development and IT services company in Jaipur, India', SITE.description);
   return (
     <>
       <Hero />

@@ -360,7 +360,12 @@ const pages = [
       description: f(l.description),
       h1: l.h1,
       body: () =>
-        `<p>${esc(f(l.answer))}</p><h2>What you get</h2>${ul(l.why.map((w) => li(`<strong>${esc(w.t)}.</strong> ${esc(w.d)}`)))}<h2>Prices</h2><p>Indicative starting prices in rupees, excluding ${data.meta.gstRate}% GST.</p>${ul(rows.map((s) => li(`${esc(s.name)} — from ${inr(s.price)} per ${esc(s.unit)}, ${esc(s.est)}`)))}<h2>Common questions</h2>${l.faqs.map((q) => `<h3>${esc(q.q)}</h3><p>${esc(f(q.a))}</p>`).join("")}<h2>Guides</h2>${ul(l.guides.map((g) => guides.find((x) => x.slug === g)).filter(Boolean).map((g) => li(a(`/guides/${g.slug}`, g.title))))}`,
+        `<p>${esc(f(l.answer))}</p><h2>What you get</h2>${ul(l.why.map((w) => li(`<strong>${esc(w.t)}.</strong> ${esc(w.d)}`)))}<h2>Prices</h2><p>Indicative starting prices in rupees, excluding ${data.meta.gstRate}% GST.</p>${ul(rows.map((s) => li(`${esc(s.name)} — from ${inr(s.price)} per ${esc(s.unit)}, ${esc(s.est)}`)))}<h2>Common questions</h2>${l.faqs.map((q) => `<h3>${esc(q.q)}</h3><p>${esc(f(q.a))}</p>`).join("")}<h2>Guides</h2>${ul(
+          l.guides
+            .map((g) => guides.find((x) => x.slug === g))
+            .filter(Boolean)
+            .map((g) => li(a(`/guides/${g.slug}`, g.title))),
+        )}`,
       ld: [
         {
           "@type": "Service",
@@ -368,7 +373,10 @@ const pages = [
           description: f(l.answer),
           provider: { "@id": ORG_ID },
           areaServed: jaipur
-            ? [{ "@type": "City", name: "Jaipur" }, { "@type": "Country", name: "India" }]
+            ? [
+                { "@type": "City", name: "Jaipur" },
+                { "@type": "Country", name: "India" },
+              ]
             : { "@type": "Country", name: "India" },
           hasOfferCatalog: {
             "@type": "OfferCatalog",
@@ -575,7 +583,10 @@ ${data.categories
       c.description,
       ...services
         .filter((s) => s.catId === c.id)
-        .map((s) => `- ${s.name}: from ${inr(s.price)} per ${s.unit}, ${s.est}. ${(s.lay || "").trim()}`),
+        .map(
+          (s) =>
+            `- ${s.name}: from ${inr(s.price)} per ${s.unit}, ${s.est}. ${(s.lay || "").trim()}`,
+        ),
     ]),
   )
   .join("\n\n")}
@@ -588,4 +599,6 @@ ${faqs.map((f) => L([`### ${f.q}`, f.a])).join("\n\n")}
 `,
 );
 
-console.log(`prerender: ${pages.length} pages, sitemap.xml, llms.txt, llms-full.txt, app-shell.html`);
+console.log(
+  `prerender: ${pages.length} pages, sitemap.xml, llms.txt, llms-full.txt, app-shell.html`,
+);
