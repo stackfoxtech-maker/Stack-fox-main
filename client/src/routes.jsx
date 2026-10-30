@@ -16,6 +16,7 @@ import MobileTabBar from '@components/layout/MobileTabBar';
 // Home is the LCP page and the most-visited route — ship it in the entry
 // bundle so it paints immediately with no Suspense spinner → content swap (CLS).
 import Home from '@pages/Home';
+import landings from '@data/landings.json';
 
 // ── Lazy page imports ───────────────────────
 const Builder = lazy(() => import('@pages/Builder'));
@@ -67,6 +68,7 @@ const ServiceDetail = lazy(() => import('@pages/ServiceDetail'));
 const Compare = lazy(() => import('@pages/Compare'));
 const ReferralPage = lazy(() => import('@pages/Referral'));
 const FAQ = lazy(() => import('@pages/FAQ'));
+const Landing = lazy(() => import('@pages/Landing'));
 
 // Auth
 const Login = lazy(() => import('@pages/auth/Login'));
@@ -304,6 +306,10 @@ export default function AppRoutes() {
         <Route path="compare" element={<Compare />} />
         <Route path="referral" element={<ReferralPage />} />
         <Route path="faq" element={<FAQ />} />
+        {/* Agency / city search landing pages (src/data/landings.json), prerendered at build. */}
+        {landings.map((l) => (
+          <Route key={l.slug} path={l.slug} element={<Landing slug={l.slug} />} />
+        ))}
       </Route>
 
       {/* OAuth return trip. Deliberately outside AuthLayout: that layout bounces

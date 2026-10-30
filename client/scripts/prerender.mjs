@@ -23,6 +23,8 @@ import {
   indexableServices,
   servicePath,
   serviceMeta,
+  fillTokens,
+  landingPath,
 } from "../src/lib/seo.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -31,6 +33,7 @@ const load = (p) => JSON.parse(readFileSync(join(here, "..", p), "utf8"));
 const data = load("../shared/stackfox-data.json");
 const faqs = load("src/data/faqs.json");
 const guides = load("src/data/guides.json");
+const landings = load("src/data/landings.json");
 const template = readFileSync(join(dist, "index.html"), "utf8");
 
 const esc = (s) =>
@@ -47,7 +50,7 @@ const minPrice = Math.min(...services.map((s) => s.price));
 const ORG_ID = `${SITE.url}/#organization`;
 
 const orgLd = {
-  "@type": "Organization",
+  "@type": ["Organization", "ProfessionalService"],
   "@id": ORG_ID,
   name: SITE.name,
   alternateName: brand.name,
@@ -62,7 +65,36 @@ const orgLd = {
     addressRegion: "Rajasthan",
     addressCountry: "IN",
   },
-  areaServed: "IN",
+  areaServed: [
+    { "@type": "City", name: "Jaipur" },
+    { "@type": "Country", name: "India" },
+  ],
+  knowsAbout: [
+    "Web development",
+    "Mobile app development",
+    "E-commerce development",
+    "AI chatbots and automation",
+    "SaaS development",
+    "Technical SEO",
+  ],
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "sales",
+    email: brand.email,
+    telephone: brand.phone,
+    areaServed: "IN",
+    availableLanguage: ["English", "Hindi"],
+  },
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "StackFox IT services",
+    url: absUrl("/catalog"),
+    itemListElement: data.categories.map((c) => ({
+      "@type": "OfferCatalog",
+      name: c.name,
+      description: c.description,
+    })),
+  },
   parentOrganization: { "@type": "Organization", name: "Artwall Labs" },
 };
 const siteLd = {
@@ -96,6 +128,7 @@ const NAV = [
   ["/industries", "Industries"],
   ["/portfolio", "Portfolio"],
   ["/guides", "Guides"],
+  ...landings.map((l) => [landingPath(l), l.title]),
   ["/faq", "FAQ"],
   ["/about", "About"],
   ["/contact", "Contact"],
@@ -145,11 +178,11 @@ const pricingBody = () =>
 const pages = [
   {
     path: "/",
-    title: "IT services with transparent INR pricing",
+    title: "Web development and IT services company in Jaipur, India",
     description: SITE.description,
-    h1: "StackFox — Smart Code, Swift Delivery",
+    h1: "StackFox — web development and IT services company in Jaipur, India",
     body: () =>
-      `<p>StackFox by Artwall Labs is a service-shopping platform for IT work. Browse ${countLabel} services across ${data.categories.length} categories — web development, mobile apps, AI and automation, e-commerce, UI/UX, DevOps, cybersecurity and SEO — see the price of each in rupees (from ${inr(minPrice)}), build a cart and get a quote instantly. Based in ${esc(brand.address)}.</p><h2>Service categories</h2>${ul(
+      `<p>StackFox by Artwall Labs is a web development and IT services company in Jaipur, India that publishes the price of every service. Browse ${countLabel} services across ${data.categories.length} categories — web development, mobile apps, AI and automation, e-commerce, UI/UX, DevOps, cybersecurity and SEO — see the price of each in rupees (from ${inr(minPrice)}), build a cart and get a quote instantly. Based in ${esc(brand.address)}.</p><h2>Service categories</h2>${ul(
         data.categories.map((c) => li(`${esc(c.name)} — ${esc(c.description)}`)),
       )}`,
     ld: [orgLd, siteLd],
@@ -317,6 +350,56 @@ const pages = [
     h1: "IT glossary",
     body: () => `<p>Plain-English explanations of technical terms.</p>`,
   },
+  ...landings.map((l) => {
+    const f = (t) => fillTokens(t, data.services);
+    const rows = l.serviceIds.map((id) => data.services.find((s) => s.id === id));
+    const jaipur = l.slug.includes("jaipur");
+    return {
+      path: landingPath(l),
+      title: l.title,
+      description: f(l.description),
+      h1: l.h1,
+      body: () =>
+        `<p>${esc(f(l.answer))}</p><h2>What you get</h2>${ul(l.why.map((w) => li(`<strong>${esc(w.t)}.</strong> ${esc(w.d)}`)))}<h2>Prices</h2><p>Indicative starting prices in rupees, excluding ${data.meta.gstRate}% GST.</p>${ul(rows.map((s) => li(`${esc(s.name)} — from ${inr(s.price)} per ${esc(s.unit)}, ${esc(s.est)}`)))}<h2>Common questions</h2>${l.faqs.map((q) => `<h3>${esc(q.q)}</h3><p>${esc(f(q.a))}</p>`).join("")}<h2>Guides</h2>${ul(
+          l.guides
+            .map((g) => guides.find((x) => x.slug === g))
+            .filter(Boolean)
+            .map((g) => li(a(`/guides/${g.slug}`, g.title))),
+        )}`,
+      ld: [
+        {
+          "@type": "Service",
+          name: l.title,
+          description: f(l.answer),
+          provider: { "@id": ORG_ID },
+          areaServed: jaipur
+            ? [
+                { "@type": "City", name: "Jaipur" },
+                { "@type": "Country", name: "India" },
+              ]
+            : { "@type": "Country", name: "India" },
+          hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: l.title,
+            itemListElement: rows.map((s) => ({
+              "@type": "Offer",
+              priceCurrency: "INR",
+              price: s.price,
+              itemOffered: { "@type": "Service", name: s.name },
+            })),
+          },
+        },
+        {
+          "@type": "FAQPage",
+          mainEntity: l.faqs.map((q) => ({
+            "@type": "Question",
+            name: q.q,
+            acceptedAnswer: { "@type": "Answer", text: f(q.a) },
+          })),
+        },
+      ],
+    };
+  }),
   ...guides.map((g) => ({
     path: `/guides/${g.slug}`,
     title: g.title,
@@ -470,6 +553,9 @@ ${[
   .map(([p, t, d]) => `- [${t}](${absUrl(p)}): ${d}`)
   .join("\n")}
 
+## Services by location
+${landings.map((l) => `- [${l.title}](${absUrl(landingPath(l))}): ${fillTokens(l.description, data.services)}`).join("\n")}
+
 ## Guides
 ${guides.map((g) => `- [${g.title}](${absUrl(`/guides/${g.slug}`)}): ${g.description}`).join("\n")}
 
@@ -482,4 +568,37 @@ ${data.categories.map((c) => `- ${c.name}: ${c.description}`).join("\n")}
 `,
 );
 
-console.log(`prerender: ${pages.length} pages, sitemap.xml, llms.txt, app-shell.html`);
+// Full plain-text catalogue for AI assistants that want prices and FAQs in one fetch.
+const L = (arr) => arr.join("\n");
+out(
+  "llms-full.txt",
+  `# StackFox — full catalogue
+
+> ${SITE.description} Prices are indicative, in INR, and exclude ${data.meta.gstRate}% GST. Contact: ${brand.email}, ${brand.phone}, ${brand.address}.
+
+${data.categories
+  .map((c) =>
+    L([
+      `## ${c.name}`,
+      c.description,
+      ...services
+        .filter((s) => s.catId === c.id)
+        .map(
+          (s) =>
+            `- ${s.name}: from ${inr(s.price)} per ${s.unit}, ${s.est}. ${(s.lay || "").trim()}`,
+        ),
+    ]),
+  )
+  .join("\n\n")}
+
+## Packages
+${L(data.packages.map((p) => `- ${p.name}: ${inr(p.price)}. ${p.description}`))}
+
+## Frequently asked questions
+${faqs.map((f) => L([`### ${f.q}`, f.a])).join("\n\n")}
+`,
+);
+
+console.log(
+  `prerender: ${pages.length} pages, sitemap.xml, llms.txt, llms-full.txt, app-shell.html`,
+);

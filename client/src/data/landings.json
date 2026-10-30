@@ -1,0 +1,376 @@
+[
+  {
+    "slug": "web-development-company-jaipur",
+    "title": "Web development company in Jaipur",
+    "description": "StackFox is a Jaipur web development company that publishes every price. Business websites from {p:web-001}, landing pages from {p:web-003}, delivered in days.",
+    "h1": "Web development company in Jaipur with published prices",
+    "answer": "StackFox is a web development company based in Jaipur, Rajasthan. Unlike most agencies, every service has a public price in rupees: a 5-page business website starts at {p:web-001} and takes about {e:web-001}, a landing page starts at {p:web-003}. You pick the pieces, see the total, then request a quote.",
+    "why": [
+      {
+        "t": "Prices before calls",
+        "d": "Each website, feature and integration is priced individually, so you can compare us with other Jaipur agencies without a sales meeting."
+      },
+      {
+        "t": "Local team, national clients",
+        "d": "We work from Jaipur and deliver to businesses across India. Project updates, files and invoices live in one client dashboard."
+      },
+      {
+        "t": "Built to be found",
+        "d": "Sites ship with fast page loads, clean markup, schema and Search Console setup, so search engines and AI assistants can read them."
+      }
+    ],
+    "serviceIds": ["web-001", "web-003", "web-004", "web-014", "web-013", "web-009"],
+    "guides": [
+      "website-development-cost-india",
+      "how-to-choose-a-website-builder",
+      "website-maintenance-cost-india"
+    ],
+    "faqs": [
+      {
+        "q": "How much does a website cost in Jaipur?",
+        "a": "A 5-page business website from StackFox starts at {p:web-001} and a landing page at {p:web-003}, both excluding 18% GST. Custom dashboards, e-commerce and web apps cost more and are priced per feature in the catalogue."
+      },
+      {
+        "q": "How long does it take to build a business website?",
+        "a": "A 5-page business website typically takes {e:web-001}. A landing page takes {e:web-003}. Larger builds such as an admin dashboard take {e:web-009}."
+      },
+      {
+        "q": "Do you work with clients outside Jaipur?",
+        "a": "Yes. The team is in Jaipur, but projects are delivered remotely to clients across India, with scope, payments, files and approvals handled online."
+      },
+      {
+        "q": "Can I see the price before I talk to someone?",
+        "a": "Yes. Open the Build & Price tool, add the services you need and the running total, including GST, updates as you go. You only talk to the team when you send the quote request."
+      }
+    ]
+  },
+  {
+    "slug": "web-development-company-india",
+    "title": "Web development company in India",
+    "description": "Hire a web development company in India that shows its prices: websites, web apps and admin dashboards priced in INR per service. Quote in minutes.",
+    "h1": "Web development company in India with transparent INR pricing",
+    "answer": "StackFox by Artwall Labs builds websites and web applications for Indian businesses and startups, and prices every deliverable in rupees up front. A business website starts at {p:web-001}, a progressive web app at {p:web-007} and a custom admin dashboard at {p:web-009}, all excluding 18% GST.",
+    "why": [
+      {
+        "t": "Itemised, not bundled blindly",
+        "d": "You see what each page, integration and feature costs, so you can drop or add scope and watch the total change."
+      },
+      {
+        "t": "Modern stack",
+        "d": "React, Next.js and Node-based builds with server rendering where search visibility matters, and a REST API behind app features."
+      },
+      {
+        "t": "Ready for Indian business",
+        "d": "GST-ready invoicing, Razorpay payments, WhatsApp automation and multi-language support are standard catalogue items."
+      }
+    ],
+    "serviceIds": ["web-001", "web-007", "web-009", "web-014", "web-006", "web-015"],
+    "guides": [
+      "website-development-cost-india",
+      "freelancer-vs-agency-vs-platform",
+      "how-to-write-a-project-brief"
+    ],
+    "faqs": [
+      {
+        "q": "What does a web development company in India charge?",
+        "a": "Agency rates vary widely. At StackFox a 5-page website starts at {p:web-001}, a progressive web app at {p:web-007} and an admin dashboard at {p:web-009}, excluding 18% GST. Our website cost guide breaks down what drives the range."
+      },
+      {
+        "q": "Which technologies do you build with?",
+        "a": "Front ends are built in React, with server rendering and static generation (Next.js or Nuxt) available as a catalogue item. WordPress or Strapi CMS setups are also offered when editors need a familiar admin."
+      },
+      {
+        "q": "Is a web app different from a website?",
+        "a": "A website mainly publishes information. A web app lets users log in and do things, such as manage orders or view reports. Web apps are priced by feature, for example an admin dashboard at {p:web-009}."
+      },
+      {
+        "q": "Do you offer support after launch?",
+        "a": "Yes. Maintenance and support is its own category in the catalogue, and our maintenance cost guide explains typical monthly scope and pricing."
+      }
+    ]
+  },
+  {
+    "slug": "mobile-app-development-company-jaipur",
+    "title": "Mobile app development company in Jaipur",
+    "description": "Mobile app development in Jaipur with published pricing: standard apps from {p:mob-001}, UI/UX design from {p:mob-005}, push, payments and offline mode priced as add-ons.",
+    "h1": "Mobile app development company in Jaipur",
+    "answer": "StackFox builds Android and iOS apps from Jaipur for founders and businesses across India. A standard mobile app starts at {p:mob-001} with about {e:mob-001} of build time, and UI/UX design for it starts at {p:mob-005}. Features such as push notifications, in-app purchases and offline mode are priced separately.",
+    "why": [
+      {
+        "t": "Design first",
+        "d": "Mobile UI/UX design is its own priced step, so you approve screens before any app code is written."
+      },
+      {
+        "t": "Pay for the features you need",
+        "d": "Push notifications, biometric login, payments, chat and offline mode are separate line items rather than hidden in a large estimate."
+      },
+      {
+        "t": "App store ready",
+        "d": "App Store Optimization, analytics integration and social login are available so the app can be found and measured after launch."
+      }
+    ],
+    "serviceIds": ["mob-001", "mob-005", "mob-006", "mob-007", "mob-010", "mob-015"],
+    "guides": [
+      "mobile-app-development-cost-india",
+      "mobile-vs-web-app",
+      "mvp-development-cost-india"
+    ],
+    "faqs": [
+      {
+        "q": "How much does it cost to build a mobile app in Jaipur?",
+        "a": "A standard StackFox mobile app starts at {p:mob-001} and design starts at {p:mob-005}, both excluding 18% GST. Add-ons such as push notifications ({p:mob-006}) and in-app purchases ({p:mob-007}) are priced individually."
+      },
+      {
+        "q": "How long does mobile app development take?",
+        "a": "A standard mobile app takes about {e:mob-001}. Individual features take days, for example push notifications take {e:mob-006}."
+      },
+      {
+        "q": "Should I build a mobile app or a web app first?",
+        "a": "If users need device features like offline access or push alerts, start with an app. If you mainly need to validate demand, a web app is usually faster and cheaper. Our mobile vs web guide compares both."
+      },
+      {
+        "q": "Do you build for both Android and iOS?",
+        "a": "Yes. Tell us the platforms in the quote request and the scope is priced accordingly."
+      }
+    ]
+  },
+  {
+    "slug": "ecommerce-website-development-company-india",
+    "title": "E-commerce website development company in India",
+    "description": "E-commerce development in India with itemised prices: Shopify store setup from {p:ecom-001}, payments, shipping, marketplaces and loyalty features priced one by one.",
+    "h1": "E-commerce website development company in India",
+    "answer": "StackFox builds online stores for Indian businesses and prices each part separately. A Shopify store setup starts at {p:ecom-001}, payment gateway integration at {p:ecom-004}, shipping integration at {p:ecom-007}, and a multi-vendor marketplace at {p:ecom-010}, all excluding 18% GST.",
+    "why": [
+      {
+        "t": "Start small, grow by feature",
+        "d": "Launch with a store, payments and shipping, then add reviews, coupons, subscriptions and loyalty as sales justify them."
+      },
+      {
+        "t": "India-ready checkout",
+        "d": "Payment integration, GST invoicing and shipping and logistics integrations are catalogue items, not custom surprises."
+      },
+      {
+        "t": "Conversion tools",
+        "d": "Abandoned cart recovery, product bundling and flash sale timers are available as priced features."
+      }
+    ],
+    "serviceIds": [
+      "ecom-001",
+      "ecom-004",
+      "ecom-007",
+      "ecom-012",
+      "ecom-017",
+      "ecom-010"
+    ],
+    "guides": [
+      "ecommerce-website-cost-india",
+      "website-development-cost-india",
+      "gst-for-service-businesses"
+    ],
+    "faqs": [
+      {
+        "q": "How much does an e-commerce website cost in India?",
+        "a": "A StackFox Shopify store setup starts at {p:ecom-001}. Payments ({p:ecom-004}) and shipping ({p:ecom-007}) integrations are separate, and a multi-vendor marketplace starts at {p:ecom-010}. Prices exclude 18% GST."
+      },
+      {
+        "q": "How long does it take to launch an online store?",
+        "a": "A Shopify store setup takes about {e:ecom-001}. A multi-vendor marketplace takes {e:ecom-010}."
+      },
+      {
+        "q": "Can you integrate Indian payment gateways?",
+        "a": "Yes. Payment integration is a catalogue service at {p:ecom-004} and takes about {e:ecom-004}."
+      },
+      {
+        "q": "Can I add features after launch?",
+        "a": "Yes. Features such as customer reviews ({p:ecom-008}), coupon engines ({p:ecom-009}) and subscriptions ({p:ecom-011}) can be added any time."
+      }
+    ]
+  },
+  {
+    "slug": "ai-automation-company-india",
+    "title": "AI and automation company in India",
+    "description": "AI chatbots, RAG bots and business automation for Indian companies with published prices: FAQ chatbot from {p:ai-001}, WhatsApp automation from {p:auto-005}.",
+    "h1": "AI chatbot and business automation company in India",
+    "answer": "StackFox builds AI chatbots and business automations for Indian companies with prices published in rupees. An FAQ chatbot starts at {p:ai-001}, a custom GPT or RAG bot at {p:ai-002}, WhatsApp automation at {p:auto-005} and a Zapier or Make workflow at {p:auto-001}, excluding 18% GST.",
+    "why": [
+      {
+        "t": "Grounded in your documents",
+        "d": "RAG pipelines and custom GPT bots answer from your own content rather than guessing."
+      },
+      {
+        "t": "Automation where work repeats",
+        "d": "Invoicing, order processing, onboarding, approvals and reporting automations are separate, priced workflows."
+      },
+      {
+        "t": "Measured payoff",
+        "d": "Our ROI guide shows how to estimate time saved before you commit to a build."
+      }
+    ],
+    "serviceIds": ["ai-001", "ai-002", "ai-011", "ai-012", "auto-005", "auto-001"],
+    "guides": [
+      "ai-chatbot-development-cost-india",
+      "business-automation-cost-india",
+      "ai-automation-roi"
+    ],
+    "faqs": [
+      {
+        "q": "How much does an AI chatbot cost in India?",
+        "a": "An FAQ chatbot from StackFox starts at {p:ai-001} and a custom GPT or RAG bot at {p:ai-002}, excluding 18% GST. Delivery takes about {e:ai-001} and {e:ai-002} respectively."
+      },
+      {
+        "q": "What is a RAG bot?",
+        "a": "A retrieval-augmented generation bot looks up passages from your own documents and uses them to answer, which keeps answers tied to your content. A RAG pipeline starts at {p:ai-011}."
+      },
+      {
+        "q": "Can you automate WhatsApp?",
+        "a": "Yes. WhatsApp automation starts at {p:auto-005} and takes about {e:auto-005}."
+      },
+      {
+        "q": "What can be automated first?",
+        "a": "Start with repetitive, rule-based work such as invoice generation ({p:auto-011}), order processing ({p:auto-014}) or CRM updates ({p:auto-016}). Our automation cost guide helps rank candidates."
+      }
+    ]
+  },
+  {
+    "slug": "seo-company-jaipur",
+    "title": "SEO company in Jaipur",
+    "description": "SEO services in Jaipur with published pricing: technical SEO audit from {p:seo-001}, local SEO from {p:seo-010}, monthly retainer from {p:seo-011}.",
+    "h1": "SEO company in Jaipur with published prices",
+    "answer": "StackFox offers SEO services from Jaipur for businesses across India. A technical SEO audit starts at {p:seo-001}, on-page optimisation at {p:seo-002}, local SEO and Google Business Profile setup at {p:seo-010}, and a monthly SEO retainer at {p:seo-011}, excluding 18% GST.",
+    "why": [
+      {
+        "t": "Technical foundations",
+        "d": "Audits, schema markup, speed and crawlability come first, because content cannot rank on a site search engines cannot read."
+      },
+      {
+        "t": "Search and AI answers",
+        "d": "Structured data, clear answer-first copy and an llms.txt file help both Google and AI assistants cite your pages."
+      },
+      {
+        "t": "No lock-in retainer",
+        "d": "Start with a one-off audit and move to a monthly retainer only if it makes sense."
+      }
+    ],
+    "serviceIds": ["seo-001", "seo-002", "seo-003", "seo-010", "seo-018", "seo-011"],
+    "guides": [
+      "seo-services-cost-india",
+      "seo-basics-for-startups",
+      "website-development-cost-india"
+    ],
+    "faqs": [
+      {
+        "q": "How much do SEO services cost in Jaipur?",
+        "a": "StackFox SEO starts at {p:seo-001} for a technical audit and {p:seo-011} per month for a retainer, excluding 18% GST. Local SEO setup starts at {p:seo-010}."
+      },
+      {
+        "q": "How long does SEO take to show results?",
+        "a": "Technical fixes can be done in days, but ranking gains usually take months and depend on competition. Anyone guaranteeing a position is not being honest."
+      },
+      {
+        "q": "What is local SEO?",
+        "a": "Local SEO optimises your Google Business Profile and location signals so you appear for searches like 'near me' or a city name. It starts at {p:seo-010}."
+      },
+      {
+        "q": "Do you help with AI search visibility?",
+        "a": "Yes. Schema markup ({p:seo-018}), answer-first content and machine-readable site files help AI assistants understand and cite your site."
+      }
+    ]
+  },
+  {
+    "slug": "software-development-company-jaipur",
+    "title": "Software development company in Jaipur",
+    "description": "Custom software, API and backend development in Jaipur with itemised prices: REST APIs from {p:be-001}, databases, authentication and integrations.",
+    "h1": "Custom software development company in Jaipur",
+    "answer": "StackFox is a custom software development company in Jaipur that prices backend work as individual services. A REST API starts at {p:be-001}, a GraphQL API at {p:be-002}, database design at {p:be-003} and an authentication system at {p:be-004}, excluding 18% GST.",
+    "why": [
+      {
+        "t": "Scoped like a shopping list",
+        "d": "APIs, databases, queues, caching and integrations are separate line items, so scope and cost stay visible."
+      },
+      {
+        "t": "Production habits",
+        "d": "Rate limiting, audit logging, documentation and background jobs are available as standard services."
+      },
+      {
+        "t": "One place to track it",
+        "d": "Milestones, files, messages and invoices are managed in the client dashboard."
+      }
+    ],
+    "serviceIds": ["be-001", "be-002", "be-003", "be-004", "be-013", "be-012"],
+    "guides": [
+      "api-backend-development-cost-india",
+      "mvp-development-cost-india",
+      "devops-cloud-setup-cost-india"
+    ],
+    "faqs": [
+      {
+        "q": "How much does custom software development cost in Jaipur?",
+        "a": "It depends on scope. StackFox lists backend services individually: a REST API from {p:be-001}, a database from {p:be-003} and third-party integrations from {p:be-013}, excluding 18% GST."
+      },
+      {
+        "q": "How long does a REST API take?",
+        "a": "A REST API takes about {e:be-001}. Authentication takes {e:be-004}."
+      },
+      {
+        "q": "Can you integrate with my existing systems?",
+        "a": "Yes. Third-party API integration starts at {p:be-013}, and webhook systems at {p:be-011}."
+      },
+      {
+        "q": "Do you document the API?",
+        "a": "Yes. API documentation with Swagger or OpenAPI is a catalogue service at {p:be-012}."
+      }
+    ]
+  },
+  {
+    "slug": "saas-development-company-india",
+    "title": "SaaS development company in India",
+    "description": "SaaS MVP development in India with published prices: MVP from {p:saas-001}, multi-tenancy, subscription billing, admin panel and RBAC priced as modules.",
+    "h1": "SaaS development company in India",
+    "answer": "StackFox helps Indian founders build SaaS products as priced modules. A SaaS MVP starts at {p:saas-001} and takes about {e:saas-001}. Multi-tenant architecture starts at {p:saas-002}, subscription billing with Razorpay or Stripe at {p:saas-003} and an admin panel at {p:saas-004}, excluding 18% GST.",
+    "why": [
+      {
+        "t": "MVP first",
+        "d": "Ship the smallest product that proves demand, then add modules as revenue arrives."
+      },
+      {
+        "t": "The hard parts are listed",
+        "d": "Multi-tenancy, billing, role-based access and usage metering are explicit modules rather than afterthoughts."
+      },
+      {
+        "t": "A platform that runs on itself",
+        "d": "StackFox itself runs on this architecture, with multi-tenant organisations, role-based access and in-house e-signing."
+      }
+    ],
+    "serviceIds": [
+      "saas-001",
+      "saas-002",
+      "saas-003",
+      "saas-004",
+      "saas-006",
+      "saas-010"
+    ],
+    "guides": [
+      "saas-development-cost-india",
+      "mvp-development-cost-india",
+      "how-to-write-a-project-brief"
+    ],
+    "faqs": [
+      {
+        "q": "How much does it cost to build a SaaS product in India?",
+        "a": "A StackFox SaaS MVP starts at {p:saas-001}, excluding 18% GST. Modules such as multi-tenancy ({p:saas-002}) and subscription billing ({p:saas-003}) are priced separately."
+      },
+      {
+        "q": "How long does a SaaS MVP take?",
+        "a": "A SaaS MVP takes about {e:saas-001}."
+      },
+      {
+        "q": "Can you add billing with Razorpay or Stripe?",
+        "a": "Yes. Subscription and billing integration is a catalogue module at {p:saas-003}, and takes about {e:saas-003}."
+      },
+      {
+        "q": "What should an MVP include?",
+        "a": "Only what proves the core promise. Our MVP guide lists what to build first and what to leave out."
+      }
+    ]
+  }
+]
