@@ -6,7 +6,7 @@ export const SITE = {
   name: 'StackFox',
   tagline: 'Smart Code, Swift Delivery',
   description:
-    'Browse, configure and price IT services like shopping online — web development, mobile apps, AI and automation, from transparent INR prices. Get an instant quote.',
+    'Web development and IT services company in Jaipur, India. Websites, mobile apps, AI and automation with every price published in INR. Build a quote in minutes.',
 };
 
 export const absUrl = (path = '/') => {
@@ -37,3 +37,13 @@ export const serviceMeta = (s) => ({
     `${s.name}: starts at ${inr(s.price)} per ${s.unit}, delivered in about ${s.est}. ${s.lay || ''}`,
   ),
 });
+
+/** Landing-page copy carries {p:<serviceId>} (price) and {e:<serviceId>} (delivery time) tokens so figures follow the catalogue. */
+export const fillTokens = (text, services) =>
+  String(text).replace(/\{([pe]):([\w-]+)\}/g, (_, kind, id) => {
+    const s = services.find((x) => x.id === id);
+    if (!s) throw new Error(`landing token: unknown service ${id}`);
+    return kind === 'p' ? inr(s.price) : s.est;
+  });
+
+export const landingPath = (l) => `/${l.slug}`;

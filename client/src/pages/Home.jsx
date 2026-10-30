@@ -1,4 +1,5 @@
 import { usePageTitle } from '@lib/hooks';
+import { SITE } from '@lib/seo';
 import { Hero } from '@components/home/Hero';
 import { FactsStrip } from '@components/home/FactsStrip';
 import { JourneySection } from '@components/home/JourneySection';
@@ -15,8 +16,8 @@ import { Faq } from '@components/home/Faq';
 /** Homepage: one component per section, each in components/home/. */
 export default function Home() {
   usePageTitle(
-    'IT services with transparent INR pricing',
-    'Browse, configure and price IT services like shopping online — web development, mobile apps, AI and automation, from transparent INR prices. Get an instant quote.',
+    'Web development and IT services company in Jaipur, India',
+    SITE.description,
   );
   return (
     <>
